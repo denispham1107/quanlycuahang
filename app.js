@@ -51,15 +51,18 @@ els.toDate.value = today;
 document.querySelectorAll(".category-form").forEach((form) => {
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    addCategory(form.dataset.type, new FormData(form).get("category"));
+    const category = ensureCategory(form.dataset.type, new FormData(form).get("category"));
+    if (!category) return;
     form.reset();
+    selectCategory(form.dataset.type, category.id);
   });
 });
 
 document.querySelectorAll(".entry-form").forEach((form) => {
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    addEntry(form.dataset.type, new FormData(form));
+    const saved = addEntry(form.dataset.type, new FormData(form));
+    if (!saved) return;
     form.querySelector('[name="amount"]').value = "";
     form.querySelector('[name="note"]').value = "";
   });
@@ -141,6 +144,8 @@ els.importData.addEventListener("change", async (event) => {
 document.addEventListener("click", (event) => {
   const categoryButton = event.target.closest("[data-delete-category]");
   const entryButton = event.target.closest("[data-delete-entry]");
+  const editCategoryButton = event.target.closest("[data-edit-category]");
+  const editEntryButton = event.target.closest("[data-edit-entry]");
 
   if (categoryButton) {
     deleteCategory(categoryButton.dataset.type, categoryButton.dataset.deleteCategory);
@@ -148,6 +153,14 @@ document.addEventListener("click", (event) => {
 
   if (entryButton) {
     deleteEntry(entryButton.dataset.deleteEntry);
+  }
+
+  if (editCategoryButton) {
+    editCategory(editCategoryButton.dataset.type, editCategoryButton.dataset.editCategory);
+  }
+
+  if (editEntryButton) {
+    editEntry(editEntryButton.dataset.editEntry);
   }
 });
 
@@ -190,9 +203,9 @@ function getActiveStore() {
 function addCategory(type, rawName) {
   const store = getActiveStore();
   const name = String(rawName || "").trim();
-  if (!store || !name) return;
+  if (!store || !name) return null;
 
-  const exists = store.categories[type].some((category) => category.name.toLowerCase() === name.toLowerCase());
+  const exists = store.categories[type].find((category) => category.name.toLowerCase() === name.toLowerCase());
   if (exists) {
     window.alert("Mục này đã tồn tại trong cửa hàng hiện tại.");
     return;
@@ -205,14 +218,45 @@ function addCategory(type, rawName) {
   saveAndRender();
 }
 
+function ensureCategory(type, rawName) {
+  const store = getActiveStore();
+  const name = String(rawName || "").trim();
+  if (!store || !name) return null;
+
+  const existing = store.categories[type].find((category) => category.name.toLowerCase() === name.toLowerCase());
+  if (existing) {
+    selectCategory(type, existing.id);
+    return existing;
+  }
+
+  const category = {
+    id: createId(),
+    name
+  };
+
+  store.categories[type].push(category);
+  saveAndRender();
+  selectCategory(type, category.id);
+  return category;
+}
+
 function addEntry(type, formData) {
   const store = getActiveStore();
-  if (!store) return;
+  if (!store) return false;
 
-  const categoryId = formData.get("categoryId");
+  let categoryId = formData.get("categoryId");
   const amount = Number(formData.get("amount"));
   const date = formData.get("date");
   const note = String(formData.get("note") || "").trim();
+
+  if (!categoryId) {
+    const categoryInput = document.querySelector(`.category-form[data-type="${type}"] [name="category"]`);
+    const category = ensureCategory(type, categoryInput?.value);
+    if (category) {
+      categoryId = category.id;
+      categoryInput.value = "";
+    }
+  }
 
   if (!categoryId || !date || !Number.isFinite(amount) || amount <= 0) {
     window.alert("Vui lòng chọn mục, ngày và nhập số tiền lớn hơn 0.");
@@ -229,6 +273,7 @@ function addEntry(type, formData) {
     createdAt: new Date().toISOString()
   });
   saveAndRender();
+  return true;
 }
 
 function deleteCategory(type, categoryId) {
@@ -245,11 +290,90 @@ function deleteCategory(type, categoryId) {
   saveAndRender();
 }
 
+function editCategory(type, categoryId) {
+  const store = getActiveStore();
+  if (!store) return;
+
+  const category = store.categories[type].find((item) => item.id === categoryId);
+  if (!category) return;
+
+  const nextName = window.prompt("Nhập tên mục mới", category.name);
+  if (nextName === null) return;
+
+  const name = nextName.trim();
+  if (!name) {
+    window.alert("Tên mục không được để trống.");
+    return;
+  }
+
+  const duplicated = store.categories[type].some((item) => item.id !== categoryId && item.name.toLowerCase() === name.toLowerCase());
+  if (duplicated) {
+    window.alert("Tên mục này đã tồn tại.");
+    return;
+  }
+
+  category.name = name;
+  saveAndRender();
+  selectCategory(type, category.id);
+}
+
 function deleteEntry(entryId) {
   const store = getActiveStore();
   if (!store) return;
   store.entries = store.entries.filter((entry) => entry.id !== entryId);
   saveAndRender();
+}
+
+function editEntry(entryId) {
+  const store = getActiveStore();
+  if (!store) return;
+
+  const entry = store.entries.find((item) => item.id === entryId);
+  if (!entry) return;
+
+  const currentCategory = store.categories[entry.type].find((item) => item.id === entry.categoryId);
+  const categoryName = window.prompt("Nhập mục cho khoản này", currentCategory?.name || "");
+  if (categoryName === null) return;
+
+  const category = ensureCategory(entry.type, categoryName);
+  if (!category) {
+    window.alert("Mục không được để trống.");
+    return;
+  }
+
+  const nextDate = window.prompt("Nhập ngày theo dạng yyyy-mm-dd", entry.date);
+  if (nextDate === null) return;
+  if (!isValidDateInput(nextDate.trim())) {
+    window.alert("Ngày không hợp lệ. Vui lòng nhập theo dạng yyyy-mm-dd.");
+    return;
+  }
+
+  const nextName = window.prompt("Nhập tên khoản", entry.note || "");
+  if (nextName === null) return;
+
+  const nextAmount = window.prompt("Nhập số tiền", String(entry.amount || ""));
+  if (nextAmount === null) return;
+
+  const amount = Number(String(nextAmount).replaceAll(",", "").trim());
+  if (!Number.isFinite(amount) || amount <= 0) {
+    window.alert("Số tiền phải lớn hơn 0.");
+    return;
+  }
+
+  entry.categoryId = category.id;
+  entry.date = nextDate.trim();
+  entry.note = nextName.trim();
+  entry.amount = amount;
+  entry.updatedAt = new Date().toISOString();
+  saveAndRender();
+  selectCategory(entry.type, category.id);
+}
+
+function selectCategory(type, categoryId) {
+  const select = document.querySelector(`.entry-form[data-type="${type}"] select[name="categoryId"]`);
+  if (!select || !categoryId) return;
+  select.disabled = false;
+  select.value = categoryId;
 }
 
 function render() {
@@ -317,6 +441,7 @@ function renderCategoryControls(store, type) {
     .map((category) => `
       <div class="category-item">
         <span class="category-name">${escapeHtml(category.name)}</span>
+        <button class="edit-small" type="button" data-type="${type}" data-edit-category="${category.id}" title="Sửa mục" aria-label="Sửa mục">Sửa</button>
         <button class="delete-small" type="button" data-type="${type}" data-delete-category="${category.id}" title="Xóa mục" aria-label="Xóa mục">×</button>
       </div>
     `)
@@ -385,6 +510,7 @@ function renderEntryTable(store, entries) {
           <td>${escapeHtml(entry.note || "")}</td>
           <td class="amount-cell">${formatCurrency(entry.amount)}</td>
           <td>
+            <button class="edit-small" type="button" data-edit-entry="${entry.id}" title="Sửa dòng" aria-label="Sửa dòng">Sửa</button>
             <button class="delete-small" type="button" data-delete-entry="${entry.id}" title="Xóa dòng" aria-label="Xóa dòng">×</button>
           </td>
         </tr>
@@ -454,6 +580,12 @@ function formatDate(value) {
 function parseDateInput(value) {
   const [year, month, day] = value.split("-").map(Number);
   return new Date(year, month - 1, day);
+}
+
+function isValidDateInput(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = parseDateInput(value);
+  return toDateInputValue(date) === value;
 }
 
 function toDateInputValue(date) {

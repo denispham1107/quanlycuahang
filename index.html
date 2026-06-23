@@ -109,14 +109,14 @@
                   <input type="text" name="category" placeholder="Thêm mục thu: đồ ăn chay, nước ngọt..." autocomplete="off" required />
                   <button type="submit">Thêm mục</button>
                 </form>
-                <form class="entry-form" data-type="income">
+                <form class="entry-form" data-type="income" novalidate>
                   <div class="form-row">
                     <select name="categoryId" required></select>
                     <input type="date" name="date" required />
                   </div>
                   <div class="form-row">
                     <input type="number" name="amount" min="0" step="1000" placeholder="Số tiền" required />
-                    <input type="text" name="note" placeholder="Ghi chú" autocomplete="off" />
+                    <input type="text" name="note" placeholder="Khoản Thu" autocomplete="off" />
                   </div>
                   <button type="submit">Lưu khoản thu</button>
                 </form>
@@ -132,14 +132,14 @@
                   <input type="text" name="category" placeholder="Thêm mục chi: tiền điện, mặt bằng..." autocomplete="off" required />
                   <button type="submit">Thêm mục</button>
                 </form>
-                <form class="entry-form" data-type="expense">
+                <form class="entry-form" data-type="expense" novalidate>
                   <div class="form-row">
                     <select name="categoryId" required></select>
                     <input type="date" name="date" required />
                   </div>
                   <div class="form-row">
                     <input type="number" name="amount" min="0" step="1000" placeholder="Số tiền" required />
-                    <input type="text" name="note" placeholder="Ghi chú" autocomplete="off" />
+                    <input type="text" name="note" placeholder="Khoản Chi" autocomplete="off" />
                   </div>
                   <button type="submit">Lưu khoản chi</button>
                 </form>
@@ -176,7 +176,7 @@
                       <th>Ngày</th>
                       <th>Loại</th>
                       <th>Mục</th>
-                      <th>Ghi chú</th>
+                      <th>Tên khoản</th>
                       <th>Số tiền</th>
                       <th></th>
                     </tr>
