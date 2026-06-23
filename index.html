@@ -1,619 +1,195 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-<head>
-<meta charset="UTF-8">
-<title>Sổ Quỹ - Quản lý thu chi cửa hàng</title>
-<style>
-  :root{
-    --ink:#1f2a24;
-    --paper:#faf7ef;
-    --paper2:#f1ecdd;
-    --line:#d8d0ba;
-    --green:#2f5d4f;
-    --green-d:#1d3c33;
-    --green-l:#e3ece6;
-    --red:#8a3324;
-    --red-l:#f3e4df;
-    --amber:#a3742a;
-    --gray:#6b6558;
-  }
-  *{box-sizing:border-box;}
-  body{
-    margin:0;
-    font-family:'Georgia','Times New Roman',serif;
-    background:var(--paper);
-    color:var(--ink);
-  }
-  .app{max-width:980px;margin:0 auto;padding:24px 20px 60px;}
-  header.top{
-    display:flex;justify-content:space-between;align-items:baseline;
-    border-bottom:3px double var(--green-d);
-    padding-bottom:12px;margin-bottom:18px;flex-wrap:wrap;gap:10px;
-  }
-  header.top h1{
-    font-size:26px;margin:0;letter-spacing:0.5px;color:var(--green-d);
-    font-weight:normal;
-  }
-  header.top .sub{font-family:Arial,sans-serif;font-size:12px;color:var(--gray);}
-  .store-bar{
-    display:flex;gap:8px;align-items:center;flex-wrap:wrap;
-    font-family:Arial,sans-serif;font-size:13px;margin-bottom:18px;
-  }
-  select,input,button,textarea{
-    font-family:Arial,sans-serif;font-size:14px;
-    border:1px solid var(--line);background:#fff;color:var(--ink);
-    padding:7px 10px;border-radius:3px;
-  }
-  button{
-    cursor:pointer;background:var(--green-d);color:#fff;border:none;
-    transition:opacity .15s;
-  }
-  button:hover{opacity:.85;}
-  button.secondary{background:#fff;color:var(--green-d);border:1px solid var(--green-d);}
-  button.danger{background:var(--red);}
-  button.ghost{background:transparent;color:var(--gray);border:1px solid var(--line);font-size:12px;padding:4px 8px;}
-  nav.tabs{
-    display:flex;gap:2px;margin-bottom:20px;border-bottom:1px solid var(--line);
-    font-family:Arial,sans-serif;
-  }
-  nav.tabs button{
-    background:transparent;color:var(--gray);border:none;border-bottom:3px solid transparent;
-    padding:10px 16px;font-size:14px;border-radius:0;
-  }
-  nav.tabs button.active{color:var(--green-d);border-bottom-color:var(--green-d);font-weight:bold;}
-  .panel{display:none;}
-  .panel.active{display:block;}
-  .card{
-    background:#fff;border:1px solid var(--line);border-radius:6px;
-    padding:18px;margin-bottom:18px;
-  }
-  .card h2{font-size:16px;margin:0 0 14px;color:var(--green-d);font-weight:normal;border-bottom:1px solid var(--paper2);padding-bottom:8px;}
-  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
-  .row label{font-family:Arial,sans-serif;font-size:12px;color:var(--gray);display:block;margin-bottom:3px;}
-  .field{display:flex;flex-direction:column;}
-  table{width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:13px;}
-  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--paper2);}
-  th{color:var(--gray);font-weight:normal;font-size:12px;text-transform:uppercase;letter-spacing:0.4px;}
-  tr.total-row td{font-weight:bold;border-top:2px solid var(--ink);border-bottom:none;}
-  .amt{text-align:right;font-variant-numeric:tabular-nums;}
-  .pos{color:var(--green-d);}
-  .neg{color:var(--red);}
-  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
-  @media (max-width:700px){.twocol{grid-template-columns:1fr;}}
-  .cat-block h3{font-size:14px;margin:0 0 8px;font-family:Arial,sans-serif;}
-  .cat-block.rev h3{color:var(--green-d);}
-  .cat-block.exp h3{color:var(--red);}
-  .entry-list-item{
-    display:flex;justify-content:space-between;align-items:center;
-    font-family:Arial,sans-serif;font-size:13px;padding:6px 0;border-bottom:1px solid var(--paper2);
-  }
-  .pill{
-    display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;
-    background:var(--paper2);color:var(--gray);margin-left:6px;
-  }
-  .empty{font-family:Arial,sans-serif;color:var(--gray);font-size:13px;padding:10px 0;}
-  .summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
-  @media (max-width:700px){.summary-grid{grid-template-columns:1fr;}}
-  .stat{background:var(--paper2);border-radius:6px;padding:12px 14px;}
-  .stat .lbl{font-family:Arial,sans-serif;font-size:12px;color:var(--gray);}
-  .stat .val{font-size:22px;margin-top:4px;}
-  .store-chip{
-    border:1px solid var(--line);background:#fff;border-radius:16px;
-    padding:6px 14px;cursor:pointer;font-family:Arial,sans-serif;font-size:13px;
-  }
-  .store-chip.active{background:var(--green-d);color:#fff;border-color:var(--green-d);}
-  .cat-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--paper2);font-family:Arial,sans-serif;font-size:13px;}
-  .msg{font-family:Arial,sans-serif;font-size:13px;color:var(--gray);padding:20px;text-align:center;}
-</style>
-</head>
-<body>
-<div class="app" id="app">
-  <div class="msg">Đang tải dữ liệu...</div>
-</div>
-
-<script>
-const VND = n => Math.round(n||0).toLocaleString('vi-VN') + ' đ';
-const todayStr = () => new Date().toISOString().slice(0,10);
-const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
-
-let state = {
-  stores: [],
-  activeStoreId: null,
-  categories: {revenue:[], expense:[]},
-  entries: [],
-  tab: 'entry',
-  entryDate: todayStr(),
-  reportMode: 'day',
-  reportStart: todayStr(),
-  reportEnd: todayStr(),
-  reportData: null,
-};
-
-async function safeGet(key, fallback){
-  try{
-    const r = await window.storage.get(key, false);
-    if(!r) return fallback;
-    return JSON.parse(r.value);
-  }catch(e){ return fallback; }
-}
-async function safeSet(key, value){
-  try{ await window.storage.set(key, JSON.stringify(value), false); }
-  catch(e){ console.error('storage set failed', key, e); alert('Lỗi lưu dữ liệu, vui lòng thử lại.'); }
-}
-
-async function loadStores(){
-  state.stores = await safeGet('stores', []);
-  if(state.stores.length && !state.activeStoreId){
-    state.activeStoreId = state.stores[0].id;
-  }
-}
-async function loadStoreData(){
-  if(!state.activeStoreId) { state.categories={revenue:[],expense:[]}; state.entries=[]; return; }
-  state.categories = await safeGet(`categories:${state.activeStoreId}`, {revenue:[],expense:[]});
-  state.entries = await safeGet(`entries:${state.activeStoreId}`, []);
-}
-
-function fmtDateVN(d){
-  const [y,m,day] = d.split('-');
-  return `${day}/${m}/${y}`;
-}
-
-function entriesForDate(date){
-  return state.entries.filter(e=>e.date===date);
-}
-function sumByType(list, type){
-  return list.filter(e=>e.type===type).reduce((s,e)=>s+e.amount,0);
-}
-function sumByCategory(list, type){
-  const map = {};
-  list.filter(e=>e.type===type).forEach(e=>{
-    map[e.categoryId] = (map[e.categoryId]||0) + e.amount;
-  });
-  return map;
-}
-function catName(type, id){
-  const c = (state.categories[type]||[]).find(c=>c.id===id);
-  return c ? c.name : '(đã xoá)';
-}
-function dateRange(start, end){
-  const out=[];
-  let d = new Date(start+'T00:00:00');
-  const e = new Date(end+'T00:00:00');
-  while(d<=e){
-    out.push(d.toISOString().slice(0,10));
-    d.setDate(d.getDate()+1);
-  }
-  return out;
-}
-function startOfWeek(dateStr){
-  const d = new Date(dateStr+'T00:00:00');
-  const day = d.getDay();
-  const diff = (day===0?-6:1-day);
-  d.setDate(d.getDate()+diff);
-  return d.toISOString().slice(0,10);
-}
-function endOfWeek(dateStr){
-  const s = startOfWeek(dateStr);
-  const d = new Date(s+'T00:00:00');
-  d.setDate(d.getDate()+6);
-  return d.toISOString().slice(0,10);
-}
-function startOfMonth(dateStr){ return dateStr.slice(0,7)+'-01'; }
-function endOfMonth(dateStr){
-  const d = new Date(dateStr.slice(0,7)+'-01T00:00:00');
-  d.setMonth(d.getMonth()+1); d.setDate(0);
-  return d.toISOString().slice(0,10);
-}
-
-function render(){
-  const app = document.getElementById('app');
-  if(!state.stores.length){
-    app.innerHTML = renderNoStore();
-    bindNoStore();
-    return;
-  }
-  app.innerHTML = `
-    ${renderHeader()}
-    ${renderStoreBar()}
-    ${renderTabs()}
-    <div class="panel ${state.tab==='entry'?'active':''}" id="panel-entry"></div>
-    <div class="panel ${state.tab==='report'?'active':''}" id="panel-report"></div>
-    <div class="panel ${state.tab==='category'?'active':''}" id="panel-category"></div>
-    <div class="panel ${state.tab==='store'?'active':''}" id="panel-store"></div>
-  `;
-  bindHeader();
-  if(state.tab==='entry') renderEntryPanel();
-  if(state.tab==='report') renderReportPanel();
-  if(state.tab==='category') renderCategoryPanel();
-  if(state.tab==='store') renderStorePanel();
-}
-
-function renderNoStore(){
-  return `
-    <header class="top"><h1>Sổ Quỹ</h1><div class="sub">Quản lý thu chi nhiều cửa hàng</div></header>
-    <div class="card">
-      <h2>Bắt đầu</h2>
-      <p style="font-family:Arial,sans-serif;font-size:14px;color:var(--gray)">Bạn chưa có cửa hàng nào. Tạo cửa hàng đầu tiên để bắt đầu ghi sổ thu chi.</p>
-      <div class="row">
-        <div class="field"><label>Tên cửa hàng</label><input id="new-store-name" placeholder="VD: Quán ăn Bình Minh"/></div>
-        <button id="btn-create-store-1" style="align-self:flex-end">+ Tạo cửa hàng</button>
-      </div>
-    </div>
-  `;
-}
-function bindNoStore(){
-  document.getElementById('btn-create-store-1').onclick = createStore;
-}
-
-function renderHeader(){
-  return `<header class="top"><h1>Sổ Quỹ</h1><div class="sub">Quản lý thu chi nhiều cửa hàng</div></header>`;
-}
-function bindHeader(){}
-
-function renderStoreBar(){
-  const chips = state.stores.map(s=>`
-    <span class="store-chip ${s.id===state.activeStoreId?'active':''}" data-id="${s.id}">${escapeHtml(s.name)}</span>
-  `).join('');
-  return `<div class="store-bar">${chips}<button class="ghost" id="btn-manage-stores">+ Quản lý cửa hàng</button></div>`;
-}
-
-function renderTabs(){
-  const tabs = [['entry','Nhập liệu'],['report','Báo cáo'],['category','Danh mục'],['store','Cửa hàng']];
-  return `<nav class="tabs">${tabs.map(([k,l])=>`<button data-tab="${k}" class="${state.tab===k?'active':''}">${l}</button>`).join('')}</nav>`;
-}
-
-function attachGlobalHandlers(){
-  document.querySelectorAll('.store-chip').forEach(el=>{
-    el.onclick = async ()=>{
-      state.activeStoreId = el.dataset.id;
-      await loadStoreData();
-      render();
-    };
-  });
-  const mgBtn = document.getElementById('btn-manage-stores');
-  if(mgBtn) mgBtn.onclick = ()=>{ state.tab='store'; render(); };
-  document.querySelectorAll('nav.tabs button').forEach(b=>{
-    b.onclick = ()=>{ state.tab = b.dataset.tab; render(); };
-  });
-}
-
-// ---------- ENTRY PANEL ----------
-function renderEntryPanel(){
-  const panel = document.getElementById('panel-entry');
-  const list = entriesForDate(state.entryDate);
-  const revTotal = sumByType(list,'revenue');
-  const expTotal = sumByType(list,'expense');
-  const net = revTotal - expTotal;
-
-  const revCats = state.categories.revenue;
-  const expCats = state.categories.expense;
-
-  panel.innerHTML = `
-    <div class="card">
-      <h2>Nhập thu chi theo ngày</h2>
-      <div class="row">
-        <div class="field"><label>Chọn ngày</label><input type="date" id="entry-date" value="${state.entryDate}"/></div>
-      </div>
-      <div class="summary-grid">
-        <div class="stat"><div class="lbl">Tổng thu ngày</div><div class="val pos">${VND(revTotal)}</div></div>
-        <div class="stat"><div class="lbl">Tổng chi ngày</div><div class="val neg">${VND(expTotal)}</div></div>
-        <div class="stat"><div class="lbl">Lãi / lỗ ngày</div><div class="val ${net>=0?'pos':'neg'}">${VND(net)}</div></div>
-      </div>
-    </div>
-
-    <div class="twocol">
-      <div class="card cat-block rev">
-        <h3>Khoản thu</h3>
-        ${revCats.length? renderAddForm('revenue', revCats) : `<div class="empty">Chưa có mục thu nào. Vào tab <b>Danh mục</b> để thêm.</div>`}
-        ${renderEntryListForType(list,'revenue')}
-      </div>
-      <div class="card cat-block exp">
-        <h3>Khoản chi</h3>
-        ${expCats.length? renderAddForm('expense', expCats) : `<div class="empty">Chưa có mục chi nào. Vào tab <b>Danh mục</b> để thêm.</div>`}
-        ${renderEntryListForType(list,'expense')}
-      </div>
-    </div>
-  `;
-  attachGlobalHandlers();
-  document.getElementById('entry-date').onchange = (e)=>{ state.entryDate = e.target.value; renderEntryPanel(); };
-
-  panel.querySelectorAll('.btn-add-entry').forEach(btn=>{
-    btn.onclick = async ()=>{
-      const type = btn.dataset.type;
-      const sel = panel.querySelector(`#sel-cat-${type}`);
-      const amtInput = panel.querySelector(`#amt-${type}`);
-      const amount = parseFloat(amtInput.value);
-      if(!sel.value){ alert('Vui lòng chọn mục.'); return; }
-      if(!amount || amount<=0){ alert('Vui lòng nhập số tiền hợp lệ.'); return; }
-      const entry = {id:uid(), type, categoryId:sel.value, date:state.entryDate, amount, time:Date.now()};
-      state.entries.push(entry);
-      await safeSet(`entries:${state.activeStoreId}`, state.entries);
-      renderEntryPanel();
-    };
-  });
-  panel.querySelectorAll('.btn-del-entry').forEach(btn=>{
-    btn.onclick = async ()=>{
-      state.entries = state.entries.filter(e=>e.id!==btn.dataset.id);
-      await safeSet(`entries:${state.activeStoreId}`, state.entries);
-      renderEntryPanel();
-    };
-  });
-}
-
-function renderAddForm(type, cats){
-  return `
-    <div class="row">
-      <div class="field">
-        <label>Mục</label>
-        <select id="sel-cat-${type}">
-          ${cats.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}
-        </select>
-      </div>
-      <div class="field">
-        <label>Số tiền (đ)</label>
-        <input type="number" min="0" step="1000" id="amt-${type}" placeholder="0" style="width:140px"/>
-      </div>
-      <button class="btn-add-entry" data-type="${type}" style="align-self:flex-end">+ Thêm</button>
-    </div>
-  `;
-}
-
-function renderEntryListForType(list, type){
-  const items = list.filter(e=>e.type===type).sort((a,b)=>b.time-a.time);
-  const total = sumByType(list, type);
-  if(!items.length) return `<div class="empty">Chưa có lượt ${type==='revenue'?'thu':'chi'} nào trong ngày.</div>`;
-  const catTotals = sumByCategory(list, type);
-  const catRows = Object.entries(catTotals).map(([cid,amt])=>`
-    <div class="cat-row"><span>${escapeHtml(catName(type,cid))}</span><span class="amt">${VND(amt)}</span></div>
-  `).join('');
-  const itemRows = items.map(e=>`
-    <div class="entry-list-item">
-      <span>${escapeHtml(catName(type,e.categoryId))} <span class="pill">${new Date(e.time).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</span></span>
-      <span style="display:flex;align-items:center;gap:8px">
-        <span class="amt">${VND(e.amount)}</span>
-        <button class="ghost btn-del-entry" data-id="${e.id}">Xoá</button>
-      </span>
-    </div>
-  `).join('');
-  return `
-    <div style="margin-top:10px;font-family:Arial,sans-serif;font-size:13px;color:var(--gray);margin-bottom:4px">Theo mục</div>
-    ${catRows}
-    <div style="margin-top:14px;font-family:Arial,sans-serif;font-size:13px;color:var(--gray);margin-bottom:4px">Tất cả lượt ghi (${items.length})</div>
-    ${itemRows}
-    <div class="cat-row" style="border-top:2px solid var(--ink);font-weight:bold;margin-top:6px"><span>Tổng</span><span class="amt">${VND(total)}</span></div>
-  `;
-}
-
-// ---------- REPORT PANEL ----------
-function applyReportPreset(){
-  const today = todayStr();
-  if(state.reportMode==='day'){ state.reportStart = state.reportEnd = state.entryDate || today; }
-  else if(state.reportMode==='week'){ state.reportStart = startOfWeek(today); state.reportEnd = endOfWeek(today); }
-  else if(state.reportMode==='month'){ state.reportStart = startOfMonth(today); state.reportEnd = endOfMonth(today); }
-}
-
-function computeReport(start, end){
-  const days = dateRange(start, end);
-  const byDay = days.map(d=>{
-    const list = entriesForDate(d);
-    const rev = sumByType(list,'revenue');
-    const exp = sumByType(list,'expense');
-    return {date:d, rev, exp, net:rev-exp};
-  });
-  const rangeList = state.entries.filter(e=>e.date>=start && e.date<=end);
-  const revByCat = sumByCategory(rangeList,'revenue');
-  const expByCat = sumByCategory(rangeList,'expense');
-  const totalRev = sumByType(rangeList,'revenue');
-  const totalExp = sumByType(rangeList,'expense');
-  return {byDay, revByCat, expByCat, totalRev, totalExp, net: totalRev-totalExp};
-}
-
-function renderReportPanel(){
-  const panel = document.getElementById('panel-report');
-  if(state.reportMode!=='custom') applyReportPreset();
-  const data = computeReport(state.reportStart, state.reportEnd);
-
-  panel.innerHTML = `
-    <div class="card">
-      <h2>Báo cáo thu chi</h2>
-      <div class="row">
-        <div class="field"><label>Khoảng thời gian</label>
-          <select id="report-mode">
-            <option value="day" ${state.reportMode==='day'?'selected':''}>Theo ngày (hôm nay/ngày đang chọn)</option>
-            <option value="week" ${state.reportMode==='week'?'selected':''}>Theo tuần này</option>
-            <option value="month" ${state.reportMode==='month'?'selected':''}>Theo tháng này</option>
-            <option value="custom" ${state.reportMode==='custom'?'selected':''}>Tùy chọn khoảng ngày</option>
-          </select>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quản lý thu chi cửa hàng</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Sổ thu chi</p>
+          <h1>Quản lý cửa hàng</h1>
         </div>
-        ${state.reportMode==='custom'?`
-          <div class="field"><label>Từ ngày</label><input type="date" id="report-start" value="${state.reportStart}"/></div>
-          <div class="field"><label>Đến ngày</label><input type="date" id="report-end" value="${state.reportEnd}"/></div>
-        `:`<div class="field" style="font-family:Arial,sans-serif;font-size:13px;align-self:flex-end;color:var(--gray)">${fmtDateVN(state.reportStart)} – ${fmtDateVN(state.reportEnd)}</div>`}
-      </div>
-      <div class="summary-grid">
-        <div class="stat"><div class="lbl">Tổng thu</div><div class="val pos">${VND(data.totalRev)}</div></div>
-        <div class="stat"><div class="lbl">Tổng chi</div><div class="val neg">${VND(data.totalExp)}</div></div>
-        <div class="stat"><div class="lbl">Lãi / lỗ</div><div class="val ${data.net>=0?'pos':'neg'}">${VND(data.net)}</div></div>
-      </div>
-    </div>
-
-    <div class="twocol">
-      <div class="card">
-        <h2>Thu theo từng mục</h2>
-        ${renderCatTable(data.revByCat,'revenue')}
-      </div>
-      <div class="card">
-        <h2>Chi theo từng mục</h2>
-        ${renderCatTable(data.expByCat,'expense')}
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Chi tiết theo từng ngày</h2>
-      <table>
-        <thead><tr><th>Ngày</th><th class="amt">Thu</th><th class="amt">Chi</th><th class="amt">Lãi/lỗ</th></tr></thead>
-        <tbody>
-          ${data.byDay.map(r=>`<tr><td>${fmtDateVN(r.date)}</td><td class="amt pos">${VND(r.rev)}</td><td class="amt neg">${VND(r.exp)}</td><td class="amt ${r.net>=0?'pos':'neg'}">${VND(r.net)}</td></tr>`).join('')}
-          <tr class="total-row"><td>Tổng cộng</td><td class="amt pos">${VND(data.totalRev)}</td><td class="amt neg">${VND(data.totalExp)}</td><td class="amt ${data.net>=0?'pos':'neg'}">${VND(data.net)}</td></tr>
-        </tbody>
-      </table>
-    </div>
-  `;
-  attachGlobalHandlers();
-  document.getElementById('report-mode').onchange = (e)=>{
-    state.reportMode = e.target.value;
-    if(state.reportMode==='custom'){
-      state.reportStart = state.reportStart || todayStr();
-      state.reportEnd = state.reportEnd || todayStr();
-    }
-    renderReportPanel();
-  };
-  const rs = document.getElementById('report-start');
-  const re = document.getElementById('report-end');
-  if(rs) rs.onchange = (e)=>{ state.reportStart = e.target.value; renderReportPanel(); };
-  if(re) re.onchange = (e)=>{ state.reportEnd = e.target.value; renderReportPanel(); };
-}
-
-function renderCatTable(catTotals, type){
-  const entries = Object.entries(catTotals);
-  if(!entries.length) return `<div class="empty">Không có dữ liệu trong khoảng này.</div>`;
-  const total = entries.reduce((s,[,v])=>s+v,0);
-  return `
-    <table>
-      <thead><tr><th>Mục</th><th class="amt">Số tiền</th></tr></thead>
-      <tbody>
-        ${entries.sort((a,b)=>b[1]-a[1]).map(([cid,amt])=>`<tr><td>${escapeHtml(catName(type,cid))}</td><td class="amt">${VND(amt)}</td></tr>`).join('')}
-        <tr class="total-row"><td>Tổng</td><td class="amt">${VND(total)}</td></tr>
-      </tbody>
-    </table>
-  `;
-}
-
-// ---------- CATEGORY PANEL ----------
-function renderCategoryPanel(){
-  const panel = document.getElementById('panel-category');
-  panel.innerHTML = `
-    <div class="twocol">
-      <div class="card cat-block rev">
-        <h3>Mục thu</h3>
-        <div class="row">
-          <input id="new-rev-cat" placeholder="VD: Đồ ăn chay, Nước ngọt, Bia..." style="flex:1"/>
-          <button id="btn-add-rev-cat">+ Thêm</button>
+        <div class="topbar-actions">
+          <button class="icon-button" id="exportData" type="button" title="Xuất dữ liệu" aria-label="Xuất dữ liệu">
+            <span aria-hidden="true">↓</span>
+          </button>
+          <label class="icon-button file-import" title="Nhập dữ liệu" aria-label="Nhập dữ liệu">
+            <span aria-hidden="true">↑</span>
+            <input id="importData" type="file" accept="application/json" />
+          </label>
         </div>
-        ${renderCatList('revenue')}
-      </div>
-      <div class="card cat-block exp">
-        <h3>Mục chi</h3>
-        <div class="row">
-          <input id="new-exp-cat" placeholder="VD: Tiền điện, Tiền nước, Tiền mặt bằng..." style="flex:1"/>
-          <button id="btn-add-exp-cat">+ Thêm</button>
-        </div>
-        ${renderCatList('expense')}
-      </div>
+      </header>
+
+      <main class="layout">
+        <aside class="sidebar">
+          <section class="panel">
+            <div class="panel-heading">
+              <h2>Cửa hàng</h2>
+              <span id="storeCount">0</span>
+            </div>
+            <form class="inline-form" id="storeForm">
+              <input id="storeName" type="text" placeholder="Tên cửa hàng" autocomplete="off" required />
+              <button type="submit">Thêm</button>
+            </form>
+            <div class="store-list" id="storeList"></div>
+          </section>
+        </aside>
+
+        <section class="workspace" id="workspace">
+          <div class="empty-state" id="emptyState">
+            <h2>Tạo cửa hàng đầu tiên</h2>
+            <p>Sau khi có cửa hàng, bạn có thể tạo mục thu, mục chi và nhập số tiền mỗi ngày.</p>
+          </div>
+
+          <div class="dashboard" id="dashboard" hidden>
+            <section class="toolbar">
+              <div>
+                <p class="eyebrow">Đang xem</p>
+                <h2 id="activeStoreName">Cửa hàng</h2>
+              </div>
+              <div class="toolbar-actions">
+                <button class="ghost-button danger" id="deleteStore" type="button">Xóa cửa hàng</button>
+              </div>
+            </section>
+
+            <section class="panel filters">
+              <div class="field">
+                <label for="rangeMode">Khoảng thời gian</label>
+                <select id="rangeMode">
+                  <option value="day">Theo ngày</option>
+                  <option value="week">Theo tuần</option>
+                  <option value="month">Theo tháng</option>
+                  <option value="custom">Tùy chọn</option>
+                </select>
+              </div>
+              <div class="field" id="singleDateField">
+                <label for="singleDate">Ngày</label>
+                <input id="singleDate" type="date" />
+              </div>
+              <div class="field" id="monthField" hidden>
+                <label for="monthDate">Tháng</label>
+                <input id="monthDate" type="month" />
+              </div>
+              <div class="field" id="fromField" hidden>
+                <label for="fromDate">Từ ngày</label>
+                <input id="fromDate" type="date" />
+              </div>
+              <div class="field" id="toField" hidden>
+                <label for="toDate">Đến ngày</label>
+                <input id="toDate" type="date" />
+              </div>
+            </section>
+
+            <section class="summary-grid">
+              <article class="metric income">
+                <span>Tổng thu</span>
+                <strong id="totalIncome">0 đ</strong>
+              </article>
+              <article class="metric expense">
+                <span>Tổng chi</span>
+                <strong id="totalExpense">0 đ</strong>
+              </article>
+              <article class="metric balance">
+                <span>Còn lại</span>
+                <strong id="balance">0 đ</strong>
+              </article>
+            </section>
+
+            <section class="entry-grid">
+              <article class="panel">
+                <div class="panel-heading">
+                  <h2>Khoản thu</h2>
+                  <span id="incomeCategoryCount">0 mục</span>
+                </div>
+                <form class="category-form" data-type="income">
+                  <input type="text" name="category" placeholder="Thêm mục thu: đồ ăn chay, nước ngọt..." autocomplete="off" required />
+                  <button type="submit">Thêm mục</button>
+                </form>
+                <form class="entry-form" data-type="income">
+                  <div class="form-row">
+                    <select name="categoryId" required></select>
+                    <input type="date" name="date" required />
+                  </div>
+                  <div class="form-row">
+                    <input type="number" name="amount" min="0" step="1000" placeholder="Số tiền" required />
+                    <input type="text" name="note" placeholder="Ghi chú" autocomplete="off" />
+                  </div>
+                  <button type="submit">Lưu khoản thu</button>
+                </form>
+                <div class="category-list" id="incomeCategories"></div>
+              </article>
+
+              <article class="panel">
+                <div class="panel-heading">
+                  <h2>Khoản chi</h2>
+                  <span id="expenseCategoryCount">0 mục</span>
+                </div>
+                <form class="category-form" data-type="expense">
+                  <input type="text" name="category" placeholder="Thêm mục chi: tiền điện, mặt bằng..." autocomplete="off" required />
+                  <button type="submit">Thêm mục</button>
+                </form>
+                <form class="entry-form" data-type="expense">
+                  <div class="form-row">
+                    <select name="categoryId" required></select>
+                    <input type="date" name="date" required />
+                  </div>
+                  <div class="form-row">
+                    <input type="number" name="amount" min="0" step="1000" placeholder="Số tiền" required />
+                    <input type="text" name="note" placeholder="Ghi chú" autocomplete="off" />
+                  </div>
+                  <button type="submit">Lưu khoản chi</button>
+                </form>
+                <div class="category-list" id="expenseCategories"></div>
+              </article>
+            </section>
+
+            <section class="report-grid">
+              <article class="panel">
+                <div class="panel-heading">
+                  <h2>Tổng thu theo mục</h2>
+                  <span id="incomeRangeLabel"></span>
+                </div>
+                <div class="report-list" id="incomeReport"></div>
+              </article>
+              <article class="panel">
+                <div class="panel-heading">
+                  <h2>Tổng chi theo mục</h2>
+                  <span id="expenseRangeLabel"></span>
+                </div>
+                <div class="report-list" id="expenseReport"></div>
+              </article>
+            </section>
+
+            <section class="panel">
+              <div class="panel-heading">
+                <h2>Lịch sử nhập liệu</h2>
+                <span id="entryCount">0 dòng</span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Ngày</th>
+                      <th>Loại</th>
+                      <th>Mục</th>
+                      <th>Ghi chú</th>
+                      <th>Số tiền</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="entryTable"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
     </div>
-  `;
-  attachGlobalHandlers();
-  document.getElementById('btn-add-rev-cat').onclick = ()=>addCategory('revenue','new-rev-cat');
-  document.getElementById('btn-add-exp-cat').onclick = ()=>addCategory('expense','new-exp-cat');
-  panel.querySelectorAll('.btn-del-cat').forEach(btn=>{
-    btn.onclick = ()=>delCategory(btn.dataset.type, btn.dataset.id);
-  });
-}
-function renderCatList(type){
-  const cats = state.categories[type];
-  if(!cats.length) return `<div class="empty">Chưa có mục nào.</div>`;
-  return cats.map(c=>`
-    <div class="cat-row"><span>${escapeHtml(c.name)}</span><button class="ghost btn-del-cat" data-type="${type}" data-id="${c.id}">Xoá</button></div>
-  `).join('');
-}
-async function addCategory(type, inputId){
-  const input = document.getElementById(inputId);
-  const name = input.value.trim();
-  if(!name) return;
-  state.categories[type].push({id:uid(), name});
-  await safeSet(`categories:${state.activeStoreId}`, state.categories);
-  renderCategoryPanel();
-}
-async function delCategory(type, id){
-  const usedCount = state.entries.filter(e=>e.type===type && e.categoryId===id).length;
-  if(usedCount>0){
-    if(!confirm(`Mục này đã có ${usedCount} lượt ghi thu/chi. Xoá mục sẽ giữ lại số liệu cũ nhưng không thể thêm mới. Tiếp tục?`)) return;
-  }
-  state.categories[type] = state.categories[type].filter(c=>c.id!==id);
-  await safeSet(`categories:${state.activeStoreId}`, state.categories);
-  renderCategoryPanel();
-}
 
-// ---------- STORE PANEL ----------
-function renderStorePanel(){
-  const panel = document.getElementById('panel-store');
-  panel.innerHTML = `
-    <div class="card">
-      <h2>Danh sách cửa hàng</h2>
-      ${state.stores.map(s=>`
-        <div class="cat-row">
-          <span>${escapeHtml(s.name)} ${s.id===state.activeStoreId?'<span class="pill">đang chọn</span>':''}</span>
-          <span style="display:flex;gap:6px">
-            ${s.id!==state.activeStoreId?`<button class="ghost btn-select-store" data-id="${s.id}">Chọn</button>`:''}
-            <button class="ghost btn-del-store" data-id="${s.id}">Xoá</button>
-          </span>
-        </div>
-      `).join('')}
-      <div class="row" style="margin-top:16px">
-        <div class="field"><label>Tên cửa hàng mới</label><input id="new-store-name-2" placeholder="VD: Chi nhánh Quận 7"/></div>
-        <button id="btn-create-store-2" style="align-self:flex-end">+ Tạo cửa hàng</button>
-      </div>
-    </div>
-  `;
-  attachGlobalHandlers();
-  document.getElementById('btn-create-store-2').onclick = createStore;
-  panel.querySelectorAll('.btn-select-store').forEach(btn=>{
-    btn.onclick = async ()=>{ state.activeStoreId = btn.dataset.id; await loadStoreData(); render(); };
-  });
-  panel.querySelectorAll('.btn-del-store').forEach(btn=>{
-    btn.onclick = ()=>deleteStore(btn.dataset.id);
-  });
-}
-async function createStore(){
-  const input = document.getElementById('new-store-name') || document.getElementById('new-store-name-2');
-  const name = input.value.trim();
-  if(!name){ alert('Vui lòng nhập tên cửa hàng.'); return; }
-  const store = {id:uid(), name, createdAt: Date.now()};
-  state.stores.push(store);
-  await safeSet('stores', state.stores);
-  state.activeStoreId = store.id;
-  await loadStoreData();
-  state.tab = 'category';
-  render();
-}
-async function deleteStore(id){
-  const store = state.stores.find(s=>s.id===id);
-  if(!confirm(`Xoá cửa hàng "${store.name}"? Toàn bộ danh mục và số liệu thu chi của cửa hàng này sẽ bị xoá vĩnh viễn.`)) return;
-  state.stores = state.stores.filter(s=>s.id!==id);
-  await safeSet('stores', state.stores);
-  try{ await window.storage.delete(`categories:${id}`, false); }catch(e){}
-  try{ await window.storage.delete(`entries:${id}`, false); }catch(e){}
-  if(state.activeStoreId===id){
-    state.activeStoreId = state.stores.length ? state.stores[0].id : null;
-    await loadStoreData();
-  }
-  render();
-}
-
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-async function init(){
-  try{
-    await loadStores();
-    await loadStoreData();
-  }catch(e){
-    console.error(e);
-  }
-  render();
-}
-init();
-</script>
-</body>
+    <script src="app.js"></script>
+  </body>
 </html>
