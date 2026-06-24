@@ -1,11 +1,23 @@
 const STORAGE_KEY = "store-cashbook-v1";
+const FIREBASE_CONFIG_PLACEHOLDER = "PASTE_YOUR_FIREBASE_CONFIG_HERE";
+const FIRESTORE_COLLECTION = "quanlycuahang";
+const FIRESTORE_DOCUMENT = "shared-state";
+
+let cloudStore = {
+  enabled: false,
+  ready: false,
+  db: null,
+  docRef: null,
+  unsubscribe: null,
+  lastError: null
+};
 
 const defaultData = {
   activeStoreId: null,
   stores: []
 };
 
-let state = loadState();
+let state = loadCachedState();
 
 const els = {
   storeForm: document.querySelector("#storeForm"),
@@ -39,7 +51,8 @@ const els = {
   entryTable: document.querySelector("#entryTable"),
   entryCount: document.querySelector("#entryCount"),
   exportData: document.querySelector("#exportData"),
-  importData: document.querySelector("#importData")
+  importData: document.querySelector("#importData"),
+  syncStatus: document.querySelector("#syncStatus")
 };
 
 const today = toDateInputValue(new Date());
@@ -164,7 +177,7 @@ document.addEventListener("click", (event) => {
   }
 });
 
-function loadState() {
+function loadCachedState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? normalizeState(JSON.parse(raw)) : cloneDefaultData();
@@ -174,7 +187,8 @@ function loadState() {
 }
 
 function normalizeState(data) {
-  const stores = (data.stores || []).map((store) => ({
+  const source = data && typeof data === "object" ? data : cloneDefaultData();
+  const stores = (source.stores || []).map((store) => ({
     id: store.id || createId(),
     name: store.name || "Cửa hàng chưa đặt tên",
     categories: {
@@ -184,16 +198,118 @@ function normalizeState(data) {
     entries: store.entries || []
   }));
 
-  const activeStoreId = stores.some((store) => store.id === data.activeStoreId)
-    ? data.activeStoreId
+  const activeStoreId = stores.some((store) => store.id === source.activeStoreId)
+    ? source.activeStoreId
     : stores[0]?.id || null;
 
-  return { activeStoreId, stores };
+  return { ...source, activeStoreId, stores };
 }
 
 function saveAndRender() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  saveStateToCache();
   render();
+  saveStateToCloud();
+}
+
+function saveStateToCache() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.warn("Cannot write local cache", error);
+  }
+}
+
+function getFirebaseConfig() {
+  const config = window.firebaseAppConfig;
+  if (!config || typeof config !== "object") return null;
+  if (!config.apiKey || config.apiKey === FIREBASE_CONFIG_PLACEHOLDER) return null;
+  if (!config.projectId || config.projectId === FIREBASE_CONFIG_PLACEHOLDER) return null;
+  return config;
+}
+
+function getFirestorePath() {
+  const options = window.appCloudOptions || {};
+  return {
+    collection: options.collection || FIRESTORE_COLLECTION,
+    document: options.document || FIRESTORE_DOCUMENT
+  };
+}
+
+function initCloudStorage() {
+  const config = getFirebaseConfig();
+
+  if (!config) {
+    updateSyncStatus("Chưa cấu hình cloud", "warning");
+    return;
+  }
+
+  if (!window.firebase?.initializeApp || !window.firebase?.firestore) {
+    updateSyncStatus("Không tải được Firebase", "error");
+    return;
+  }
+
+  try {
+    const app = window.firebase.apps?.length ? window.firebase.app() : window.firebase.initializeApp(config);
+    cloudStore.db = window.firebase.firestore(app);
+    const path = getFirestorePath();
+    cloudStore.docRef = cloudStore.db.collection(path.collection).doc(path.document);
+    cloudStore.enabled = true;
+    updateSyncStatus("Đang tải dữ liệu cloud...", "loading");
+
+    cloudStore.unsubscribe = cloudStore.docRef.onSnapshot(
+      (snapshot) => {
+        if (!snapshot.exists) {
+          saveStateToCloud();
+          updateSyncStatus("Đã tạo dữ liệu cloud", "ok");
+          return;
+        }
+
+        const remote = snapshot.data()?.state || snapshot.data();
+        state = normalizeState(remote);
+        saveStateToCache();
+        render();
+        updateSyncStatus("Đã đồng bộ cloud", "ok");
+      },
+      (error) => {
+        cloudStore.lastError = error;
+        updateSyncStatus("Lỗi đồng bộ cloud", "error");
+        console.error("Firestore sync error", error);
+      }
+    );
+  } catch (error) {
+    cloudStore.lastError = error;
+    updateSyncStatus("Lỗi kết nối cloud", "error");
+    console.error("Cannot initialize cloud storage", error);
+  }
+}
+
+async function saveStateToCloud() {
+  if (!cloudStore.enabled || !cloudStore.docRef) {
+    updateSyncStatus("Chưa cấu hình cloud", "warning");
+    return;
+  }
+
+  try {
+    updateSyncStatus("Đang lưu cloud...", "loading");
+    await cloudStore.docRef.set(
+      {
+        state,
+        updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+      },
+      { merge: true }
+    );
+    updateSyncStatus("Đã lưu cloud", "ok");
+  } catch (error) {
+    cloudStore.lastError = error;
+    updateSyncStatus("Lưu cloud thất bại", "error");
+    console.error("Cannot save cloud state", error);
+  }
+}
+
+function updateSyncStatus(message, status) {
+  if (!els.syncStatus) return;
+  els.syncStatus.textContent = message;
+  els.syncStatus.dataset.status = status;
 }
 
 function getActiveStore() {
@@ -614,3 +730,4 @@ function cloneDefaultData() {
 }
 
 render();
+initCloudStorage();

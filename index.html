@@ -12,6 +12,7 @@
         <div>
           <p class="eyebrow">Sổ thu chi</p>
           <h1>Quản lý cửa hàng</h1>
+          <p class="sync-status" id="syncStatus" data-status="loading">Đang kiểm tra đồng bộ...</p>
         </div>
         <div class="topbar-actions">
           <button class="icon-button" id="exportData" type="button" title="Xuất dữ liệu" aria-label="Xuất dữ liệu">
@@ -190,6 +191,9 @@
       </main>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

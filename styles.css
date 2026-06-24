@@ -90,6 +90,39 @@ button {
   text-transform: uppercase;
 }
 
+.sync-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  margin: 8px 0 0;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: var(--surface-strong);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sync-status[data-status="ok"] {
+  background: #e4f4ef;
+  color: var(--income);
+}
+
+.sync-status[data-status="loading"] {
+  background: #e5f0f7;
+  color: var(--balance);
+}
+
+.sync-status[data-status="warning"] {
+  background: #fff4d8;
+  color: #8a5a00;
+}
+
+.sync-status[data-status="error"] {
+  background: #f8e9e7;
+  color: var(--expense);
+}
+
 .topbar-actions {
   flex: 0 0 auto;
   display: flex;
