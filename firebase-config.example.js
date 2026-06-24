@@ -1,10 +1,11 @@
 window.firebaseAppConfig = {
-  apiKey: "your-api-key",
-  authDomain: "your-project-id.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project-id.appspot.com",
-  messagingSenderId: "your-sender-id",
-  appId: "your-app-id"
+  apiKey: "AIzaSyAkmEnSQcNp173Q_OWVW-tmVSWVSBttyc8",
+  authDomain: "quanlycuahang-d3ab7.firebaseapp.com",
+  projectId: "quanlycuahang-d3ab7",
+  storageBucket: "quanlycuahang-d3ab7.firebasestorage.app",
+  messagingSenderId: "766184475989",
+  appId: "1:766184475989:web:875e0df8b2e5870bc6f3dc",
+  measurementId: "G-GCKHCFY4HF"
 };
 
 window.appCloudOptions = {
