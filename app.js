@@ -9,7 +9,8 @@ let cloudStore = {
   db: null,
   docRef: null,
   unsubscribe: null,
-  lastError: null
+  lastError: null,
+  status: "starting"
 };
 
 const defaultData = {
@@ -239,11 +240,13 @@ function initCloudStorage() {
   const config = getFirebaseConfig();
 
   if (!config) {
+    cloudStore.status = "missing-config";
     updateSyncStatus("Chưa cấu hình cloud", "warning");
     return;
   }
 
   if (!window.firebase?.initializeApp || !window.firebase?.firestore) {
+    cloudStore.status = "missing-sdk";
     updateSyncStatus("Không tải được Firebase", "error");
     return;
   }
@@ -254,6 +257,7 @@ function initCloudStorage() {
     const path = getFirestorePath();
     cloudStore.docRef = cloudStore.db.collection(path.collection).doc(path.document);
     cloudStore.enabled = true;
+    cloudStore.status = "ready";
     updateSyncStatus("Đang tải dữ liệu cloud...", "loading");
 
     cloudStore.unsubscribe = cloudStore.docRef.onSnapshot(
@@ -272,12 +276,14 @@ function initCloudStorage() {
       },
       (error) => {
         cloudStore.lastError = error;
+        cloudStore.status = "sync-error";
         updateSyncStatus("Lỗi đồng bộ cloud", "error");
         console.error("Firestore sync error", error);
       }
     );
   } catch (error) {
     cloudStore.lastError = error;
+    cloudStore.status = "init-error";
     updateSyncStatus("Lỗi kết nối cloud", "error");
     console.error("Cannot initialize cloud storage", error);
   }
@@ -285,7 +291,13 @@ function initCloudStorage() {
 
 async function saveStateToCloud() {
   if (!cloudStore.enabled || !cloudStore.docRef) {
-    updateSyncStatus("Chưa cấu hình cloud", "warning");
+    if (cloudStore.status === "missing-config") {
+      updateSyncStatus("Chưa cấu hình cloud", "warning");
+    } else if (cloudStore.status === "missing-sdk") {
+      updateSyncStatus("Không tải được Firebase", "error");
+    } else if (cloudStore.status === "starting") {
+      updateSyncStatus("Đang khởi tạo cloud...", "loading");
+    }
     return;
   }
 
