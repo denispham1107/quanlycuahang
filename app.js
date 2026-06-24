@@ -25,7 +25,6 @@ const els = {
   storeName: document.querySelector("#storeName"),
   storeList: document.querySelector("#storeList"),
   storeCount: document.querySelector("#storeCount"),
-  emptyState: document.querySelector("#emptyState"),
   dashboard: document.querySelector("#dashboard"),
   activeStoreName: document.querySelector("#activeStoreName"),
   deleteStore: document.querySelector("#deleteStore"),
@@ -517,7 +516,6 @@ function render() {
   els.storeCount.textContent = state.stores.length;
   renderStores();
 
-  els.emptyState.hidden = Boolean(store);
   els.dashboard.hidden = !store;
   if (!store) return;
 
