@@ -53,7 +53,9 @@ const els = {
   entryCount: document.querySelector("#entryCount"),
   exportData: document.querySelector("#exportData"),
   importData: document.querySelector("#importData"),
-  syncStatus: document.querySelector("#syncStatus")
+  syncStatus: document.querySelector("#syncStatus"),
+  tabButtons: document.querySelectorAll("[data-tab]"),
+  tabPanels: document.querySelectorAll("[data-tab-panel]")
 };
 
 const today = toDateInputValue(new Date());
@@ -127,6 +129,12 @@ els.rangeMode.addEventListener("change", () => {
 
 [els.singleDate, els.monthDate, els.fromDate, els.toDate].forEach((input) => {
   input.addEventListener("change", render);
+});
+
+els.tabButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    activateTab(button.dataset.tab);
+  });
 });
 
 els.exportData.addEventListener("click", () => {
@@ -519,6 +527,20 @@ function render() {
   renderCategoryControls(store, "income");
   renderCategoryControls(store, "expense");
   renderReports(store);
+}
+
+function activateTab(tabName) {
+  els.tabButtons.forEach((button) => {
+    const isActive = button.dataset.tab === tabName;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+  });
+
+  els.tabPanels.forEach((panel) => {
+    const isActive = panel.dataset.tabPanel === tabName;
+    panel.classList.toggle("active", isActive);
+    panel.hidden = !isActive;
+  });
 }
 
 function renderStores() {

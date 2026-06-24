@@ -57,50 +57,60 @@
               </div>
             </section>
 
-            <section class="panel filters">
-              <div class="field">
-                <label for="rangeMode">Khoảng thời gian</label>
-                <select id="rangeMode">
-                  <option value="day">Theo ngày</option>
-                  <option value="week">Theo tuần</option>
-                  <option value="month">Theo tháng</option>
-                  <option value="custom">Tùy chọn</option>
-                </select>
-              </div>
-              <div class="field" id="singleDateField">
-                <label for="singleDate">Ngày</label>
-                <input id="singleDate" type="date" />
-              </div>
-              <div class="field" id="monthField" hidden>
-                <label for="monthDate">Tháng</label>
-                <input id="monthDate" type="month" />
-              </div>
-              <div class="field" id="fromField" hidden>
-                <label for="fromDate">Từ ngày</label>
-                <input id="fromDate" type="date" />
-              </div>
-              <div class="field" id="toField" hidden>
-                <label for="toDate">Đến ngày</label>
-                <input id="toDate" type="date" />
-              </div>
+            <nav class="tab-bar" aria-label="Nhóm chức năng">
+              <button class="tab-button active" type="button" data-tab="overview" aria-selected="true">Tổng quan</button>
+              <button class="tab-button" type="button" data-tab="income" aria-selected="false">Thu</button>
+              <button class="tab-button" type="button" data-tab="expense" aria-selected="false">Chi</button>
+              <button class="tab-button" type="button" data-tab="report" aria-selected="false">Báo cáo</button>
+              <button class="tab-button" type="button" data-tab="history" aria-selected="false">Lịch sử</button>
+            </nav>
+
+            <section class="tab-panel active" data-tab-panel="overview">
+              <section class="panel filters">
+                <div class="field">
+                  <label for="rangeMode">Khoảng thời gian</label>
+                  <select id="rangeMode">
+                    <option value="day">Theo ngày</option>
+                    <option value="week">Theo tuần</option>
+                    <option value="month">Theo tháng</option>
+                    <option value="custom">Tùy chọn</option>
+                  </select>
+                </div>
+                <div class="field" id="singleDateField">
+                  <label for="singleDate">Ngày</label>
+                  <input id="singleDate" type="date" />
+                </div>
+                <div class="field" id="monthField" hidden>
+                  <label for="monthDate">Tháng</label>
+                  <input id="monthDate" type="month" />
+                </div>
+                <div class="field" id="fromField" hidden>
+                  <label for="fromDate">Từ ngày</label>
+                  <input id="fromDate" type="date" />
+                </div>
+                <div class="field" id="toField" hidden>
+                  <label for="toDate">Đến ngày</label>
+                  <input id="toDate" type="date" />
+                </div>
+              </section>
+
+              <section class="summary-grid">
+                <article class="metric income">
+                  <span>Tổng thu</span>
+                  <strong id="totalIncome">0 đ</strong>
+                </article>
+                <article class="metric expense">
+                  <span>Tổng chi</span>
+                  <strong id="totalExpense">0 đ</strong>
+                </article>
+                <article class="metric balance">
+                  <span>Còn lại</span>
+                  <strong id="balance">0 đ</strong>
+                </article>
+              </section>
             </section>
 
-            <section class="summary-grid">
-              <article class="metric income">
-                <span>Tổng thu</span>
-                <strong id="totalIncome">0 đ</strong>
-              </article>
-              <article class="metric expense">
-                <span>Tổng chi</span>
-                <strong id="totalExpense">0 đ</strong>
-              </article>
-              <article class="metric balance">
-                <span>Còn lại</span>
-                <strong id="balance">0 đ</strong>
-              </article>
-            </section>
-
-            <section class="entry-grid">
+            <section class="tab-panel" data-tab-panel="income" hidden>
               <article class="panel">
                 <div class="panel-heading">
                   <h2>Khoản thu</h2>
@@ -123,7 +133,9 @@
                 </form>
                 <div class="category-list" id="incomeCategories"></div>
               </article>
+            </section>
 
+            <section class="tab-panel" data-tab-panel="expense" hidden>
               <article class="panel">
                 <div class="panel-heading">
                   <h2>Khoản chi</h2>
@@ -148,43 +160,47 @@
               </article>
             </section>
 
-            <section class="report-grid">
-              <article class="panel">
-                <div class="panel-heading">
-                  <h2>Tổng thu theo mục</h2>
-                  <span id="incomeRangeLabel"></span>
-                </div>
-                <div class="report-list" id="incomeReport"></div>
-              </article>
-              <article class="panel">
-                <div class="panel-heading">
-                  <h2>Tổng chi theo mục</h2>
-                  <span id="expenseRangeLabel"></span>
-                </div>
-                <div class="report-list" id="expenseReport"></div>
-              </article>
+            <section class="tab-panel" data-tab-panel="report" hidden>
+              <section class="report-grid">
+                <article class="panel">
+                  <div class="panel-heading">
+                    <h2>Tổng thu theo mục</h2>
+                    <span id="incomeRangeLabel"></span>
+                  </div>
+                  <div class="report-list" id="incomeReport"></div>
+                </article>
+                <article class="panel">
+                  <div class="panel-heading">
+                    <h2>Tổng chi theo mục</h2>
+                    <span id="expenseRangeLabel"></span>
+                  </div>
+                  <div class="report-list" id="expenseReport"></div>
+                </article>
+              </section>
             </section>
 
-            <section class="panel">
-              <div class="panel-heading">
-                <h2>Lịch sử nhập liệu</h2>
-                <span id="entryCount">0 dòng</span>
-              </div>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Ngày</th>
-                      <th>Loại</th>
-                      <th>Mục</th>
-                      <th>Tên khoản</th>
-                      <th>Số tiền</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody id="entryTable"></tbody>
-                </table>
-              </div>
+            <section class="tab-panel" data-tab-panel="history" hidden>
+              <section class="panel">
+                <div class="panel-heading">
+                  <h2>Lịch sử nhập liệu</h2>
+                  <span id="entryCount">0 dòng</span>
+                </div>
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Ngày</th>
+                        <th>Loại</th>
+                        <th>Mục</th>
+                        <th>Tên khoản</th>
+                        <th>Số tiền</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="entryTable"></tbody>
+                  </table>
+                </div>
+              </section>
             </section>
           </div>
         </section>
