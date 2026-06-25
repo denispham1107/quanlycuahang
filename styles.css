@@ -436,6 +436,13 @@ form button:disabled {
   min-width: 0;
 }
 
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .filters {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
@@ -692,6 +699,8 @@ th:last-child {
 
   .toolbar-actions {
     display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .inline-form,

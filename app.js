@@ -27,6 +27,7 @@ const els = {
   storeCount: document.querySelector("#storeCount"),
   dashboard: document.querySelector("#dashboard"),
   activeStoreName: document.querySelector("#activeStoreName"),
+  renameStore: document.querySelector("#renameStore"),
   deleteStore: document.querySelector("#deleteStore"),
   rangeMode: document.querySelector("#rangeMode"),
   singleDate: document.querySelector("#singleDate"),
@@ -121,6 +122,30 @@ els.storeList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-store-id]");
   if (!button) return;
   state.activeStoreId = button.dataset.storeId;
+  saveAndRender();
+});
+
+els.renameStore.addEventListener("click", () => {
+  const store = getActiveStore();
+  if (!store) return;
+
+  const nextName = window.prompt("Nhập tên cửa hàng mới", store.name);
+  if (nextName === null) return;
+
+  const name = nextName.trim();
+  if (!name) {
+    window.alert("Tên cửa hàng không được để trống.");
+    return;
+  }
+
+  const duplicated = state.stores.some((item) => item.id !== store.id && item.name.toLowerCase() === name.toLowerCase());
+  if (duplicated) {
+    window.alert("Tên cửa hàng này đã tồn tại.");
+    return;
+  }
+
+  store.name = name;
+  store.updatedAt = new Date().toISOString();
   saveAndRender();
 });
 
