@@ -672,7 +672,8 @@ function renderReportList(container, categories, entries) {
     totals.set(entry.categoryId, (totals.get(entry.categoryId) || 0) + entry.amount);
   });
 
-  container.innerHTML = categories
+  const totalAmount = sumEntries(entries);
+  const categoryRows = categories
     .map((category) => `
       <div class="report-item">
         <span class="report-name">${escapeHtml(category.name)}</span>
@@ -680,6 +681,14 @@ function renderReportList(container, categories, entries) {
       </div>
     `)
     .join("");
+
+  container.innerHTML = `
+    ${categoryRows}
+    <div class="report-item report-total">
+      <span class="report-name">Tổng cộng</span>
+      <span class="report-amount">${formatCurrency(totalAmount)}</span>
+    </div>
+  `;
 }
 
 function renderEntryTable(container, store, entries) {

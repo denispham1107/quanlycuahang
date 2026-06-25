@@ -503,6 +503,11 @@ form button:disabled {
   grid-template-columns: minmax(0, 1fr) minmax(100px, auto);
 }
 
+.report-total {
+  border-color: var(--accent);
+  background: #e4f4ef;
+}
+
 .report-amount {
   color: var(--text);
   font-weight: 800;
