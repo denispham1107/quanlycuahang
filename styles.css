@@ -590,6 +590,47 @@ th:last-child {
   text-align: center;
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(23, 32, 28, 0.48);
+}
+
+.modal-backdrop[hidden] {
+  display: none;
+}
+
+.modal-card {
+  display: grid;
+  gap: 12px;
+  width: min(480px, 100%);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+  background: var(--surface);
+  box-shadow: 0 22px 70px rgba(23, 32, 28, 0.22);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.modal-actions button {
+  min-height: 44px;
+  border-radius: 8px;
+  padding: 0 16px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+}
+
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;
@@ -661,6 +702,10 @@ th:last-child {
   form button,
   .ghost-button {
     width: 100%;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
   }
 
   .category-form,

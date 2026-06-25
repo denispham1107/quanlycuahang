@@ -59,6 +59,12 @@ const els = {
   syncStatus: document.querySelector("#syncStatus"),
   tabBar: document.querySelector("#tabBar"),
   tabSpacer: document.querySelector("#tabSpacer"),
+  editEntryModal: document.querySelector("#editEntryModal"),
+  editEntryForm: document.querySelector("#editEntryForm"),
+  editEntryType: document.querySelector("#editEntryType"),
+  editEntryCategory: document.querySelector("#editEntryCategory"),
+  editEntryAmount: document.querySelector("#editEntryAmount"),
+  cancelEditEntry: document.querySelector("#cancelEditEntry"),
   tabButtons: document.querySelectorAll("[data-tab]"),
   tabPanels: document.querySelectorAll("[data-tab-panel]")
 };
@@ -171,6 +177,21 @@ document.querySelectorAll('.entry-form input[name="amount"]').forEach((input) =>
   input.addEventListener("input", () => {
     input.value = formatAmountInput(input.value);
   });
+});
+
+els.editEntryAmount.addEventListener("input", () => {
+  els.editEntryAmount.value = formatAmountInput(els.editEntryAmount.value);
+});
+
+els.cancelEditEntry.addEventListener("click", closeEditEntryModal);
+
+els.editEntryModal.addEventListener("click", (event) => {
+  if (event.target === els.editEntryModal) closeEditEntryModal();
+});
+
+els.editEntryForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  saveEditedEntry(new FormData(els.editEntryForm));
 });
 
 els.exportData.addEventListener("click", () => {
@@ -504,42 +525,65 @@ function editEntry(entryId) {
   const entry = store.entries.find((item) => item.id === entryId);
   if (!entry) return;
 
-  const currentCategory = store.categories[entry.type].find((item) => item.id === entry.categoryId);
-  const categoryName = window.prompt("Nhập mục cho khoản này", currentCategory?.name || "");
-  if (categoryName === null) return;
+  openEditEntryModal(store, entry);
+}
 
-  const category = ensureCategory(entry.type, categoryName);
-  if (!category) {
-    window.alert("Mục không được để trống.");
+function openEditEntryModal(store, entry) {
+  const categories = store.categories[entry.type] || [];
+  els.editEntryForm.elements.entryId.value = entry.id;
+  els.editEntryType.textContent = entry.type === "income" ? "Khoản thu" : "Khoản chi";
+  els.editEntryCategory.innerHTML = categories
+    .map((category) => `<option value="${category.id}">${escapeHtml(category.name)}</option>`)
+    .join("");
+  els.editEntryCategory.value = entry.categoryId;
+  els.editEntryForm.elements.date.value = entry.date;
+  els.editEntryForm.elements.note.value = entry.note || "";
+  els.editEntryForm.elements.amount.value = formatAmountInput(entry.amount);
+  els.editEntryModal.hidden = false;
+  els.editEntryCategory.focus();
+}
+
+function closeEditEntryModal() {
+  els.editEntryModal.hidden = true;
+  els.editEntryForm.reset();
+}
+
+function saveEditedEntry(formData) {
+  const store = getActiveStore();
+  if (!store) return;
+
+  const entryId = formData.get("entryId");
+  const entry = store.entries.find((item) => item.id === entryId);
+  if (!entry) return;
+
+  const categoryId = formData.get("categoryId");
+  const nextDate = String(formData.get("date") || "").trim();
+  const nextName = String(formData.get("note") || "").trim();
+  const amount = parseAmountInput(formData.get("amount"));
+
+  if (!categoryId) {
+    window.alert("Vui lòng chọn mục.");
     return;
   }
 
-  const nextDate = window.prompt("Nhập ngày theo dạng yyyy-mm-dd", entry.date);
-  if (nextDate === null) return;
-  if (!isValidDateInput(nextDate.trim())) {
-    window.alert("Ngày không hợp lệ. Vui lòng nhập theo dạng yyyy-mm-dd.");
+  if (!isValidDateInput(nextDate)) {
+    window.alert("Ngày không hợp lệ.");
     return;
   }
 
-  const nextName = window.prompt("Nhập tên khoản", entry.note || "");
-  if (nextName === null) return;
-
-  const nextAmount = window.prompt("Nhập số tiền", String(entry.amount || ""));
-  if (nextAmount === null) return;
-
-  const amount = parseAmountInput(nextAmount);
   if (!Number.isFinite(amount) || amount <= 0) {
     window.alert("Số tiền phải lớn hơn 0.");
     return;
   }
 
-  entry.categoryId = category.id;
-  entry.date = nextDate.trim();
-  entry.note = nextName.trim();
+  entry.categoryId = categoryId;
+  entry.date = nextDate;
+  entry.note = nextName;
   entry.amount = amount;
   entry.updatedAt = new Date().toISOString();
   saveAndRender();
-  selectCategory(entry.type, category.id);
+  selectCategory(entry.type, categoryId);
+  closeEditEntryModal();
 }
 
 function selectCategory(type, categoryId) {

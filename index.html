@@ -229,6 +229,36 @@
       </main>
     </div>
 
+    <div class="modal-backdrop" id="editEntryModal" hidden>
+      <form class="modal-card" id="editEntryForm">
+        <div class="panel-heading">
+          <h2>Sửa dòng</h2>
+          <span id="editEntryType">Thu</span>
+        </div>
+        <input type="hidden" name="entryId" />
+        <div class="field">
+          <label for="editEntryCategory">Mục</label>
+          <select id="editEntryCategory" name="categoryId" required></select>
+        </div>
+        <div class="field">
+          <label for="editEntryDate">Ngày</label>
+          <input id="editEntryDate" name="date" type="date" required />
+        </div>
+        <div class="field">
+          <label for="editEntryNote">Tên khoản</label>
+          <input id="editEntryNote" name="note" type="text" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="editEntryAmount">Số tiền</label>
+          <input id="editEntryAmount" name="amount" type="text" inputmode="numeric" autocomplete="off" required />
+        </div>
+        <div class="modal-actions">
+          <button class="ghost-button" id="cancelEditEntry" type="button">Hủy</button>
+          <button type="submit">Lưu thay đổi</button>
+        </div>
+      </form>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
