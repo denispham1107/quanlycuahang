@@ -516,12 +516,18 @@ form button:disabled {
   gap: 6px;
 }
 
+.history-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 350px);
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.history-search,
 .history-filter {
   display: grid;
-  grid-template-columns: minmax(90px, auto) minmax(180px, 280px);
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: 6px;
 }
 
 .summary-grid,
@@ -706,6 +712,7 @@ th:last-child {
   }
 
   .filters,
+  .history-tools,
   .summary-grid,
   .entry-grid,
   .report-grid {

@@ -56,6 +56,10 @@ const els = {
   expenseEntryTable: document.querySelector("#expenseEntryTable"),
   incomeEntryCount: document.querySelector("#incomeEntryCount"),
   expenseEntryCount: document.querySelector("#expenseEntryCount"),
+  incomeHistorySearch: document.querySelector("#incomeHistorySearch"),
+  expenseHistorySearch: document.querySelector("#expenseHistorySearch"),
+  incomeHistorySearchSuggestions: document.querySelector("#incomeHistorySearchSuggestions"),
+  expenseHistorySearchSuggestions: document.querySelector("#expenseHistorySearchSuggestions"),
   incomeHistoryFilter: document.querySelector("#incomeHistoryFilter"),
   expenseHistoryFilter: document.querySelector("#expenseHistoryFilter"),
   incomeNoteSuggestions: document.querySelector("#incomeNoteSuggestions"),
@@ -203,6 +207,11 @@ els.monthDate.addEventListener("change", () => {
 
 [els.incomeHistoryFilter, els.expenseHistoryFilter].forEach((select) => {
   select.addEventListener("change", render);
+});
+
+[els.incomeHistorySearch, els.expenseHistorySearch].forEach((input) => {
+  input.addEventListener("input", render);
+  input.addEventListener("change", render);
 });
 
 els.tabButtons.forEach((button) => {
@@ -853,8 +862,14 @@ function renderReports(store) {
 
   const incomeEntries = entries.filter((entry) => entry.type === "income");
   const expenseEntries = entries.filter((entry) => entry.type === "expense");
-  const filteredIncomeEntries = filterEntriesByCategory(incomeEntries, els.incomeHistoryFilter?.value);
-  const filteredExpenseEntries = filterEntriesByCategory(expenseEntries, els.expenseHistoryFilter?.value);
+  const filteredIncomeEntries = filterEntriesBySearch(
+    filterEntriesByCategory(incomeEntries, els.incomeHistoryFilter?.value),
+    els.incomeHistorySearch?.value
+  );
+  const filteredExpenseEntries = filterEntriesBySearch(
+    filterEntriesByCategory(expenseEntries, els.expenseHistoryFilter?.value),
+    els.expenseHistorySearch?.value
+  );
   const totalIncome = sumEntries(incomeEntries);
   const totalExpense = sumEntries(expenseEntries);
 
@@ -866,6 +881,8 @@ function renderReports(store) {
   els.incomeEntryCount.textContent = `${filteredIncomeEntries.length} dòng`;
   els.expenseEntryCount.textContent = `${filteredExpenseEntries.length} dòng`;
 
+  renderHistorySearchSuggestions(els.incomeHistorySearchSuggestions, incomeEntries);
+  renderHistorySearchSuggestions(els.expenseHistorySearchSuggestions, expenseEntries);
   renderReportList(els.incomeReport, store.categories.income, incomeEntries);
   renderReportList(els.expenseReport, store.categories.expense, expenseEntries);
   renderEntryTable(els.incomeEntryTable, store, filteredIncomeEntries);
@@ -875,6 +892,44 @@ function renderReports(store) {
 function filterEntriesByCategory(entries, categoryId) {
   if (!categoryId || categoryId === "all") return entries;
   return entries.filter((entry) => entry.categoryId === categoryId);
+}
+
+function filterEntriesBySearch(entries, rawQuery) {
+  const query = normalizeSearchText(rawQuery);
+  if (!query) return entries;
+
+  const terms = query.split(/\s+/).filter(Boolean);
+  return entries.filter((entry) => {
+    const note = normalizeSearchText(entry.note);
+    return terms.every((term) => note.includes(term));
+  });
+}
+
+function renderHistorySearchSuggestions(container, entries) {
+  if (!container) return;
+
+  const notes = new Map();
+  entries.forEach((entry) => {
+    const note = String(entry.note || "").trim();
+    if (!note) return;
+
+    const key = normalizeSearchText(note);
+    if (!notes.has(key)) notes.set(key, note);
+  });
+
+  container.innerHTML = [...notes.values()]
+    .sort((a, b) => a.localeCompare(b, "vi"))
+    .map((note) => `<option value="${escapeHtml(note)}"></option>`)
+    .join("");
+}
+
+function normalizeSearchText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .trim();
 }
 
 function renderReportList(container, categories, entries) {

@@ -157,11 +157,18 @@
                   <h2>Lịch sử khoản thu</h2>
                   <span id="incomeEntryCount">0 dòng</span>
                 </div>
-                <div class="history-filter">
-                  <label for="incomeHistoryFilter">Phân loại</label>
-                  <select id="incomeHistoryFilter">
-                    <option value="all">Tất cả</option>
-                  </select>
+                <div class="history-tools">
+                  <div class="history-search">
+                    <label for="incomeHistorySearch">Tìm tên khoản</label>
+                    <input id="incomeHistorySearch" type="text" placeholder="Nhập tên khoản..." autocomplete="off" list="incomeHistorySearchSuggestions" />
+                    <datalist id="incomeHistorySearchSuggestions"></datalist>
+                  </div>
+                  <div class="history-filter">
+                    <label for="incomeHistoryFilter">Phân loại</label>
+                    <select id="incomeHistoryFilter">
+                      <option value="all">Tất cả</option>
+                    </select>
+                  </div>
                 </div>
                 <div class="table-wrap">
                   <table>
@@ -216,11 +223,18 @@
                   <h2>Lịch sử khoản chi</h2>
                   <span id="expenseEntryCount">0 dòng</span>
                 </div>
-                <div class="history-filter">
-                  <label for="expenseHistoryFilter">Phân loại</label>
-                  <select id="expenseHistoryFilter">
-                    <option value="all">Tất cả</option>
-                  </select>
+                <div class="history-tools">
+                  <div class="history-search">
+                    <label for="expenseHistorySearch">Tìm tên khoản</label>
+                    <input id="expenseHistorySearch" type="text" placeholder="Nhập tên khoản..." autocomplete="off" list="expenseHistorySearchSuggestions" />
+                    <datalist id="expenseHistorySearchSuggestions"></datalist>
+                  </div>
+                  <div class="history-filter">
+                    <label for="expenseHistoryFilter">Phân loại</label>
+                    <select id="expenseHistoryFilter">
+                      <option value="all">Tất cả</option>
+                    </select>
+                  </div>
                 </div>
                 <div class="table-wrap">
                   <table>
