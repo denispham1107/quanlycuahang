@@ -55,6 +55,8 @@ const els = {
   expenseEntryCount: document.querySelector("#expenseEntryCount"),
   incomeHistoryFilter: document.querySelector("#incomeHistoryFilter"),
   expenseHistoryFilter: document.querySelector("#expenseHistoryFilter"),
+  incomeNoteSuggestions: document.querySelector("#incomeNoteSuggestions"),
+  expenseNoteSuggestions: document.querySelector("#expenseNoteSuggestions"),
   exportData: document.querySelector("#exportData"),
   importData: document.querySelector("#importData"),
   syncStatus: document.querySelector("#syncStatus"),
@@ -202,6 +204,11 @@ document.querySelectorAll('.entry-form input[name="amount"]').forEach((input) =>
   input.addEventListener("input", () => {
     input.value = formatAmountInput(input.value);
   });
+});
+
+document.querySelectorAll('.entry-form input[name="note"]').forEach((input) => {
+  input.addEventListener("input", () => applyEntrySuggestion(input.closest(".entry-form")));
+  input.addEventListener("change", () => applyEntrySuggestion(input.closest(".entry-form")));
 });
 
 els.editEntryAmount.addEventListener("input", () => {
@@ -634,6 +641,7 @@ function render() {
   updateFilterFields();
   renderCategoryControls(store, "income");
   renderCategoryControls(store, "expense");
+  renderEntrySuggestions(store);
   renderHistoryFilters(store);
   renderReports(store);
   els.tabBar.dataset.pinTop = "";
@@ -643,6 +651,56 @@ function render() {
 function renderHistoryFilters(store) {
   renderHistoryFilter(els.incomeHistoryFilter, store.categories.income);
   renderHistoryFilter(els.expenseHistoryFilter, store.categories.expense);
+}
+
+function renderEntrySuggestions(store) {
+  renderEntrySuggestionList(els.incomeNoteSuggestions, getEntrySuggestions(store, "income"));
+  renderEntrySuggestionList(els.expenseNoteSuggestions, getEntrySuggestions(store, "expense"));
+}
+
+function renderEntrySuggestionList(container, suggestions) {
+  if (!container) return;
+
+  container.innerHTML = suggestions
+    .map((suggestion) => {
+      const amount = formatAmountInput(suggestion.amount);
+      return `<option value="${escapeHtml(suggestion.note)}" label="${escapeHtml(`${suggestion.note} - ${amount} đ`)}"></option>`;
+    })
+    .join("");
+}
+
+function getEntrySuggestions(store, type) {
+  const suggestions = new Map();
+  [...store.entries]
+    .filter((entry) => entry.type === type && String(entry.note || "").trim())
+    .sort((a, b) => String(b.updatedAt || b.createdAt || b.date || "").localeCompare(String(a.updatedAt || a.createdAt || a.date || "")))
+    .forEach((entry) => {
+      const note = String(entry.note || "").trim();
+      const key = note.toLowerCase();
+      if (!suggestions.has(key)) {
+        suggestions.set(key, {
+          note,
+          amount: Number(entry.amount || 0)
+        });
+      }
+    });
+
+  return [...suggestions.values()].sort((a, b) => a.note.localeCompare(b.note, "vi"));
+}
+
+function applyEntrySuggestion(form) {
+  const store = getActiveStore();
+  if (!store || !form) return;
+
+  const noteInput = form.querySelector('[name="note"]');
+  const amountInput = form.querySelector('[name="amount"]');
+  const note = String(noteInput.value || "").trim().toLowerCase();
+  if (!note) return;
+
+  const suggestion = getEntrySuggestions(store, form.dataset.type).find((item) => item.note.toLowerCase() === note);
+  if (!suggestion) return;
+
+  amountInput.value = formatAmountInput(suggestion.amount);
 }
 
 function renderHistoryFilter(select, categories) {
