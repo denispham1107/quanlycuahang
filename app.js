@@ -57,6 +57,8 @@ const els = {
   exportData: document.querySelector("#exportData"),
   importData: document.querySelector("#importData"),
   syncStatus: document.querySelector("#syncStatus"),
+  tabBar: document.querySelector("#tabBar"),
+  tabSpacer: document.querySelector("#tabSpacer"),
   tabButtons: document.querySelectorAll("[data-tab]"),
   tabPanels: document.querySelectorAll("[data-tab-panel]")
 };
@@ -143,6 +145,9 @@ els.tabButtons.forEach((button) => {
     activateTab(button.dataset.tab);
   });
 });
+
+window.addEventListener("scroll", updatePinnedTabs, { passive: true });
+window.addEventListener("resize", updatePinnedTabs);
 
 document.querySelectorAll('.entry-form input[name="amount"]').forEach((input) => {
   input.addEventListener("input", () => {
@@ -531,7 +536,10 @@ function render() {
   renderStores();
 
   els.dashboard.hidden = !store;
-  if (!store) return;
+  if (!store) {
+    resetPinnedTabs();
+    return;
+  }
 
   els.activeStoreName.textContent = store.name;
   setDefaultEntryDates();
@@ -540,6 +548,8 @@ function render() {
   renderCategoryControls(store, "expense");
   renderHistoryFilters(store);
   renderReports(store);
+  els.tabBar.dataset.pinTop = "";
+  updatePinnedTabs();
 }
 
 function renderHistoryFilters(store) {
@@ -572,6 +582,40 @@ function activateTab(tabName) {
     panel.classList.toggle("active", isActive);
     panel.hidden = !isActive;
   });
+  updatePinnedTabs();
+}
+
+function updatePinnedTabs() {
+  if (!els.tabBar || !els.tabSpacer || els.dashboard.hidden) return;
+
+  if (!els.tabBar.dataset.pinTop) {
+    const initialTop = els.tabSpacer.getBoundingClientRect().top + window.scrollY;
+    els.tabBar.dataset.pinTop = String(initialTop);
+  }
+
+  const pinTop = Number(els.tabBar.dataset.pinTop || 0);
+  const shouldPin = window.scrollY >= pinTop;
+  const widthSource = els.tabSpacer.parentElement?.getBoundingClientRect();
+
+  els.tabBar.classList.toggle("is-fixed", shouldPin);
+  els.tabSpacer.style.height = shouldPin ? `${els.tabBar.offsetHeight}px` : "0px";
+
+  if (shouldPin && widthSource) {
+    els.tabBar.style.left = `${widthSource.left}px`;
+    els.tabBar.style.width = `${widthSource.width}px`;
+  } else {
+    els.tabBar.style.left = "";
+    els.tabBar.style.width = "";
+  }
+}
+
+function resetPinnedTabs() {
+  if (!els.tabBar || !els.tabSpacer) return;
+  els.tabBar.classList.remove("is-fixed");
+  els.tabBar.style.left = "";
+  els.tabBar.style.width = "";
+  els.tabBar.dataset.pinTop = "";
+  els.tabSpacer.style.height = "0px";
 }
 
 function renderStores() {
