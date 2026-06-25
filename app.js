@@ -101,7 +101,8 @@ els.storeForm.addEventListener("submit", (event) => {
       income: [],
       expense: []
     },
-    entries: []
+    entries: [],
+    createdAt: new Date().toISOString()
   };
 
   state.stores.push(store);
@@ -222,7 +223,8 @@ function normalizeState(data) {
       income: store.categories?.income || [],
       expense: store.categories?.expense || []
     },
-    entries: store.entries || []
+    entries: store.entries || [],
+    createdAt: store.createdAt || getEarliestEntryDate(store.entries || []) || today
   }));
 
   const activeStoreId = stores.some((store) => store.id === source.activeStoreId)
@@ -764,7 +766,8 @@ function renderEntryTable(container, store, entries) {
 
 function updateFilterFields() {
   const mode = els.rangeMode.value;
-  els.singleDateField.hidden = mode === "month" || mode === "custom";
+  const quickModes = ["all", "today", "yesterday", "this-month", "last-month"];
+  els.singleDateField.hidden = mode === "month" || mode === "custom" || quickModes.includes(mode);
   els.monthField.hidden = mode !== "month";
   els.fromField.hidden = mode !== "custom";
   els.toField.hidden = mode !== "custom";
@@ -772,6 +775,39 @@ function updateFilterFields() {
 
 function getDateRange() {
   const mode = els.rangeMode.value;
+  const store = getActiveStore();
+
+  if (mode === "all") {
+    const start = getStoreStartDate(store);
+    return { start, end: today, label: `${formatDate(start)} - ${formatDate(today)}` };
+  }
+
+  if (mode === "today") {
+    return { start: today, end: today, label: formatDate(today) };
+  }
+
+  if (mode === "yesterday") {
+    const date = new Date();
+    date.setDate(date.getDate() - 1);
+    const value = toDateInputValue(date);
+    return { start: value, end: value, label: formatDate(value) };
+  }
+
+  if (mode === "this-month") {
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const start = `${month}-01`;
+    return { start, end: today, label: `Tháng ${month.slice(5, 7)}/${month.slice(0, 4)}` };
+  }
+
+  if (mode === "last-month") {
+    const now = new Date();
+    const monthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const month = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}`;
+    const start = `${month}-01`;
+    const end = toDateInputValue(new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0));
+    return { start, end, label: `Tháng ${month.slice(5, 7)}/${month.slice(0, 4)}` };
+  }
 
   if (mode === "month") {
     const month = els.monthDate.value || today.slice(0, 7);
@@ -831,6 +867,19 @@ function formatCurrency(value) {
 function formatDate(value) {
   const [year, month, day] = value.split("-");
   return `${day}/${month}/${year}`;
+}
+
+function getStoreStartDate(store) {
+  if (!store) return today;
+  if (store.createdAt) return String(store.createdAt).slice(0, 10);
+  return getEarliestEntryDate(store.entries || []) || today;
+}
+
+function getEarliestEntryDate(entries) {
+  return entries
+    .map((entry) => entry.date)
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b))[0] || null;
 }
 
 function parseDateInput(value) {
