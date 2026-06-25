@@ -26,6 +26,8 @@ const els = {
   storeList: document.querySelector("#storeList"),
   storeCount: document.querySelector("#storeCount"),
   dashboard: document.querySelector("#dashboard"),
+  heroStoreName: document.querySelector("#heroStoreName"),
+  heroStoreMeta: document.querySelector("#heroStoreMeta"),
   activeStorePanel: document.querySelector(".toolbar"),
   activeStoreName: document.querySelector("#activeStoreName"),
   renameStore: document.querySelector("#renameStore"),
@@ -651,12 +653,16 @@ function render() {
   els.deleteStore.disabled = !store;
   if (!store) {
     els.activeStoreName.textContent = "Chưa chọn cửa hàng";
+    els.heroStoreName.textContent = "Chưa chọn cửa hàng";
+    els.heroStoreMeta.textContent = "Tạo hoặc chọn một cửa hàng";
     activateTab("stores");
     updatePinnedTabs();
     return;
   }
 
   els.activeStoreName.textContent = store.name;
+  els.heroStoreName.textContent = store.name;
+  els.heroStoreMeta.textContent = `${store.entries.length} dòng`;
   setDefaultEntryDates();
   updateFilterFields();
   renderCategoryControls(store, "income");
