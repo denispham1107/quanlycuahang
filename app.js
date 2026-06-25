@@ -129,12 +129,29 @@ els.deleteStore.addEventListener("click", () => {
 });
 
 els.rangeMode.addEventListener("change", () => {
+  syncQuickRangeInputs();
   updateFilterFields();
   render();
 });
 
-[els.singleDate, els.monthDate, els.fromDate, els.toDate].forEach((input) => {
-  input.addEventListener("change", render);
+els.singleDate.addEventListener("change", () => {
+  els.rangeMode.value = "day";
+  updateFilterFields();
+  render();
+});
+
+els.monthDate.addEventListener("change", () => {
+  els.rangeMode.value = "month";
+  updateFilterFields();
+  render();
+});
+
+[els.fromDate, els.toDate].forEach((input) => {
+  input.addEventListener("change", () => {
+    els.rangeMode.value = "custom";
+    updateFilterFields();
+    render();
+  });
 });
 
 [els.incomeHistoryFilter, els.expenseHistoryFilter].forEach((select) => {
@@ -766,11 +783,34 @@ function renderEntryTable(container, store, entries) {
 
 function updateFilterFields() {
   const mode = els.rangeMode.value;
-  const quickModes = ["all", "today", "yesterday", "this-month", "last-month"];
-  els.singleDateField.hidden = mode === "month" || mode === "custom" || quickModes.includes(mode);
-  els.monthField.hidden = mode !== "month";
+  els.singleDateField.hidden = false;
+  els.monthField.hidden = false;
   els.fromField.hidden = mode !== "custom";
   els.toField.hidden = mode !== "custom";
+}
+
+function syncQuickRangeInputs() {
+  const mode = els.rangeMode.value;
+
+  if (mode === "today") {
+    els.singleDate.value = today;
+  }
+
+  if (mode === "yesterday") {
+    const date = new Date();
+    date.setDate(date.getDate() - 1);
+    els.singleDate.value = toDateInputValue(date);
+  }
+
+  if (mode === "this-month") {
+    els.monthDate.value = today.slice(0, 7);
+  }
+
+  if (mode === "last-month") {
+    const now = new Date();
+    const monthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    els.monthDate.value = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}`;
+  }
 }
 
 function getDateRange() {
