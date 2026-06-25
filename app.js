@@ -683,11 +683,11 @@ function renderReportList(container, categories, entries) {
     .join("");
 
   container.innerHTML = `
-    ${categoryRows}
     <div class="report-item report-total">
       <span class="report-name">Tổng cộng</span>
       <span class="report-amount">${formatCurrency(totalAmount)}</span>
     </div>
+    ${categoryRows}
   `;
 }
 
