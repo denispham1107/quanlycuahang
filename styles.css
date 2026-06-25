@@ -232,6 +232,10 @@ button {
   gap: 10px;
 }
 
+.category-form {
+  margin-bottom: 18px;
+}
+
 .inline-form {
   grid-template-columns: minmax(0, 1fr) minmax(84px, auto);
 }
@@ -800,6 +804,10 @@ th:last-child {
   .category-form,
   .entry-form {
     gap: 12px;
+  }
+
+  .category-form {
+    margin-bottom: 22px;
   }
 
   .history-filter {
