@@ -144,6 +144,12 @@ els.tabButtons.forEach((button) => {
   });
 });
 
+document.querySelectorAll('.entry-form input[name="amount"]').forEach((input) => {
+  input.addEventListener("input", () => {
+    input.value = formatAmountInput(input.value);
+  });
+});
+
 els.exportData.addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -388,7 +394,7 @@ function addEntry(type, formData) {
   if (!store) return false;
 
   let categoryId = formData.get("categoryId");
-  const amount = Number(formData.get("amount"));
+  const amount = parseAmountInput(formData.get("amount"));
   const date = formData.get("date");
   const note = String(formData.get("note") || "").trim();
 
@@ -497,7 +503,7 @@ function editEntry(entryId) {
   const nextAmount = window.prompt("Nhập số tiền", String(entry.amount || ""));
   if (nextAmount === null) return;
 
-  const amount = Number(String(nextAmount).replaceAll(",", "").trim());
+  const amount = parseAmountInput(nextAmount);
   if (!Number.isFinite(amount) || amount <= 0) {
     window.alert("Số tiền phải lớn hơn 0.");
     return;
@@ -746,6 +752,19 @@ function getDateRange() {
 
 function sumEntries(entries) {
   return entries.reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
+}
+
+function parseAmountInput(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  return digits ? Number(digits) : 0;
+}
+
+function formatAmountInput(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (!digits) return "";
+  return new Intl.NumberFormat("vi-VN", {
+    maximumFractionDigits: 0
+  }).format(Number(digits));
 }
 
 function formatCurrency(value) {
