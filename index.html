@@ -56,7 +56,6 @@
               <button class="tab-button active" type="button" data-tab="overview" aria-selected="true">Tổng quan</button>
               <button class="tab-button" type="button" data-tab="income" aria-selected="false">Thu</button>
               <button class="tab-button" type="button" data-tab="expense" aria-selected="false">Chi</button>
-              <button class="tab-button" type="button" data-tab="report" aria-selected="false">Báo cáo</button>
               <button class="tab-button" type="button" data-tab="history" aria-selected="false">Lịch sử</button>
             </nav>
 
@@ -128,6 +127,13 @@
                 </form>
                 <div class="category-list" id="incomeCategories"></div>
               </article>
+              <article class="panel">
+                <div class="panel-heading">
+                  <h2>Tổng thu theo mục</h2>
+                  <span id="incomeRangeLabel"></span>
+                </div>
+                <div class="report-list" id="incomeReport"></div>
+              </article>
             </section>
 
             <section class="tab-panel" data-tab-panel="expense" hidden>
@@ -153,25 +159,13 @@
                 </form>
                 <div class="category-list" id="expenseCategories"></div>
               </article>
-            </section>
-
-            <section class="tab-panel" data-tab-panel="report" hidden>
-              <section class="report-grid">
-                <article class="panel">
-                  <div class="panel-heading">
-                    <h2>Tổng thu theo mục</h2>
-                    <span id="incomeRangeLabel"></span>
-                  </div>
-                  <div class="report-list" id="incomeReport"></div>
-                </article>
-                <article class="panel">
-                  <div class="panel-heading">
-                    <h2>Tổng chi theo mục</h2>
-                    <span id="expenseRangeLabel"></span>
-                  </div>
-                  <div class="report-list" id="expenseReport"></div>
-                </article>
-              </section>
+              <article class="panel">
+                <div class="panel-heading">
+                  <h2>Tổng chi theo mục</h2>
+                  <span id="expenseRangeLabel"></span>
+                </div>
+                <div class="report-list" id="expenseReport"></div>
+              </article>
             </section>
 
             <section class="tab-panel" data-tab-panel="history" hidden>
