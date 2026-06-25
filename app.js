@@ -52,6 +52,8 @@ const els = {
   expenseEntryTable: document.querySelector("#expenseEntryTable"),
   incomeEntryCount: document.querySelector("#incomeEntryCount"),
   expenseEntryCount: document.querySelector("#expenseEntryCount"),
+  incomeHistoryFilter: document.querySelector("#incomeHistoryFilter"),
+  expenseHistoryFilter: document.querySelector("#expenseHistoryFilter"),
   exportData: document.querySelector("#exportData"),
   importData: document.querySelector("#importData"),
   syncStatus: document.querySelector("#syncStatus"),
@@ -130,6 +132,10 @@ els.rangeMode.addEventListener("change", () => {
 
 [els.singleDate, els.monthDate, els.fromDate, els.toDate].forEach((input) => {
   input.addEventListener("change", render);
+});
+
+[els.incomeHistoryFilter, els.expenseHistoryFilter].forEach((select) => {
+  select.addEventListener("change", render);
 });
 
 els.tabButtons.forEach((button) => {
@@ -526,7 +532,26 @@ function render() {
   updateFilterFields();
   renderCategoryControls(store, "income");
   renderCategoryControls(store, "expense");
+  renderHistoryFilters(store);
   renderReports(store);
+}
+
+function renderHistoryFilters(store) {
+  renderHistoryFilter(els.incomeHistoryFilter, store.categories.income);
+  renderHistoryFilter(els.expenseHistoryFilter, store.categories.expense);
+}
+
+function renderHistoryFilter(select, categories) {
+  if (!select) return;
+
+  const currentValue = select.value || "all";
+  select.innerHTML = [
+    '<option value="all">Tất cả</option>',
+    ...categories.map((category) => `<option value="${category.id}">${escapeHtml(category.name)}</option>`)
+  ].join("");
+
+  const stillExists = currentValue === "all" || categories.some((category) => category.id === currentValue);
+  select.value = stillExists ? currentValue : "all";
 }
 
 function activateTab(tabName) {
@@ -606,6 +631,8 @@ function renderReports(store) {
 
   const incomeEntries = entries.filter((entry) => entry.type === "income");
   const expenseEntries = entries.filter((entry) => entry.type === "expense");
+  const filteredIncomeEntries = filterEntriesByCategory(incomeEntries, els.incomeHistoryFilter?.value);
+  const filteredExpenseEntries = filterEntriesByCategory(expenseEntries, els.expenseHistoryFilter?.value);
   const totalIncome = sumEntries(incomeEntries);
   const totalExpense = sumEntries(expenseEntries);
 
@@ -614,13 +641,18 @@ function renderReports(store) {
   els.balance.textContent = formatCurrency(totalIncome - totalExpense);
   els.incomeRangeLabel.textContent = range.label;
   els.expenseRangeLabel.textContent = range.label;
-  els.incomeEntryCount.textContent = `${incomeEntries.length} dòng`;
-  els.expenseEntryCount.textContent = `${expenseEntries.length} dòng`;
+  els.incomeEntryCount.textContent = `${filteredIncomeEntries.length} dòng`;
+  els.expenseEntryCount.textContent = `${filteredExpenseEntries.length} dòng`;
 
   renderReportList(els.incomeReport, store.categories.income, incomeEntries);
   renderReportList(els.expenseReport, store.categories.expense, expenseEntries);
-  renderEntryTable(els.incomeEntryTable, store, incomeEntries);
-  renderEntryTable(els.expenseEntryTable, store, expenseEntries);
+  renderEntryTable(els.incomeEntryTable, store, filteredIncomeEntries);
+  renderEntryTable(els.expenseEntryTable, store, filteredExpenseEntries);
+}
+
+function filterEntriesByCategory(entries, categoryId) {
+  if (!categoryId || categoryId === "all") return entries;
+  return entries.filter((entry) => entry.categoryId === categoryId);
 }
 
 function renderReportList(container, categories, entries) {

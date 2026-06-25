@@ -436,6 +436,14 @@ form button:disabled {
   gap: 6px;
 }
 
+.history-filter {
+  display: grid;
+  grid-template-columns: minmax(90px, auto) minmax(180px, 280px);
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
 .summary-grid,
 .entry-grid,
 .report-grid {
@@ -642,6 +650,10 @@ th:last-child {
   .category-form,
   .entry-form {
     gap: 12px;
+  }
+
+  .history-filter {
+    grid-template-columns: 1fr;
   }
 
   .panel-heading {
