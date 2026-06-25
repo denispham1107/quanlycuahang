@@ -233,7 +233,7 @@ button {
 }
 
 .category-form {
-  margin-bottom: 18px;
+  margin: 18px 0 14px;
 }
 
 .inline-form {
@@ -807,7 +807,7 @@ th:last-child {
   }
 
   .category-form {
-    margin-bottom: 22px;
+    margin: 22px 0 16px;
   }
 
   .history-filter {
