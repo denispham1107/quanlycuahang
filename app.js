@@ -81,7 +81,7 @@ els.toDate.value = today;
 document.querySelectorAll(".category-form").forEach((form) => {
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    const category = ensureCategory(form.dataset.type, new FormData(form).get("category"));
+    const category = addCategory(form.dataset.type, new FormData(form).get("category"));
     if (!category) return;
     form.reset();
     selectCategory(form.dataset.type, category.id);
@@ -437,11 +437,14 @@ function addCategory(type, rawName) {
     return;
   }
 
-  store.categories[type].push({
+  const category = {
     id: createId(),
     name
-  });
+  };
+
+  store.categories[type].push(category);
   saveAndRender();
+  return category;
 }
 
 function ensureCategory(type, rawName) {
