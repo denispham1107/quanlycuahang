@@ -708,29 +708,25 @@ th:last-child {
   }
 
   td:nth-child(2)::before {
-    content: "Loại";
-  }
-
-  td:nth-child(3)::before {
     content: "Mục";
   }
 
-  td:nth-child(4)::before {
+  td:nth-child(3)::before {
     content: "Tên khoản";
   }
 
-  td:nth-child(5)::before {
+  td:nth-child(4)::before {
     content: "Số tiền";
   }
 
-  td:nth-child(6) {
+  td:nth-child(5) {
     display: flex;
     gap: 8px;
     justify-content: flex-end;
     padding-top: 8px;
   }
 
-  td:nth-child(6)::before {
+  td:nth-child(5)::before {
     content: "";
   }
 

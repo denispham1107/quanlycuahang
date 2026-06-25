@@ -56,7 +56,6 @@
               <button class="tab-button active" type="button" data-tab="overview" aria-selected="true">Tổng quan</button>
               <button class="tab-button" type="button" data-tab="income" aria-selected="false">Thu</button>
               <button class="tab-button" type="button" data-tab="expense" aria-selected="false">Chi</button>
-              <button class="tab-button" type="button" data-tab="history" aria-selected="false">Lịch sử</button>
             </nav>
 
             <section class="tab-panel active" data-tab-panel="overview">
@@ -134,6 +133,26 @@
                 </div>
                 <div class="report-list" id="incomeReport"></div>
               </article>
+              <article class="panel">
+                <div class="panel-heading">
+                  <h2>Lịch sử khoản thu</h2>
+                  <span id="incomeEntryCount">0 dòng</span>
+                </div>
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Ngày</th>
+                        <th>Mục</th>
+                        <th>Tên khoản</th>
+                        <th>Số tiền</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="incomeEntryTable"></tbody>
+                  </table>
+                </div>
+              </article>
             </section>
 
             <section class="tab-panel" data-tab-panel="expense" hidden>
@@ -166,30 +185,26 @@
                 </div>
                 <div class="report-list" id="expenseReport"></div>
               </article>
-            </section>
-
-            <section class="tab-panel" data-tab-panel="history" hidden>
-              <section class="panel">
+              <article class="panel">
                 <div class="panel-heading">
-                  <h2>Lịch sử nhập liệu</h2>
-                  <span id="entryCount">0 dòng</span>
+                  <h2>Lịch sử khoản chi</h2>
+                  <span id="expenseEntryCount">0 dòng</span>
                 </div>
                 <div class="table-wrap">
                   <table>
                     <thead>
                       <tr>
                         <th>Ngày</th>
-                        <th>Loại</th>
                         <th>Mục</th>
                         <th>Tên khoản</th>
                         <th>Số tiền</th>
                         <th></th>
                       </tr>
                     </thead>
-                    <tbody id="entryTable"></tbody>
+                    <tbody id="expenseEntryTable"></tbody>
                   </table>
                 </div>
-              </section>
+              </article>
             </section>
           </div>
         </section>

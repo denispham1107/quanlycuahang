@@ -48,8 +48,10 @@ const els = {
   expenseReport: document.querySelector("#expenseReport"),
   incomeRangeLabel: document.querySelector("#incomeRangeLabel"),
   expenseRangeLabel: document.querySelector("#expenseRangeLabel"),
-  entryTable: document.querySelector("#entryTable"),
-  entryCount: document.querySelector("#entryCount"),
+  incomeEntryTable: document.querySelector("#incomeEntryTable"),
+  expenseEntryTable: document.querySelector("#expenseEntryTable"),
+  incomeEntryCount: document.querySelector("#incomeEntryCount"),
+  expenseEntryCount: document.querySelector("#expenseEntryCount"),
   exportData: document.querySelector("#exportData"),
   importData: document.querySelector("#importData"),
   syncStatus: document.querySelector("#syncStatus"),
@@ -612,11 +614,13 @@ function renderReports(store) {
   els.balance.textContent = formatCurrency(totalIncome - totalExpense);
   els.incomeRangeLabel.textContent = range.label;
   els.expenseRangeLabel.textContent = range.label;
-  els.entryCount.textContent = `${entries.length} dòng`;
+  els.incomeEntryCount.textContent = `${incomeEntries.length} dòng`;
+  els.expenseEntryCount.textContent = `${expenseEntries.length} dòng`;
 
   renderReportList(els.incomeReport, store.categories.income, incomeEntries);
   renderReportList(els.expenseReport, store.categories.expense, expenseEntries);
-  renderEntryTable(store, entries);
+  renderEntryTable(els.incomeEntryTable, store, incomeEntries);
+  renderEntryTable(els.expenseEntryTable, store, expenseEntries);
 }
 
 function renderReportList(container, categories, entries) {
@@ -640,20 +644,20 @@ function renderReportList(container, categories, entries) {
     .join("");
 }
 
-function renderEntryTable(store, entries) {
+function renderEntryTable(container, store, entries) {
+  if (!container) return;
+
   if (!entries.length) {
-    els.entryTable.innerHTML = '<tr><td colspan="6" class="empty-list">Chưa có dữ liệu trong khoảng thời gian này</td></tr>';
+    container.innerHTML = '<tr><td colspan="5" class="empty-list">Chưa có dữ liệu trong khoảng thời gian này</td></tr>';
     return;
   }
 
-  els.entryTable.innerHTML = entries
+  container.innerHTML = entries
     .map((entry) => {
       const category = store.categories[entry.type].find((item) => item.id === entry.categoryId);
-      const typeText = entry.type === "income" ? "Thu" : "Chi";
       return `
         <tr>
           <td>${formatDate(entry.date)}</td>
-          <td><span class="type-pill ${entry.type}">${typeText}</span></td>
           <td>${escapeHtml(category?.name || "Mục đã xóa")}</td>
           <td>${escapeHtml(entry.note || "")}</td>
           <td class="amount-cell">${formatCurrency(entry.amount)}</td>
