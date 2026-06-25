@@ -372,16 +372,17 @@ form button:disabled {
 
 .tab-bar {
   position: sticky;
-  top: 88px;
-  z-index: 8;
+  top: 0;
+  z-index: 30;
   display: flex;
   gap: 8px;
   overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 8px;
-  background: rgba(245, 247, 248, 0.94);
+  background: rgba(245, 247, 248, 0.96);
   box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
   -webkit-overflow-scrolling: touch;
 }
 
@@ -618,7 +619,7 @@ th:last-child {
   }
 
   .tab-bar {
-    top: 84px;
+    top: 0;
     margin-inline: -2px;
   }
 
