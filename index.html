@@ -127,23 +127,27 @@
                   <h2>Khoản thu</h2>
                   <span id="incomeCategoryCount">0 mục</span>
                 </div>
-                <form class="entry-form" data-type="income" novalidate>
-                  <div class="form-row">
-                    <input type="text" name="note" placeholder="Khoản Thu" autocomplete="off" list="incomeNoteSuggestions" />
-                    <input type="text" name="amount" inputmode="numeric" placeholder="Số tiền" autocomplete="off" required />
-                  </div>
-                  <div class="form-row">
-                    <input type="date" name="date" required />
-                    <select name="categoryId" required></select>
-                  </div>
-                  <datalist id="incomeNoteSuggestions"></datalist>
-                  <button type="submit">Lưu khoản thu</button>
-                </form>
-                <form class="category-form" data-type="income">
-                  <input type="text" name="category" placeholder="Thêm mục thu: đồ ăn chay, nước ngọt..." autocomplete="off" required />
-                  <button type="submit">Thêm mục</button>
-                </form>
-                <div class="category-list" id="incomeCategories"></div>
+                <div class="entry-section">
+                  <form class="entry-form" data-type="income" novalidate>
+                    <div class="form-row">
+                      <input type="text" name="note" placeholder="Khoản Thu" autocomplete="off" list="incomeNoteSuggestions" />
+                      <input type="text" name="amount" inputmode="numeric" placeholder="Số tiền" autocomplete="off" required />
+                    </div>
+                    <div class="form-row">
+                      <input type="date" name="date" required />
+                      <select name="categoryId" required></select>
+                    </div>
+                    <datalist id="incomeNoteSuggestions"></datalist>
+                    <button type="submit">Lưu khoản thu</button>
+                  </form>
+                </div>
+                <div class="category-section">
+                  <form class="category-form" data-type="income">
+                    <input type="text" name="category" placeholder="Thêm mục thu: đồ ăn chay, nước ngọt..." autocomplete="off" required />
+                    <button type="submit">Thêm mục</button>
+                  </form>
+                  <div class="category-list" id="incomeCategories"></div>
+                </div>
               </article>
               <article class="panel">
                 <div class="panel-heading">
@@ -193,23 +197,27 @@
                   <h2>Khoản chi</h2>
                   <span id="expenseCategoryCount">0 mục</span>
                 </div>
-                <form class="entry-form" data-type="expense" novalidate>
-                  <div class="form-row">
-                    <input type="text" name="note" placeholder="Khoản Chi" autocomplete="off" list="expenseNoteSuggestions" />
-                    <input type="text" name="amount" inputmode="numeric" placeholder="Số tiền" autocomplete="off" required />
-                  </div>
-                  <div class="form-row">
-                    <input type="date" name="date" required />
-                    <select name="categoryId" required></select>
-                  </div>
-                  <datalist id="expenseNoteSuggestions"></datalist>
-                  <button type="submit">Lưu khoản chi</button>
-                </form>
-                <form class="category-form" data-type="expense">
-                  <input type="text" name="category" placeholder="Thêm mục chi: tiền điện, mặt bằng..." autocomplete="off" required />
-                  <button type="submit">Thêm mục</button>
-                </form>
-                <div class="category-list" id="expenseCategories"></div>
+                <div class="entry-section">
+                  <form class="entry-form" data-type="expense" novalidate>
+                    <div class="form-row">
+                      <input type="text" name="note" placeholder="Khoản Chi" autocomplete="off" list="expenseNoteSuggestions" />
+                      <input type="text" name="amount" inputmode="numeric" placeholder="Số tiền" autocomplete="off" required />
+                    </div>
+                    <div class="form-row">
+                      <input type="date" name="date" required />
+                      <select name="categoryId" required></select>
+                    </div>
+                    <datalist id="expenseNoteSuggestions"></datalist>
+                    <button type="submit">Lưu khoản chi</button>
+                  </form>
+                </div>
+                <div class="category-section">
+                  <form class="category-form" data-type="expense">
+                    <input type="text" name="category" placeholder="Thêm mục chi: tiền điện, mặt bằng..." autocomplete="off" required />
+                    <button type="submit">Thêm mục</button>
+                  </form>
+                  <div class="category-list" id="expenseCategories"></div>
+                </div>
               </article>
               <article class="panel">
                 <div class="panel-heading">

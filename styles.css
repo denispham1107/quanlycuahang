@@ -236,6 +236,34 @@ button {
   margin: 18px 0 14px;
 }
 
+.entry-section,
+.category-section {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.entry-section {
+  border-color: rgba(22, 119, 97, 0.28);
+  background: #f0f8f5;
+}
+
+.category-section {
+  margin-top: 14px;
+  border-color: #eadf9a;
+  background: #fffbed;
+}
+
+.entry-section .entry-form,
+.category-section .category-form {
+  margin: 0;
+}
+
+.category-section .category-list {
+  margin-top: 14px;
+}
+
 .inline-form {
   grid-template-columns: minmax(0, 1fr) minmax(84px, auto);
 }
@@ -808,6 +836,15 @@ th:last-child {
 
   .category-form {
     margin: 22px 0 16px;
+  }
+
+  .entry-section,
+  .category-section {
+    padding: 12px;
+  }
+
+  .category-section {
+    margin-top: 12px;
   }
 
   .history-filter {
