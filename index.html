@@ -41,7 +41,7 @@
         </aside>
 
         <section class="workspace" id="workspace">
-          <div class="dashboard" id="dashboard" hidden>
+          <div class="dashboard" id="dashboard">
             <section class="toolbar">
               <div>
                 <p class="eyebrow">Đang xem</p>
@@ -55,12 +55,15 @@
 
             <div class="tab-spacer" id="tabSpacer" aria-hidden="true"></div>
             <nav class="tab-bar" id="tabBar" aria-label="Nhóm chức năng">
-              <button class="tab-button active" type="button" data-tab="overview" aria-selected="true">Tổng quan</button>
+              <button class="tab-button active" type="button" data-tab="stores" aria-selected="true">Cửa Hàng</button>
+              <button class="tab-button" type="button" data-tab="overview" aria-selected="false">Tổng quan</button>
               <button class="tab-button" type="button" data-tab="income" aria-selected="false">Thu</button>
               <button class="tab-button" type="button" data-tab="expense" aria-selected="false">Chi</button>
             </nav>
 
-            <section class="tab-panel active" data-tab-panel="overview">
+            <section class="tab-panel active" data-tab-panel="stores"></section>
+
+            <section class="tab-panel" data-tab-panel="overview" hidden>
               <section class="panel filters">
                 <div class="field">
                   <label for="rangeMode">Khoảng thời gian</label>

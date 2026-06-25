@@ -26,6 +26,7 @@ const els = {
   storeList: document.querySelector("#storeList"),
   storeCount: document.querySelector("#storeCount"),
   dashboard: document.querySelector("#dashboard"),
+  activeStorePanel: document.querySelector(".toolbar"),
   activeStoreName: document.querySelector("#activeStoreName"),
   renameStore: document.querySelector("#renameStore"),
   deleteStore: document.querySelector("#deleteStore"),
@@ -72,11 +73,22 @@ const els = {
   tabPanels: document.querySelectorAll("[data-tab-panel]")
 };
 
+moveStoreSectionsIntoTab();
+
 const today = toDateInputValue(new Date());
 els.singleDate.value = today;
 els.monthDate.value = today.slice(0, 7);
 els.fromDate.value = today;
 els.toDate.value = today;
+
+function moveStoreSectionsIntoTab() {
+  const storesPanel = document.querySelector('[data-tab-panel="stores"]');
+  const storePanel = document.querySelector(".sidebar .panel");
+  if (!storesPanel) return;
+
+  if (storePanel) storesPanel.append(storePanel);
+  if (els.activeStorePanel) storesPanel.append(els.activeStorePanel);
+}
 
 document.querySelectorAll(".category-form").forEach((form) => {
   form.addEventListener("submit", (event) => {
@@ -633,9 +645,14 @@ function render() {
   els.storeCount.textContent = state.stores.length;
   renderStores();
 
-  els.dashboard.hidden = !store;
+  els.dashboard.hidden = false;
+  els.activeStorePanel.hidden = !store;
+  els.renameStore.disabled = !store;
+  els.deleteStore.disabled = !store;
   if (!store) {
-    resetPinnedTabs();
+    els.activeStoreName.textContent = "Chưa chọn cửa hàng";
+    activateTab("stores");
+    updatePinnedTabs();
     return;
   }
 

@@ -159,7 +159,7 @@ button {
   width: 100%;
   max-width: 100%;
   display: grid;
-  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
   padding: 20px clamp(16px, 4vw, 40px) 40px;
 }
@@ -175,6 +175,10 @@ button {
 .sidebar {
   min-width: 0;
   max-width: 100%;
+}
+
+.sidebar:empty {
+  display: none;
 }
 
 .workspace {
