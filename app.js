@@ -576,14 +576,8 @@ function deleteEntry(entryId) {
   const entry = store.entries.find((item) => item.id === entryId);
   if (!entry) return;
 
-  if (entry.type === "income") {
-    entry.status = "cancelled";
-    entry.cancelledAt = new Date().toISOString();
-    saveAndRender();
-    return;
-  }
-
-  store.entries = store.entries.filter((item) => item.id !== entryId);
+  entry.status = "cancelled";
+  entry.cancelledAt = new Date().toISOString();
   saveAndRender();
 }
 
@@ -696,7 +690,7 @@ function render() {
 
 function renderHistoryFilters(store) {
   renderHistoryFilter(els.incomeHistoryFilter, store.categories.income, true);
-  renderHistoryFilter(els.expenseHistoryFilter, store.categories.expense);
+  renderHistoryFilter(els.expenseHistoryFilter, store.categories.expense, true);
 }
 
 function renderEntrySuggestions(store) {
@@ -879,6 +873,7 @@ function renderReports(store) {
   const incomeEntries = entries.filter((entry) => entry.type === "income");
   const expenseEntries = entries.filter((entry) => entry.type === "expense");
   const activeIncomeEntries = incomeEntries.filter((entry) => !isCancelledEntry(entry));
+  const activeExpenseEntries = expenseEntries.filter((entry) => !isCancelledEntry(entry));
   const filteredIncomeEntries = filterEntriesBySearch(
     filterEntriesByCategory(incomeEntries, els.incomeHistoryFilter?.value),
     els.incomeHistorySearch?.value
@@ -888,7 +883,7 @@ function renderReports(store) {
     els.expenseHistorySearch?.value
   );
   const totalIncome = sumEntries(activeIncomeEntries);
-  const totalExpense = sumEntries(expenseEntries);
+  const totalExpense = sumEntries(activeExpenseEntries);
 
   els.totalIncome.textContent = formatCurrency(totalIncome);
   els.totalExpense.textContent = formatCurrency(totalExpense);
@@ -901,7 +896,7 @@ function renderReports(store) {
   renderHistorySearchSuggestions(els.incomeHistorySearchSuggestions, incomeEntries);
   renderHistorySearchSuggestions(els.expenseHistorySearchSuggestions, expenseEntries);
   renderReportList(els.incomeReport, store.categories.income, activeIncomeEntries);
-  renderReportList(els.expenseReport, store.categories.expense, expenseEntries);
+  renderReportList(els.expenseReport, store.categories.expense, activeExpenseEntries);
   renderEntryTable(els.incomeEntryTable, store, filteredIncomeEntries);
   renderEntryTable(els.expenseEntryTable, store, filteredExpenseEntries);
 }
