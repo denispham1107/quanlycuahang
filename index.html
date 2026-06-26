@@ -66,8 +66,8 @@
               <button class="tab-button active" type="button" data-tab="stores" aria-selected="true">Cửa Hàng</button>
               <button class="tab-button" type="button" data-tab="overview" aria-selected="false">Tổng quan</button>
               <button class="tab-button" type="button" data-tab="income" aria-selected="false">Thu</button>
-              <button class="tab-button" type="button" data-tab="sales" aria-selected="false">Bán Hàng</button>
               <button class="tab-button" type="button" data-tab="purchase" aria-selected="false">Nhập hàng</button>
+              <button class="tab-button" type="button" data-tab="sales" aria-selected="false">Bán Hàng</button>
               <button class="tab-button" type="button" data-tab="expense" aria-selected="false">Chi</button>
             </nav>
 
@@ -239,8 +239,11 @@
               <article class="panel">
                 <div class="panel-heading">
                   <h2>Nhập hàng</h2>
+                  <span id="inventoryCount">0 mặt hàng</span>
                 </div>
-                <div class="empty-list">Chức năng nhập hàng sẽ được thêm tại đây.</div>
+                <div class="empty-list">Bấm nút + để nhập hàng hóa mới vào kho.</div>
+                <button class="ghost-button inventory-toggle" id="toggleInventory" type="button">Kho hàng</button>
+                <div class="report-list inventory-list" id="inventoryList" hidden></div>
               </article>
             </section>
 
@@ -375,6 +378,19 @@
             <strong id="salesOrderTotal">0 đ</strong>
           </div>
           <datalist id="salesItemSuggestions"></datalist>
+        </div>
+        <div class="purchase-order-fields" id="purchaseOrderFields" hidden>
+          <div class="field">
+            <label for="purchaseOrderDate">Ngày nhập hàng</label>
+            <input id="purchaseOrderDate" name="purchaseDate" type="date" />
+          </div>
+          <div class="purchase-items" id="purchaseItems"></div>
+          <button class="ghost-button add-sales-item" id="addPurchaseItem" type="button">Thêm hàng hóa</button>
+          <div class="sales-total">
+            <span>Tổng tiền nhập</span>
+            <strong id="purchaseOrderTotal">0 đ</strong>
+          </div>
+          <datalist id="purchaseGroupSuggestions"></datalist>
         </div>
         <div class="modal-actions">
           <button class="ghost-button" id="cancelQuickEntry" type="button">Hủy</button>

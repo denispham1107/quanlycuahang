@@ -103,6 +103,15 @@ const els = {
   salesGoodsReport: document.querySelector("#salesGoodsReport"),
   salesRangeLabel: document.querySelector("#salesRangeLabel"),
   salesOrderTable: document.querySelector("#salesOrderTable"),
+  purchaseOrderFields: document.querySelector("#purchaseOrderFields"),
+  purchaseOrderDate: document.querySelector("#purchaseOrderDate"),
+  purchaseItems: document.querySelector("#purchaseItems"),
+  addPurchaseItem: document.querySelector("#addPurchaseItem"),
+  purchaseOrderTotal: document.querySelector("#purchaseOrderTotal"),
+  purchaseGroupSuggestions: document.querySelector("#purchaseGroupSuggestions"),
+  inventoryCount: document.querySelector("#inventoryCount"),
+  toggleInventory: document.querySelector("#toggleInventory"),
+  inventoryList: document.querySelector("#inventoryList"),
   quickEntrySubmit: document.querySelector("#quickEntrySubmit"),
   saveSalesDraft: document.querySelector("#saveSalesDraft"),
   deleteSalesDraft: document.querySelector("#deleteSalesDraft"),
@@ -170,6 +179,9 @@ els.storeForm.addEventListener("submit", (event) => {
     entries: [],
     orders: [],
     draftOrders: [],
+    purchaseCategories: [],
+    purchaseOrders: [],
+    inventory: [],
     createdAt: new Date().toISOString()
   };
 
@@ -318,10 +330,13 @@ els.quickEntryModal.addEventListener("click", (event) => {
 
 els.quickEntryForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  const type = els.quickEntryForm.dataset.type;
   const saved =
-    els.quickEntryForm.dataset.type === "sales"
+    type === "sales"
       ? saveSalesOrder()
-      : addEntry(els.quickEntryForm.dataset.type, new FormData(els.quickEntryForm));
+      : type === "purchase"
+        ? savePurchaseOrder()
+        : addEntry(type, new FormData(els.quickEntryForm));
   if (saved) closeQuickEntryModal();
 });
 
@@ -356,6 +371,31 @@ els.salesItems.addEventListener("click", (event) => {
   button.closest(".sales-item-row")?.remove();
   if (!els.salesItems.querySelector(".sales-item-row")) addSalesItemRow();
   updateSalesOrderTotal();
+});
+
+els.addPurchaseItem.addEventListener("click", () => {
+  addPurchaseItemRow();
+  updatePurchaseOrderTotal();
+});
+
+els.purchaseItems.addEventListener("input", (event) => {
+  if (event.target.matches('[data-purchase-item="price"]')) {
+    event.target.value = formatAmountInput(event.target.value);
+  }
+
+  updatePurchaseOrderTotal();
+});
+
+els.purchaseItems.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-remove-purchase-item]");
+  if (!button) return;
+  button.closest(".purchase-item-row")?.remove();
+  if (!els.purchaseItems.querySelector(".purchase-item-row")) addPurchaseItemRow();
+  updatePurchaseOrderTotal();
+});
+
+els.toggleInventory.addEventListener("click", () => {
+  els.inventoryList.hidden = !els.inventoryList.hidden;
 });
 
 els.cancelEditEntry.addEventListener("click", closeEditEntryModal);
@@ -461,6 +501,9 @@ function normalizeState(data) {
     entries: store.entries || [],
     orders: store.orders || [],
     draftOrders: store.draftOrders || [],
+    purchaseCategories: store.purchaseCategories || [],
+    purchaseOrders: store.purchaseOrders || [],
+    inventory: store.inventory || [],
     createdAt: store.createdAt || getEarliestEntryDate(store.entries || []) || today
   }));
 
@@ -847,6 +890,7 @@ function render() {
   renderEntrySuggestions(store);
   renderHistoryFilters(store);
   renderReports(store);
+  renderInventory(store);
   els.tabBar.dataset.pinTop = "";
   updateQuickEntryButton();
   updatePinnedTabs();
@@ -870,6 +914,14 @@ function renderEntrySuggestionList(container, suggestions) {
       const amount = formatAmountInput(suggestion.amount);
       return `<option value="${escapeHtml(suggestion.note)}" label="${escapeHtml(`${suggestion.note} - ${amount} đ`)}"></option>`;
     })
+    .join("");
+}
+
+function renderPurchaseGroupSuggestions(store) {
+  if (!els.purchaseGroupSuggestions) return;
+
+  els.purchaseGroupSuggestions.innerHTML = (store.purchaseCategories || [])
+    .map((category) => `<option value="${escapeHtml(category.name)}"></option>`)
     .join("");
 }
 
@@ -909,7 +961,7 @@ function applyEntrySuggestion(form) {
 
 function openQuickEntryModal(type) {
   const store = getActiveStore();
-  if (!store || !["income", "expense", "sales"].includes(type)) return;
+  if (!store || !["income", "expense", "sales", "purchase"].includes(type)) return;
 
   els.quickEntryForm.dataset.type = type;
 
@@ -918,10 +970,16 @@ function openQuickEntryModal(type) {
     return;
   }
 
+  if (type === "purchase") {
+    openPurchaseOrderModal(store);
+    return;
+  }
+
   els.quickEntryModal.classList.remove("sales-page-mode");
   const categories = store.categories[type] || [];
   els.quickEntryFields.hidden = false;
   els.salesOrderFields.hidden = true;
+  els.purchaseOrderFields.hidden = true;
   els.quickEntryTitle.textContent = type === "income" ? "Thêm khoản thu" : "Thêm khoản chi";
   els.quickEntryNote.placeholder = type === "income" ? "Khoản Thu" : "Khoản Chi";
   els.quickEntryAmount.value = "";
@@ -946,8 +1004,10 @@ function closeQuickEntryModal() {
   els.quickEntryForm.reset();
   uiState.salesDraftId = null;
   els.salesItems.innerHTML = "";
+  els.purchaseItems.innerHTML = "";
   els.quickEntryFields.hidden = false;
   els.salesOrderFields.hidden = true;
+  els.purchaseOrderFields.hidden = true;
   els.quickEntrySubmit.disabled = false;
   els.saveSalesDraft.hidden = true;
   els.deleteSalesDraft.hidden = true;
@@ -974,6 +1034,7 @@ function openSalesOrderModal(store, draft = null) {
   els.quickEntryTitle.textContent = "Tạo đơn bán hàng";
   els.quickEntryFields.hidden = true;
   els.salesOrderFields.hidden = false;
+  els.purchaseOrderFields.hidden = true;
   uiState.salesDraftId = draft?.id || null;
   els.salesCustomerName.value = draft?.customerName || "";
   els.salesCustomerPhone.value = draft?.customerPhone || "";
@@ -1133,6 +1194,135 @@ function saveSalesOrder() {
   return true;
 }
 
+function openPurchaseOrderModal(store) {
+  els.quickEntryForm.dataset.type = "purchase";
+  els.quickEntryModal.classList.add("sales-page-mode");
+  els.quickEntryTitle.textContent = "Nhập hàng vào kho";
+  els.quickEntryFields.hidden = true;
+  els.salesOrderFields.hidden = true;
+  els.purchaseOrderFields.hidden = false;
+  els.purchaseOrderDate.value = els.singleDate.value || today;
+  els.purchaseItems.innerHTML = "";
+  renderPurchaseGroupSuggestions(store);
+  addPurchaseItemRow();
+  updatePurchaseOrderTotal();
+  els.quickEntrySubmit.disabled = false;
+  els.saveSalesDraft.hidden = true;
+  els.deleteSalesDraft.hidden = true;
+  els.quickEntrySubmit.textContent = "Hoàn Thành";
+  els.quickEntryModal.hidden = false;
+}
+
+function addPurchaseItemRow(item = {}) {
+  const row = document.createElement("div");
+  row.className = "purchase-item-row sales-item-row";
+  row.innerHTML = `
+    <input type="text" data-purchase-item="name" placeholder="Hàng hóa" autocomplete="off" value="${escapeHtml(item.name || "")}" />
+    <input type="text" data-purchase-item="group" placeholder="Nhóm hàng hóa" autocomplete="off" list="purchaseGroupSuggestions" value="${escapeHtml(item.groupName || "")}" />
+    <input type="number" data-purchase-item="quantity" min="1" step="1" placeholder="SL" value="${item.quantity || 1}" />
+    <input type="text" data-purchase-item="price" inputmode="numeric" placeholder="Giá tiền" autocomplete="off" value="${item.price ? formatAmountInput(item.price) : ""}" />
+    <button class="delete-small" type="button" data-remove-purchase-item title="Xóa hàng hóa" aria-label="Xóa hàng hóa">×</button>
+  `;
+  els.purchaseItems.append(row);
+}
+
+function getPurchaseOrderItems() {
+  return [...els.purchaseItems.querySelectorAll(".purchase-item-row")]
+    .map((row) => {
+      const name = String(row.querySelector('[data-purchase-item="name"]')?.value || "").trim();
+      const groupName = String(row.querySelector('[data-purchase-item="group"]')?.value || "").trim();
+      const quantity = Math.max(1, Number.parseInt(row.querySelector('[data-purchase-item="quantity"]')?.value, 10) || 1);
+      const price = parseAmountInput(row.querySelector('[data-purchase-item="price"]')?.value);
+      return {
+        name,
+        groupName,
+        quantity,
+        price,
+        total: quantity * price
+      };
+    })
+    .filter((item) => item.name && item.groupName && Number.isFinite(item.price) && item.price > 0);
+}
+
+function updatePurchaseOrderTotal() {
+  const total = getPurchaseOrderItems().reduce((sum, item) => sum + item.total, 0);
+  els.purchaseOrderTotal.textContent = formatCurrency(total);
+}
+
+function ensurePurchaseCategory(store, rawName) {
+  const name = String(rawName || "").trim();
+  if (!name) return null;
+
+  const existing = (store.purchaseCategories || []).find((category) => category.name.toLowerCase() === name.toLowerCase());
+  if (existing) return existing;
+
+  const category = { id: createId(), name };
+  store.purchaseCategories = [...(store.purchaseCategories || []), category];
+  return category;
+}
+
+function savePurchaseOrder() {
+  const store = getActiveStore();
+  if (!store) return false;
+
+  const date = els.purchaseOrderDate.value || today;
+  const items = getPurchaseOrderItems();
+  const total = items.reduce((sum, item) => sum + item.total, 0);
+
+  if (!isValidDateInput(date)) {
+    window.alert("Ngày nhập hàng không hợp lệ.");
+    return false;
+  }
+
+  if (!items.length) {
+    window.alert("Vui lòng nhập hàng hóa, nhóm hàng hóa, số lượng và giá tiền.");
+    return false;
+  }
+
+  const createdAt = new Date().toISOString();
+  const orderId = createId();
+  const normalizedItems = items.map((item) => {
+    const category = ensurePurchaseCategory(store, item.groupName);
+    return {
+      ...item,
+      groupId: category.id,
+      groupName: category.name
+    };
+  });
+
+  store.purchaseOrders = [
+    ...(store.purchaseOrders || []),
+    { id: orderId, date, items: normalizedItems, total, createdAt }
+  ];
+
+  store.inventory = [...(store.inventory || [])];
+  normalizedItems.forEach((item) => {
+    const key = normalizeSearchText(`${item.groupName} ${item.name}`);
+    const current = store.inventory.find((stock) => normalizeSearchText(`${stock.groupName} ${stock.name}`) === key);
+    if (current) {
+      current.quantity = Number(current.quantity || 0) + item.quantity;
+      current.totalCost = Number(current.totalCost || 0) + item.total;
+      current.lastPrice = item.price;
+      current.updatedAt = createdAt;
+    } else {
+      store.inventory.push({
+        id: createId(),
+        name: item.name,
+        groupId: item.groupId,
+        groupName: item.groupName,
+        quantity: item.quantity,
+        totalCost: item.total,
+        lastPrice: item.price,
+        createdAt,
+        updatedAt: createdAt
+      });
+    }
+  });
+
+  saveAndRender();
+  return true;
+}
+
 function saveSalesDraft() {
   const store = getActiveStore();
   if (!store) return false;
@@ -1200,7 +1390,16 @@ function getActiveTabName() {
 function updateQuickEntryButton() {
   const store = getActiveStore();
   const tabName = getActiveTabName();
-  const type = tabName === "income" ? "income" : tabName === "expense" ? "expense" : tabName === "sales" ? "sales" : "";
+  const type =
+    tabName === "income"
+      ? "income"
+      : tabName === "expense"
+        ? "expense"
+        : tabName === "sales"
+          ? "sales"
+          : tabName === "purchase"
+            ? "purchase"
+            : "";
   const showButton = Boolean(store && type);
 
   els.quickEntryButton.hidden = !showButton;
@@ -1210,7 +1409,14 @@ function updateQuickEntryButton() {
   }
 
   els.quickEntryButton.dataset.type = type;
-  const label = type === "income" ? "Thêm khoản thu" : type === "expense" ? "Thêm khoản chi" : "Tạo đơn bán hàng";
+  const label =
+    type === "income"
+      ? "Thêm khoản thu"
+      : type === "expense"
+        ? "Thêm khoản chi"
+        : type === "sales"
+          ? "Tạo đơn bán hàng"
+          : "Nhập hàng vào kho";
   els.quickEntryButton.title = label;
   els.quickEntryButton.setAttribute("aria-label", label);
 }
@@ -1535,6 +1741,47 @@ function renderSalesDraftList(drafts) {
         <tbody>${rows}</tbody>
       </table>
     </div>
+  `;
+}
+
+function renderInventory(store) {
+  if (!els.inventoryList) return;
+
+  const inventory = [...(store.inventory || [])].sort((a, b) =>
+    String(a.groupName || "").localeCompare(String(b.groupName || ""), "vi") ||
+    String(a.name || "").localeCompare(String(b.name || ""), "vi")
+  );
+
+  els.inventoryCount.textContent = `${inventory.length} mặt hàng`;
+
+  if (!inventory.length) {
+    els.inventoryList.innerHTML = '<div class="empty-list">Kho hàng chưa có hàng hóa</div>';
+    return;
+  }
+
+  const totalCost = inventory.reduce((sum, item) => sum + Number(item.totalCost || 0), 0);
+  els.inventoryList.innerHTML = `
+    <div class="report-item report-total">
+      <span>Tổng giá trị kho</span>
+      <span class="report-amount">${formatCurrency(totalCost)}</span>
+    </div>
+    ${inventory
+      .map(
+        (item) => `
+          <div class="inventory-item">
+            <div>
+              <span class="inventory-group">${escapeHtml(item.groupName || "Chưa phân nhóm")}</span>
+              <strong>${escapeHtml(item.name || "")}</strong>
+            </div>
+            <div class="inventory-meta">
+              <span>SL: ${Number(item.quantity || 0).toLocaleString("vi-VN")}</span>
+              <span>Giá gần nhất: ${formatCurrency(item.lastPrice || 0)}</span>
+              <span>Tổng: ${formatCurrency(item.totalCost || 0)}</span>
+            </div>
+          </div>
+        `
+      )
+      .join("")}
   `;
 }
 
