@@ -102,7 +102,6 @@ document.querySelectorAll(".category-form").forEach((form) => {
     const category = addCategory(form.dataset.type, new FormData(form).get("category"));
     if (!category) return;
     form.reset();
-    selectCategory(form.dataset.type, category.id);
   });
 });
 
@@ -113,6 +112,7 @@ document.querySelectorAll(".entry-form").forEach((form) => {
     if (!saved) return;
     form.querySelector('[name="amount"]').value = "";
     form.querySelector('[name="note"]').value = "";
+    form.querySelector('[name="categoryId"]').value = "";
   });
 });
 
@@ -832,9 +832,11 @@ function renderCategoryControls(store, type) {
   const select = document.querySelector(`.entry-form[data-type="${type}"] select[name="categoryId"]`);
 
   countEl.textContent = `${categories.length} mục`;
-  select.innerHTML = categories.length
-    ? categories.map((category) => `<option value="${category.id}">${escapeHtml(category.name)}</option>`).join("")
-    : '<option value="">Chưa có mục</option>';
+  select.innerHTML = [
+    '<option value="">Chưa có mục</option>',
+    ...categories.map((category) => `<option value="${category.id}">${escapeHtml(category.name)}</option>`)
+  ].join("");
+  select.value = "";
   select.disabled = !categories.length;
   select.closest("form").querySelector('button[type="submit"]').disabled = !categories.length;
 
