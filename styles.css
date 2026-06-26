@@ -712,7 +712,7 @@ form button:disabled {
 }
 
 .tab-button {
-  flex: 1 1 0;
+  flex: 0 0 calc(25% - 6px);
   order: 1;
   min-height: 42px;
   border: 1px solid transparent;
@@ -721,6 +721,7 @@ form button:disabled {
   background: transparent;
   color: var(--muted);
   font-weight: 800;
+  text-align: center;
   white-space: nowrap;
 }
 
@@ -734,7 +735,7 @@ form button:disabled {
 .tab-button[data-tab="sales"],
 .tab-button[data-tab="purchase"] {
   order: 2;
-  flex: 1 1 calc(50% - 4px);
+  flex: 0 0 calc(50% - 4px);
   margin-top: 4px;
   border-color: rgba(255, 255, 255, 0.78);
   background: linear-gradient(135deg, rgba(12, 130, 244, 0.12) 0%, rgba(216, 92, 255, 0.16) 52%, rgba(255, 154, 74, 0.18) 100%);
@@ -1316,8 +1317,8 @@ th:last-child {
 
   .tab-button {
     min-height: 40px;
-    padding-inline: 8px;
-    font-size: 13px;
+    padding-inline: 4px;
+    font-size: 12px;
   }
 
   .tab-button[data-tab="sales"],
