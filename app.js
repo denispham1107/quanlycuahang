@@ -856,6 +856,7 @@ function openQuickEntryModal(type) {
     return;
   }
 
+  els.quickEntryModal.classList.remove("sales-page-mode");
   const categories = store.categories[type] || [];
   els.quickEntryFields.hidden = false;
   els.salesOrderFields.hidden = true;
@@ -878,6 +879,7 @@ function openQuickEntryModal(type) {
 
 function closeQuickEntryModal() {
   els.quickEntryModal.hidden = true;
+  els.quickEntryModal.classList.remove("sales-page-mode");
   els.quickEntryForm.reset();
   els.salesItems.innerHTML = "";
   els.quickEntryFields.hidden = false;
@@ -901,6 +903,7 @@ function applyQuickEntrySuggestion() {
 }
 
 function openSalesOrderModal(store) {
+  els.quickEntryModal.classList.add("sales-page-mode");
   els.quickEntryTitle.textContent = "Tạo đơn bán hàng";
   els.quickEntryFields.hidden = true;
   els.salesOrderFields.hidden = false;
