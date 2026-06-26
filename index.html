@@ -410,11 +410,51 @@
           <h2>Kho hàng</h2>
           <span id="inventoryModalCount">0 mặt hàng</span>
         </div>
+        <div class="history-tools inventory-tools">
+          <div class="history-search">
+            <label for="inventorySearch">Tìm hàng hóa</label>
+            <input id="inventorySearch" type="text" placeholder="Nhập tên hàng hóa..." autocomplete="off" />
+          </div>
+          <div class="history-filter">
+            <label for="inventoryFilter">Phân Loại</label>
+            <select id="inventoryFilter"></select>
+          </div>
+        </div>
         <div class="report-list inventory-list" id="inventoryList"></div>
         <div class="modal-actions">
           <button class="ghost-button" id="closeInventory" type="button">Đóng</button>
         </div>
       </section>
+    </div>
+
+    <div class="modal-backdrop" id="editInventoryModal" hidden>
+      <form class="modal-card" id="editInventoryForm">
+        <div class="panel-heading">
+          <h2>Sửa hàng hóa</h2>
+          <span>Kho hàng</span>
+        </div>
+        <input type="hidden" name="inventoryId" />
+        <div class="field">
+          <label for="editInventoryName">Tên hàng hóa</label>
+          <input id="editInventoryName" name="name" type="text" autocomplete="off" required />
+        </div>
+        <div class="field">
+          <label for="editInventoryGroup">Nhóm hàng hóa</label>
+          <input id="editInventoryGroup" name="groupName" type="text" autocomplete="off" required />
+        </div>
+        <div class="field">
+          <label for="editInventoryQuantity">Số lượng tồn kho</label>
+          <input id="editInventoryQuantity" name="quantity" type="number" step="1" autocomplete="off" required />
+        </div>
+        <div class="field">
+          <label for="editInventoryPrice">Giá</label>
+          <input id="editInventoryPrice" name="lastPrice" type="text" inputmode="numeric" autocomplete="off" required />
+        </div>
+        <div class="modal-actions">
+          <button class="ghost-button" id="cancelEditInventory" type="button">Hủy</button>
+          <button type="submit">Lưu</button>
+        </div>
+      </form>
     </div>
 
     <div class="modal-backdrop" id="editEntryModal" hidden>

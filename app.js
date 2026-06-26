@@ -26,6 +26,8 @@ const uiState = {
     expense: false
   },
   rangeMode: "today",
+  inventorySearch: "",
+  inventoryFilter: "all",
   salesDraftId: null
 };
 
@@ -114,8 +116,17 @@ const els = {
   toggleInventory: document.querySelector("#toggleInventory"),
   inventoryModal: document.querySelector("#inventoryModal"),
   inventoryModalCount: document.querySelector("#inventoryModalCount"),
+  inventorySearch: document.querySelector("#inventorySearch"),
+  inventoryFilter: document.querySelector("#inventoryFilter"),
   inventoryList: document.querySelector("#inventoryList"),
   closeInventory: document.querySelector("#closeInventory"),
+  editInventoryModal: document.querySelector("#editInventoryModal"),
+  editInventoryForm: document.querySelector("#editInventoryForm"),
+  editInventoryName: document.querySelector("#editInventoryName"),
+  editInventoryGroup: document.querySelector("#editInventoryGroup"),
+  editInventoryQuantity: document.querySelector("#editInventoryQuantity"),
+  editInventoryPrice: document.querySelector("#editInventoryPrice"),
+  cancelEditInventory: document.querySelector("#cancelEditInventory"),
   quickEntrySubmit: document.querySelector("#quickEntrySubmit"),
   saveSalesDraft: document.querySelector("#saveSalesDraft"),
   deleteSalesDraft: document.querySelector("#deleteSalesDraft"),
@@ -406,6 +417,37 @@ els.closeInventory.addEventListener("click", closeInventoryModal);
 
 els.inventoryModal.addEventListener("click", (event) => {
   if (event.target === els.inventoryModal) closeInventoryModal();
+});
+
+els.inventorySearch.addEventListener("input", () => {
+  uiState.inventorySearch = els.inventorySearch.value;
+  renderInventory(getActiveStore());
+});
+
+els.inventoryFilter.addEventListener("change", () => {
+  uiState.inventoryFilter = els.inventoryFilter.value;
+  renderInventory(getActiveStore());
+});
+
+els.inventoryList.addEventListener("click", (event) => {
+  const item = event.target.closest("[data-edit-inventory]");
+  if (!item) return;
+  openEditInventoryModal(item.dataset.editInventory);
+});
+
+els.cancelEditInventory.addEventListener("click", closeEditInventoryModal);
+
+els.editInventoryModal.addEventListener("click", (event) => {
+  if (event.target === els.editInventoryModal) closeEditInventoryModal();
+});
+
+els.editInventoryPrice.addEventListener("input", () => {
+  els.editInventoryPrice.value = formatAmountInput(els.editInventoryPrice.value);
+});
+
+els.editInventoryForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  saveEditedInventory(new FormData(els.editInventoryForm));
 });
 
 els.cancelEditEntry.addEventListener("click", closeEditEntryModal);
@@ -1311,6 +1353,56 @@ function closeInventoryModal() {
   els.inventoryModal.hidden = true;
 }
 
+function openEditInventoryModal(inventoryId) {
+  const store = getActiveStore();
+  const item = (store?.inventory || []).find((stock) => stock.id === inventoryId);
+  if (!item) return;
+
+  els.editInventoryForm.elements.inventoryId.value = item.id;
+  els.editInventoryName.value = item.name || "";
+  els.editInventoryGroup.value = item.groupName || "";
+  els.editInventoryQuantity.value = Number(item.quantity || 0);
+  els.editInventoryPrice.value = formatAmountInput(item.lastPrice || 0);
+  els.editInventoryModal.hidden = false;
+}
+
+function closeEditInventoryModal() {
+  els.editInventoryModal.hidden = true;
+  els.editInventoryForm.reset();
+}
+
+function saveEditedInventory(formData) {
+  const store = getActiveStore();
+  if (!store) return false;
+
+  const item = (store.inventory || []).find((stock) => stock.id === formData.get("inventoryId"));
+  if (!item) return false;
+
+  const name = String(formData.get("name") || "").trim();
+  const groupName = String(formData.get("groupName") || "").trim();
+  const quantity = Number.parseInt(formData.get("quantity"), 10);
+  const lastPrice = parseAmountInput(formData.get("lastPrice"));
+
+  if (!name || !groupName || !Number.isFinite(quantity) || !Number.isFinite(lastPrice) || lastPrice < 0) {
+    window.alert("Vui lòng nhập đầy đủ tên hàng hóa, nhóm, số lượng và giá.");
+    return false;
+  }
+
+  const category = ensurePurchaseCategory(store, groupName);
+  item.name = name;
+  item.groupId = category.id;
+  item.groupName = category.name;
+  item.quantity = quantity;
+  item.lastPrice = lastPrice;
+  item.totalCost = Math.max(0, quantity * lastPrice);
+  item.updatedAt = new Date().toISOString();
+
+  saveAndRender();
+  renderInventory(store);
+  closeEditInventoryModal();
+  return true;
+}
+
 function addPurchaseItemRow(item = {}) {
   const row = document.createElement("div");
   row.className = "purchase-item-row sales-item-row";
@@ -1844,19 +1936,59 @@ function renderSalesDraftList(drafts) {
 }
 
 function renderInventory(store) {
-  if (!els.inventoryList) return;
+  if (!els.inventoryList || !store) return;
 
-  const inventory = [...(store.inventory || [])].sort((a, b) =>
+  const allInventory = [...(store.inventory || [])].sort((a, b) =>
     String(a.groupName || "").localeCompare(String(b.groupName || ""), "vi") ||
     String(a.name || "").localeCompare(String(b.name || ""), "vi")
   );
+  const groups = [
+    ...new Map(
+      allInventory
+        .filter((item) => item.groupName)
+        .map((item) => [normalizeSearchText(item.groupName), item.groupName])
+    ).values(),
+  ].sort((a, b) => String(a).localeCompare(String(b), "vi"));
+  const groupOptions = groups.map((groupName) => `group:${normalizeSearchText(groupName)}`);
+  const validFilters = new Set(["all", "out-of-stock", ...groupOptions]);
 
-  const countText = `${inventory.length} mặt hàng`;
-  els.inventoryCount.textContent = countText;
-  els.inventoryModalCount.textContent = countText;
+  if (!validFilters.has(uiState.inventoryFilter)) {
+    uiState.inventoryFilter = "all";
+  }
+
+  if (els.inventorySearch && els.inventorySearch.value !== uiState.inventorySearch) {
+    els.inventorySearch.value = uiState.inventorySearch;
+  }
+
+  if (els.inventoryFilter) {
+    els.inventoryFilter.innerHTML = [
+      '<option value="all">Tất cả</option>',
+      '<option value="out-of-stock">Hết hàng</option>',
+      ...groups.map(
+        (groupName) =>
+          `<option value="group:${normalizeSearchText(groupName)}">Phân Theo Nhóm: ${escapeHtml(groupName)}</option>`
+      ),
+    ].join("");
+    els.inventoryFilter.value = uiState.inventoryFilter;
+  }
+
+  const query = normalizeSearchText(uiState.inventorySearch || "");
+  const inventory = allInventory.filter((item) => {
+    const quantity = Number(item.quantity || 0);
+    const matchesSearch = !query || normalizeSearchText(item.name || "").includes(query);
+    const matchesFilter =
+      uiState.inventoryFilter === "all" ||
+      (uiState.inventoryFilter === "out-of-stock" && quantity <= 0) ||
+      (uiState.inventoryFilter.startsWith("group:") &&
+        normalizeSearchText(item.groupName || "") === uiState.inventoryFilter.slice(6));
+    return matchesSearch && matchesFilter;
+  });
+
+  els.inventoryCount.textContent = `${allInventory.length} mặt hàng`;
+  els.inventoryModalCount.textContent = `${inventory.length} mặt hàng`;
 
   if (!inventory.length) {
-    els.inventoryList.innerHTML = '<div class="empty-list">Kho hàng chưa có hàng hóa</div>';
+    els.inventoryList.innerHTML = '<div class="empty-list">Không có hàng hóa phù hợp</div>';
     return;
   }
 
@@ -1869,7 +2001,7 @@ function renderInventory(store) {
     ${inventory
       .map(
         (item) => `
-          <div class="inventory-item">
+          <button class="inventory-item" type="button" data-edit-inventory="${escapeHtml(item.id || "")}">
             <div>
               <span class="inventory-group">${escapeHtml(item.groupName || "Chưa phân nhóm")}</span>
               <strong>${escapeHtml(item.name || "")}</strong>
@@ -1879,7 +2011,7 @@ function renderInventory(store) {
               <span>Giá gần nhất: ${formatCurrency(item.lastPrice || 0)}</span>
               <span>Tổng: ${formatCurrency(item.totalCost || 0)}</span>
             </div>
-          </div>
+          </button>
         `
       )
       .join("")}
