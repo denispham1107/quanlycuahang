@@ -370,6 +370,7 @@ els.importData.addEventListener("change", async (event) => {
 document.addEventListener("click", (event) => {
   const categoryButton = event.target.closest("[data-delete-category]");
   const entryButton = event.target.closest("[data-delete-entry]");
+  const orderButton = event.target.closest("[data-delete-order]");
   const editCategoryButton = event.target.closest("[data-edit-category]");
   const editEntryButton = event.target.closest("[data-edit-entry]");
   const toggleCategoryButton = event.target.closest("[data-toggle-categories]");
@@ -380,6 +381,10 @@ document.addEventListener("click", (event) => {
 
   if (entryButton) {
     deleteEntry(entryButton.dataset.deleteEntry);
+  }
+
+  if (orderButton) {
+    deleteSalesOrder(orderButton.dataset.deleteOrder);
   }
 
   if (editCategoryButton) {
@@ -678,6 +683,24 @@ function deleteEntry(entryId) {
 
   entry.status = "cancelled";
   entry.cancelledAt = new Date().toISOString();
+  saveAndRender();
+}
+
+function deleteSalesOrder(orderId) {
+  const store = getActiveStore();
+  if (!store) return;
+
+  const order = (store.orders || []).find((item) => item.id === orderId);
+  if (!order) return;
+
+  order.status = "cancelled";
+  order.cancelledAt = new Date().toISOString();
+  store.entries
+    .filter((entry) => entry.orderId === orderId)
+    .forEach((entry) => {
+      entry.status = "cancelled";
+      entry.cancelledAt = order.cancelledAt;
+    });
   saveAndRender();
 }
 
@@ -1240,23 +1263,32 @@ function renderSalesOrderTable(container, orders) {
   if (!container) return;
 
   if (!orders.length) {
-    container.innerHTML = '<tr><td colspan="5" class="empty-list">Chưa có đơn hàng trong khoảng thời gian này</td></tr>';
+    container.innerHTML = '<tr><td colspan="6" class="empty-list">Chưa có đơn hàng trong khoảng thời gian này</td></tr>';
     return;
   }
 
   container.innerHTML = orders
     .map((order) => {
+      const cancelled = isCancelledEntry(order);
       const items = (order.items || [])
         .map((item) => `${escapeHtml(item.name)} x${item.quantity} - ${formatCurrency(item.total)}`)
         .join("<br>");
+      const customer = [
+        escapeHtml(order.customerName || ""),
+        cancelled ? '<span class="cancelled-pill">Hủy</span>' : ""
+      ].join("");
+      const actions = cancelled
+        ? '<span class="muted-action">Đã hủy</span>'
+        : `<button class="delete-small" type="button" data-delete-order="${order.id}" title="Xóa đơn" aria-label="Xóa đơn">×</button>`;
 
       return `
-        <tr>
+        <tr class="${cancelled ? "entry-cancelled" : ""}">
           <td>${formatDate(order.date)}</td>
-          <td>${escapeHtml(order.customerName || "")}</td>
+          <td>${customer}</td>
           <td>${escapeHtml(order.customerPhone || "")}</td>
           <td class="note-cell">${items}</td>
           <td class="amount-cell">${formatCurrency(order.total || 0)}</td>
+          <td>${actions}</td>
         </tr>
       `;
     })

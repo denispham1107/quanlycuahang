@@ -773,6 +773,12 @@ th:last-child {
   text-align: right;
 }
 
+.sales-table td:nth-child(6),
+.sales-table th:nth-child(6) {
+  width: 42px;
+  text-align: right;
+}
+
 .amount-cell {
   font-weight: 800;
   text-align: right;
@@ -1311,6 +1317,38 @@ th:last-child {
   }
 
   td:nth-child(5)::before {
+    content: "";
+  }
+
+  .sales-table td:nth-child(2)::before {
+    content: "Khách hàng";
+  }
+
+  .sales-table td:nth-child(3)::before {
+    content: "Số điện thoại";
+  }
+
+  .sales-table td:nth-child(4)::before {
+    content: "Chi tiết";
+  }
+
+  .sales-table td:nth-child(5)::before {
+    content: "Tổng bill";
+  }
+
+  .sales-table td:nth-child(5) {
+    display: block;
+    padding: 6px 0;
+  }
+
+  .sales-table td:nth-child(6) {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding-top: 8px;
+  }
+
+  .sales-table td:nth-child(6)::before {
     content: "";
   }
 
