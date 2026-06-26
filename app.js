@@ -572,7 +572,18 @@ function editCategory(type, categoryId) {
 function deleteEntry(entryId) {
   const store = getActiveStore();
   if (!store) return;
-  store.entries = store.entries.filter((entry) => entry.id !== entryId);
+
+  const entry = store.entries.find((item) => item.id === entryId);
+  if (!entry) return;
+
+  if (entry.type === "income") {
+    entry.status = "cancelled";
+    entry.cancelledAt = new Date().toISOString();
+    saveAndRender();
+    return;
+  }
+
+  store.entries = store.entries.filter((item) => item.id !== entryId);
   saveAndRender();
 }
 
@@ -684,7 +695,7 @@ function render() {
 }
 
 function renderHistoryFilters(store) {
-  renderHistoryFilter(els.incomeHistoryFilter, store.categories.income);
+  renderHistoryFilter(els.incomeHistoryFilter, store.categories.income, true);
   renderHistoryFilter(els.expenseHistoryFilter, store.categories.expense);
 }
 
@@ -738,19 +749,22 @@ function applyEntrySuggestion(form) {
   amountInput.value = formatAmountInput(suggestion.amount);
 }
 
-function renderHistoryFilter(select, categories) {
+function renderHistoryFilter(select, categories, includeCancelled = false) {
   if (!select) return;
 
   const currentValue = select.value || "all";
   select.innerHTML = [
     '<option value="all">Tất cả</option>',
+    includeCancelled ? '<option value="cancelled">Đã hủy</option>' : "",
     ...categories.map((category) => `<option value="${category.id}">${escapeHtml(category.name)}</option>`)
   ].join("");
 
-  const stillExists = currentValue === "all" || categories.some((category) => category.id === currentValue);
+  const stillExists =
+    currentValue === "all" ||
+    (includeCancelled && currentValue === "cancelled") ||
+    categories.some((category) => category.id === currentValue);
   select.value = stillExists ? currentValue : "all";
 }
-
 function activateTab(tabName) {
   els.tabButtons.forEach((button) => {
     const isActive = button.dataset.tab === tabName;
@@ -864,6 +878,7 @@ function renderReports(store) {
 
   const incomeEntries = entries.filter((entry) => entry.type === "income");
   const expenseEntries = entries.filter((entry) => entry.type === "expense");
+  const activeIncomeEntries = incomeEntries.filter((entry) => !isCancelledEntry(entry));
   const filteredIncomeEntries = filterEntriesBySearch(
     filterEntriesByCategory(incomeEntries, els.incomeHistoryFilter?.value),
     els.incomeHistorySearch?.value
@@ -872,7 +887,7 @@ function renderReports(store) {
     filterEntriesByCategory(expenseEntries, els.expenseHistoryFilter?.value),
     els.expenseHistorySearch?.value
   );
-  const totalIncome = sumEntries(incomeEntries);
+  const totalIncome = sumEntries(activeIncomeEntries);
   const totalExpense = sumEntries(expenseEntries);
 
   els.totalIncome.textContent = formatCurrency(totalIncome);
@@ -885,7 +900,7 @@ function renderReports(store) {
 
   renderHistorySearchSuggestions(els.incomeHistorySearchSuggestions, incomeEntries);
   renderHistorySearchSuggestions(els.expenseHistorySearchSuggestions, expenseEntries);
-  renderReportList(els.incomeReport, store.categories.income, incomeEntries);
+  renderReportList(els.incomeReport, store.categories.income, activeIncomeEntries);
   renderReportList(els.expenseReport, store.categories.expense, expenseEntries);
   renderEntryTable(els.incomeEntryTable, store, filteredIncomeEntries);
   renderEntryTable(els.expenseEntryTable, store, filteredExpenseEntries);
@@ -893,7 +908,12 @@ function renderReports(store) {
 
 function filterEntriesByCategory(entries, categoryId) {
   if (!categoryId || categoryId === "all") return entries;
+  if (categoryId === "cancelled") return entries.filter(isCancelledEntry);
   return entries.filter((entry) => entry.categoryId === categoryId);
+}
+
+function isCancelledEntry(entry) {
+  return entry.status === "cancelled";
 }
 
 function filterEntriesBySearch(entries, rawQuery) {
@@ -965,8 +985,6 @@ function renderReportList(container, categories, entries) {
 }
 
 function renderEntryTable(container, store, entries) {
-  if (!container) return;
-
   if (!entries.length) {
     container.innerHTML = '<tr><td colspan="5" class="empty-list">Chưa có dữ liệu trong khoảng thời gian này</td></tr>';
     return;
@@ -975,22 +993,30 @@ function renderEntryTable(container, store, entries) {
   container.innerHTML = entries
     .map((entry) => {
       const category = store.categories[entry.type].find((item) => item.id === entry.categoryId);
-      return `
-        <tr>
-          <td>${formatDate(entry.date)}</td>
-          <td>${escapeHtml(category?.name || "Mục đã xóa")}</td>
-          <td>${escapeHtml(entry.note || "")}</td>
-          <td class="amount-cell">${formatCurrency(entry.amount)}</td>
-          <td>
+      const cancelled = isCancelledEntry(entry);
+      const note = [
+        escapeHtml(entry.note || ""),
+        cancelled ? '<span class="cancelled-pill">Hủy</span>' : ""
+      ].join("");
+      const actions = cancelled
+        ? '<span class="muted-action">Đã hủy</span>'
+        : `
             <button class="edit-small" type="button" data-edit-entry="${entry.id}" title="Sửa dòng" aria-label="Sửa dòng">Sửa</button>
             <button class="delete-small" type="button" data-delete-entry="${entry.id}" title="Xóa dòng" aria-label="Xóa dòng">×</button>
-          </td>
+          `;
+
+      return `
+        <tr class="${cancelled ? "entry-cancelled" : ""}">
+          <td>${formatDate(entry.date)}</td>
+          <td>${escapeHtml(category?.name || "Mục đã xóa")}</td>
+          <td class="note-cell">${note}</td>
+          <td class="amount-cell">${formatCurrency(entry.amount)}</td>
+          <td>${actions}</td>
         </tr>
       `;
     })
     .join("");
 }
-
 function updateFilterFields() {
   const mode = els.rangeMode.value;
   els.singleDateField.hidden = false;

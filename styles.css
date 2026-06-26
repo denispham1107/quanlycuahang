@@ -669,6 +669,39 @@ th:last-child {
   text-align: right;
 }
 
+.entry-cancelled {
+  background: #fff6f5;
+  color: var(--muted);
+}
+
+.entry-cancelled .amount-cell {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.note-cell {
+  min-width: 0;
+}
+
+.cancelled-pill {
+  display: inline-block;
+  margin-left: 8px;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #f8e9e7;
+  color: var(--expense);
+  font-size: 12px;
+  font-weight: 800;
+  vertical-align: middle;
+}
+
+.muted-action {
+  color: var(--expense);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .type-pill {
   display: inline-block;
   min-width: 62px;
