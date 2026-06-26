@@ -943,6 +943,7 @@ function applyQuickEntrySuggestion() {
 }
 
 function openSalesOrderModal(store, draft = null) {
+  els.quickEntryForm.dataset.type = "sales";
   els.quickEntryModal.classList.add("sales-page-mode");
   els.quickEntryTitle.textContent = "Tạo đơn bán hàng";
   els.quickEntryFields.hidden = true;
