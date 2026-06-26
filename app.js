@@ -815,7 +815,6 @@ function openQuickEntryModal(type) {
   els.quickEntrySubmit.disabled = !categories.length;
   renderEntrySuggestionList(els.quickEntrySuggestions, getEntrySuggestions(store, type));
   els.quickEntryModal.hidden = false;
-  els.quickEntryNote.focus();
 }
 
 function closeQuickEntryModal() {
