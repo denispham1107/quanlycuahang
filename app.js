@@ -873,7 +873,9 @@ function renderCategoryControls(store, type) {
     categories.length > 2
       ? `
         <button class="category-toggle${expanded ? " expanded" : ""}" type="button" data-toggle-categories="${type}" aria-label="${expanded ? "Thu gọn mục" : "Hiển thị tất cả mục"}">
-          <span aria-hidden="true">⌄</span>
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M12 5v14m0 0 6-6m-6 6-6-6" />
+          </svg>
         </button>
       `
       : "";

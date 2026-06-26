@@ -377,25 +377,31 @@ form button:disabled {
 
 .category-toggle {
   justify-self: center;
-  width: 38px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
+  display: inline-grid;
+  place-items: center;
   border-radius: 999px;
   border: 1px solid var(--line);
   background: #fff;
-  color: var(--accent);
-  font-size: 24px;
-  line-height: 1;
-  box-shadow: 0 8px 20px rgba(23, 32, 28, 0.08);
+  color: var(--text);
+  box-shadow: 0 3px 10px rgba(23, 32, 28, 0.08);
 }
 
-.category-toggle span {
+.category-toggle svg {
+  width: 24px;
+  height: 24px;
   display: block;
-  transform: translateY(-2px);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   transition: transform 180ms ease;
 }
 
-.category-toggle.expanded span {
-  transform: translateY(1px) rotate(180deg);
+.category-toggle.expanded svg {
+  transform: rotate(180deg);
 }
 
 @keyframes category-slide-in {
