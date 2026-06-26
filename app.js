@@ -225,16 +225,26 @@ els.rangeMode.addEventListener("change", () => {
   render();
 });
 
-els.singleDate.addEventListener("change", () => {
+function applySingleDateFilter() {
   els.rangeMode.value = "day";
   updateFilterFields();
   render();
-});
+}
 
-els.monthDate.addEventListener("change", () => {
+function applyMonthFilter() {
   els.rangeMode.value = "month";
   updateFilterFields();
   render();
+}
+
+["input", "change"].forEach((eventName) => {
+  els.singleDate.addEventListener(eventName, applySingleDateFilter);
+  els.monthDate.addEventListener(eventName, applyMonthFilter);
+});
+
+["focus", "click"].forEach((eventName) => {
+  els.singleDate.addEventListener(eventName, applySingleDateFilter);
+  els.monthDate.addEventListener(eventName, applyMonthFilter);
 });
 
 [els.fromDate, els.toDate].forEach((input) => {
