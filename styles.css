@@ -731,9 +731,10 @@ form button:disabled {
   box-shadow: 0 10px 22px rgba(8, 120, 247, 0.26);
 }
 
-.tab-button[data-tab="sales"] {
+.tab-button[data-tab="sales"],
+.tab-button[data-tab="purchase"] {
   order: 2;
-  flex: 0 0 min(100%, 720px);
+  flex: 1 1 calc(50% - 4px);
   margin-top: 4px;
   border-color: rgba(255, 255, 255, 0.78);
   background: linear-gradient(135deg, rgba(12, 130, 244, 0.12) 0%, rgba(216, 92, 255, 0.16) 52%, rgba(255, 154, 74, 0.18) 100%);
@@ -741,7 +742,8 @@ form button:disabled {
   box-shadow: 0 12px 26px rgba(83, 96, 222, 0.14);
 }
 
-.tab-button[data-tab="sales"].active {
+.tab-button[data-tab="sales"].active,
+.tab-button[data-tab="purchase"].active {
   background: linear-gradient(135deg, #0c82f4 0%, #d85cff 52%, #ff9a4a 100%);
   color: #fff;
   box-shadow: 0 16px 32px rgba(83, 96, 222, 0.32);
@@ -1318,9 +1320,11 @@ th:last-child {
     font-size: 13px;
   }
 
-  .tab-button[data-tab="sales"] {
+  .tab-button[data-tab="sales"],
+  .tab-button[data-tab="purchase"] {
     min-height: 44px;
-    font-size: 16px;
+    padding-inline: 6px;
+    font-size: 15px;
   }
 
   .active-store-hero {
