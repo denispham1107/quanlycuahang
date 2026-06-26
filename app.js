@@ -915,7 +915,7 @@ function openSalesOrderModal(store) {
   addSalesItemRow();
   updateSalesOrderTotal();
   els.quickEntrySubmit.disabled = false;
-  els.quickEntrySubmit.textContent = "Lưu đơn hàng";
+  els.quickEntrySubmit.textContent = "Hoàn Thành";
   els.quickEntryModal.hidden = false;
 }
 
