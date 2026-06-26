@@ -102,6 +102,7 @@ const els = {
   salesOrderTable: document.querySelector("#salesOrderTable"),
   quickEntrySubmit: document.querySelector("#quickEntrySubmit"),
   saveSalesDraft: document.querySelector("#saveSalesDraft"),
+  deleteSalesDraft: document.querySelector("#deleteSalesDraft"),
   cancelQuickEntry: document.querySelector("#cancelQuickEntry"),
   editEntryModal: document.querySelector("#editEntryModal"),
   editEntryForm: document.querySelector("#editEntryForm"),
@@ -292,6 +293,10 @@ els.saveSalesDraft.addEventListener("click", () => {
   if (saveSalesDraft()) closeQuickEntryModal();
 });
 
+els.deleteSalesDraft.addEventListener("click", () => {
+  if (deleteSalesDraft(uiState.salesDraftId)) closeQuickEntryModal();
+});
+
 els.quickEntryModal.addEventListener("click", (event) => {
   if (event.target === els.quickEntryModal) closeQuickEntryModal();
 });
@@ -383,6 +388,7 @@ document.addEventListener("click", (event) => {
   const editEntryButton = event.target.closest("[data-edit-entry]");
   const toggleCategoryButton = event.target.closest("[data-toggle-categories]");
   const draftButton = event.target.closest("[data-open-sales-draft]");
+  const draftDeleteButton = event.target.closest("[data-delete-sales-draft]");
 
   if (categoryButton) {
     deleteCategory(categoryButton.dataset.type, categoryButton.dataset.deleteCategory);
@@ -410,7 +416,11 @@ document.addEventListener("click", (event) => {
     render();
   }
 
-  if (draftButton) {
+  if (draftDeleteButton) {
+    deleteSalesDraft(draftDeleteButton.dataset.deleteSalesDraft);
+  }
+
+  if (draftButton && !draftDeleteButton) {
     openSalesDraft(draftButton.dataset.openSalesDraft);
   }
 });
@@ -925,6 +935,7 @@ function closeQuickEntryModal() {
   els.salesOrderFields.hidden = true;
   els.quickEntrySubmit.disabled = false;
   els.saveSalesDraft.hidden = true;
+  els.deleteSalesDraft.hidden = true;
   els.quickEntrySubmit.textContent = "Lưu";
 }
 
@@ -958,6 +969,7 @@ function openSalesOrderModal(store, draft = null) {
   updateSalesOrderTotal();
   els.quickEntrySubmit.disabled = false;
   els.saveSalesDraft.hidden = false;
+  els.deleteSalesDraft.hidden = !uiState.salesDraftId;
   els.quickEntrySubmit.textContent = "Hoàn Thành";
   els.quickEntryModal.hidden = false;
 }
@@ -1154,6 +1166,16 @@ function openSalesDraft(draftId) {
   if (!draft) return;
 
   openSalesOrderModal(store, draft);
+}
+
+function deleteSalesDraft(draftId) {
+  const store = getActiveStore();
+  if (!store || !draftId) return false;
+
+  store.draftOrders = (store.draftOrders || []).filter((draft) => draft.id !== draftId);
+  if (uiState.salesDraftId === draftId) uiState.salesDraftId = null;
+  saveAndRender();
+  return true;
 }
 
 function getActiveTabName() {
@@ -1420,10 +1442,13 @@ function renderSalesDraftList(drafts) {
           .join(" • ");
 
         return `
-          <button class="draft-order-button" type="button" data-open-sales-draft="${draft.id}">
-            <span class="draft-order-name">${escapeHtml(title)}</span>
-            <span class="draft-order-meta">${escapeHtml(meta)}</span>
-          </button>
+          <div class="draft-order-button">
+            <button class="draft-order-open" type="button" data-open-sales-draft="${draft.id}">
+              <span class="draft-order-name">${escapeHtml(title)}</span>
+              <span class="draft-order-meta">${escapeHtml(meta)}</span>
+            </button>
+            <button class="delete-small" type="button" data-delete-sales-draft="${draft.id}" title="Xóa đơn đang lưu" aria-label="Xóa đơn đang lưu">×</button>
+          </div>
         `;
       })
       .join("")}
