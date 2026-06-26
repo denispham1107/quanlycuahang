@@ -525,8 +525,10 @@ form button:disabled {
   position: relative;
   z-index: 30;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
-  overflow-x: auto;
+  overflow-x: visible;
   border: 1px solid var(--line);
   border-radius: 20px;
   padding: 8px;
@@ -564,6 +566,22 @@ form button:disabled {
   background: var(--accent);
   color: #fff;
   box-shadow: 0 10px 22px rgba(8, 120, 247, 0.26);
+}
+
+.tab-button[data-tab="sales"] {
+  flex-basis: min(100%, 360px);
+  justify-self: center;
+  margin-top: 4px;
+  border-color: rgba(255, 255, 255, 0.78);
+  background: linear-gradient(135deg, rgba(12, 130, 244, 0.12) 0%, rgba(216, 92, 255, 0.16) 52%, rgba(255, 154, 74, 0.18) 100%);
+  color: #0b376f;
+  box-shadow: 0 12px 26px rgba(83, 96, 222, 0.14);
+}
+
+.tab-button[data-tab="sales"].active {
+  background: linear-gradient(135deg, #0c82f4 0%, #d85cff 52%, #ff9a4a 100%);
+  color: #fff;
+  box-shadow: 0 16px 32px rgba(83, 96, 222, 0.32);
 }
 
 .tab-panel {
