@@ -51,6 +51,7 @@ const els = {
   fromField: document.querySelector("#fromField"),
   toField: document.querySelector("#toField"),
   totalIncome: document.querySelector("#totalIncome"),
+  totalSales: document.querySelector("#totalSales"),
   totalExpense: document.querySelector("#totalExpense"),
   balance: document.querySelector("#balance"),
   selectedRangeLabel: document.querySelector("#selectedRangeLabel"),
@@ -783,9 +784,14 @@ function deleteSalesOrder(orderId) {
 
   const order = (store.orders || []).find((item) => item.id === orderId);
   if (!order) return;
+  if (isCancelledEntry(order)) return;
 
   order.status = "cancelled";
   order.cancelledAt = new Date().toISOString();
+  if (order.inventoryDeducted) {
+    restoreInventoryFromSales(store, order.items || []);
+    order.inventoryDeducted = false;
+  }
   store.entries
     .filter((entry) => entry.orderId === orderId)
     .forEach((entry) => {
@@ -934,6 +940,18 @@ function renderPurchaseGroupSuggestions(store) {
     .join("");
 }
 
+function renderInventorySuggestionList(store) {
+  if (!els.salesItemSuggestions) return;
+
+  els.salesItemSuggestions.innerHTML = (store.inventory || [])
+    .filter((item) => Number(item.quantity || 0) > 0)
+    .map((item) => {
+      const label = `${item.name} - tồn ${Number(item.quantity || 0).toLocaleString("vi-VN")} - ${formatAmountInput(item.lastPrice || 0)} đ`;
+      return `<option value="${escapeHtml(item.name)}" label="${escapeHtml(label)}"></option>`;
+    })
+    .join("");
+}
+
 function getEntrySuggestions(store, type) {
   const suggestions = new Map();
   [...store.entries]
@@ -1049,7 +1067,7 @@ function openSalesOrderModal(store, draft = null) {
   els.salesCustomerPhone.value = draft?.customerPhone || "";
   els.salesOrderDate.value = draft?.date || els.singleDate.value || today;
   els.salesItems.innerHTML = "";
-  renderEntrySuggestionList(els.salesItemSuggestions, getEntrySuggestions(store, "income"));
+  renderInventorySuggestionList(store);
   (draft?.items?.length ? draft.items : [{}]).forEach((item) => addSalesItemRow(item));
   updateSalesOrderTotal();
   els.quickEntrySubmit.disabled = false;
@@ -1063,7 +1081,7 @@ function addSalesItemRow(item = {}) {
   const row = document.createElement("div");
   row.className = "sales-item-row";
   row.innerHTML = `
-    <input type="text" data-sales-item="name" placeholder="Khoản thu" autocomplete="off" list="salesItemSuggestions" value="${escapeHtml(item.name || "")}" />
+    <input type="text" data-sales-item="name" placeholder="Hàng hóa" autocomplete="off" list="salesItemSuggestions" value="${escapeHtml(item.name || "")}" />
     <input type="text" data-sales-item="price" inputmode="numeric" placeholder="Giá" autocomplete="off" value="${item.price ? formatAmountInput(item.price) : ""}" />
     <input type="number" data-sales-item="quantity" min="1" step="1" placeholder="SL" value="${item.quantity || 1}" />
     <button class="delete-small" type="button" data-remove-sales-item title="Xóa khoản" aria-label="Xóa khoản">×</button>
@@ -1132,10 +1150,89 @@ function applySalesItemSuggestion(row) {
   const name = String(nameInput.value || "").trim().toLowerCase();
   if (!name || priceInput.value) return;
 
-  const suggestion = getEntrySuggestions(store, "income").find((item) => item.note.toLowerCase() === name);
+  const suggestion = (store.inventory || []).find((item) => item.name.toLowerCase() === name && Number(item.quantity || 0) > 0);
   if (!suggestion) return;
 
-  priceInput.value = formatAmountInput(suggestion.amount);
+  priceInput.value = formatAmountInput(suggestion.lastPrice || 0);
+}
+
+function getInventoryAvailableByName(store, rawName) {
+  const key = normalizeSearchText(rawName);
+  return (store.inventory || [])
+    .filter((item) => normalizeSearchText(item.name) === key)
+    .reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+}
+
+function validateSalesInventory(store, items) {
+  const requested = new Map();
+  items.forEach((item) => {
+    const key = normalizeSearchText(item.name);
+    requested.set(key, {
+      name: item.name,
+      quantity: (requested.get(key)?.quantity || 0) + item.quantity
+    });
+  });
+
+  for (const item of requested.values()) {
+    const available = getInventoryAvailableByName(store, item.name);
+    if (available <= 0) {
+      window.alert(`Hàng hóa "${item.name}" chưa có trong kho hoặc đã hết hàng.`);
+      return false;
+    }
+
+    if (item.quantity > available) {
+      window.alert(`Hàng hóa "${item.name}" chỉ còn ${available.toLocaleString("vi-VN")} trong kho.`);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function deductInventoryForSales(store, items) {
+  items.forEach((item) => {
+    let remaining = item.quantity;
+    const key = normalizeSearchText(item.name);
+    const stocks = (store.inventory || []).filter((stock) => normalizeSearchText(stock.name) === key && Number(stock.quantity || 0) > 0);
+
+    stocks.forEach((stock) => {
+      if (remaining <= 0) return;
+      const quantity = Number(stock.quantity || 0);
+      const used = Math.min(quantity, remaining);
+      const averageCost = quantity > 0 ? Number(stock.totalCost || 0) / quantity : 0;
+      stock.quantity = quantity - used;
+      stock.totalCost = Math.max(0, Number(stock.totalCost || 0) - averageCost * used);
+      stock.updatedAt = new Date().toISOString();
+      remaining -= used;
+    });
+  });
+}
+
+function restoreInventoryFromSales(store, items) {
+  const now = new Date().toISOString();
+  items.forEach((item) => {
+    const key = normalizeSearchText(item.name);
+    const stock = (store.inventory || []).find((current) => normalizeSearchText(current.name) === key);
+    if (stock) {
+      stock.quantity = Number(stock.quantity || 0) + Number(item.quantity || 0);
+      stock.updatedAt = now;
+    } else {
+      store.inventory = [
+        ...(store.inventory || []),
+        {
+          id: createId(),
+          name: item.name,
+          groupId: "",
+          groupName: "Bán hàng hoàn lại",
+          quantity: Number(item.quantity || 0),
+          totalCost: 0,
+          lastPrice: Number(item.price || 0),
+          createdAt: now,
+          updatedAt: now
+        }
+      ];
+    }
+  });
 }
 
 function saveSalesOrder() {
@@ -1155,21 +1252,15 @@ function saveSalesOrder() {
   }
 
   if (!items.length) {
-    window.alert("Vui lòng nhập ít nhất một khoản thu, giá và số lượng.");
+    window.alert("Vui lòng nhập ít nhất một hàng hóa, giá và số lượng.");
     return false;
   }
 
-  let defaultCategory = store.categories.income.find((category) => category.name.toLowerCase() === "bán hàng");
-  if (!defaultCategory) {
-    defaultCategory = {
-      id: createId(),
-      name: "Bán hàng"
-    };
-    store.categories.income.push(defaultCategory);
-  }
+  if (!validateSalesInventory(store, items)) return false;
 
   const orderId = createId();
   const createdAt = new Date().toISOString();
+  deductInventoryForSales(store, items);
   store.orders.push({
     id: orderId,
     customerName,
@@ -1177,22 +1268,8 @@ function saveSalesOrder() {
     date,
     items,
     total,
+    inventoryDeducted: true,
     createdAt
-  });
-
-  items.forEach((item) => {
-    store.entries.push({
-      id: createId(),
-      type: "income",
-      categoryId: defaultCategory.id,
-      date,
-      amount: item.total,
-      note: item.name,
-      orderId,
-      orderQuantity: item.quantity,
-      orderUnitPrice: item.price,
-      createdAt
-    });
   });
 
   if (uiState.salesDraftId) {
@@ -1585,7 +1662,7 @@ function renderReports(store) {
     .filter((entry) => entry.date >= range.start && entry.date <= range.end)
     .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
 
-  const incomeEntries = entries.filter((entry) => entry.type === "income");
+  const incomeEntries = entries.filter((entry) => entry.type === "income" && !entry.orderId);
   const expenseEntries = entries.filter((entry) => entry.type === "expense");
   const activeIncomeEntries = incomeEntries.filter((entry) => !isCancelledEntry(entry));
   const activeExpenseEntries = expenseEntries.filter((entry) => !isCancelledEntry(entry));
@@ -1602,7 +1679,6 @@ function renderReports(store) {
 
   els.totalIncome.textContent = formatCurrency(totalIncome);
   els.totalExpense.textContent = formatCurrency(totalExpense);
-  els.balance.textContent = formatCurrency(totalIncome - totalExpense);
   els.selectedRangeLabel.textContent = range.label;
   els.incomeRangeLabel.textContent = range.label;
   els.expenseRangeLabel.textContent = range.label;
@@ -1616,6 +1692,8 @@ function renderReports(store) {
     .sort((a, b) => b.date.localeCompare(a.date) || String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
   const activeSalesOrders = salesOrders.filter((order) => !isCancelledEntry(order));
   const totalSalesAmount = activeSalesOrders.reduce((sum, order) => sum + Number(order.total || 0), 0);
+  els.totalSales.textContent = formatCurrency(totalSalesAmount);
+  els.balance.textContent = formatCurrency(totalIncome + totalSalesAmount - totalExpense);
   els.salesRangeLabel.textContent = `${range.label} • Tổng: ${formatCurrency(totalSalesAmount)}`;
   els.salesOrderCount.textContent = `${salesOrders.length} đơn`;
   renderSalesDraftList(store.draftOrders || []);

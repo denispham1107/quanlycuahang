@@ -876,6 +876,10 @@ form button:disabled {
   color: transparent;
 }
 
+.metric.sales strong {
+  color: var(--accent);
+}
+
 .metric.expense strong {
   color: var(--expense);
 }
