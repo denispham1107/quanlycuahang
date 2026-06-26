@@ -349,7 +349,8 @@ form button:disabled {
 
 .store-list,
 .category-list,
-.report-list {
+.report-list,
+.draft-order-list {
   display: grid;
   gap: 8px;
   margin-top: 14px;
@@ -431,6 +432,40 @@ form button:disabled {
 .store-button.active {
   border-color: rgba(8, 120, 247, 0.26);
   background: #eef6ff;
+}
+
+.draft-order-heading {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.draft-order-button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  border: 1px solid rgba(8, 120, 247, 0.18);
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(255, 232, 220, 0.84), rgba(238, 226, 255, 0.9), rgba(226, 246, 255, 0.94));
+  color: var(--text);
+  text-align: left;
+  box-shadow: 0 12px 28px rgba(83, 96, 222, 0.1);
+}
+
+.draft-order-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 800;
+}
+
+.draft-order-meta {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
 }
 
 .store-name,
@@ -1195,8 +1230,13 @@ th:last-child {
 
   .inline-form,
   .form-row,
-  .sales-item-row {
+  .sales-item-row,
+  .draft-order-button {
     grid-template-columns: 1fr;
+  }
+
+  .draft-order-meta {
+    text-align: left;
   }
 
   form button,

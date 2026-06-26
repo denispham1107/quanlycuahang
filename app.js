@@ -24,7 +24,8 @@ const uiState = {
   categoryExpanded: {
     income: false,
     expense: false
-  }
+  },
+  salesDraftId: null
 };
 
 const els = {
@@ -96,9 +97,11 @@ const els = {
   salesOrderTotal: document.querySelector("#salesOrderTotal"),
   salesItemSuggestions: document.querySelector("#salesItemSuggestions"),
   salesOrderCount: document.querySelector("#salesOrderCount"),
+  salesDraftList: document.querySelector("#salesDraftList"),
   salesRangeLabel: document.querySelector("#salesRangeLabel"),
   salesOrderTable: document.querySelector("#salesOrderTable"),
   quickEntrySubmit: document.querySelector("#quickEntrySubmit"),
+  saveSalesDraft: document.querySelector("#saveSalesDraft"),
   cancelQuickEntry: document.querySelector("#cancelQuickEntry"),
   editEntryModal: document.querySelector("#editEntryModal"),
   editEntryForm: document.querySelector("#editEntryForm"),
@@ -162,6 +165,7 @@ els.storeForm.addEventListener("submit", (event) => {
     },
     entries: [],
     orders: [],
+    draftOrders: [],
     createdAt: new Date().toISOString()
   };
 
@@ -284,6 +288,10 @@ els.quickEntryNote.addEventListener("change", applyQuickEntrySuggestion);
 
 els.cancelQuickEntry.addEventListener("click", closeQuickEntryModal);
 
+els.saveSalesDraft.addEventListener("click", () => {
+  if (saveSalesDraft()) closeQuickEntryModal();
+});
+
 els.quickEntryModal.addEventListener("click", (event) => {
   if (event.target === els.quickEntryModal) closeQuickEntryModal();
 });
@@ -374,6 +382,7 @@ document.addEventListener("click", (event) => {
   const editCategoryButton = event.target.closest("[data-edit-category]");
   const editEntryButton = event.target.closest("[data-edit-entry]");
   const toggleCategoryButton = event.target.closest("[data-toggle-categories]");
+  const draftButton = event.target.closest("[data-open-sales-draft]");
 
   if (categoryButton) {
     deleteCategory(categoryButton.dataset.type, categoryButton.dataset.deleteCategory);
@@ -400,6 +409,10 @@ document.addEventListener("click", (event) => {
     uiState.categoryExpanded[type] = !uiState.categoryExpanded[type];
     render();
   }
+
+  if (draftButton) {
+    openSalesDraft(draftButton.dataset.openSalesDraft);
+  }
 });
 
 function loadCachedState() {
@@ -422,6 +435,7 @@ function normalizeState(data) {
     },
     entries: store.entries || [],
     orders: store.orders || [],
+    draftOrders: store.draftOrders || [],
     createdAt: store.createdAt || getEarliestEntryDate(store.entries || []) || today
   }));
 
@@ -888,6 +902,7 @@ function openQuickEntryModal(type) {
   els.quickEntryAmount.value = "";
   els.quickEntryNote.value = "";
   els.quickEntrySubmit.textContent = "Lưu";
+  els.saveSalesDraft.hidden = true;
   els.quickEntryDate.value = els.singleDate.value || today;
   els.quickEntryCategory.innerHTML = [
     '<option value="">Chưa có mục</option>',
@@ -904,10 +919,12 @@ function closeQuickEntryModal() {
   els.quickEntryModal.hidden = true;
   els.quickEntryModal.classList.remove("sales-page-mode");
   els.quickEntryForm.reset();
+  uiState.salesDraftId = null;
   els.salesItems.innerHTML = "";
   els.quickEntryFields.hidden = false;
   els.salesOrderFields.hidden = true;
   els.quickEntrySubmit.disabled = false;
+  els.saveSalesDraft.hidden = true;
   els.quickEntrySubmit.textContent = "Lưu";
 }
 
@@ -925,19 +942,21 @@ function applyQuickEntrySuggestion() {
   els.quickEntryAmount.value = formatAmountInput(suggestion.amount);
 }
 
-function openSalesOrderModal(store) {
+function openSalesOrderModal(store, draft = null) {
   els.quickEntryModal.classList.add("sales-page-mode");
   els.quickEntryTitle.textContent = "Tạo đơn bán hàng";
   els.quickEntryFields.hidden = true;
   els.salesOrderFields.hidden = false;
-  els.salesCustomerName.value = "";
-  els.salesCustomerPhone.value = "";
-  els.salesOrderDate.value = els.singleDate.value || today;
+  uiState.salesDraftId = draft?.id || null;
+  els.salesCustomerName.value = draft?.customerName || "";
+  els.salesCustomerPhone.value = draft?.customerPhone || "";
+  els.salesOrderDate.value = draft?.date || els.singleDate.value || today;
   els.salesItems.innerHTML = "";
   renderEntrySuggestionList(els.salesItemSuggestions, getEntrySuggestions(store, "income"));
-  addSalesItemRow();
+  (draft?.items?.length ? draft.items : [{}]).forEach((item) => addSalesItemRow(item));
   updateSalesOrderTotal();
   els.quickEntrySubmit.disabled = false;
+  els.saveSalesDraft.hidden = false;
   els.quickEntrySubmit.textContent = "Hoàn Thành";
   els.quickEntryModal.hidden = false;
 }
@@ -970,6 +989,37 @@ function getSalesOrderItems() {
     .filter((item) => item.name && Number.isFinite(item.price) && item.price > 0);
 }
 
+function getSalesDraftItems() {
+  return [...els.salesItems.querySelectorAll(".sales-item-row")]
+    .map((row) => {
+      const name = String(row.querySelector('[data-sales-item="name"]')?.value || "").trim();
+      const rawPrice = row.querySelector('[data-sales-item="price"]')?.value;
+      const parsedPrice = parseAmountInput(rawPrice);
+      const price = Number.isFinite(parsedPrice) ? parsedPrice : 0;
+      const quantity = Math.max(1, Number.parseInt(row.querySelector('[data-sales-item="quantity"]')?.value, 10) || 1);
+      return {
+        name,
+        price,
+        quantity,
+        total: price * quantity
+      };
+    })
+    .filter((item) => item.name || item.price > 0);
+}
+
+function getSalesFormData({ completeOnly = false } = {}) {
+  const items = completeOnly ? getSalesOrderItems() : getSalesDraftItems();
+  const total = items.reduce((sum, item) => sum + item.total, 0);
+
+  return {
+    customerName: String(els.salesCustomerName.value || "").trim(),
+    customerPhone: String(els.salesCustomerPhone.value || "").trim(),
+    date: els.salesOrderDate.value || today,
+    items,
+    total
+  };
+}
+
 function updateSalesOrderTotal() {
   const total = getSalesOrderItems().reduce((sum, item) => sum + item.total, 0);
   els.salesOrderTotal.textContent = formatCurrency(total);
@@ -994,10 +1044,7 @@ function saveSalesOrder() {
   const store = getActiveStore();
   if (!store) return false;
 
-  const customerName = String(els.salesCustomerName.value || "").trim();
-  const customerPhone = String(els.salesCustomerPhone.value || "").trim();
-  const date = els.salesOrderDate.value || today;
-  const items = getSalesOrderItems();
+  const { customerName, customerPhone, date, items, total } = getSalesFormData({ completeOnly: true });
 
   if (!customerName) {
     window.alert("Vui lòng nhập tên khách hàng.");
@@ -1025,8 +1072,6 @@ function saveSalesOrder() {
 
   const orderId = createId();
   const createdAt = new Date().toISOString();
-  const total = items.reduce((sum, item) => sum + item.total, 0);
-
   store.orders.push({
     id: orderId,
     customerName,
@@ -1052,8 +1097,62 @@ function saveSalesOrder() {
     });
   });
 
+  if (uiState.salesDraftId) {
+    store.draftOrders = (store.draftOrders || []).filter((draft) => draft.id !== uiState.salesDraftId);
+  }
+
   saveAndRender();
   return true;
+}
+
+function saveSalesDraft() {
+  const store = getActiveStore();
+  if (!store) return false;
+
+  const draft = getSalesFormData();
+  const hasDraftData =
+    draft.customerName ||
+    draft.customerPhone ||
+    draft.items.length ||
+    (draft.date && draft.date !== today);
+
+  if (!hasDraftData) {
+    window.alert("Vui lòng nhập thông tin đơn hàng trước khi lưu.");
+    return false;
+  }
+
+  if (!isValidDateInput(draft.date)) {
+    window.alert("Ngày bán không hợp lệ.");
+    return false;
+  }
+
+  const now = new Date().toISOString();
+  const draftId = uiState.salesDraftId || createId();
+  const nextDraft = {
+    id: draftId,
+    ...draft,
+    status: "draft",
+    createdAt: (store.draftOrders || []).find((item) => item.id === draftId)?.createdAt || now,
+    updatedAt: now
+  };
+
+  store.draftOrders = [
+    ...(store.draftOrders || []).filter((item) => item.id !== draftId),
+    nextDraft
+  ];
+  uiState.salesDraftId = draftId;
+  saveAndRender();
+  return true;
+}
+
+function openSalesDraft(draftId) {
+  const store = getActiveStore();
+  if (!store) return;
+
+  const draft = (store.draftOrders || []).find((item) => item.id === draftId);
+  if (!draft) return;
+
+  openSalesOrderModal(store, draft);
 }
 
 function getActiveTabName() {
@@ -1249,6 +1348,7 @@ function renderReports(store) {
     .filter((order) => order.date >= range.start && order.date <= range.end)
     .sort((a, b) => b.date.localeCompare(a.date) || String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
   els.salesOrderCount.textContent = `${salesOrders.length} đơn`;
+  renderSalesDraftList(store.draftOrders || []);
 
   renderHistorySearchSuggestions(els.incomeHistorySearchSuggestions, incomeEntries);
   renderHistorySearchSuggestions(els.expenseHistorySearchSuggestions, expenseEntries);
@@ -1293,6 +1393,40 @@ function renderSalesOrderTable(container, orders) {
       `;
     })
     .join("");
+}
+
+function renderSalesDraftList(drafts) {
+  if (!els.salesDraftList) return;
+
+  if (!drafts.length) {
+    els.salesDraftList.innerHTML = "";
+    return;
+  }
+
+  els.salesDraftList.innerHTML = `
+    <div class="draft-order-heading">Đơn hàng đang lưu</div>
+    ${[...drafts]
+      .sort((a, b) => String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || "")))
+      .map((draft) => {
+        const title = draft.customerName || "Đơn chưa có tên khách";
+        const meta = [
+          formatDate(draft.date || today),
+          draft.customerPhone || "",
+          `${draft.items?.length || 0} khoản`,
+          formatCurrency(draft.total || 0)
+        ]
+          .filter(Boolean)
+          .join(" • ");
+
+        return `
+          <button class="draft-order-button" type="button" data-open-sales-draft="${draft.id}">
+            <span class="draft-order-name">${escapeHtml(title)}</span>
+            <span class="draft-order-meta">${escapeHtml(meta)}</span>
+          </button>
+        `;
+      })
+      .join("")}
+  `;
 }
 
 function filterEntriesByCategory(entries, categoryId) {
