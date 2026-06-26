@@ -20,6 +20,13 @@ const defaultData = {
 
 let state = loadCachedState();
 
+const uiState = {
+  categoryExpanded: {
+    income: false,
+    expense: false
+  }
+};
+
 const els = {
   storeForm: document.querySelector("#storeForm"),
   storeName: document.querySelector("#storeName"),
@@ -280,6 +287,7 @@ document.addEventListener("click", (event) => {
   const entryButton = event.target.closest("[data-delete-entry]");
   const editCategoryButton = event.target.closest("[data-edit-category]");
   const editEntryButton = event.target.closest("[data-edit-entry]");
+  const toggleCategoryButton = event.target.closest("[data-toggle-categories]");
 
   if (categoryButton) {
     deleteCategory(categoryButton.dataset.type, categoryButton.dataset.deleteCategory);
@@ -295,6 +303,12 @@ document.addEventListener("click", (event) => {
 
   if (editEntryButton) {
     editEntry(editEntryButton.dataset.editEntry);
+  }
+
+  if (toggleCategoryButton) {
+    const type = toggleCategoryButton.dataset.toggleCategories;
+    uiState.categoryExpanded[type] = !uiState.categoryExpanded[type];
+    render();
   }
 });
 
@@ -853,15 +867,28 @@ function renderCategoryControls(store, type) {
     return;
   }
 
-  listEl.innerHTML = categories
-    .map((category) => `
-      <div class="category-item">
-        <span class="category-name">${escapeHtml(category.name)}</span>
-        <button class="edit-small" type="button" data-type="${type}" data-edit-category="${category.id}" title="Sửa mục" aria-label="Sửa mục">Sửa</button>
-        <button class="delete-small" type="button" data-type="${type}" data-delete-category="${category.id}" title="Xóa mục" aria-label="Xóa mục">×</button>
-      </div>
-    `)
-    .join("");
+  const expanded = uiState.categoryExpanded[type];
+  const visibleCategories = expanded ? categories : categories.slice(-2);
+  const toggleButton =
+    categories.length > 2
+      ? `
+        <button class="category-toggle${expanded ? " expanded" : ""}" type="button" data-toggle-categories="${type}" aria-label="${expanded ? "Thu gọn mục" : "Hiển thị tất cả mục"}">
+          <span aria-hidden="true">⌄</span>
+        </button>
+      `
+      : "";
+
+  listEl.classList.toggle("expanded", expanded);
+  listEl.innerHTML =
+    visibleCategories
+      .map((category) => `
+        <div class="category-item">
+          <span class="category-name">${escapeHtml(category.name)}</span>
+          <button class="edit-small" type="button" data-type="${type}" data-edit-category="${category.id}" title="Sửa mục" aria-label="Sửa mục">Sửa</button>
+          <button class="delete-small" type="button" data-type="${type}" data-delete-category="${category.id}" title="Xóa mục" aria-label="Xóa mục">×</button>
+        </div>
+      `)
+      .join("") + toggleButton;
 }
 
 function renderReports(store) {
