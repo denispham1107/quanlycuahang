@@ -550,7 +550,8 @@ form button:disabled {
 }
 
 .tab-button {
-  flex: 0 0 auto;
+  flex: 1 1 0;
+  order: 1;
   min-height: 42px;
   border: 1px solid transparent;
   border-radius: 18px;
@@ -569,8 +570,8 @@ form button:disabled {
 }
 
 .tab-button[data-tab="sales"] {
-  flex-basis: min(100%, 360px);
-  justify-self: center;
+  order: 2;
+  flex: 0 0 min(100%, 720px);
   margin-top: 4px;
   border-color: rgba(255, 255, 255, 0.78);
   background: linear-gradient(135deg, rgba(12, 130, 244, 0.12) 0%, rgba(216, 92, 255, 0.16) 52%, rgba(255, 154, 74, 0.18) 100%);
@@ -1077,7 +1078,13 @@ th:last-child {
 
   .tab-button {
     min-height: 40px;
-    padding-inline: 14px;
+    padding-inline: 8px;
+    font-size: 13px;
+  }
+
+  .tab-button[data-tab="sales"] {
+    min-height: 44px;
+    font-size: 16px;
   }
 
   .active-store-hero {
