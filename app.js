@@ -1492,32 +1492,46 @@ function renderSalesDraftList(drafts) {
     return;
   }
 
+  const rows = [...drafts]
+    .sort((a, b) => String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || "")))
+    .map((draft) => {
+      const title = draft.customerName || "Đơn chưa có tên khách";
+      const items = (draft.items || [])
+        .map((item) => `${escapeHtml(item.name)} x${item.quantity} - ${formatCurrency(item.total)}`)
+        .join("<br>");
+
+      return `
+        <tr class="draft-order-row" data-open-sales-draft="${draft.id}">
+          <td>${formatDate(draft.date || today)}</td>
+          <td>${escapeHtml(title)}</td>
+          <td>${escapeHtml(draft.customerPhone || "")}</td>
+          <td class="note-cell">${items || "Chưa có khoản thu"}</td>
+          <td class="amount-cell">${formatCurrency(draft.total || 0)}</td>
+          <td>
+            <button class="delete-small" type="button" data-delete-sales-draft="${draft.id}" title="Xóa đơn đang lưu" aria-label="Xóa đơn đang lưu">×</button>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+
   els.salesDraftList.innerHTML = `
     <div class="draft-order-heading">Đơn hàng đang lưu</div>
-    ${[...drafts]
-      .sort((a, b) => String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || "")))
-      .map((draft) => {
-        const title = draft.customerName || "Đơn chưa có tên khách";
-        const meta = [
-          formatDate(draft.date || today),
-          draft.customerPhone || "",
-          `${draft.items?.length || 0} khoản`,
-          formatCurrency(draft.total || 0)
-        ]
-          .filter(Boolean)
-          .join(" • ");
-
-        return `
-          <div class="draft-order-button">
-            <button class="draft-order-open" type="button" data-open-sales-draft="${draft.id}">
-              <span class="draft-order-name">${escapeHtml(title)}</span>
-              <span class="draft-order-meta">${escapeHtml(meta)}</span>
-            </button>
-            <button class="delete-small" type="button" data-delete-sales-draft="${draft.id}" title="Xóa đơn đang lưu" aria-label="Xóa đơn đang lưu">×</button>
-          </div>
-        `;
-      })
-      .join("")}
+    <div class="table-wrap draft-order-table-wrap">
+      <table class="sales-table draft-order-table">
+        <thead>
+          <tr>
+            <th>Ngày</th>
+            <th>Khách hàng</th>
+            <th>Số điện thoại</th>
+            <th>Chi tiết</th>
+            <th>Tổng bill</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
   `;
 }
 
