@@ -66,6 +66,7 @@
               <button class="tab-button active" type="button" data-tab="stores" aria-selected="true">Cửa Hàng</button>
               <button class="tab-button" type="button" data-tab="overview" aria-selected="false">Tổng quan</button>
               <button class="tab-button" type="button" data-tab="income" aria-selected="false">Thu</button>
+              <button class="tab-button" type="button" data-tab="sales" aria-selected="false">Bán Hàng</button>
               <button class="tab-button" type="button" data-tab="expense" aria-selected="false">Chi</button>
             </nav>
 
@@ -196,6 +197,36 @@
               </article>
             </section>
 
+            <section class="tab-panel" data-tab-panel="sales" hidden>
+              <article class="panel">
+                <div class="panel-heading">
+                  <h2>Bán hàng</h2>
+                  <span id="salesOrderCount">0 đơn</span>
+                </div>
+                <div class="empty-list">Bấm nút + để tạo đơn hàng mới cho khách.</div>
+              </article>
+              <article class="panel">
+                <div class="panel-heading">
+                  <h2>Lịch sử bán hàng</h2>
+                  <span id="salesRangeLabel"></span>
+                </div>
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Ngày</th>
+                        <th>Khách hàng</th>
+                        <th>Số điện thoại</th>
+                        <th>Chi tiết</th>
+                        <th>Tổng bill</th>
+                      </tr>
+                    </thead>
+                    <tbody id="salesOrderTable"></tbody>
+                  </table>
+                </div>
+              </article>
+            </section>
+
             <section class="tab-panel" data-tab-panel="expense" hidden>
               <article class="panel">
                 <div class="panel-heading">
@@ -282,26 +313,51 @@
           <h2 id="quickEntryTitle">Thêm khoản</h2>
           <span>Nhập nhanh</span>
         </div>
-        <div class="form-row">
-          <div class="field">
-            <label for="quickEntryNote">Tên khoản</label>
-            <input id="quickEntryNote" name="note" type="text" autocomplete="off" list="quickEntrySuggestions" />
-            <datalist id="quickEntrySuggestions"></datalist>
+        <div id="quickEntryFields">
+          <div class="form-row">
+            <div class="field">
+              <label for="quickEntryNote">Tên khoản</label>
+              <input id="quickEntryNote" name="note" type="text" autocomplete="off" list="quickEntrySuggestions" />
+              <datalist id="quickEntrySuggestions"></datalist>
+            </div>
+            <div class="field">
+              <label for="quickEntryAmount">Số tiền</label>
+              <input id="quickEntryAmount" name="amount" type="text" inputmode="numeric" autocomplete="off" required />
+            </div>
           </div>
-          <div class="field">
-            <label for="quickEntryAmount">Số tiền</label>
-            <input id="quickEntryAmount" name="amount" type="text" inputmode="numeric" autocomplete="off" required />
+          <div class="form-row">
+            <div class="field">
+              <label for="quickEntryDate">Ngày</label>
+              <input id="quickEntryDate" name="date" type="date" required />
+            </div>
+            <div class="field">
+              <label for="quickEntryCategory">Mục</label>
+              <select id="quickEntryCategory" name="categoryId" required></select>
+            </div>
           </div>
         </div>
-        <div class="form-row">
-          <div class="field">
-            <label for="quickEntryDate">Ngày</label>
-            <input id="quickEntryDate" name="date" type="date" required />
+        <div class="sales-order-fields" id="salesOrderFields" hidden>
+          <div class="form-row">
+            <div class="field">
+              <label for="salesCustomerName">Tên khách hàng</label>
+              <input id="salesCustomerName" name="customerName" type="text" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label for="salesCustomerPhone">Số điện thoại</label>
+              <input id="salesCustomerPhone" name="customerPhone" type="tel" autocomplete="off" />
+            </div>
           </div>
           <div class="field">
-            <label for="quickEntryCategory">Mục</label>
-            <select id="quickEntryCategory" name="categoryId" required></select>
+            <label for="salesOrderDate">Ngày bán</label>
+            <input id="salesOrderDate" name="salesDate" type="date" />
           </div>
+          <div class="sales-items" id="salesItems"></div>
+          <button class="ghost-button add-sales-item" id="addSalesItem" type="button">Thêm khoản thu</button>
+          <div class="sales-total">
+            <span>Tổng bill</span>
+            <strong id="salesOrderTotal">0 đ</strong>
+          </div>
+          <datalist id="salesItemSuggestions"></datalist>
         </div>
         <div class="modal-actions">
           <button class="ghost-button" id="cancelQuickEntry" type="button">Hủy</button>

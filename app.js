@@ -81,11 +81,23 @@ const els = {
   quickEntryModal: document.querySelector("#quickEntryModal"),
   quickEntryForm: document.querySelector("#quickEntryForm"),
   quickEntryTitle: document.querySelector("#quickEntryTitle"),
+  quickEntryFields: document.querySelector("#quickEntryFields"),
   quickEntryCategory: document.querySelector("#quickEntryCategory"),
   quickEntryDate: document.querySelector("#quickEntryDate"),
   quickEntryNote: document.querySelector("#quickEntryNote"),
   quickEntryAmount: document.querySelector("#quickEntryAmount"),
   quickEntrySuggestions: document.querySelector("#quickEntrySuggestions"),
+  salesOrderFields: document.querySelector("#salesOrderFields"),
+  salesCustomerName: document.querySelector("#salesCustomerName"),
+  salesCustomerPhone: document.querySelector("#salesCustomerPhone"),
+  salesOrderDate: document.querySelector("#salesOrderDate"),
+  salesItems: document.querySelector("#salesItems"),
+  addSalesItem: document.querySelector("#addSalesItem"),
+  salesOrderTotal: document.querySelector("#salesOrderTotal"),
+  salesItemSuggestions: document.querySelector("#salesItemSuggestions"),
+  salesOrderCount: document.querySelector("#salesOrderCount"),
+  salesRangeLabel: document.querySelector("#salesRangeLabel"),
+  salesOrderTable: document.querySelector("#salesOrderTable"),
   quickEntrySubmit: document.querySelector("#quickEntrySubmit"),
   cancelQuickEntry: document.querySelector("#cancelQuickEntry"),
   editEntryModal: document.querySelector("#editEntryModal"),
@@ -149,6 +161,7 @@ els.storeForm.addEventListener("submit", (event) => {
       expense: []
     },
     entries: [],
+    orders: [],
     createdAt: new Date().toISOString()
   };
 
@@ -277,8 +290,44 @@ els.quickEntryModal.addEventListener("click", (event) => {
 
 els.quickEntryForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  const saved = addEntry(els.quickEntryForm.dataset.type, new FormData(els.quickEntryForm));
+  const saved =
+    els.quickEntryForm.dataset.type === "sales"
+      ? saveSalesOrder()
+      : addEntry(els.quickEntryForm.dataset.type, new FormData(els.quickEntryForm));
   if (saved) closeQuickEntryModal();
+});
+
+els.addSalesItem.addEventListener("click", () => {
+  addSalesItemRow();
+  updateSalesOrderTotal();
+});
+
+els.salesItems.addEventListener("input", (event) => {
+  if (event.target.matches('[data-sales-item="price"]')) {
+    event.target.value = formatAmountInput(event.target.value);
+  }
+
+  if (event.target.matches('[data-sales-item="name"]')) {
+    applySalesItemSuggestion(event.target.closest(".sales-item-row"));
+  }
+
+  updateSalesOrderTotal();
+});
+
+els.salesItems.addEventListener("change", (event) => {
+  if (event.target.matches('[data-sales-item="name"]')) {
+    applySalesItemSuggestion(event.target.closest(".sales-item-row"));
+  }
+
+  updateSalesOrderTotal();
+});
+
+els.salesItems.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-remove-sales-item]");
+  if (!button) return;
+  button.closest(".sales-item-row")?.remove();
+  if (!els.salesItems.querySelector(".sales-item-row")) addSalesItemRow();
+  updateSalesOrderTotal();
 });
 
 els.cancelEditEntry.addEventListener("click", closeEditEntryModal);
@@ -367,6 +416,7 @@ function normalizeState(data) {
       expense: store.categories?.expense || []
     },
     entries: store.entries || [],
+    orders: store.orders || [],
     createdAt: store.createdAt || getEarliestEntryDate(store.entries || []) || today
   }));
 
@@ -772,7 +822,7 @@ function getEntrySuggestions(store, type) {
       if (!suggestions.has(key)) {
         suggestions.set(key, {
           note,
-          amount: Number(entry.amount || 0)
+          amount: Number(entry.orderUnitPrice || entry.amount || 0)
         });
       }
     });
@@ -797,14 +847,23 @@ function applyEntrySuggestion(form) {
 
 function openQuickEntryModal(type) {
   const store = getActiveStore();
-  if (!store || !["income", "expense"].includes(type)) return;
+  if (!store || !["income", "expense", "sales"].includes(type)) return;
+
+  els.quickEntryForm.dataset.type = type;
+
+  if (type === "sales") {
+    openSalesOrderModal(store);
+    return;
+  }
 
   const categories = store.categories[type] || [];
-  els.quickEntryForm.dataset.type = type;
+  els.quickEntryFields.hidden = false;
+  els.salesOrderFields.hidden = true;
   els.quickEntryTitle.textContent = type === "income" ? "Thêm khoản thu" : "Thêm khoản chi";
   els.quickEntryNote.placeholder = type === "income" ? "Khoản Thu" : "Khoản Chi";
   els.quickEntryAmount.value = "";
   els.quickEntryNote.value = "";
+  els.quickEntrySubmit.textContent = "Lưu";
   els.quickEntryDate.value = els.singleDate.value || today;
   els.quickEntryCategory.innerHTML = [
     '<option value="">Chưa có mục</option>',
@@ -820,7 +879,11 @@ function openQuickEntryModal(type) {
 function closeQuickEntryModal() {
   els.quickEntryModal.hidden = true;
   els.quickEntryForm.reset();
+  els.salesItems.innerHTML = "";
+  els.quickEntryFields.hidden = false;
+  els.salesOrderFields.hidden = true;
   els.quickEntrySubmit.disabled = false;
+  els.quickEntrySubmit.textContent = "Lưu";
 }
 
 function applyQuickEntrySuggestion() {
@@ -837,6 +900,136 @@ function applyQuickEntrySuggestion() {
   els.quickEntryAmount.value = formatAmountInput(suggestion.amount);
 }
 
+function openSalesOrderModal(store) {
+  els.quickEntryTitle.textContent = "Tạo đơn bán hàng";
+  els.quickEntryFields.hidden = true;
+  els.salesOrderFields.hidden = false;
+  els.salesCustomerName.value = "";
+  els.salesCustomerPhone.value = "";
+  els.salesOrderDate.value = els.singleDate.value || today;
+  els.salesItems.innerHTML = "";
+  renderEntrySuggestionList(els.salesItemSuggestions, getEntrySuggestions(store, "income"));
+  addSalesItemRow();
+  updateSalesOrderTotal();
+  els.quickEntrySubmit.disabled = false;
+  els.quickEntrySubmit.textContent = "Lưu đơn hàng";
+  els.quickEntryModal.hidden = false;
+}
+
+function addSalesItemRow(item = {}) {
+  const row = document.createElement("div");
+  row.className = "sales-item-row";
+  row.innerHTML = `
+    <input type="text" data-sales-item="name" placeholder="Khoản thu" autocomplete="off" list="salesItemSuggestions" value="${escapeHtml(item.name || "")}" />
+    <input type="text" data-sales-item="price" inputmode="numeric" placeholder="Giá" autocomplete="off" value="${item.price ? formatAmountInput(item.price) : ""}" />
+    <input type="number" data-sales-item="quantity" min="1" step="1" placeholder="SL" value="${item.quantity || 1}" />
+    <button class="delete-small" type="button" data-remove-sales-item title="Xóa khoản" aria-label="Xóa khoản">×</button>
+  `;
+  els.salesItems.append(row);
+}
+
+function getSalesOrderItems() {
+  return [...els.salesItems.querySelectorAll(".sales-item-row")]
+    .map((row) => {
+      const name = String(row.querySelector('[data-sales-item="name"]')?.value || "").trim();
+      const price = parseAmountInput(row.querySelector('[data-sales-item="price"]')?.value);
+      const quantity = Math.max(1, Number.parseInt(row.querySelector('[data-sales-item="quantity"]')?.value, 10) || 1);
+      return {
+        name,
+        price,
+        quantity,
+        total: price * quantity
+      };
+    })
+    .filter((item) => item.name && Number.isFinite(item.price) && item.price > 0);
+}
+
+function updateSalesOrderTotal() {
+  const total = getSalesOrderItems().reduce((sum, item) => sum + item.total, 0);
+  els.salesOrderTotal.textContent = formatCurrency(total);
+}
+
+function applySalesItemSuggestion(row) {
+  const store = getActiveStore();
+  if (!store || !row) return;
+
+  const nameInput = row.querySelector('[data-sales-item="name"]');
+  const priceInput = row.querySelector('[data-sales-item="price"]');
+  const name = String(nameInput.value || "").trim().toLowerCase();
+  if (!name || priceInput.value) return;
+
+  const suggestion = getEntrySuggestions(store, "income").find((item) => item.note.toLowerCase() === name);
+  if (!suggestion) return;
+
+  priceInput.value = formatAmountInput(suggestion.amount);
+}
+
+function saveSalesOrder() {
+  const store = getActiveStore();
+  if (!store) return false;
+
+  const customerName = String(els.salesCustomerName.value || "").trim();
+  const customerPhone = String(els.salesCustomerPhone.value || "").trim();
+  const date = els.salesOrderDate.value || today;
+  const items = getSalesOrderItems();
+
+  if (!customerName) {
+    window.alert("Vui lòng nhập tên khách hàng.");
+    return false;
+  }
+
+  if (!isValidDateInput(date)) {
+    window.alert("Ngày bán không hợp lệ.");
+    return false;
+  }
+
+  if (!items.length) {
+    window.alert("Vui lòng nhập ít nhất một khoản thu, giá và số lượng.");
+    return false;
+  }
+
+  let defaultCategory = store.categories.income.find((category) => category.name.toLowerCase() === "bán hàng");
+  if (!defaultCategory) {
+    defaultCategory = {
+      id: createId(),
+      name: "Bán hàng"
+    };
+    store.categories.income.push(defaultCategory);
+  }
+
+  const orderId = createId();
+  const createdAt = new Date().toISOString();
+  const total = items.reduce((sum, item) => sum + item.total, 0);
+
+  store.orders.push({
+    id: orderId,
+    customerName,
+    customerPhone,
+    date,
+    items,
+    total,
+    createdAt
+  });
+
+  items.forEach((item) => {
+    store.entries.push({
+      id: createId(),
+      type: "income",
+      categoryId: defaultCategory.id,
+      date,
+      amount: item.total,
+      note: item.name,
+      orderId,
+      orderQuantity: item.quantity,
+      orderUnitPrice: item.price,
+      createdAt
+    });
+  });
+
+  saveAndRender();
+  return true;
+}
+
 function getActiveTabName() {
   return document.querySelector(".tab-button.active")?.dataset.tab || "stores";
 }
@@ -844,7 +1037,7 @@ function getActiveTabName() {
 function updateQuickEntryButton() {
   const store = getActiveStore();
   const tabName = getActiveTabName();
-  const type = tabName === "income" ? "income" : tabName === "expense" ? "expense" : "";
+  const type = tabName === "income" ? "income" : tabName === "expense" ? "expense" : tabName === "sales" ? "sales" : "";
   const showButton = Boolean(store && type);
 
   els.quickEntryButton.hidden = !showButton;
@@ -854,7 +1047,7 @@ function updateQuickEntryButton() {
   }
 
   els.quickEntryButton.dataset.type = type;
-  const label = type === "income" ? "Thêm khoản thu" : "Thêm khoản chi";
+  const label = type === "income" ? "Thêm khoản thu" : type === "expense" ? "Thêm khoản chi" : "Tạo đơn bán hàng";
   els.quickEntryButton.title = label;
   els.quickEntryButton.setAttribute("aria-label", label);
 }
@@ -1023,8 +1216,13 @@ function renderReports(store) {
   els.selectedRangeLabel.textContent = range.label;
   els.incomeRangeLabel.textContent = range.label;
   els.expenseRangeLabel.textContent = range.label;
+  els.salesRangeLabel.textContent = range.label;
   els.incomeEntryCount.textContent = `${filteredIncomeEntries.length} dòng`;
   els.expenseEntryCount.textContent = `${filteredExpenseEntries.length} dòng`;
+  const salesOrders = (store.orders || [])
+    .filter((order) => order.date >= range.start && order.date <= range.end)
+    .sort((a, b) => b.date.localeCompare(a.date) || String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+  els.salesOrderCount.textContent = `${salesOrders.length} đơn`;
 
   renderHistorySearchSuggestions(els.incomeHistorySearchSuggestions, incomeEntries);
   renderHistorySearchSuggestions(els.expenseHistorySearchSuggestions, expenseEntries);
@@ -1032,6 +1230,34 @@ function renderReports(store) {
   renderReportList(els.expenseReport, store.categories.expense, activeExpenseEntries);
   renderEntryTable(els.incomeEntryTable, store, filteredIncomeEntries);
   renderEntryTable(els.expenseEntryTable, store, filteredExpenseEntries);
+  renderSalesOrderTable(els.salesOrderTable, salesOrders);
+}
+
+function renderSalesOrderTable(container, orders) {
+  if (!container) return;
+
+  if (!orders.length) {
+    container.innerHTML = '<tr><td colspan="5" class="empty-list">Chưa có đơn hàng trong khoảng thời gian này</td></tr>';
+    return;
+  }
+
+  container.innerHTML = orders
+    .map((order) => {
+      const items = (order.items || [])
+        .map((item) => `${escapeHtml(item.name)} x${item.quantity} - ${formatCurrency(item.total)}`)
+        .join("<br>");
+
+      return `
+        <tr>
+          <td>${formatDate(order.date)}</td>
+          <td>${escapeHtml(order.customerName || "")}</td>
+          <td>${escapeHtml(order.customerPhone || "")}</td>
+          <td class="note-cell">${items}</td>
+          <td class="amount-cell">${formatCurrency(order.total || 0)}</td>
+        </tr>
+      `;
+    })
+    .join("");
 }
 
 function filterEntriesByCategory(entries, categoryId) {

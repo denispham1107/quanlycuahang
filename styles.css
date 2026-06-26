@@ -920,6 +920,71 @@ th:last-child {
   background: var(--accent-gradient);
 }
 
+#quickEntryFields {
+  display: grid;
+  gap: 12px;
+}
+
+#quickEntryFields[hidden] {
+  display: none;
+}
+
+.sales-order-fields {
+  display: grid;
+  gap: 12px;
+}
+
+.sales-order-fields[hidden] {
+  display: none;
+}
+
+.sales-items {
+  display: grid;
+  gap: 10px;
+}
+
+.sales-item-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 78px 40px;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid rgba(8, 120, 247, 0.14);
+  border-radius: 16px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.sales-item-row input {
+  min-height: 40px;
+}
+
+.add-sales-item {
+  width: 100%;
+}
+
+.sales-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid rgba(8, 120, 247, 0.18);
+  border-radius: 18px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(255, 232, 220, 0.88), rgba(238, 226, 255, 0.92), rgba(226, 246, 255, 0.96));
+}
+
+.sales-total span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.sales-total strong {
+  color: var(--accent);
+  font-size: 22px;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
 @keyframes quick-entry-pop {
   from {
     opacity: 0;
@@ -1037,7 +1102,8 @@ th:last-child {
   }
 
   .inline-form,
-  .form-row {
+  .form-row,
+  .sales-item-row {
     grid-template-columns: 1fr;
   }
 
