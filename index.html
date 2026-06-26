@@ -243,7 +243,6 @@
                 </div>
                 <div class="empty-list">Bấm nút + để nhập hàng hóa mới vào kho.</div>
                 <button class="ghost-button inventory-toggle" id="toggleInventory" type="button">Kho hàng</button>
-                <div class="report-list inventory-list" id="inventoryList" hidden></div>
               </article>
             </section>
 
@@ -399,6 +398,19 @@
           <button id="quickEntrySubmit" type="submit">Lưu</button>
         </div>
       </form>
+    </div>
+
+    <div class="modal-backdrop inventory-backdrop" id="inventoryModal" hidden>
+      <section class="modal-card inventory-card">
+        <div class="panel-heading">
+          <h2>Kho hàng</h2>
+          <span id="inventoryModalCount">0 mặt hàng</span>
+        </div>
+        <div class="report-list inventory-list" id="inventoryList"></div>
+        <div class="modal-actions">
+          <button class="ghost-button" id="closeInventory" type="button">Đóng</button>
+        </div>
+      </section>
     </div>
 
     <div class="modal-backdrop" id="editEntryModal" hidden>

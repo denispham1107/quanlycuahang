@@ -111,7 +111,10 @@ const els = {
   purchaseGroupSuggestions: document.querySelector("#purchaseGroupSuggestions"),
   inventoryCount: document.querySelector("#inventoryCount"),
   toggleInventory: document.querySelector("#toggleInventory"),
+  inventoryModal: document.querySelector("#inventoryModal"),
+  inventoryModalCount: document.querySelector("#inventoryModalCount"),
   inventoryList: document.querySelector("#inventoryList"),
+  closeInventory: document.querySelector("#closeInventory"),
   quickEntrySubmit: document.querySelector("#quickEntrySubmit"),
   saveSalesDraft: document.querySelector("#saveSalesDraft"),
   deleteSalesDraft: document.querySelector("#deleteSalesDraft"),
@@ -395,7 +398,13 @@ els.purchaseItems.addEventListener("click", (event) => {
 });
 
 els.toggleInventory.addEventListener("click", () => {
-  els.inventoryList.hidden = !els.inventoryList.hidden;
+  openInventoryModal();
+});
+
+els.closeInventory.addEventListener("click", closeInventoryModal);
+
+els.inventoryModal.addEventListener("click", (event) => {
+  if (event.target === els.inventoryModal) closeInventoryModal();
 });
 
 els.cancelEditEntry.addEventListener("click", closeEditEntryModal);
@@ -1213,6 +1222,18 @@ function openPurchaseOrderModal(store) {
   els.quickEntryModal.hidden = false;
 }
 
+function openInventoryModal() {
+  const store = getActiveStore();
+  if (!store) return;
+
+  renderInventory(store);
+  els.inventoryModal.hidden = false;
+}
+
+function closeInventoryModal() {
+  els.inventoryModal.hidden = true;
+}
+
 function addPurchaseItemRow(item = {}) {
   const row = document.createElement("div");
   row.className = "purchase-item-row sales-item-row";
@@ -1752,7 +1773,9 @@ function renderInventory(store) {
     String(a.name || "").localeCompare(String(b.name || ""), "vi")
   );
 
-  els.inventoryCount.textContent = `${inventory.length} mặt hàng`;
+  const countText = `${inventory.length} mặt hàng`;
+  els.inventoryCount.textContent = countText;
+  els.inventoryModalCount.textContent = countText;
 
   if (!inventory.length) {
     els.inventoryList.innerHTML = '<div class="empty-list">Kho hàng chưa có hàng hóa</div>';
