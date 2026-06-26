@@ -98,6 +98,8 @@ const els = {
   salesItemSuggestions: document.querySelector("#salesItemSuggestions"),
   salesOrderCount: document.querySelector("#salesOrderCount"),
   salesDraftList: document.querySelector("#salesDraftList"),
+  salesGoodsRangeLabel: document.querySelector("#salesGoodsRangeLabel"),
+  salesGoodsReport: document.querySelector("#salesGoodsReport"),
   salesRangeLabel: document.querySelector("#salesRangeLabel"),
   salesOrderTable: document.querySelector("#salesOrderTable"),
   quickEntrySubmit: document.querySelector("#quickEntrySubmit"),
@@ -1364,12 +1366,17 @@ function renderReports(store) {
   els.selectedRangeLabel.textContent = range.label;
   els.incomeRangeLabel.textContent = range.label;
   els.expenseRangeLabel.textContent = range.label;
-  els.salesRangeLabel.textContent = range.label;
+  if (els.salesGoodsRangeLabel) {
+    els.salesGoodsRangeLabel.textContent = range.label;
+  }
   els.incomeEntryCount.textContent = `${filteredIncomeEntries.length} dòng`;
   els.expenseEntryCount.textContent = `${filteredExpenseEntries.length} dòng`;
   const salesOrders = (store.orders || [])
     .filter((order) => order.date >= range.start && order.date <= range.end)
     .sort((a, b) => b.date.localeCompare(a.date) || String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+  const activeSalesOrders = salesOrders.filter((order) => !isCancelledEntry(order));
+  const totalSalesAmount = activeSalesOrders.reduce((sum, order) => sum + Number(order.total || 0), 0);
+  els.salesRangeLabel.textContent = `${range.label} • Tổng: ${formatCurrency(totalSalesAmount)}`;
   els.salesOrderCount.textContent = `${salesOrders.length} đơn`;
   renderSalesDraftList(store.draftOrders || []);
 
@@ -1377,9 +1384,58 @@ function renderReports(store) {
   renderHistorySearchSuggestions(els.expenseHistorySearchSuggestions, expenseEntries);
   renderReportList(els.incomeReport, store.categories.income, activeIncomeEntries);
   renderReportList(els.expenseReport, store.categories.expense, activeExpenseEntries);
+  renderSalesGoodsReport(els.salesGoodsReport, activeSalesOrders);
   renderEntryTable(els.incomeEntryTable, store, filteredIncomeEntries);
   renderEntryTable(els.expenseEntryTable, store, filteredExpenseEntries);
   renderSalesOrderTable(els.salesOrderTable, salesOrders);
+}
+
+function renderSalesGoodsReport(container, orders) {
+  if (!container) return;
+
+  const goods = new Map();
+  let grandTotal = 0;
+
+  orders.forEach((order) => {
+    (order.items || []).forEach((item) => {
+      const name = String(item.name || "").trim();
+      if (!name) return;
+
+      const total = Number(item.total || 0);
+      const quantity = Number(item.quantity || 0);
+      const current = goods.get(name) || { name, total: 0, quantity: 0 };
+      current.total += total;
+      current.quantity += quantity;
+      grandTotal += total;
+      goods.set(name, current);
+    });
+  });
+
+  if (!goods.size) {
+    container.innerHTML = '<div class="empty-list">Chưa có hàng hóa bán ra trong khoảng thời gian này</div>';
+    return;
+  }
+
+  const rows = [...goods.values()].sort((a, b) => a.name.localeCompare(b.name, "vi"));
+  container.innerHTML = `
+    <div class="report-item report-total">
+      <span>Tổng cộng</span>
+      <span class="report-amount">${formatCurrency(grandTotal)}</span>
+    </div>
+    ${rows
+      .map(
+        (item) => `
+          <div class="report-item">
+            <span>
+              ${escapeHtml(item.name)}
+              <span class="item-quantity">x${item.quantity.toLocaleString("vi-VN")}</span>
+            </span>
+            <span class="report-amount">${formatCurrency(item.total)}</span>
+          </div>
+        `
+      )
+      .join("")}
+  `;
 }
 
 function renderSalesOrderTable(container, orders) {

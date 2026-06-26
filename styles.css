@@ -794,6 +794,13 @@ form button:disabled {
   text-align: right;
 }
 
+.item-quantity {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  margin-left: 6px;
+}
+
 .table-wrap {
   width: 100%;
   max-width: 100%;
