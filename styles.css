@@ -1,17 +1,20 @@
 :root {
   color-scheme: light;
-  --bg: #f5f7f8;
+  --bg: #edf6ff;
   --surface: #ffffff;
-  --surface-strong: #eef3f1;
-  --text: #17201c;
-  --muted: #65736d;
-  --line: #dce4e0;
-  --accent: #167761;
-  --accent-dark: #0f5a49;
-  --income: #116d5a;
-  --expense: #b5473f;
-  --balance: #2b5d87;
-  --shadow: 0 16px 40px rgba(23, 32, 28, 0.08);
+  --surface-strong: #f7f9ff;
+  --text: #181b22;
+  --muted: #6f7481;
+  --line: #e5e7f0;
+  --accent: #0878f7;
+  --accent-dark: #075fd4;
+  --income: #b45cff;
+  --expense: #f06ca8;
+  --balance: #1477e8;
+  --shadow: 0 18px 42px rgba(57, 76, 120, 0.14);
+  --soft-gradient: linear-gradient(145deg, #ffe5d8 0%, #eadcff 46%, #a8dfff 100%);
+  --accent-gradient: linear-gradient(135deg, #8b48ff 0%, #0c82f4 100%);
+  --money-gradient: linear-gradient(90deg, #c157ff 0%, #ff70c8 100%);
 }
 
 * {
@@ -33,7 +36,11 @@ body {
 
 body {
   margin: 0;
-  background: var(--bg);
+  background:
+    radial-gradient(circle at 8% 10%, rgba(255, 215, 207, 0.86), transparent 32%),
+    radial-gradient(circle at 88% 4%, rgba(208, 188, 255, 0.84), transparent 34%),
+    linear-gradient(145deg, #fff0e7 0%, #efe8ff 48%, #bde8ff 100%);
+  background-attachment: fixed;
   color: var(--text);
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -63,9 +70,9 @@ button {
   gap: 16px;
   width: 100%;
   padding: 18px clamp(16px, 4vw, 40px);
-  background: rgba(245, 247, 248, 0.92);
-  border-bottom: 1px solid var(--line);
-  backdrop-filter: blur(14px);
+  background: rgba(255, 255, 255, 0.38);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.58);
+  backdrop-filter: blur(18px);
 }
 
 .topbar h1,
@@ -84,7 +91,7 @@ button {
 
 .eyebrow {
   margin: 0 0 4px;
-  color: var(--accent);
+  color: var(--accent-dark);
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -104,8 +111,8 @@ button {
 }
 
 .sync-status[data-status="ok"] {
-  background: #e4f4ef;
-  color: var(--income);
+  background: rgba(255, 255, 255, 0.74);
+  color: var(--accent-dark);
 }
 
 .sync-status[data-status="loading"] {
@@ -135,7 +142,7 @@ button {
   display: inline-grid;
   place-items: center;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 16px;
   background: var(--surface);
   color: var(--text);
   font-size: 23px;
@@ -192,7 +199,7 @@ button {
 .empty-state {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 22px;
   box-shadow: var(--shadow);
 }
 
@@ -240,19 +247,19 @@ button {
 .category-section {
   min-width: 0;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 16px;
   padding: 14px;
 }
 
 .entry-section {
-  border-color: rgba(22, 119, 97, 0.28);
-  background: #f0f8f5;
+  border-color: rgba(8, 120, 247, 0.22);
+  background: rgba(238, 246, 255, 0.9);
 }
 
 .category-section {
   margin-top: 14px;
-  border-color: #eadf9a;
-  background: #fffbed;
+  border-color: rgba(197, 108, 255, 0.22);
+  background: rgba(255, 246, 253, 0.9);
 }
 
 .entry-section .entry-form,
@@ -275,7 +282,7 @@ select {
   max-width: 100%;
   min-height: 44px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 16px;
   background: #fff;
   color: var(--text);
   padding: 0 12px;
@@ -316,9 +323,9 @@ form button,
 .ghost-button {
   min-width: 0;
   min-height: 44px;
-  border-radius: 8px;
+  border-radius: 16px;
   padding: 0 14px;
-  background: var(--accent);
+  background: var(--accent-gradient);
   color: #fff;
   font-weight: 700;
   white-space: normal;
@@ -422,8 +429,8 @@ form button:disabled {
 }
 
 .store-button.active {
-  border-color: var(--accent);
-  background: #e9f5f1;
+  border-color: rgba(8, 120, 247, 0.26);
+  background: #eef6ff;
 }
 
 .store-name,
@@ -444,8 +451,8 @@ form button:disabled {
 .delete-small {
   width: 34px;
   height: 34px;
-  border-radius: 8px;
-  background: #f8e9e7;
+  border-radius: 12px;
+  background: #ffe7ef;
   color: var(--expense);
   font-weight: 800;
 }
@@ -453,8 +460,8 @@ form button:disabled {
 .edit-small {
   min-width: 48px;
   height: 34px;
-  border-radius: 8px;
-  background: #e5f0f7;
+  border-radius: 12px;
+  background: #e8f3ff;
   color: var(--balance);
   font-size: 13px;
   font-weight: 800;
@@ -487,16 +494,16 @@ form button:disabled {
   justify-content: space-between;
   gap: 16px;
   min-width: 0;
-  border: 1px solid rgba(22, 119, 97, 0.28);
-  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  border-radius: 24px;
   padding: 16px 20px;
-  background: linear-gradient(135deg, #e4f4ef 0%, #ffffff 58%);
+  background: linear-gradient(135deg, rgba(255, 232, 220, 0.92) 0%, rgba(238, 226, 255, 0.94) 48%, rgba(210, 239, 255, 0.96) 100%);
   box-shadow: var(--shadow);
 }
 
 .active-store-hero h2 {
   margin: 0;
-  color: var(--accent-dark);
+  color: #0b376f;
   font-size: clamp(22px, 3.4vw, 38px);
   line-height: 1.08;
   overflow-wrap: anywhere;
@@ -521,9 +528,9 @@ form button:disabled {
   gap: 8px;
   overflow-x: auto;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 20px;
   padding: 8px;
-  background: rgba(245, 247, 248, 0.96);
+  background: rgba(255, 255, 255, 0.72);
   box-shadow: var(--shadow);
   backdrop-filter: blur(14px);
   -webkit-overflow-scrolling: touch;
@@ -544,7 +551,7 @@ form button:disabled {
   flex: 0 0 auto;
   min-height: 42px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 18px;
   padding: 0 16px;
   background: transparent;
   color: var(--muted);
@@ -553,9 +560,10 @@ form button:disabled {
 }
 
 .tab-button.active {
-  border-color: var(--accent);
-  background: #e4f4ef;
-  color: var(--accent-dark);
+  border-color: transparent;
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(8, 120, 247, 0.26);
 }
 
 .tab-panel {
@@ -603,15 +611,15 @@ form button:disabled {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  border: 1px solid rgba(22, 119, 97, 0.24);
-  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 22px;
   padding: 14px 18px;
-  background: linear-gradient(135deg, #e4f4ef 0%, #ffffff 68%);
+  background: linear-gradient(135deg, rgba(255, 232, 220, 0.92) 0%, rgba(238, 226, 255, 0.94) 52%, rgba(226, 246, 255, 0.98) 100%);
   box-shadow: var(--shadow);
 }
 
 .selected-range-card span {
-  color: var(--accent);
+  color: var(--accent-dark);
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
@@ -619,7 +627,7 @@ form button:disabled {
 }
 
 .selected-range-card strong {
-  color: var(--accent-dark);
+  color: #7e49e9;
   font-size: clamp(18px, 2.7vw, 26px);
   line-height: 1.15;
   text-align: right;
@@ -660,6 +668,7 @@ form button:disabled {
 .metric {
   min-height: 104px;
   padding: 18px;
+  border-color: rgba(255, 255, 255, 0.78);
 }
 
 .metric span {
@@ -677,7 +686,10 @@ form button:disabled {
 }
 
 .metric.income strong {
-  color: var(--income);
+  background: var(--money-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .metric.expense strong {
@@ -701,7 +713,7 @@ form button:disabled {
 
 .report-total {
   border-color: var(--accent);
-  background: #e4f4ef;
+  background: #eef6ff;
 }
 
 .report-amount {
@@ -748,7 +760,7 @@ th:last-child {
 }
 
 .entry-cancelled {
-  background: #fff6f5;
+  background: #fff3f8;
   color: var(--muted);
 }
 
@@ -766,7 +778,7 @@ th:last-child {
   margin-left: 8px;
   border-radius: 999px;
   padding: 4px 8px;
-  background: #f8e9e7;
+  background: #ffe7ef;
   color: var(--expense);
   font-size: 12px;
   font-weight: 800;
@@ -791,12 +803,12 @@ th:last-child {
 }
 
 .type-pill.income {
-  background: #e4f4ef;
+  background: #f3e8ff;
   color: var(--income);
 }
 
 .type-pill.expense {
-  background: #f8e9e7;
+  background: #ffe7ef;
   color: var(--expense);
 }
 
