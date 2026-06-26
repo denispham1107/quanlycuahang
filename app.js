@@ -51,6 +51,7 @@ const els = {
   totalIncome: document.querySelector("#totalIncome"),
   totalExpense: document.querySelector("#totalExpense"),
   balance: document.querySelector("#balance"),
+  selectedRangeLabel: document.querySelector("#selectedRangeLabel"),
   incomeCategoryCount: document.querySelector("#incomeCategoryCount"),
   expenseCategoryCount: document.querySelector("#expenseCategoryCount"),
   incomeCategories: document.querySelector("#incomeCategories"),
@@ -89,6 +90,7 @@ const els = {
 moveStoreSectionsIntoTab();
 
 const today = toDateInputValue(new Date());
+els.rangeMode.value = "today";
 els.singleDate.value = today;
 els.monthDate.value = today.slice(0, 7);
 els.fromDate.value = today;
@@ -917,6 +919,7 @@ function renderReports(store) {
   els.totalIncome.textContent = formatCurrency(totalIncome);
   els.totalExpense.textContent = formatCurrency(totalExpense);
   els.balance.textContent = formatCurrency(totalIncome - totalExpense);
+  els.selectedRangeLabel.textContent = range.label;
   els.incomeRangeLabel.textContent = range.label;
   els.expenseRangeLabel.textContent = range.label;
   els.incomeEntryCount.textContent = `${filteredIncomeEntries.length} dòng`;

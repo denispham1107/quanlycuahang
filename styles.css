@@ -598,6 +598,34 @@ form button:disabled {
   gap: 6px;
 }
 
+.selected-range-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid rgba(22, 119, 97, 0.24);
+  border-radius: 8px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #e4f4ef 0%, #ffffff 68%);
+  box-shadow: var(--shadow);
+}
+
+.selected-range-card span {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.selected-range-card strong {
+  color: var(--accent-dark);
+  font-size: clamp(18px, 2.7vw, 26px);
+  line-height: 1.15;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
 .history-tools {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(180px, 350px);
@@ -879,6 +907,17 @@ th:last-child {
 
   .active-store-hero h2 {
     font-size: clamp(24px, 8vw, 34px);
+  }
+
+  .selected-range-card {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px;
+  }
+
+  .selected-range-card strong {
+    text-align: left;
   }
 
   .panel,
