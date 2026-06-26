@@ -77,6 +77,17 @@ const els = {
   syncStatus: document.querySelector("#syncStatus"),
   tabBar: document.querySelector("#tabBar"),
   tabSpacer: document.querySelector("#tabSpacer"),
+  quickEntryButton: document.querySelector("#quickEntryButton"),
+  quickEntryModal: document.querySelector("#quickEntryModal"),
+  quickEntryForm: document.querySelector("#quickEntryForm"),
+  quickEntryTitle: document.querySelector("#quickEntryTitle"),
+  quickEntryCategory: document.querySelector("#quickEntryCategory"),
+  quickEntryDate: document.querySelector("#quickEntryDate"),
+  quickEntryNote: document.querySelector("#quickEntryNote"),
+  quickEntryAmount: document.querySelector("#quickEntryAmount"),
+  quickEntrySuggestions: document.querySelector("#quickEntrySuggestions"),
+  quickEntrySubmit: document.querySelector("#quickEntrySubmit"),
+  cancelQuickEntry: document.querySelector("#cancelQuickEntry"),
   editEntryModal: document.querySelector("#editEntryModal"),
   editEntryForm: document.querySelector("#editEntryForm"),
   editEntryType: document.querySelector("#editEntryType"),
@@ -245,6 +256,29 @@ document.querySelectorAll('.entry-form input[name="note"]').forEach((input) => {
 
 els.editEntryAmount.addEventListener("input", () => {
   els.editEntryAmount.value = formatAmountInput(els.editEntryAmount.value);
+});
+
+els.quickEntryButton.addEventListener("click", () => {
+  openQuickEntryModal(els.quickEntryButton.dataset.type);
+});
+
+els.quickEntryAmount.addEventListener("input", () => {
+  els.quickEntryAmount.value = formatAmountInput(els.quickEntryAmount.value);
+});
+
+els.quickEntryNote.addEventListener("input", applyQuickEntrySuggestion);
+els.quickEntryNote.addEventListener("change", applyQuickEntrySuggestion);
+
+els.cancelQuickEntry.addEventListener("click", closeQuickEntryModal);
+
+els.quickEntryModal.addEventListener("click", (event) => {
+  if (event.target === els.quickEntryModal) closeQuickEntryModal();
+});
+
+els.quickEntryForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const saved = addEntry(els.quickEntryForm.dataset.type, new FormData(els.quickEntryForm));
+  if (saved) closeQuickEntryModal();
 });
 
 els.cancelEditEntry.addEventListener("click", closeEditEntryModal);
@@ -686,6 +720,7 @@ function render() {
     els.heroStoreName.textContent = "Chưa chọn cửa hàng";
     els.heroStoreMeta.textContent = "Tạo hoặc chọn một cửa hàng";
     activateTab("stores");
+    updateQuickEntryButton();
     updatePinnedTabs();
     return;
   }
@@ -701,6 +736,7 @@ function render() {
   renderHistoryFilters(store);
   renderReports(store);
   els.tabBar.dataset.pinTop = "";
+  updateQuickEntryButton();
   updatePinnedTabs();
 }
 
@@ -759,6 +795,71 @@ function applyEntrySuggestion(form) {
   amountInput.value = formatAmountInput(suggestion.amount);
 }
 
+function openQuickEntryModal(type) {
+  const store = getActiveStore();
+  if (!store || !["income", "expense"].includes(type)) return;
+
+  const categories = store.categories[type] || [];
+  els.quickEntryForm.dataset.type = type;
+  els.quickEntryTitle.textContent = type === "income" ? "Thêm khoản thu" : "Thêm khoản chi";
+  els.quickEntryNote.placeholder = type === "income" ? "Khoản Thu" : "Khoản Chi";
+  els.quickEntryAmount.value = "";
+  els.quickEntryNote.value = "";
+  els.quickEntryDate.value = els.singleDate.value || today;
+  els.quickEntryCategory.innerHTML = [
+    '<option value="">Chưa có mục</option>',
+    ...categories.map((category) => `<option value="${category.id}">${escapeHtml(category.name)}</option>`)
+  ].join("");
+  els.quickEntryCategory.value = "";
+  els.quickEntryCategory.disabled = !categories.length;
+  els.quickEntrySubmit.disabled = !categories.length;
+  renderEntrySuggestionList(els.quickEntrySuggestions, getEntrySuggestions(store, type));
+  els.quickEntryModal.hidden = false;
+  els.quickEntryNote.focus();
+}
+
+function closeQuickEntryModal() {
+  els.quickEntryModal.hidden = true;
+  els.quickEntryForm.reset();
+  els.quickEntrySubmit.disabled = false;
+}
+
+function applyQuickEntrySuggestion() {
+  const store = getActiveStore();
+  const type = els.quickEntryForm.dataset.type;
+  if (!store || !type) return;
+
+  const note = String(els.quickEntryNote.value || "").trim().toLowerCase();
+  if (!note) return;
+
+  const suggestion = getEntrySuggestions(store, type).find((item) => item.note.toLowerCase() === note);
+  if (!suggestion) return;
+
+  els.quickEntryAmount.value = formatAmountInput(suggestion.amount);
+}
+
+function getActiveTabName() {
+  return document.querySelector(".tab-button.active")?.dataset.tab || "stores";
+}
+
+function updateQuickEntryButton() {
+  const store = getActiveStore();
+  const tabName = getActiveTabName();
+  const type = tabName === "income" ? "income" : tabName === "expense" ? "expense" : "";
+  const showButton = Boolean(store && type);
+
+  els.quickEntryButton.hidden = !showButton;
+  if (!showButton) {
+    closeQuickEntryModal();
+    return;
+  }
+
+  els.quickEntryButton.dataset.type = type;
+  const label = type === "income" ? "Thêm khoản thu" : "Thêm khoản chi";
+  els.quickEntryButton.title = label;
+  els.quickEntryButton.setAttribute("aria-label", label);
+}
+
 function renderHistoryFilter(select, categories, includeCancelled = false) {
   if (!select) return;
 
@@ -787,6 +888,7 @@ function activateTab(tabName) {
     panel.classList.toggle("active", isActive);
     panel.hidden = !isActive;
   });
+  updateQuickEntryButton();
   updatePinnedTabs();
 }
 
