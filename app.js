@@ -25,6 +25,7 @@ const uiState = {
     income: false,
     expense: false
   },
+  rangeMode: "today",
   salesDraftId: null
 };
 
@@ -220,19 +221,20 @@ els.deleteStore.addEventListener("click", () => {
 });
 
 els.rangeMode.addEventListener("change", () => {
+  uiState.rangeMode = els.rangeMode.value;
   syncQuickRangeInputs();
   updateFilterFields();
   render();
 });
 
 function applySingleDateFilter() {
-  els.rangeMode.value = "day";
+  uiState.rangeMode = "day";
   updateFilterFields();
   render();
 }
 
 function applyMonthFilter() {
-  els.rangeMode.value = "month";
+  uiState.rangeMode = "month";
   updateFilterFields();
   render();
 }
@@ -249,6 +251,7 @@ function applyMonthFilter() {
 
 [els.fromDate, els.toDate].forEach((input) => {
   input.addEventListener("change", () => {
+    uiState.rangeMode = "custom";
     els.rangeMode.value = "custom";
     updateFilterFields();
     render();
@@ -1647,7 +1650,7 @@ function renderEntryTable(container, store, entries) {
     .join("");
 }
 function updateFilterFields() {
-  const mode = els.rangeMode.value;
+  const mode = uiState.rangeMode;
   els.singleDateField.hidden = false;
   els.monthField.hidden = false;
   els.fromField.hidden = mode !== "custom";
@@ -1655,7 +1658,7 @@ function updateFilterFields() {
 }
 
 function syncQuickRangeInputs() {
-  const mode = els.rangeMode.value;
+  const mode = uiState.rangeMode;
 
   if (mode === "today") {
     els.singleDate.value = today;
@@ -1679,7 +1682,7 @@ function syncQuickRangeInputs() {
 }
 
 function getDateRange() {
-  const mode = els.rangeMode.value;
+  const mode = uiState.rangeMode;
   const store = getActiveStore();
 
   if (mode === "all") {
