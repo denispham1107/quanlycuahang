@@ -231,21 +231,19 @@ button {
 }
 
 #salesRangeLabel {
-  display: inline-flex;
-  align-items: baseline;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 6px;
-  white-space: normal;
+  margin-bottom: 10px;
+  min-height: 48px;
 }
 
 .sales-range-total {
-  color: var(--accent);
+  color: var(--text);
   font-size: 18px;
   font-weight: 900;
 }
 
 .sales-range-date {
+  display: inline-block;
+  margin-left: 8px;
   color: var(--muted);
   font-size: 13px;
   font-weight: 700;
