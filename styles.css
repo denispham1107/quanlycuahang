@@ -1310,6 +1310,74 @@ th:last-child {
   margin-top: 10px;
 }
 
+.inventory-log-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.inventory-log-heading {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--text);
+}
+
+.inventory-log-empty {
+  margin-top: 0;
+}
+
+.inventory-log-table-wrap {
+  border: 1px solid rgba(8, 120, 247, 0.16);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.inventory-log-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.inventory-log-table th,
+.inventory-log-table td {
+  border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+  padding: 12px 14px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.inventory-log-table th {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.inventory-log-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.inventory-log-change {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-weight: 900;
+}
+
+.old-value {
+  color: var(--expense);
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.change-arrow {
+  color: var(--muted);
+}
+
+.new-value {
+  color: var(--accent);
+}
+
 .inventory-tools {
   margin-bottom: 14px;
 }

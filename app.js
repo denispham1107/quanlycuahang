@@ -113,6 +113,7 @@ const els = {
   purchaseOrderTotal: document.querySelector("#purchaseOrderTotal"),
   purchaseGroupSuggestions: document.querySelector("#purchaseGroupSuggestions"),
   inventoryCount: document.querySelector("#inventoryCount"),
+  inventoryLogPanel: document.querySelector("#inventoryLogPanel"),
   toggleInventory: document.querySelector("#toggleInventory"),
   inventoryModal: document.querySelector("#inventoryModal"),
   inventoryModalCount: document.querySelector("#inventoryModalCount"),
@@ -196,6 +197,7 @@ els.storeForm.addEventListener("submit", (event) => {
     draftOrders: [],
     purchaseCategories: [],
     purchaseOrders: [],
+    inventoryLogs: [],
     inventory: [],
     createdAt: new Date().toISOString()
   };
@@ -555,6 +557,7 @@ function normalizeState(data) {
     draftOrders: store.draftOrders || [],
     purchaseCategories: store.purchaseCategories || [],
     purchaseOrders: store.purchaseOrders || [],
+    inventoryLogs: store.inventoryLogs || [],
     inventory: store.inventory || [],
     createdAt: store.createdAt || getEarliestEntryDate(store.entries || []) || today
   }));
@@ -948,6 +951,7 @@ function render() {
   renderHistoryFilters(store);
   renderReports(store);
   renderInventory(store);
+  renderInventoryLogs(store);
   els.tabBar.dataset.pinTop = "";
   updateQuickEntryButton();
   updatePinnedTabs();
@@ -1388,14 +1392,27 @@ function saveEditedInventory(formData) {
     return false;
   }
 
+  const oldQuantity = Number(item.quantity || 0);
+  const oldPrice = Number(item.lastPrice || 0);
   const category = ensurePurchaseCategory(store, groupName);
+  const updatedAt = new Date().toISOString();
   item.name = name;
   item.groupId = category.id;
   item.groupName = category.name;
   item.quantity = quantity;
   item.lastPrice = lastPrice;
   item.totalCost = Math.max(0, quantity * lastPrice);
-  item.updatedAt = new Date().toISOString();
+  item.updatedAt = updatedAt;
+  addInventoryLog(store, {
+    date: updatedAt.slice(0, 10),
+    type: "edit",
+    itemName: item.name,
+    groupName: item.groupName,
+    oldQuantity,
+    newQuantity: Number(item.quantity || 0),
+    oldPrice,
+    newPrice: Number(item.lastPrice || 0)
+  });
 
   saveAndRender();
   renderInventory(store);
@@ -1451,6 +1468,17 @@ function ensurePurchaseCategory(store, rawName) {
   return category;
 }
 
+function addInventoryLog(store, log) {
+  store.inventoryLogs = [
+    {
+      id: createId(),
+      updatedAt: new Date().toISOString(),
+      ...log
+    },
+    ...(store.inventoryLogs || [])
+  ];
+}
+
 function savePurchaseOrder() {
   const store = getActiveStore();
   if (!store) return false;
@@ -1490,12 +1518,24 @@ function savePurchaseOrder() {
     const key = normalizeSearchText(`${item.groupName} ${item.name}`);
     const current = store.inventory.find((stock) => normalizeSearchText(`${stock.groupName} ${stock.name}`) === key);
     if (current) {
+      const oldQuantity = Number(current.quantity || 0);
+      const oldPrice = Number(current.lastPrice || 0);
       current.quantity = Number(current.quantity || 0) + item.quantity;
       current.totalCost = Number(current.totalCost || 0) + item.total;
       current.lastPrice = item.price;
       current.updatedAt = createdAt;
+      addInventoryLog(store, {
+        date,
+        type: "purchase",
+        itemName: current.name,
+        groupName: current.groupName,
+        oldQuantity,
+        newQuantity: Number(current.quantity || 0),
+        oldPrice,
+        newPrice: Number(current.lastPrice || 0)
+      });
     } else {
-      store.inventory.push({
+      const stock = {
         id: createId(),
         name: item.name,
         groupId: item.groupId,
@@ -1505,6 +1545,17 @@ function savePurchaseOrder() {
         lastPrice: item.price,
         createdAt,
         updatedAt: createdAt
+      };
+      store.inventory.push(stock);
+      addInventoryLog(store, {
+        date,
+        type: "purchase",
+        itemName: stock.name,
+        groupName: stock.groupName,
+        oldQuantity: 0,
+        newQuantity: Number(stock.quantity || 0),
+        oldPrice: 0,
+        newPrice: Number(stock.lastPrice || 0)
       });
     }
   });
@@ -2016,6 +2067,63 @@ function renderInventory(store) {
         `
       )
       .join("")}
+  `;
+}
+
+function renderInventoryLogs(store) {
+  if (!els.inventoryLogPanel) return;
+
+  const logs = [...(store?.inventoryLogs || [])].sort((a, b) =>
+    String(b.updatedAt || b.date || "").localeCompare(String(a.updatedAt || a.date || ""))
+  );
+
+  if (!logs.length) {
+    els.inventoryLogPanel.innerHTML = '<div class="empty-list inventory-log-empty">Chưa có cập nhật kho.</div>';
+    return;
+  }
+
+  els.inventoryLogPanel.innerHTML = `
+    <div class="inventory-log-heading">Lịch sử cập nhật kho</div>
+    <div class="table-wrap inventory-log-table-wrap">
+      <table class="inventory-log-table">
+        <thead>
+          <tr>
+            <th>Ngày Cập Nhật</th>
+            <th>Tên Hàng Hóa</th>
+            <th>Tên Nhóm</th>
+            <th>Số lượng</th>
+            <th>Giá tiền</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${logs
+            .map(
+              (log) => `
+                <tr>
+                  <td>${formatDate(String(log.date || log.updatedAt || today).slice(0, 10))}</td>
+                  <td>${escapeHtml(log.itemName || "")}</td>
+                  <td>${escapeHtml(log.groupName || "")}</td>
+                  <td>
+                    <span class="inventory-log-change">
+                      <span class="old-value">${Number(log.oldQuantity || 0).toLocaleString("vi-VN")}</span>
+                      <span class="change-arrow">→</span>
+                      <span class="new-value">${Number(log.newQuantity || 0).toLocaleString("vi-VN")}</span>
+                    </span>
+                  </td>
+                  <td>
+                    <span class="inventory-log-change">
+                      <span class="old-value">${formatCurrency(log.oldPrice || 0)}</span>
+                      <span class="change-arrow">→</span>
+                      <span class="new-value">${formatCurrency(log.newPrice || 0)}</span>
+                    </span>
+                  </td>
+                </tr>
+              `
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
   `;
 }
 
