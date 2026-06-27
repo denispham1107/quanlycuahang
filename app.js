@@ -382,6 +382,10 @@ els.salesItems.addEventListener("input", (event) => {
     event.target.value = formatAmountInput(event.target.value);
   }
 
+  if (event.target.matches('[data-sales-item="discount"]')) {
+    event.target.value = formatPercentInput(event.target.value);
+  }
+
   if (event.target.matches('[data-sales-item="name"]')) {
     applySalesItemSuggestion(event.target.closest(".sales-item-row"));
   }
@@ -1200,9 +1204,11 @@ function openSalesOrderModal(store, draft = null) {
 function addSalesItemRow(item = {}) {
   const row = document.createElement("div");
   row.className = "sales-item-row";
+  const originalPrice = Number(item.originalPrice || item.price || 0);
   row.innerHTML = `
     <input type="text" data-sales-item="name" placeholder="Hàng hóa" autocomplete="off" list="salesItemSuggestions" value="${escapeHtml(item.name || "")}" />
-    <input type="text" data-sales-item="price" inputmode="numeric" placeholder="Giá" autocomplete="off" value="${item.price ? formatAmountInput(item.price) : ""}" />
+    <input type="text" data-sales-item="price" inputmode="numeric" placeholder="Giá" autocomplete="off" value="${originalPrice ? formatAmountInput(originalPrice) : ""}" />
+    <input type="text" data-sales-item="discount" inputmode="numeric" placeholder="Chiết khấu %" autocomplete="off" value="${item.discountPercent ? formatPercentInput(item.discountPercent) : ""}" />
     <div class="quantity-stepper" aria-label="Số lượng">
       <button class="quantity-step" type="button" data-sales-quantity-step="-1" aria-label="Giảm số lượng">-</button>
       <input type="number" data-sales-item="quantity" min="1" step="1" placeholder="SL" value="${item.quantity || 1}" />
@@ -1217,16 +1223,20 @@ function getSalesOrderItems() {
   return [...els.salesItems.querySelectorAll(".sales-item-row")]
     .map((row) => {
       const name = String(row.querySelector('[data-sales-item="name"]')?.value || "").trim();
-      const price = parseAmountInput(row.querySelector('[data-sales-item="price"]')?.value);
+      const originalPrice = parseAmountInput(row.querySelector('[data-sales-item="price"]')?.value);
+      const discountPercent = parsePercentInput(row.querySelector('[data-sales-item="discount"]')?.value);
+      const price = getDiscountedPrice(originalPrice, discountPercent);
       const quantity = Math.max(1, Number.parseInt(row.querySelector('[data-sales-item="quantity"]')?.value, 10) || 1);
       return {
         name,
         price,
+        originalPrice,
+        discountPercent,
         quantity,
         total: price * quantity
       };
     })
-    .filter((item) => item.name && Number.isFinite(item.price) && item.price > 0);
+    .filter((item) => item.name && Number.isFinite(item.originalPrice) && item.originalPrice > 0);
 }
 
 function getSalesDraftItems() {
@@ -1235,16 +1245,20 @@ function getSalesDraftItems() {
       const name = String(row.querySelector('[data-sales-item="name"]')?.value || "").trim();
       const rawPrice = row.querySelector('[data-sales-item="price"]')?.value;
       const parsedPrice = parseAmountInput(rawPrice);
-      const price = Number.isFinite(parsedPrice) ? parsedPrice : 0;
+      const originalPrice = Number.isFinite(parsedPrice) ? parsedPrice : 0;
+      const discountPercent = parsePercentInput(row.querySelector('[data-sales-item="discount"]')?.value);
+      const price = getDiscountedPrice(originalPrice, discountPercent);
       const quantity = Math.max(1, Number.parseInt(row.querySelector('[data-sales-item="quantity"]')?.value, 10) || 1);
       return {
         name,
         price,
+        originalPrice,
+        discountPercent,
         quantity,
         total: price * quantity
       };
     })
-    .filter((item) => item.name || item.price > 0);
+    .filter((item) => item.name || item.originalPrice > 0);
 }
 
 function getSalesFormData({ completeOnly = false } = {}) {
@@ -2169,7 +2183,7 @@ function renderSalesOrderTable(container, orders) {
     .map((order) => {
       const cancelled = isCancelledEntry(order);
       const items = (order.items || [])
-        .map((item) => `${escapeHtml(item.name)} x${item.quantity} - ${formatCurrency(item.total)}`)
+        .map(renderSalesOrderItemLine)
         .join("<br>");
       const customer = [
         escapeHtml(order.customerName || ""),
@@ -2193,6 +2207,26 @@ function renderSalesOrderTable(container, orders) {
     .join("");
 }
 
+function renderSalesOrderItemLine(item) {
+  const quantity = Number(item.quantity || 0);
+  const originalPrice = Number(item.originalPrice || item.price || 0);
+  const originalTotal = originalPrice * quantity;
+  const finalTotal = Number(item.total || 0);
+  const hasDiscount = Number(item.discountPercent || 0) > 0 && originalTotal > finalTotal;
+
+  if (!hasDiscount) {
+    return `${escapeHtml(item.name || "")} x${quantity} - ${formatCurrency(finalTotal)}`;
+  }
+
+  return `
+    ${escapeHtml(item.name || "")} x${quantity}
+    <span class="sales-discount-price">
+      <span class="old-value">${formatCurrency(originalTotal)}</span>
+      <span class="new-value">${formatCurrency(finalTotal)}</span>
+    </span>
+  `;
+}
+
 function renderSalesDraftList(drafts) {
   if (!els.salesDraftList) return;
 
@@ -2206,7 +2240,7 @@ function renderSalesDraftList(drafts) {
     .map((draft) => {
       const title = draft.customerName || "Đơn chưa có tên khách";
       const items = (draft.items || [])
-        .map((item) => `${escapeHtml(item.name)} x${item.quantity} - ${formatCurrency(item.total)}`)
+        .map(renderSalesOrderItemLine)
         .join("<br>");
 
       return `
@@ -2634,6 +2668,25 @@ function formatAmountInput(value) {
   return new Intl.NumberFormat("vi-VN", {
     maximumFractionDigits: 0
   }).format(Number(digits));
+}
+
+function parsePercentInput(value) {
+  const normalized = String(value || "").replace(",", ".").replace(/[^\d.]/g, "");
+  const parsed = Number.parseFloat(normalized);
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.min(100, Math.max(0, parsed));
+}
+
+function formatPercentInput(value) {
+  const percent = parsePercentInput(value);
+  if (!percent) return "";
+  return `${Number.isInteger(percent) ? percent : percent.toFixed(2).replace(/\.?0+$/, "")}%`;
+}
+
+function getDiscountedPrice(price, discountPercent) {
+  const originalPrice = Number(price || 0);
+  const discount = Math.min(100, Math.max(0, Number(discountPercent || 0)));
+  return Math.max(0, Math.round(originalPrice * (100 - discount) / 100));
 }
 
 function formatCurrency(value) {
