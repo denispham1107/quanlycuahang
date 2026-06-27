@@ -241,14 +241,6 @@ button {
   font-weight: 900;
 }
 
-.sales-range-date {
-  display: inline-block;
-  margin-left: 8px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 700;
-}
-
 .inline-form,
 .category-form,
 .entry-form {

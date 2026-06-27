@@ -108,6 +108,7 @@ const els = {
   salesGoodsRangeLabel: document.querySelector("#salesGoodsRangeLabel"),
   salesGoodsReport: document.querySelector("#salesGoodsReport"),
   salesRangeLabel: document.querySelector("#salesRangeLabel"),
+  salesHistoryDateLabel: document.querySelector("#salesHistoryDateLabel"),
   salesOrderTable: document.querySelector("#salesOrderTable"),
   purchaseOrderFields: document.querySelector("#purchaseOrderFields"),
   purchaseOrderDate: document.querySelector("#purchaseOrderDate"),
@@ -1969,11 +1970,9 @@ function renderReports(store) {
   const totalSalesAmount = activeSalesOrders.reduce((sum, order) => sum + Number(order.total || 0), 0);
   els.totalSales.textContent = formatCurrency(totalSalesAmount);
   els.balance.textContent = formatCurrency(totalIncome + totalSalesAmount - totalExpense);
+  els.salesHistoryDateLabel.textContent = range.label;
   els.salesRangeLabel.innerHTML = `
-    <span>
-      Tổng
-      <span class="sales-range-date">${escapeHtml(range.label)}</span>
-    </span>
+    <span>Tổng</span>
     <span class="report-amount sales-range-total">${formatCurrency(totalSalesAmount)}</span>
   `;
   els.salesOrderCount.textContent = `${salesOrders.length} đơn`;
