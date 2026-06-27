@@ -400,14 +400,7 @@ els.salesItems.addEventListener("change", (event) => {
 els.salesItems.addEventListener("click", (event) => {
   const stepButton = event.target.closest("[data-sales-quantity-step]");
   if (stepButton) {
-    const row = stepButton.closest(".sales-item-row");
-    const quantityInput = row?.querySelector('[data-sales-item="quantity"]');
-    if (!quantityInput) return;
-
-    const step = Number(stepButton.dataset.salesQuantityStep || 0);
-    const current = Number.parseInt(quantityInput.value, 10) || 1;
-    quantityInput.value = Math.max(1, current + step);
-    updateSalesOrderTotal();
+    applyQuantityStep(stepButton, '[data-sales-item="quantity"]', "salesQuantityStep", updateSalesOrderTotal);
     return;
   }
 
@@ -417,6 +410,13 @@ els.salesItems.addEventListener("click", (event) => {
   if (!els.salesItems.querySelector(".sales-item-row")) addSalesItemRow();
   updateSalesOrderTotal();
 });
+
+els.salesItems.addEventListener("touchend", (event) => {
+  const stepButton = event.target.closest("[data-sales-quantity-step]");
+  if (!stepButton) return;
+  event.preventDefault();
+  applyQuantityStep(stepButton, '[data-sales-item="quantity"]', "salesQuantityStep", updateSalesOrderTotal);
+}, { passive: false });
 
 els.addPurchaseItem.addEventListener("click", () => {
   addPurchaseItemRow();
@@ -434,14 +434,7 @@ els.purchaseItems.addEventListener("input", (event) => {
 els.purchaseItems.addEventListener("click", (event) => {
   const stepButton = event.target.closest("[data-purchase-quantity-step]");
   if (stepButton) {
-    const row = stepButton.closest(".purchase-item-row");
-    const quantityInput = row?.querySelector('[data-purchase-item="quantity"]');
-    if (!quantityInput) return;
-
-    const step = Number(stepButton.dataset.purchaseQuantityStep || 0);
-    const current = Number.parseInt(quantityInput.value, 10) || 1;
-    quantityInput.value = Math.max(1, current + step);
-    updatePurchaseOrderTotal();
+    applyQuantityStep(stepButton, '[data-purchase-item="quantity"]', "purchaseQuantityStep", updatePurchaseOrderTotal);
     return;
   }
 
@@ -451,6 +444,13 @@ els.purchaseItems.addEventListener("click", (event) => {
   if (!els.purchaseItems.querySelector(".purchase-item-row")) addPurchaseItemRow();
   updatePurchaseOrderTotal();
 });
+
+els.purchaseItems.addEventListener("touchend", (event) => {
+  const stepButton = event.target.closest("[data-purchase-quantity-step]");
+  if (!stepButton) return;
+  event.preventDefault();
+  applyQuantityStep(stepButton, '[data-purchase-item="quantity"]', "purchaseQuantityStep", updatePurchaseOrderTotal);
+}, { passive: false });
 
 els.openBulkPurchase.addEventListener("click", () => {
   openBulkPurchaseModal(getActiveStore());
@@ -1018,6 +1018,17 @@ function render() {
 function renderHistoryFilters(store) {
   renderHistoryFilter(els.incomeHistoryFilter, store.categories.income, true);
   renderHistoryFilter(els.expenseHistoryFilter, store.categories.expense, true);
+}
+
+function applyQuantityStep(button, inputSelector, stepDatasetKey, onChange) {
+  const row = button.closest(".sales-item-row");
+  const quantityInput = row?.querySelector(inputSelector);
+  if (!quantityInput) return;
+
+  const step = Number(button.dataset[stepDatasetKey] || 0);
+  const current = Number.parseInt(quantityInput.value, 10) || 1;
+  quantityInput.value = Math.max(1, current + step);
+  onChange();
 }
 
 function renderEntrySuggestions(store) {
