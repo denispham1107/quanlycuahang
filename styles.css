@@ -1357,11 +1357,16 @@ th:last-child {
 }
 
 .inventory-log-toggle {
-  display: none;
+  display: inline-grid;
+  margin: 2px auto 0;
 }
 
 .inventory-log-extra {
   animation: category-slide-in 180ms ease both;
+}
+
+.inventory-log-collapsed .inventory-log-extra {
+  display: none;
 }
 
 .inventory-log-change {
@@ -1840,15 +1845,6 @@ th:last-child {
 
   .old-value {
     text-decoration-thickness: 1.5px;
-  }
-
-  .inventory-log-collapsed .inventory-log-extra {
-    display: none;
-  }
-
-  .inventory-log-toggle {
-    display: inline-grid;
-    margin: 2px auto 0;
   }
 
   .draft-order-table {
