@@ -29,6 +29,7 @@ const uiState = {
   inventorySearch: "",
   inventoryFilter: "all",
   inventoryLogsExpanded: false,
+  salesGoodsFilter: "all",
   salesDraftId: null
 };
 
@@ -103,6 +104,7 @@ const els = {
   salesItemSuggestions: document.querySelector("#salesItemSuggestions"),
   salesOrderCount: document.querySelector("#salesOrderCount"),
   salesDraftList: document.querySelector("#salesDraftList"),
+  salesGoodsFilter: document.querySelector("#salesGoodsFilter"),
   salesGoodsRangeLabel: document.querySelector("#salesGoodsRangeLabel"),
   salesGoodsReport: document.querySelector("#salesGoodsReport"),
   salesRangeLabel: document.querySelector("#salesRangeLabel"),
@@ -424,6 +426,11 @@ els.openBulkPurchase.addEventListener("click", () => {
 });
 
 els.bulkPurchaseText.addEventListener("input", updateBulkPurchaseSummary);
+
+els.salesGoodsFilter.addEventListener("change", () => {
+  uiState.salesGoodsFilter = els.salesGoodsFilter.value;
+  renderReports(getActiveStore());
+});
 
 els.toggleInventory.addEventListener("click", () => {
   openInventoryModal();
@@ -1331,13 +1338,18 @@ function saveSalesOrder() {
 
   const orderId = createId();
   const createdAt = new Date().toISOString();
+  const groupLookup = getGoodsGroupLookup(store);
+  const orderItems = items.map((item) => ({
+    ...item,
+    groupName: item.groupName || groupLookup.get(normalizeSearchText(item.name)) || "Chưa phân nhóm"
+  }));
   deductInventoryForSales(store, items);
   store.orders.push({
     id: orderId,
     customerName,
     customerPhone,
     date,
-    items,
+    items: orderItems,
     total,
     inventoryDeducted: true,
     createdAt
@@ -1968,39 +1980,57 @@ function renderReports(store) {
   renderHistorySearchSuggestions(els.expenseHistorySearchSuggestions, expenseEntries);
   renderReportList(els.incomeReport, store.categories.income, activeIncomeEntries);
   renderReportList(els.expenseReport, store.categories.expense, activeExpenseEntries);
-  renderSalesGoodsReport(els.salesGoodsReport, activeSalesOrders);
+  renderSalesGoodsReport(els.salesGoodsReport, activeSalesOrders, store);
   renderEntryTable(els.incomeEntryTable, store, filteredIncomeEntries);
   renderEntryTable(els.expenseEntryTable, store, filteredExpenseEntries);
   renderSalesOrderTable(els.salesOrderTable, salesOrders);
 }
 
-function renderSalesGoodsReport(container, orders) {
+function renderSalesGoodsReport(container, orders, store) {
   if (!container) return;
 
   const goods = new Map();
-  let grandTotal = 0;
+  const groupLookup = getGoodsGroupLookup(store);
 
   orders.forEach((order) => {
     (order.items || []).forEach((item) => {
       const name = String(item.name || "").trim();
       if (!name) return;
 
+      const groupName = String(item.groupName || groupLookup.get(normalizeSearchText(name)) || "Chưa phân nhóm");
+      const key = `${normalizeSearchText(groupName)}::${normalizeSearchText(name)}`;
       const total = Number(item.total || 0);
       const quantity = Number(item.quantity || 0);
-      const current = goods.get(name) || { name, total: 0, quantity: 0 };
+      const current = goods.get(key) || { name, groupName, total: 0, quantity: 0 };
       current.total += total;
       current.quantity += quantity;
-      grandTotal += total;
-      goods.set(name, current);
+      goods.set(key, current);
     });
   });
 
   if (!goods.size) {
+    renderSalesGoodsFilter([]);
     container.innerHTML = '<div class="empty-list">Chưa có hàng hóa bán ra trong khoảng thời gian này</div>';
     return;
   }
 
-  const rows = [...goods.values()].sort((a, b) => a.name.localeCompare(b.name, "vi"));
+  const allRows = [...goods.values()].sort((a, b) =>
+    a.groupName.localeCompare(b.groupName, "vi") || a.name.localeCompare(b.name, "vi")
+  );
+  renderSalesGoodsFilter(allRows);
+
+  const selectedGroup = uiState.salesGoodsFilter || "all";
+  const rows =
+    selectedGroup === "all"
+      ? allRows
+      : allRows.filter((item) => normalizeSearchText(item.groupName) === selectedGroup);
+
+  if (!rows.length) {
+    container.innerHTML = '<div class="empty-list">Không có hàng hóa trong nhóm đã chọn</div>';
+    return;
+  }
+
+  const grandTotal = rows.reduce((sum, item) => sum + Number(item.total || 0), 0);
   container.innerHTML = `
     <div class="report-item report-total">
       <span>Tổng cộng</span>
@@ -2012,6 +2042,7 @@ function renderSalesGoodsReport(container, orders) {
           <div class="report-item">
             <span>
               ${escapeHtml(item.name)}
+              <span class="item-group">${escapeHtml(item.groupName)}</span>
               <span class="item-quantity">x${item.quantity.toLocaleString("vi-VN")}</span>
             </span>
             <span class="report-amount">${formatCurrency(item.total)}</span>
@@ -2020,6 +2051,44 @@ function renderSalesGoodsReport(container, orders) {
       )
       .join("")}
   `;
+}
+
+function getGoodsGroupLookup(store) {
+  const lookup = new Map();
+  (store?.inventory || []).forEach((item) => {
+    const name = normalizeSearchText(item.name || "");
+    if (name && item.groupName && !lookup.has(name)) lookup.set(name, item.groupName);
+  });
+  (store?.purchaseOrders || []).forEach((order) => {
+    (order.items || []).forEach((item) => {
+      const name = normalizeSearchText(item.name || "");
+      if (name && item.groupName && !lookup.has(name)) lookup.set(name, item.groupName);
+    });
+  });
+  return lookup;
+}
+
+function renderSalesGoodsFilter(rows) {
+  if (!els.salesGoodsFilter) return;
+
+  const groups = [
+    ...new Map(
+      rows
+        .filter((item) => item.groupName)
+        .map((item) => [normalizeSearchText(item.groupName), item.groupName])
+    ).entries(),
+  ].sort((a, b) => a[1].localeCompare(b[1], "vi"));
+  const validFilters = new Set(["all", ...groups.map(([key]) => key)]);
+
+  if (!validFilters.has(uiState.salesGoodsFilter)) {
+    uiState.salesGoodsFilter = "all";
+  }
+
+  els.salesGoodsFilter.innerHTML = [
+    '<option value="all">Tất cả</option>',
+    ...groups.map(([key, name]) => `<option value="${key}">${escapeHtml(name)}</option>`)
+  ].join("");
+  els.salesGoodsFilter.value = uiState.salesGoodsFilter;
 }
 
 function renderSalesOrderTable(container, orders) {
