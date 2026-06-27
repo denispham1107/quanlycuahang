@@ -246,6 +246,7 @@
                   <span id="inventoryCount">0 mặt hàng</span>
                 </div>
                 <div class="empty-list">Bấm nút + để nhập hàng hóa mới vào kho.</div>
+                <button class="ghost-button inventory-toggle" id="openBulkPurchase" type="button">Nhập hàng từ Danh Sách</button>
                 <div class="inventory-log-panel" id="inventoryLogPanel"></div>
                 <button class="ghost-button inventory-toggle" id="toggleInventory" type="button">Kho hàng</button>
               </article>
@@ -395,6 +396,17 @@
             <strong id="purchaseOrderTotal">0 đ</strong>
           </div>
           <datalist id="purchaseGroupSuggestions"></datalist>
+        </div>
+        <div class="bulk-purchase-fields" id="bulkPurchaseFields" hidden>
+          <div class="field">
+            <label for="bulkPurchaseDate">Ngày nhập hàng</label>
+            <input id="bulkPurchaseDate" name="bulkPurchaseDate" type="date" />
+          </div>
+          <div class="field">
+            <label for="bulkPurchaseText">Danh sách hàng hóa</label>
+            <textarea id="bulkPurchaseText" name="bulkPurchaseText" rows="18" maxlength="12000" placeholder="Coca,30,Nước ngọt,18000&#10;Bò húc,30,Nước ngọt,25000&#10;Mì cay,30,Mì,40000"></textarea>
+          </div>
+          <div class="bulk-purchase-summary" id="bulkPurchaseSummary">0 dòng hợp lệ</div>
         </div>
         <div class="modal-actions">
           <button class="ghost-button" id="cancelQuickEntry" type="button">Hủy</button>

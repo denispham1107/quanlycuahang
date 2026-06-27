@@ -115,6 +115,11 @@ const els = {
   purchaseGroupSuggestions: document.querySelector("#purchaseGroupSuggestions"),
   inventoryCount: document.querySelector("#inventoryCount"),
   inventoryLogPanel: document.querySelector("#inventoryLogPanel"),
+  openBulkPurchase: document.querySelector("#openBulkPurchase"),
+  bulkPurchaseFields: document.querySelector("#bulkPurchaseFields"),
+  bulkPurchaseDate: document.querySelector("#bulkPurchaseDate"),
+  bulkPurchaseText: document.querySelector("#bulkPurchaseText"),
+  bulkPurchaseSummary: document.querySelector("#bulkPurchaseSummary"),
   toggleInventory: document.querySelector("#toggleInventory"),
   inventoryModal: document.querySelector("#inventoryModal"),
   inventoryModalCount: document.querySelector("#inventoryModalCount"),
@@ -354,7 +359,9 @@ els.quickEntryForm.addEventListener("submit", (event) => {
       ? saveSalesOrder()
       : type === "purchase"
         ? savePurchaseOrder()
-        : addEntry(type, new FormData(els.quickEntryForm));
+        : type === "purchase-bulk"
+          ? saveBulkPurchaseOrder()
+          : addEntry(type, new FormData(els.quickEntryForm));
   if (saved) closeQuickEntryModal();
 });
 
@@ -411,6 +418,12 @@ els.purchaseItems.addEventListener("click", (event) => {
   if (!els.purchaseItems.querySelector(".purchase-item-row")) addPurchaseItemRow();
   updatePurchaseOrderTotal();
 });
+
+els.openBulkPurchase.addEventListener("click", () => {
+  openBulkPurchaseModal(getActiveStore());
+});
+
+els.bulkPurchaseText.addEventListener("input", updateBulkPurchaseSummary);
 
 els.toggleInventory.addEventListener("click", () => {
   openInventoryModal();
@@ -1060,6 +1073,7 @@ function openQuickEntryModal(type) {
   els.quickEntryFields.hidden = false;
   els.salesOrderFields.hidden = true;
   els.purchaseOrderFields.hidden = true;
+  els.bulkPurchaseFields.hidden = true;
   els.quickEntryTitle.textContent = type === "income" ? "Thêm khoản thu" : "Thêm khoản chi";
   els.quickEntryNote.placeholder = type === "income" ? "Khoản Thu" : "Khoản Chi";
   els.quickEntryAmount.value = "";
@@ -1088,6 +1102,9 @@ function closeQuickEntryModal() {
   els.quickEntryFields.hidden = false;
   els.salesOrderFields.hidden = true;
   els.purchaseOrderFields.hidden = true;
+  els.bulkPurchaseFields.hidden = true;
+  els.bulkPurchaseText.value = "";
+  updateBulkPurchaseSummary();
   els.quickEntrySubmit.disabled = false;
   els.saveSalesDraft.hidden = true;
   els.deleteSalesDraft.hidden = true;
@@ -1115,6 +1132,7 @@ function openSalesOrderModal(store, draft = null) {
   els.quickEntryFields.hidden = true;
   els.salesOrderFields.hidden = false;
   els.purchaseOrderFields.hidden = true;
+  els.bulkPurchaseFields.hidden = true;
   uiState.salesDraftId = draft?.id || null;
   els.salesCustomerName.value = draft?.customerName || "";
   els.salesCustomerPhone.value = draft?.customerPhone || "";
@@ -1340,6 +1358,7 @@ function openPurchaseOrderModal(store) {
   els.quickEntryFields.hidden = true;
   els.salesOrderFields.hidden = true;
   els.purchaseOrderFields.hidden = false;
+  els.bulkPurchaseFields.hidden = true;
   els.purchaseOrderDate.value = els.singleDate.value || today;
   els.purchaseItems.innerHTML = "";
   renderPurchaseGroupSuggestions(store);
@@ -1350,6 +1369,27 @@ function openPurchaseOrderModal(store) {
   els.deleteSalesDraft.hidden = true;
   els.quickEntrySubmit.textContent = "Hoàn Thành";
   els.quickEntryModal.hidden = false;
+}
+
+function openBulkPurchaseModal(store) {
+  if (!store) return;
+
+  els.quickEntryForm.dataset.type = "purchase-bulk";
+  els.quickEntryModal.classList.add("sales-page-mode");
+  els.quickEntryTitle.textContent = "Nhập hàng từ Danh Sách";
+  els.quickEntryFields.hidden = true;
+  els.salesOrderFields.hidden = true;
+  els.purchaseOrderFields.hidden = true;
+  els.bulkPurchaseFields.hidden = false;
+  els.bulkPurchaseDate.value = els.singleDate.value || today;
+  els.bulkPurchaseText.value = "";
+  updateBulkPurchaseSummary();
+  els.quickEntrySubmit.disabled = false;
+  els.saveSalesDraft.hidden = true;
+  els.deleteSalesDraft.hidden = true;
+  els.quickEntrySubmit.textContent = "Hoàn Thành";
+  els.quickEntryModal.hidden = false;
+  els.bulkPurchaseText.focus();
 }
 
 function openInventoryModal() {
@@ -1486,42 +1526,10 @@ function addInventoryLog(store, log) {
   ];
 }
 
-function savePurchaseOrder() {
-  const store = getActiveStore();
-  if (!store) return false;
-
-  const date = els.purchaseOrderDate.value || today;
-  const items = getPurchaseOrderItems();
-  const total = items.reduce((sum, item) => sum + item.total, 0);
-
-  if (!isValidDateInput(date)) {
-    window.alert("Ngày nhập hàng không hợp lệ.");
-    return false;
-  }
-
-  if (!items.length) {
-    window.alert("Vui lòng nhập hàng hóa, nhóm hàng hóa, số lượng và giá tiền.");
-    return false;
-  }
-
-  const createdAt = new Date().toISOString();
-  const orderId = createId();
-  const normalizedItems = items.map((item) => {
-    const category = ensurePurchaseCategory(store, item.groupName);
-    return {
-      ...item,
-      groupId: category.id,
-      groupName: category.name
-    };
-  });
-
-  store.purchaseOrders = [
-    ...(store.purchaseOrders || []),
-    { id: orderId, date, items: normalizedItems, total, createdAt }
-  ];
-
+function applyPurchaseItemsToInventory(store, date, items, createdAt) {
   store.inventory = [...(store.inventory || [])];
-  normalizedItems.forEach((item) => {
+
+  items.forEach((item) => {
     const key = normalizeSearchText(`${item.groupName} ${item.name}`);
     const current = store.inventory.find((stock) => normalizeSearchText(`${stock.groupName} ${stock.name}`) === key);
     if (current) {
@@ -1566,7 +1574,127 @@ function savePurchaseOrder() {
       });
     }
   });
+}
 
+function savePurchaseOrder() {
+  const store = getActiveStore();
+  if (!store) return false;
+
+  const date = els.purchaseOrderDate.value || today;
+  const items = getPurchaseOrderItems();
+  const total = items.reduce((sum, item) => sum + item.total, 0);
+
+  if (!isValidDateInput(date)) {
+    window.alert("Ngày nhập hàng không hợp lệ.");
+    return false;
+  }
+
+  if (!items.length) {
+    window.alert("Vui lòng nhập hàng hóa, nhóm hàng hóa, số lượng và giá tiền.");
+    return false;
+  }
+
+  const createdAt = new Date().toISOString();
+  const orderId = createId();
+  const normalizedItems = items.map((item) => {
+    const category = ensurePurchaseCategory(store, item.groupName);
+    return {
+      ...item,
+      groupId: category.id,
+      groupName: category.name
+    };
+  });
+
+  store.purchaseOrders = [
+    ...(store.purchaseOrders || []),
+    { id: orderId, date, items: normalizedItems, total, createdAt }
+  ];
+
+  applyPurchaseItemsToInventory(store, date, normalizedItems, createdAt);
+
+  saveAndRender();
+  return true;
+}
+
+function parseBulkPurchaseItems({ silent = false } = {}) {
+  const lines = String(els.bulkPurchaseText.value || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length > 50) {
+    if (!silent) window.alert("Danh sách nhập hàng tối đa 50 dòng.");
+    return null;
+  }
+
+  const items = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const parts = line.split(",").map((part) => part.trim());
+    if (parts.length !== 4) {
+      if (!silent) window.alert(`Dòng ${index + 1} chưa đúng định dạng: Tên,Số lượng,Nhóm,Giá.`);
+      return null;
+    }
+
+    const [name, rawQuantity, groupName, rawPrice] = parts;
+    const quantity = Number.parseInt(rawQuantity, 10);
+    const price = parseAmountInput(rawPrice);
+    if (!name || !groupName || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price) || price <= 0) {
+      if (!silent) window.alert(`Dòng ${index + 1} chưa hợp lệ. Vui lòng kiểm tra tên, số lượng, nhóm và giá.`);
+      return null;
+    }
+
+    items.push({
+      name,
+      groupName,
+      quantity,
+      price,
+      total: quantity * price
+    });
+  }
+
+  return items;
+}
+
+function updateBulkPurchaseSummary() {
+  if (!els.bulkPurchaseSummary) return;
+  const items = parseBulkPurchaseItems({ silent: true }) || [];
+  els.bulkPurchaseSummary.textContent = `${items.length} dòng hợp lệ`;
+}
+
+function saveBulkPurchaseOrder() {
+  const store = getActiveStore();
+  if (!store) return false;
+
+  const date = els.bulkPurchaseDate.value || today;
+  if (!isValidDateInput(date)) {
+    window.alert("Ngày nhập hàng không hợp lệ.");
+    return false;
+  }
+
+  const items = parseBulkPurchaseItems();
+  if (!items || !items.length) {
+    window.alert("Vui lòng nhập ít nhất 1 dòng hàng hóa.");
+    return false;
+  }
+
+  const createdAt = new Date().toISOString();
+  const orderId = createId();
+  const normalizedItems = items.map((item) => {
+    const category = ensurePurchaseCategory(store, item.groupName);
+    return {
+      ...item,
+      groupId: category.id,
+      groupName: category.name
+    };
+  });
+  const total = normalizedItems.reduce((sum, item) => sum + item.total, 0);
+
+  store.purchaseOrders = [
+    ...(store.purchaseOrders || []),
+    { id: orderId, date, items: normalizedItems, total, createdAt, source: "bulk" }
+  ];
+  applyPurchaseItemsToInventory(store, date, normalizedItems, createdAt);
   saveAndRender();
   return true;
 }

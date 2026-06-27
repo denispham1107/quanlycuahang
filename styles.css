@@ -1147,7 +1147,8 @@ th:last-child {
 }
 
 .sales-page-mode .sales-order-fields,
-.sales-page-mode .purchase-order-fields {
+.sales-page-mode .purchase-order-fields,
+.sales-page-mode .bulk-purchase-fields {
   max-width: 980px;
   width: 100%;
   margin: 0 auto;
@@ -1243,14 +1244,39 @@ th:last-child {
 }
 
 .sales-order-fields,
-.purchase-order-fields {
+.purchase-order-fields,
+.bulk-purchase-fields {
   display: grid;
   gap: 12px;
 }
 
 .sales-order-fields[hidden],
-.purchase-order-fields[hidden] {
+.purchase-order-fields[hidden],
+.bulk-purchase-fields[hidden] {
   display: none;
+}
+
+.bulk-purchase-fields textarea {
+  width: 100%;
+  min-height: min(52vh, 520px);
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.55;
+}
+
+.bulk-purchase-summary {
+  justify-self: end;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(8, 120, 247, 0.1);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 900;
 }
 
 .sales-items {
