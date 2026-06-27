@@ -258,12 +258,16 @@ els.deleteStore.addEventListener("click", () => {
   saveAndRender();
 });
 
-els.rangeMode.addEventListener("change", () => {
+function applyRangeModeFilter() {
   uiState.rangeMode = els.rangeMode.value;
   syncQuickRangeInputs();
   updateFilterFields();
   render();
-});
+}
+
+els.rangeMode.addEventListener("change", applyRangeModeFilter);
+els.rangeMode.addEventListener("click", applyRangeModeFilter);
+els.rangeMode.addEventListener("blur", applyRangeModeFilter);
 
 function applySingleDateFilter() {
   uiState.rangeMode = "day";
