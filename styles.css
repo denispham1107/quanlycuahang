@@ -1329,7 +1329,7 @@ th:last-child {
 }
 
 .purchase-item-row {
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 76px minmax(0, 1fr) 40px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(128px, 0.46fr) minmax(0, 1fr) 40px;
 }
 
 .sales-item-row input {

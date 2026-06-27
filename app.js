@@ -432,6 +432,19 @@ els.purchaseItems.addEventListener("input", (event) => {
 });
 
 els.purchaseItems.addEventListener("click", (event) => {
+  const stepButton = event.target.closest("[data-purchase-quantity-step]");
+  if (stepButton) {
+    const row = stepButton.closest(".purchase-item-row");
+    const quantityInput = row?.querySelector('[data-purchase-item="quantity"]');
+    if (!quantityInput) return;
+
+    const step = Number(stepButton.dataset.purchaseQuantityStep || 0);
+    const current = Number.parseInt(quantityInput.value, 10) || 1;
+    quantityInput.value = Math.max(1, current + step);
+    updatePurchaseOrderTotal();
+    return;
+  }
+
   const button = event.target.closest("[data-remove-purchase-item]");
   if (!button) return;
   button.closest(".purchase-item-row")?.remove();
@@ -1507,7 +1520,11 @@ function addPurchaseItemRow(item = {}) {
   row.innerHTML = `
     <input type="text" data-purchase-item="name" placeholder="Hàng hóa" autocomplete="off" value="${escapeHtml(item.name || "")}" />
     <input type="text" data-purchase-item="group" placeholder="Nhóm hàng hóa" autocomplete="off" list="purchaseGroupSuggestions" value="${escapeHtml(item.groupName || "")}" />
-    <input type="number" data-purchase-item="quantity" min="1" step="1" placeholder="SL" value="${item.quantity || 1}" />
+    <div class="quantity-stepper" aria-label="Số lượng">
+      <button class="quantity-step" type="button" data-purchase-quantity-step="-1" aria-label="Giảm số lượng">-</button>
+      <input type="number" data-purchase-item="quantity" min="1" step="1" placeholder="SL" value="${item.quantity || 1}" />
+      <button class="quantity-step" type="button" data-purchase-quantity-step="1" aria-label="Tăng số lượng">+</button>
+    </div>
     <input type="text" data-purchase-item="price" inputmode="numeric" placeholder="Giá tiền" autocomplete="off" value="${item.price ? formatAmountInput(item.price) : ""}" />
     <button class="delete-small" type="button" data-remove-purchase-item title="Xóa hàng hóa" aria-label="Xóa hàng hóa">×</button>
   `;
