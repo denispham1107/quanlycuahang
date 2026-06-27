@@ -1747,6 +1747,90 @@ th:last-child {
     content: "";
   }
 
+  .inventory-log-table-wrap {
+    border-radius: 14px;
+  }
+
+  .inventory-log-table,
+  .inventory-log-table thead,
+  .inventory-log-table tbody,
+  .inventory-log-table tr,
+  .inventory-log-table th,
+  .inventory-log-table td {
+    display: block;
+  }
+
+  .inventory-log-table {
+    min-width: 0;
+  }
+
+  .inventory-log-table tbody {
+    display: grid;
+    gap: 8px;
+  }
+
+  .inventory-log-table tr {
+    border: 1px solid rgba(8, 120, 247, 0.14);
+    border-radius: 14px;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.88);
+  }
+
+  .inventory-log-table td {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    gap: 7px;
+    border: 0;
+    padding: 3px 0;
+    font-size: 13px;
+    line-height: 1.22;
+  }
+
+  .inventory-log-table td::before {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 900;
+    line-height: 1.22;
+  }
+
+  .inventory-log-table td:nth-child(1)::before {
+    content: "Ngày";
+  }
+
+  .inventory-log-table td:nth-child(2)::before {
+    content: "Hàng hóa";
+  }
+
+  .inventory-log-table td:nth-child(3)::before {
+    content: "Nhóm";
+  }
+
+  .inventory-log-table td:nth-child(4)::before {
+    content: "Số lượng";
+  }
+
+  .inventory-log-table td:nth-child(5)::before {
+    content: "Giá tiền";
+  }
+
+  .inventory-log-table td:nth-child(5) {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    gap: 7px;
+    justify-content: initial;
+    padding: 3px 0;
+  }
+
+  .inventory-log-change {
+    gap: 4px;
+    font-size: 13px;
+    line-height: 1.22;
+  }
+
+  .old-value {
+    text-decoration-thickness: 1.5px;
+  }
+
   .draft-order-table {
     border-spacing: 0;
   }
