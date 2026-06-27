@@ -2267,9 +2267,15 @@ function renderInventory(store) {
 function renderInventoryLogs(store) {
   if (!els.inventoryLogPanel) return;
 
-  const logs = [...(store?.inventoryLogs || [])].sort((a, b) =>
-    String(b.updatedAt || b.date || "").localeCompare(String(a.updatedAt || a.date || ""))
-  );
+  const range = getDateRange();
+  const logs = [...(store?.inventoryLogs || [])]
+    .filter((log) => {
+      const logDate = getInventoryLogDate(log);
+      return logDate >= range.start && logDate <= range.end;
+    })
+    .sort((a, b) =>
+      String(b.updatedAt || b.date || "").localeCompare(String(a.updatedAt || a.date || ""))
+    );
 
   if (!logs.length) {
     els.inventoryLogPanel.innerHTML = '<div class="empty-list inventory-log-empty">Chưa có cập nhật kho.</div>';
@@ -2298,7 +2304,7 @@ function renderInventoryLogs(store) {
             .map(
               (log, index) => `
                 <tr class="${index > 0 ? "inventory-log-extra" : ""}">
-                  <td>${formatDate(String(log.date || log.updatedAt || today).slice(0, 10))}</td>
+                  <td>${formatDate(getInventoryLogDate(log))}</td>
                   <td>${escapeHtml(log.itemName || "")}</td>
                   <td>${escapeHtml(log.groupName || "")}</td>
                   <td>
@@ -2334,6 +2340,10 @@ function renderInventoryLogs(store) {
         : ""
     }
   `;
+}
+
+function getInventoryLogDate(log) {
+  return String(log?.date || log?.updatedAt || today).slice(0, 10);
 }
 
 function filterEntriesByCategory(entries, categoryId) {
