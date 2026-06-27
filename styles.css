@@ -696,8 +696,10 @@ form button:disabled {
 
 .tab-bar {
   position: sticky;
+  position: -webkit-sticky;
   top: 0;
-  z-index: 30;
+  z-index: 60;
+  align-self: start;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -709,7 +711,9 @@ form button:disabled {
   background: rgba(255, 255, 255, 0.72);
   box-shadow: var(--shadow);
   backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   -webkit-overflow-scrolling: touch;
+  transform: translateZ(0);
 }
 
 .tab-spacer {
@@ -717,9 +721,9 @@ form button:disabled {
 }
 
 .tab-bar.is-fixed {
-  position: sticky;
-  left: auto;
-  width: auto;
+  position: fixed;
+  top: 0;
+  z-index: 60;
   max-width: calc(100vw - 24px);
 }
 

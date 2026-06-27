@@ -1843,12 +1843,27 @@ function activateTab(tabName) {
 }
 
 function updatePinnedTabs() {
-  if (!els.tabBar || !els.tabSpacer || els.dashboard.hidden) return;
-  els.tabBar.classList.remove("is-fixed");
-  els.tabBar.style.left = "";
-  els.tabBar.style.width = "";
-  els.tabBar.dataset.pinTop = "";
-  els.tabSpacer.style.height = "0px";
+  if (!els.tabBar || !els.tabSpacer || els.dashboard.hidden) {
+    resetPinnedTabs();
+    return;
+  }
+
+  const spacerRect = els.tabSpacer.getBoundingClientRect();
+  const dashboardRect = els.dashboard.getBoundingClientRect();
+  const shouldFix = spacerRect.top <= 0 && dashboardRect.bottom > els.tabBar.offsetHeight;
+
+  if (!shouldFix) {
+    resetPinnedTabs();
+    return;
+  }
+
+  const left = Math.max(8, dashboardRect.left);
+  const width = Math.min(dashboardRect.width, window.innerWidth - left * 2);
+  els.tabSpacer.style.height = `${els.tabBar.offsetHeight}px`;
+  els.tabBar.classList.add("is-fixed");
+  els.tabBar.style.left = `${left}px`;
+  els.tabBar.style.width = `${width}px`;
+  els.tabBar.dataset.pinTop = "true";
 }
 
 function resetPinnedTabs() {
