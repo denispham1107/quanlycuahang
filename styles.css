@@ -230,6 +230,27 @@ button {
   white-space: nowrap;
 }
 
+#salesRangeLabel {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+  white-space: normal;
+}
+
+.sales-range-total {
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.sales-range-date {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .inline-form,
 .category-form,
 .entry-form {

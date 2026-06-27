@@ -1957,7 +1957,10 @@ function renderReports(store) {
   const totalSalesAmount = activeSalesOrders.reduce((sum, order) => sum + Number(order.total || 0), 0);
   els.totalSales.textContent = formatCurrency(totalSalesAmount);
   els.balance.textContent = formatCurrency(totalIncome + totalSalesAmount - totalExpense);
-  els.salesRangeLabel.textContent = `${range.label} • Tổng: ${formatCurrency(totalSalesAmount)}`;
+  els.salesRangeLabel.innerHTML = `
+    <span class="sales-range-total">Tổng ${formatCurrency(totalSalesAmount)}</span>
+    <span class="sales-range-date">${escapeHtml(range.label)}</span>
+  `;
   els.salesOrderCount.textContent = `${salesOrders.length} đơn`;
   renderSalesDraftList(store.draftOrders || []);
 
