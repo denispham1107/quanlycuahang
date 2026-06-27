@@ -398,6 +398,19 @@ els.salesItems.addEventListener("change", (event) => {
 });
 
 els.salesItems.addEventListener("click", (event) => {
+  const stepButton = event.target.closest("[data-sales-quantity-step]");
+  if (stepButton) {
+    const row = stepButton.closest(".sales-item-row");
+    const quantityInput = row?.querySelector('[data-sales-item="quantity"]');
+    if (!quantityInput) return;
+
+    const step = Number(stepButton.dataset.salesQuantityStep || 0);
+    const current = Number.parseInt(quantityInput.value, 10) || 1;
+    quantityInput.value = Math.max(1, current + step);
+    updateSalesOrderTotal();
+    return;
+  }
+
   const button = event.target.closest("[data-remove-sales-item]");
   if (!button) return;
   button.closest(".sales-item-row")?.remove();
@@ -1166,7 +1179,11 @@ function addSalesItemRow(item = {}) {
   row.innerHTML = `
     <input type="text" data-sales-item="name" placeholder="Hàng hóa" autocomplete="off" list="salesItemSuggestions" value="${escapeHtml(item.name || "")}" />
     <input type="text" data-sales-item="price" inputmode="numeric" placeholder="Giá" autocomplete="off" value="${item.price ? formatAmountInput(item.price) : ""}" />
-    <input type="number" data-sales-item="quantity" min="1" step="1" placeholder="SL" value="${item.quantity || 1}" />
+    <div class="quantity-stepper" aria-label="Số lượng">
+      <button class="quantity-step" type="button" data-sales-quantity-step="-1" aria-label="Giảm số lượng">-</button>
+      <input type="number" data-sales-item="quantity" min="1" step="1" placeholder="SL" value="${item.quantity || 1}" />
+      <button class="quantity-step" type="button" data-sales-quantity-step="1" aria-label="Tăng số lượng">+</button>
+    </div>
     <button class="delete-small" type="button" data-remove-sales-item title="Xóa khoản" aria-label="Xóa khoản">×</button>
   `;
   els.salesItems.append(row);

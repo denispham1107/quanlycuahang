@@ -1319,7 +1319,7 @@ th:last-child {
 
 .sales-item-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 78px 40px;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(128px, 0.4fr) 40px;
   gap: 8px;
   align-items: center;
   border: 1px solid rgba(8, 120, 247, 0.14);
@@ -1334,6 +1334,37 @@ th:last-child {
 
 .sales-item-row input {
   min-height: 40px;
+}
+
+.quantity-stepper {
+  display: grid;
+  grid-template-columns: 34px minmax(44px, 1fr) 34px;
+  gap: 6px;
+  align-items: center;
+}
+
+.quantity-stepper input {
+  width: 100%;
+  min-width: 0;
+  padding-inline: 4px;
+  text-align: center;
+}
+
+.quantity-step {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  height: 40px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(139, 72, 255, 0.16), rgba(8, 120, 247, 0.16));
+  color: var(--accent);
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.quantity-step:active {
+  transform: translateY(1px);
 }
 
 .add-sales-item {
@@ -1661,6 +1692,17 @@ th:last-child {
   .sales-item-row,
   .draft-order-button {
     grid-template-columns: 1fr;
+  }
+
+  .quantity-stepper {
+    grid-template-columns: 46px minmax(0, 1fr) 46px;
+    width: 100%;
+  }
+
+  .quantity-step {
+    height: 46px;
+    border-radius: 16px;
+    font-size: 22px;
   }
 
   .draft-order-meta {
