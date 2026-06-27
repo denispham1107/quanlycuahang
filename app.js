@@ -28,6 +28,7 @@ const uiState = {
   rangeMode: "today",
   inventorySearch: "",
   inventoryFilter: "all",
+  inventoryLogsExpanded: false,
   salesDraftId: null
 };
 
@@ -496,6 +497,7 @@ document.addEventListener("click", (event) => {
   const editCategoryButton = event.target.closest("[data-edit-category]");
   const editEntryButton = event.target.closest("[data-edit-entry]");
   const toggleCategoryButton = event.target.closest("[data-toggle-categories]");
+  const toggleInventoryLogsButton = event.target.closest("[data-toggle-inventory-logs]");
   const draftButton = event.target.closest("[data-open-sales-draft]");
   const draftDeleteButton = event.target.closest("[data-delete-sales-draft]");
 
@@ -523,6 +525,11 @@ document.addEventListener("click", (event) => {
     const type = toggleCategoryButton.dataset.toggleCategories;
     uiState.categoryExpanded[type] = !uiState.categoryExpanded[type];
     render();
+  }
+
+  if (toggleInventoryLogsButton) {
+    uiState.inventoryLogsExpanded = !uiState.inventoryLogsExpanded;
+    renderInventoryLogs(getActiveStore());
   }
 
   if (draftDeleteButton) {
@@ -2082,6 +2089,10 @@ function renderInventoryLogs(store) {
     return;
   }
 
+  const expanded = uiState.inventoryLogsExpanded;
+  els.inventoryLogPanel.classList.toggle("inventory-log-expanded", expanded);
+  els.inventoryLogPanel.classList.toggle("inventory-log-collapsed", !expanded);
+
   els.inventoryLogPanel.innerHTML = `
     <div class="inventory-log-heading">Lịch sử cập nhật kho</div>
     <div class="table-wrap inventory-log-table-wrap">
@@ -2098,8 +2109,8 @@ function renderInventoryLogs(store) {
         <tbody>
           ${logs
             .map(
-              (log) => `
-                <tr>
+              (log, index) => `
+                <tr class="${index > 0 ? "inventory-log-extra" : ""}">
                   <td>${formatDate(String(log.date || log.updatedAt || today).slice(0, 10))}</td>
                   <td>${escapeHtml(log.itemName || "")}</td>
                   <td>${escapeHtml(log.groupName || "")}</td>
@@ -2124,6 +2135,17 @@ function renderInventoryLogs(store) {
         </tbody>
       </table>
     </div>
+    ${
+      logs.length > 1
+        ? `
+          <button class="category-toggle inventory-log-toggle${expanded ? " expanded" : ""}" type="button" data-toggle-inventory-logs aria-label="${expanded ? "Thu gọn lịch sử kho" : "Hiển thị tất cả lịch sử kho"}">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M12 5v14m0 0 6-6m-6 6-6-6" />
+            </svg>
+          </button>
+        `
+        : ""
+    }
   `;
 }
 

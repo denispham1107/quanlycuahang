@@ -1356,6 +1356,14 @@ th:last-child {
   border-bottom: 0;
 }
 
+.inventory-log-toggle {
+  display: none;
+}
+
+.inventory-log-extra {
+  animation: category-slide-in 180ms ease both;
+}
+
 .inventory-log-change {
   display: inline-flex;
   align-items: center;
@@ -1752,12 +1760,15 @@ th:last-child {
   }
 
   .inventory-log-table,
-  .inventory-log-table thead,
   .inventory-log-table tbody,
   .inventory-log-table tr,
   .inventory-log-table th,
   .inventory-log-table td {
     display: block;
+  }
+
+  .inventory-log-table thead {
+    display: none;
   }
 
   .inventory-log-table {
@@ -1829,6 +1840,15 @@ th:last-child {
 
   .old-value {
     text-decoration-thickness: 1.5px;
+  }
+
+  .inventory-log-collapsed .inventory-log-extra {
+    display: none;
+  }
+
+  .inventory-log-toggle {
+    display: inline-grid;
+    margin: 2px auto 0;
   }
 
   .draft-order-table {
