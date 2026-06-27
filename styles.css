@@ -1207,6 +1207,7 @@ th:last-child {
 
 .inventory-card .inventory-list {
   max-width: 980px;
+  width: 100%;
   margin-inline: auto;
 }
 
@@ -1343,6 +1344,14 @@ th:last-child {
   margin-top: 4px;
   font-size: 18px;
   overflow-wrap: anywhere;
+}
+
+.inventory-date {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .inventory-group {

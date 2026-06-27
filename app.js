@@ -1966,7 +1966,7 @@ function renderInventory(store) {
       '<option value="out-of-stock">Hết hàng</option>',
       ...groups.map(
         (groupName) =>
-          `<option value="group:${normalizeSearchText(groupName)}">Phân Theo Nhóm: ${escapeHtml(groupName)}</option>`
+          `<option value="group:${normalizeSearchText(groupName)}">${escapeHtml(groupName)}</option>`
       ),
     ].join("");
     els.inventoryFilter.value = uiState.inventoryFilter;
@@ -2005,6 +2005,7 @@ function renderInventory(store) {
             <div>
               <span class="inventory-group">${escapeHtml(item.groupName || "Chưa phân nhóm")}</span>
               <strong>${escapeHtml(item.name || "")}</strong>
+              <span class="inventory-date">Cập nhật: ${formatDate(String(item.updatedAt || item.createdAt || today).slice(0, 10))}</span>
             </div>
             <div class="inventory-meta">
               <span>SL: ${Number(item.quantity || 0).toLocaleString("vi-VN")}</span>
