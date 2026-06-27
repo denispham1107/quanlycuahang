@@ -684,7 +684,8 @@ form button:disabled {
 }
 
 .tab-bar {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 30;
   display: flex;
   flex-wrap: wrap;
@@ -705,9 +706,9 @@ form button:disabled {
 }
 
 .tab-bar.is-fixed {
-  position: fixed;
-  top: 0;
-  right: auto;
+  position: sticky;
+  left: auto;
+  width: auto;
   max-width: calc(100vw - 24px);
 }
 

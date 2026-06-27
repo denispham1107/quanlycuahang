@@ -1703,26 +1703,11 @@ function activateTab(tabName) {
 
 function updatePinnedTabs() {
   if (!els.tabBar || !els.tabSpacer || els.dashboard.hidden) return;
-
-  if (!els.tabBar.dataset.pinTop) {
-    const initialTop = els.tabSpacer.getBoundingClientRect().top + window.scrollY;
-    els.tabBar.dataset.pinTop = String(initialTop);
-  }
-
-  const pinTop = Number(els.tabBar.dataset.pinTop || 0);
-  const shouldPin = window.scrollY >= pinTop;
-  const widthSource = els.tabSpacer.parentElement?.getBoundingClientRect();
-
-  els.tabBar.classList.toggle("is-fixed", shouldPin);
-  els.tabSpacer.style.height = shouldPin ? `${els.tabBar.offsetHeight}px` : "0px";
-
-  if (shouldPin && widthSource) {
-    els.tabBar.style.left = `${widthSource.left}px`;
-    els.tabBar.style.width = `${widthSource.width}px`;
-  } else {
-    els.tabBar.style.left = "";
-    els.tabBar.style.width = "";
-  }
+  els.tabBar.classList.remove("is-fixed");
+  els.tabBar.style.left = "";
+  els.tabBar.style.width = "";
+  els.tabBar.dataset.pinTop = "";
+  els.tabSpacer.style.height = "0px";
 }
 
 function resetPinnedTabs() {
