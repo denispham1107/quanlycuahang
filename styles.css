@@ -2268,8 +2268,10 @@ th:last-child {
   }
 
   .sales-table td:nth-child(4) {
-    display: block;
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr);
     padding: 6px 0;
+    text-align: left;
   }
 
   .sales-table td:nth-child(5) {
