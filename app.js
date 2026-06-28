@@ -28,6 +28,9 @@ const uiState = {
   rangeMode: "today",
   inventorySearch: "",
   inventoryFilter: "all",
+  salesCatalogSearch: "",
+  salesCatalogFilter: "all",
+  salesCatalogRow: null,
   inventoryLogsExpanded: false,
   salesGoodsFilter: "all",
   salesDraftId: null,
@@ -120,6 +123,12 @@ const els = {
   salesOrderDetailStatus: document.querySelector("#salesOrderDetailStatus"),
   salesOrderDetailContent: document.querySelector("#salesOrderDetailContent"),
   closeSalesOrderDetail: document.querySelector("#closeSalesOrderDetail"),
+  salesCatalogModal: document.querySelector("#salesCatalogModal"),
+  salesCatalogCount: document.querySelector("#salesCatalogCount"),
+  salesCatalogSearch: document.querySelector("#salesCatalogSearch"),
+  salesCatalogFilter: document.querySelector("#salesCatalogFilter"),
+  salesCatalogList: document.querySelector("#salesCatalogList"),
+  closeSalesCatalog: document.querySelector("#closeSalesCatalog"),
   purchaseOrderFields: document.querySelector("#purchaseOrderFields"),
   purchaseOrderDate: document.querySelector("#purchaseOrderDate"),
   purchaseItems: document.querySelector("#purchaseItems"),
@@ -456,6 +465,12 @@ els.salesItems.addEventListener("change", (event) => {
 });
 
 els.salesItems.addEventListener("click", (event) => {
+  const catalogButton = event.target.closest("[data-open-sales-catalog]");
+  if (catalogButton) {
+    openSalesCatalogModal(catalogButton.closest(".sales-item-row"));
+    return;
+  }
+
   const stepButton = event.target.closest("[data-sales-quantity-step]");
   if (stepButton) {
     applyQuantityStep(stepButton, '[data-sales-item="quantity"]', "salesQuantityStep", updateSalesOrderTotal);
@@ -535,6 +550,28 @@ els.closeSalesOrderDetail.addEventListener("click", closeSalesOrderDetailModal);
 
 els.salesOrderDetailModal.addEventListener("click", (event) => {
   if (event.target === els.salesOrderDetailModal) closeSalesOrderDetailModal();
+});
+
+els.closeSalesCatalog.addEventListener("click", closeSalesCatalogModal);
+
+els.salesCatalogModal.addEventListener("click", (event) => {
+  if (event.target === els.salesCatalogModal) closeSalesCatalogModal();
+});
+
+els.salesCatalogSearch.addEventListener("input", () => {
+  uiState.salesCatalogSearch = els.salesCatalogSearch.value;
+  renderSalesCatalog();
+});
+
+els.salesCatalogFilter.addEventListener("change", () => {
+  uiState.salesCatalogFilter = els.salesCatalogFilter.value;
+  renderSalesCatalog();
+});
+
+els.salesCatalogList.addEventListener("click", (event) => {
+  const item = event.target.closest("[data-select-sales-catalog-item]");
+  if (!item || item.hasAttribute("aria-disabled")) return;
+  selectSalesCatalogItem(item.dataset.selectSalesCatalogItem);
 });
 
 els.salesOrderTable.addEventListener("click", (event) => {
@@ -1221,6 +1258,7 @@ function closeQuickEntryModal() {
   uiState.salesOrderDiscountPercent = 0;
   uiState.salesOrderDiscountAmount = 0;
   closeOrderDiscountModal();
+  closeSalesCatalogModal();
   els.salesItems.innerHTML = "";
   els.purchaseItems.innerHTML = "";
   els.quickEntryFields.hidden = false;
@@ -1286,7 +1324,16 @@ function addSalesItemRow(item = {}) {
     row.dataset.originalPrice = String(originalPrice);
   }
   row.innerHTML = `
-    <input type="text" data-sales-item="name" placeholder="Hàng hóa" autocomplete="off" list="salesItemSuggestions" value="${escapeHtml(item.name || "")}" />
+    <div class="sales-name-picker">
+      <input type="text" data-sales-item="name" placeholder="Hàng hóa" autocomplete="off" list="salesItemSuggestions" value="${escapeHtml(item.name || "")}" />
+      <button class="catalog-button" type="button" data-open-sales-catalog title="Mục lục" aria-label="Mục lục">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 4.5c0-.83.67-1.5 1.5-1.5H19v15.5H7.2c-.66 0-1.2.54-1.2 1.2V4.5Z"></path>
+          <path d="M5 19.7c0-.66.54-1.2 1.2-1.2H19V21H6.2c-.66 0-1.2-.54-1.2-1.2v-.1Z"></path>
+          <path d="M8 7h7M8 10h7"></path>
+        </svg>
+      </button>
+    </div>
     <input type="text" data-sales-item="price" inputmode="numeric" placeholder="Giá" autocomplete="off" value="${displayPrice ? formatAmountInput(displayPrice) : ""}" />
     <div class="discount-field">
       <input type="text" data-sales-item="discount" inputmode="numeric" placeholder="Chiết khấu" autocomplete="off" value="${item.discountPercent ? formatPercentInput(item.discountPercent) : ""}" />
@@ -1465,6 +1512,128 @@ function applySalesItemSuggestion(row) {
   if (!suggestion) return;
 
   priceInput.value = formatAmountInput(suggestion.lastPrice || 0);
+}
+
+function openSalesCatalogModal(row) {
+  const store = getActiveStore();
+  if (!store || !row) return;
+
+  uiState.salesCatalogRow = row;
+  uiState.salesCatalogSearch = "";
+  uiState.salesCatalogFilter = "all";
+  els.salesCatalogSearch.value = "";
+  renderSalesCatalog();
+  els.salesCatalogModal.hidden = false;
+  els.salesCatalogSearch.focus();
+}
+
+function closeSalesCatalogModal() {
+  els.salesCatalogModal.hidden = true;
+  uiState.salesCatalogRow = null;
+}
+
+function renderSalesCatalog() {
+  const store = getActiveStore();
+  if (!store || !els.salesCatalogList) return;
+
+  const inventory = [...(store.inventory || [])].sort((a, b) =>
+    Number(b.quantity || 0) - Number(a.quantity || 0) ||
+    String(a.groupName || "").localeCompare(String(b.groupName || ""), "vi") ||
+    String(a.name || "").localeCompare(String(b.name || ""), "vi")
+  );
+  const groups = [
+    ...new Map(
+      inventory
+        .filter((item) => item.groupName)
+        .map((item) => [normalizeSearchText(item.groupName), item.groupName])
+    ).entries()
+  ].sort((a, b) => a[1].localeCompare(b[1], "vi"));
+  const validFilters = new Set(["all", ...groups.map(([key]) => `group:${key}`)]);
+
+  if (!validFilters.has(uiState.salesCatalogFilter)) {
+    uiState.salesCatalogFilter = "all";
+  }
+
+  els.salesCatalogFilter.innerHTML = [
+    '<option value="all">Tất cả</option>',
+    ...groups.map(([key, name]) => `<option value="group:${key}">${escapeHtml(name)}</option>`)
+  ].join("");
+  els.salesCatalogFilter.value = uiState.salesCatalogFilter;
+
+  const query = normalizeSearchText(uiState.salesCatalogSearch);
+  const rows = inventory
+    .filter((item) => {
+      const groupMatch =
+        uiState.salesCatalogFilter === "all" ||
+        normalizeSearchText(item.groupName || "") === uiState.salesCatalogFilter.slice(6);
+      const searchTarget = normalizeSearchText(`${item.name || ""} ${item.groupName || ""}`);
+      return groupMatch && (!query || searchTarget.includes(query));
+    })
+    .sort((a, b) => {
+      if (!query) return 0;
+      const aName = normalizeSearchText(a.name || "");
+      const bName = normalizeSearchText(b.name || "");
+      const aStarts = aName.startsWith(query) ? 0 : 1;
+      const bStarts = bName.startsWith(query) ? 0 : 1;
+      return aStarts - bStarts || aName.localeCompare(bName);
+    });
+
+  els.salesCatalogCount.textContent = `${rows.length} hàng hóa`;
+
+  if (!rows.length) {
+    els.salesCatalogList.innerHTML = '<div class="empty-list">Không tìm thấy hàng hóa phù hợp</div>';
+    return;
+  }
+
+  els.salesCatalogList.innerHTML = rows
+    .map((item) => {
+      const quantity = Number(item.quantity || 0);
+      const disabled = quantity <= 0;
+      return `
+        <button
+          class="sales-catalog-item ${disabled ? "is-disabled" : ""}"
+          type="button"
+          data-select-sales-catalog-item="${item.id}"
+          ${disabled ? 'aria-disabled="true"' : ""}
+        >
+          <span>
+            <strong>${escapeHtml(item.name || "")}</strong>
+            <small>${escapeHtml(item.groupName || "Chưa phân nhóm")}</small>
+          </span>
+          <span class="sales-catalog-meta">
+            <strong>${formatCurrency(item.lastPrice || 0)}</strong>
+            <small>Tồn: ${quantity.toLocaleString("vi-VN")}</small>
+          </span>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function selectSalesCatalogItem(itemId) {
+  const store = getActiveStore();
+  const row = uiState.salesCatalogRow;
+  if (!store || !row || !itemId) return;
+
+  const item = (store.inventory || []).find((inventoryItem) => inventoryItem.id === itemId);
+  if (!item || Number(item.quantity || 0) <= 0) return;
+
+  const nameInput = row.querySelector('[data-sales-item="name"]');
+  const priceInput = row.querySelector('[data-sales-item="price"]');
+  const quantityInput = row.querySelector('[data-sales-item="quantity"]');
+  const discountInput = row.querySelector('[data-sales-item="discount"]');
+  const discountAmountInput = row.querySelector('[data-sales-item="discountAmount"]');
+  const price = Number(item.lastPrice || 0);
+
+  if (nameInput) nameInput.value = item.name || "";
+  if (priceInput) priceInput.value = price ? formatAmountInput(price) : "";
+  if (quantityInput) quantityInput.value = 1;
+  if (discountInput) discountInput.value = "";
+  if (discountAmountInput) discountAmountInput.value = "";
+  if (price > 0) row.dataset.originalPrice = String(price);
+
+  updateSalesOrderTotal();
+  closeSalesCatalogModal();
 }
 
 function getInventoryAvailableByName(store, rawName) {

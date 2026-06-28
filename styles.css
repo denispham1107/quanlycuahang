@@ -623,6 +623,102 @@ form button:disabled {
   text-align: right;
 }
 
+.sales-catalog-backdrop {
+  align-items: start;
+  justify-items: center;
+  padding: clamp(14px, 3vw, 32px);
+  overflow-y: auto;
+  background:
+    radial-gradient(circle at 8% 10%, rgba(255, 215, 207, 0.86), transparent 32%),
+    radial-gradient(circle at 88% 4%, rgba(208, 188, 255, 0.84), transparent 34%),
+    linear-gradient(145deg, #fff0e7 0%, #efe8ff 48%, #bde8ff 100%);
+}
+
+.sales-catalog-card {
+  width: min(980px, 100%);
+  max-height: none;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 28px;
+  padding: clamp(18px, 3vw, 28px);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 26px 72px rgba(42, 58, 115, 0.18);
+}
+
+.sales-catalog-card .panel-heading {
+  position: static;
+  margin: 0 0 18px;
+  padding: 0;
+  background: transparent;
+  border-bottom: 0;
+  backdrop-filter: none;
+}
+
+.sales-catalog-tools {
+  margin-bottom: 16px;
+}
+
+.sales-catalog-list {
+  display: grid;
+  gap: 10px;
+}
+
+.sales-catalog-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 72px;
+  border: 1px solid rgba(8, 120, 247, 0.16);
+  border-radius: 18px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--text);
+  text-align: left;
+  box-shadow: 0 12px 28px rgba(83, 96, 222, 0.08);
+  cursor: pointer;
+}
+
+.sales-catalog-item:hover {
+  border-color: rgba(8, 120, 247, 0.36);
+  transform: translateY(-1px);
+}
+
+.sales-catalog-item > span,
+.sales-catalog-meta {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sales-catalog-item strong {
+  overflow-wrap: anywhere;
+}
+
+.sales-catalog-item small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.sales-catalog-meta {
+  text-align: right;
+}
+
+.sales-catalog-meta strong {
+  color: var(--accent);
+}
+
+.sales-catalog-item.is-disabled {
+  opacity: 0.44;
+  cursor: not-allowed;
+  filter: grayscale(0.2);
+}
+
+.sales-catalog-item.is-disabled:hover {
+  transform: none;
+  border-color: rgba(8, 120, 247, 0.16);
+}
+
 .store-name,
 .category-name,
 .report-name {
@@ -1410,7 +1506,7 @@ th:last-child {
 
 .sales-item-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.8fr) minmax(100px, 0.32fr) minmax(110px, 0.38fr) minmax(128px, 0.42fr) 40px;
+  grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.8fr) minmax(100px, 0.32fr) minmax(110px, 0.38fr) minmax(128px, 0.42fr) 40px;
   gap: 8px;
   align-items: center;
   border: 1px solid rgba(8, 120, 247, 0.14);
@@ -1421,6 +1517,49 @@ th:last-child {
 
 .purchase-item-row {
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(128px, 0.46fr) minmax(0, 1fr) 40px;
+}
+
+.sales-name-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 42px;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.catalog-button {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  border: 1px solid rgba(8, 120, 247, 0.2);
+  border-radius: 14px;
+  padding: 0;
+  background: linear-gradient(135deg, rgba(255, 232, 220, 0.92), rgba(238, 226, 255, 0.94), rgba(226, 246, 255, 0.98));
+  color: var(--accent);
+  box-shadow: 0 10px 22px rgba(83, 96, 222, 0.12);
+  cursor: pointer;
+}
+
+.catalog-button svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.catalog-button:hover {
+  border-color: rgba(8, 120, 247, 0.38);
+  transform: translateY(-1px);
+}
+
+.sales-name-picker .catalog-button {
+  width: 42px;
+  min-width: 42px;
 }
 
 .sales-item-row input {
@@ -2148,6 +2287,31 @@ th:last-child {
 
   .order-detail-summary > div {
     align-items: flex-start;
+  }
+
+  .sales-name-picker {
+    grid-template-columns: minmax(0, 1fr) 46px;
+  }
+
+  .sales-name-picker .catalog-button {
+    width: 46px;
+    min-width: 46px;
+    height: 46px;
+    border-radius: 16px;
+  }
+
+  .sales-catalog-card {
+    width: min(100%, calc(100vw - 24px));
+    padding: 18px;
+  }
+
+  .sales-catalog-item {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .sales-catalog-meta {
+    text-align: left;
   }
 
   .draft-order-table {

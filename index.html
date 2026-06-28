@@ -473,6 +473,29 @@
       </section>
     </div>
 
+    <div class="modal-backdrop sales-catalog-backdrop" id="salesCatalogModal" hidden>
+      <section class="modal-card sales-catalog-card">
+        <div class="panel-heading">
+          <h2>Mục lục hàng hóa</h2>
+          <span id="salesCatalogCount">0 hàng hóa</span>
+        </div>
+        <div class="history-tools sales-catalog-tools">
+          <div class="history-search">
+            <label for="salesCatalogSearch">Tìm hàng hóa</label>
+            <input id="salesCatalogSearch" type="text" placeholder="Nhập tên hàng hóa..." autocomplete="off" />
+          </div>
+          <div class="history-filter">
+            <label for="salesCatalogFilter">Phân loại</label>
+            <select id="salesCatalogFilter"></select>
+          </div>
+        </div>
+        <div class="sales-catalog-list" id="salesCatalogList"></div>
+        <div class="modal-actions">
+          <button class="ghost-button" id="closeSalesCatalog" type="button">Đóng</button>
+        </div>
+      </section>
+    </div>
+
     <div class="modal-backdrop inventory-backdrop" id="inventoryModal" hidden>
       <section class="modal-card inventory-card">
         <div class="panel-heading">
