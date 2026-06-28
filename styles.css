@@ -609,38 +609,21 @@ form button:disabled {
 }
 
 .draft-order-table {
-  border-collapse: separate;
-  border-spacing: 0 10px;
-}
-
-.draft-order-table th,
-.draft-order-table td {
-  border-bottom: 0;
+  border-collapse: collapse;
+  border-spacing: 0;
 }
 
 .draft-order-row {
   cursor: pointer;
-  box-shadow: 0 12px 28px rgba(83, 96, 222, 0.1);
 }
 
 .draft-order-row td {
-  background: linear-gradient(135deg, rgba(255, 232, 220, 0.84), rgba(238, 226, 255, 0.9), rgba(226, 246, 255, 0.94));
-  border-top: 1px solid rgba(8, 120, 247, 0.18);
-  border-bottom: 1px solid rgba(8, 120, 247, 0.18);
-}
-
-.draft-order-row td:first-child {
-  border-left: 1px solid rgba(8, 120, 247, 0.18);
-  border-radius: 16px 0 0 16px;
-}
-
-.draft-order-row td:last-child {
-  border-right: 1px solid rgba(8, 120, 247, 0.18);
-  border-radius: 0 16px 16px 0;
+  background: transparent;
+  border-bottom: 1px solid var(--line);
 }
 
 .draft-order-row:hover td {
-  border-color: rgba(8, 120, 247, 0.34);
+  background: rgba(8, 120, 247, 0.035);
 }
 
 .date-stack {
@@ -2448,15 +2431,16 @@ th:last-child {
   }
 
   .draft-order-row {
-    border-color: rgba(8, 120, 247, 0.18);
-    border-radius: 16px;
-    background: linear-gradient(135deg, rgba(255, 232, 220, 0.84), rgba(238, 226, 255, 0.9), rgba(226, 246, 255, 0.94));
-    box-shadow: 0 12px 28px rgba(83, 96, 222, 0.1);
+    border-color: var(--line);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .draft-order-row td {
     background: transparent;
     border: 0;
+    border-bottom: 1px solid var(--line);
   }
 
   .draft-order-row td:first-child,
