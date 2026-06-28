@@ -31,6 +31,8 @@ const uiState = {
   salesCatalogSearch: "",
   salesCatalogFilter: "all",
   salesCatalogRow: null,
+  salesCustomerCatalogSearch: "",
+  salesCustomerCatalogFilter: "all",
   customerFormOpen: false,
   customerMemberFilter: "all",
   customerSearch: "",
@@ -105,6 +107,7 @@ const els = {
   salesOrderFields: document.querySelector("#salesOrderFields"),
   salesCustomerName: document.querySelector("#salesCustomerName"),
   salesCustomerPhone: document.querySelector("#salesCustomerPhone"),
+  openSalesCustomerCatalog: document.querySelector("#openSalesCustomerCatalog"),
   salesOrderDate: document.querySelector("#salesOrderDate"),
   salesItems: document.querySelector("#salesItems"),
   addSalesItem: document.querySelector("#addSalesItem"),
@@ -132,6 +135,12 @@ const els = {
   salesCatalogFilter: document.querySelector("#salesCatalogFilter"),
   salesCatalogList: document.querySelector("#salesCatalogList"),
   closeSalesCatalog: document.querySelector("#closeSalesCatalog"),
+  salesCustomerCatalogModal: document.querySelector("#salesCustomerCatalogModal"),
+  salesCustomerCatalogCount: document.querySelector("#salesCustomerCatalogCount"),
+  salesCustomerCatalogSearch: document.querySelector("#salesCustomerCatalogSearch"),
+  salesCustomerCatalogFilter: document.querySelector("#salesCustomerCatalogFilter"),
+  salesCustomerCatalogList: document.querySelector("#salesCustomerCatalogList"),
+  closeSalesCustomerCatalog: document.querySelector("#closeSalesCustomerCatalog"),
   openCustomers: document.querySelector("#openCustomers"),
   customersModal: document.querySelector("#customersModal"),
   customersCount: document.querySelector("#customersCount"),
@@ -580,6 +589,14 @@ els.salesCatalogModal.addEventListener("click", (event) => {
   if (event.target === els.salesCatalogModal) closeSalesCatalogModal();
 });
 
+els.openSalesCustomerCatalog.addEventListener("click", openSalesCustomerCatalogModal);
+
+els.closeSalesCustomerCatalog.addEventListener("click", closeSalesCustomerCatalogModal);
+
+els.salesCustomerCatalogModal.addEventListener("click", (event) => {
+  if (event.target === els.salesCustomerCatalogModal) closeSalesCustomerCatalogModal();
+});
+
 els.salesCatalogSearch.addEventListener("input", () => {
   uiState.salesCatalogSearch = els.salesCatalogSearch.value;
   renderSalesCatalog();
@@ -594,6 +611,22 @@ els.salesCatalogList.addEventListener("click", (event) => {
   const item = event.target.closest("[data-select-sales-catalog-item]");
   if (!item || item.hasAttribute("aria-disabled")) return;
   selectSalesCatalogItem(item.dataset.selectSalesCatalogItem);
+});
+
+els.salesCustomerCatalogSearch.addEventListener("input", () => {
+  uiState.salesCustomerCatalogSearch = els.salesCustomerCatalogSearch.value;
+  renderSalesCustomerCatalog();
+});
+
+els.salesCustomerCatalogFilter.addEventListener("change", () => {
+  uiState.salesCustomerCatalogFilter = els.salesCustomerCatalogFilter.value;
+  renderSalesCustomerCatalog();
+});
+
+els.salesCustomerCatalogList.addEventListener("click", (event) => {
+  const customer = event.target.closest("[data-select-sales-customer]");
+  if (!customer) return;
+  selectSalesCustomer(customer.dataset.selectSalesCustomer);
 });
 
 els.openCustomers.addEventListener("click", openCustomersModal);
@@ -1713,6 +1746,100 @@ function selectSalesCatalogItem(itemId) {
 
   updateSalesOrderTotal();
   closeSalesCatalogModal();
+}
+
+function openSalesCustomerCatalogModal() {
+  const store = getActiveStore();
+  if (!store) return;
+
+  uiState.salesCustomerCatalogSearch = "";
+  uiState.salesCustomerCatalogFilter = "all";
+  els.salesCustomerCatalogSearch.value = "";
+  renderSalesCustomerCatalog();
+  els.salesCustomerCatalogModal.hidden = false;
+  els.salesCustomerCatalogSearch.focus();
+}
+
+function closeSalesCustomerCatalogModal() {
+  els.salesCustomerCatalogModal.hidden = true;
+}
+
+function renderSalesCustomerCatalog() {
+  const store = getActiveStore();
+  if (!store || !els.salesCustomerCatalogList) return;
+
+  const customers = getStoreCustomers(store);
+  const tiers = [
+    ...new Map(
+      customers.map((customer) => {
+        const tier = String(customer.memberTier || "Thường").trim() || "Thường";
+        return [normalizeSearchText(tier), tier];
+      })
+    ).entries()
+  ].sort((a, b) => a[1].localeCompare(b[1], "vi"));
+  const validFilters = new Set(["all", ...tiers.map(([key]) => `tier:${key}`)]);
+
+  if (!validFilters.has(uiState.salesCustomerCatalogFilter)) {
+    uiState.salesCustomerCatalogFilter = "all";
+  }
+
+  els.salesCustomerCatalogFilter.innerHTML = [
+    '<option value="all">Tất cả</option>',
+    ...tiers.map(([key, name]) => `<option value="tier:${key}">${escapeHtml(name)}</option>`)
+  ].join("");
+  els.salesCustomerCatalogFilter.value = uiState.salesCustomerCatalogFilter;
+
+  const query = normalizeSearchText(uiState.salesCustomerCatalogSearch || "");
+  const rows = customers
+    .filter((customer) => {
+      const tierMatch =
+        uiState.salesCustomerCatalogFilter === "all" ||
+        normalizeSearchText(customer.memberTier || "Thường") === uiState.salesCustomerCatalogFilter.slice(5);
+      const searchTarget = normalizeSearchText(`${customer.name || ""} ${customer.phone || ""} ${customer.memberTier || ""}`);
+      return tierMatch && (!query || searchTarget.includes(query));
+    })
+    .sort((a, b) => {
+      if (!query) return 0;
+      const aName = normalizeSearchText(`${a.name || ""} ${a.phone || ""}`);
+      const bName = normalizeSearchText(`${b.name || ""} ${b.phone || ""}`);
+      const aStarts = aName.startsWith(query) ? 0 : 1;
+      const bStarts = bName.startsWith(query) ? 0 : 1;
+      return aStarts - bStarts || aName.localeCompare(bName);
+    });
+
+  els.salesCustomerCatalogCount.textContent = `${rows.length} khách`;
+
+  if (!rows.length) {
+    els.salesCustomerCatalogList.innerHTML = '<div class="empty-list">Không tìm thấy khách hàng phù hợp</div>';
+    return;
+  }
+
+  els.salesCustomerCatalogList.innerHTML = rows
+    .map((customer) => `
+      <button class="sales-catalog-item customer-catalog-item" type="button" data-select-sales-customer="${escapeHtml(customer.id)}">
+        <span>
+          <strong>${escapeHtml(customer.name || "")}</strong>
+          <small>${escapeHtml(customer.phone || "Chưa có số điện thoại")}</small>
+        </span>
+        <span class="sales-catalog-meta">
+          <strong>${escapeHtml(customer.memberTier || "Thường")}</strong>
+          <small>${formatDate(String(customer.createdAt || today).slice(0, 10))}</small>
+        </span>
+      </button>
+    `)
+    .join("");
+}
+
+function selectSalesCustomer(customerId) {
+  const store = getActiveStore();
+  if (!store || !customerId) return;
+
+  const customer = getStoreCustomers(store).find((item) => item.id === customerId);
+  if (!customer) return;
+
+  els.salesCustomerName.value = customer.name || "";
+  els.salesCustomerPhone.value = customer.phone || "";
+  closeSalesCustomerCatalogModal();
 }
 
 function getInventoryAvailableByName(store, rawName) {

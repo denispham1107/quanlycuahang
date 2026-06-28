@@ -1718,6 +1718,14 @@ th:last-child {
   min-width: 0;
 }
 
+.customer-name-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 42px;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
 .catalog-button {
   display: grid;
   place-items: center;
@@ -1751,6 +1759,19 @@ th:last-child {
 .sales-name-picker .catalog-button {
   width: 42px;
   min-width: 42px;
+}
+
+.customer-picker-button {
+  color: #d62d56;
+}
+
+.customer-picker-button svg {
+  width: 22px;
+  height: 22px;
+}
+
+.customer-catalog-item small {
+  overflow-wrap: anywhere;
 }
 
 .sales-item-row input {
@@ -2482,11 +2503,13 @@ th:last-child {
     align-items: flex-start;
   }
 
-  .sales-name-picker {
+  .sales-name-picker,
+  .customer-name-picker {
     grid-template-columns: minmax(0, 1fr) 46px;
   }
 
-  .sales-name-picker .catalog-button {
+  .sales-name-picker .catalog-button,
+  .customer-name-picker .catalog-button {
     width: 46px;
     min-width: 46px;
     height: 46px;

@@ -372,7 +372,15 @@
           <div class="form-row">
             <div class="field">
               <label for="salesCustomerName">Tên khách hàng</label>
-              <input id="salesCustomerName" name="customerName" type="text" autocomplete="off" />
+              <div class="customer-name-picker">
+                <input id="salesCustomerName" name="customerName" type="text" autocomplete="off" />
+                <button class="catalog-button customer-picker-button" id="openSalesCustomerCatalog" type="button" title="Customer" aria-label="Customer">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 12.5a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"></path>
+                    <path d="M4.5 20.5c1.2-4 4-6 7.5-6s6.3 2 7.5 6"></path>
+                  </svg>
+                </button>
+              </div>
             </div>
             <div class="field">
               <label for="salesCustomerPhone">Số điện thoại</label>
@@ -493,6 +501,29 @@
         <div class="sales-catalog-list" id="salesCatalogList"></div>
         <div class="modal-actions">
           <button class="ghost-button" id="closeSalesCatalog" type="button">Đóng</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop sales-customer-catalog-backdrop" id="salesCustomerCatalogModal" hidden>
+      <section class="modal-card sales-catalog-card">
+        <div class="panel-heading">
+          <h2>Danh sách khách hàng</h2>
+          <span id="salesCustomerCatalogCount">0 khách</span>
+        </div>
+        <div class="history-tools sales-catalog-tools">
+          <div class="history-search">
+            <label for="salesCustomerCatalogSearch">Tìm khách hàng</label>
+            <input id="salesCustomerCatalogSearch" type="text" placeholder="Nhập tên hoặc số điện thoại..." autocomplete="off" />
+          </div>
+          <div class="history-filter">
+            <label for="salesCustomerCatalogFilter">Phân loại</label>
+            <select id="salesCustomerCatalogFilter"></select>
+          </div>
+        </div>
+        <div class="sales-catalog-list customer-catalog-list" id="salesCustomerCatalogList"></div>
+        <div class="modal-actions">
+          <button class="ghost-button" id="closeSalesCustomerCatalog" type="button">Đóng</button>
         </div>
       </section>
     </div>
