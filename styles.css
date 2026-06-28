@@ -411,6 +411,12 @@ form button:disabled {
   margin-bottom: 14px;
 }
 
+.customer-filter-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 360px);
+  margin-bottom: 14px;
+}
+
 .customer-form {
   display: grid;
   gap: 12px;
@@ -2422,6 +2428,10 @@ th:last-child {
   .customers-card {
     width: min(100%, calc(100vw - 24px));
     padding: 18px;
+  }
+
+  .customer-filter-row {
+    grid-template-columns: 1fr;
   }
 
   .customer-card {

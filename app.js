@@ -32,6 +32,7 @@ const uiState = {
   salesCatalogFilter: "all",
   salesCatalogRow: null,
   customerFormOpen: false,
+  customerMemberFilter: "all",
   inventoryLogsExpanded: false,
   salesGoodsFilter: "all",
   salesDraftId: null,
@@ -139,6 +140,7 @@ const els = {
   customerNameInput: document.querySelector("#customerNameInput"),
   customerPhoneInput: document.querySelector("#customerPhoneInput"),
   customerMemberTier: document.querySelector("#customerMemberTier"),
+  customerMemberFilter: document.querySelector("#customerMemberFilter"),
   customerCreatedAt: document.querySelector("#customerCreatedAt"),
   cancelCustomerForm: document.querySelector("#cancelCustomerForm"),
   closeCustomers: document.querySelector("#closeCustomers"),
@@ -604,6 +606,11 @@ els.cancelCustomerForm.addEventListener("click", closeCustomerForm);
 els.customerForm.addEventListener("submit", (event) => {
   event.preventDefault();
   saveCustomerFromForm(new FormData(els.customerForm));
+});
+
+els.customerMemberFilter.addEventListener("change", () => {
+  uiState.customerMemberFilter = els.customerMemberFilter.value;
+  renderCustomers(getActiveStore());
 });
 
 els.customersList.addEventListener("click", (event) => {
@@ -1892,6 +1899,7 @@ function openCustomersModal() {
   if (!store) return;
 
   uiState.customerFormOpen = false;
+  uiState.customerMemberFilter = "all";
   renderCustomers(store);
   els.customersModal.hidden = false;
 }
@@ -1920,12 +1928,23 @@ function closeCustomerForm() {
 }
 
 function renderCustomers(store) {
-  const customers = getStoreCustomers(store);
+  const allCustomers = getStoreCustomers(store);
+  renderCustomerMemberFilter(allCustomers);
+  const selectedTier = uiState.customerMemberFilter || "all";
+  const customers =
+    selectedTier === "all"
+      ? allCustomers
+      : allCustomers.filter((customer) => normalizeSearchText(customer.memberTier || "Thường") === selectedTier);
   els.customersCount.textContent = `${customers.length} khách`;
   els.customerForm.hidden = !uiState.customerFormOpen;
 
-  if (!customers.length) {
+  if (!allCustomers.length) {
     els.customersList.innerHTML = '<div class="empty-list">Chưa có thông tin khách hàng</div>';
+    return;
+  }
+
+  if (!customers.length) {
+    els.customersList.innerHTML = '<div class="empty-list">Không có khách hàng trong gói thành viên này</div>';
     return;
   }
 
@@ -1955,6 +1974,26 @@ function renderCustomers(store) {
       `;
     })
     .join("");
+}
+
+function renderCustomerMemberFilter(customers) {
+  const tierMap = new Map();
+  customers.forEach((customer) => {
+    const tierName = String(customer.memberTier || "Thường").trim() || "Thường";
+    tierMap.set(normalizeSearchText(tierName), tierName);
+  });
+
+  const tiers = [...tierMap.entries()].sort((a, b) => a[1].localeCompare(b[1], "vi"));
+  const validFilters = new Set(["all", ...tiers.map(([key]) => key)]);
+  if (!validFilters.has(uiState.customerMemberFilter)) {
+    uiState.customerMemberFilter = "all";
+  }
+
+  els.customerMemberFilter.innerHTML = [
+    '<option value="all">Tất cả</option>',
+    ...tiers.map(([key, name]) => `<option value="${key}">${escapeHtml(name)}</option>`)
+  ].join("");
+  els.customerMemberFilter.value = uiState.customerMemberFilter;
 }
 
 function saveCustomerFromForm(formData) {
