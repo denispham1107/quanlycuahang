@@ -31,6 +31,7 @@ const uiState = {
   salesCatalogSearch: "",
   salesCatalogFilter: "all",
   salesCatalogRow: null,
+  customerFormOpen: false,
   inventoryLogsExpanded: false,
   salesGoodsFilter: "all",
   salesDraftId: null,
@@ -129,6 +130,18 @@ const els = {
   salesCatalogFilter: document.querySelector("#salesCatalogFilter"),
   salesCatalogList: document.querySelector("#salesCatalogList"),
   closeSalesCatalog: document.querySelector("#closeSalesCatalog"),
+  openCustomers: document.querySelector("#openCustomers"),
+  customersModal: document.querySelector("#customersModal"),
+  customersCount: document.querySelector("#customersCount"),
+  customersList: document.querySelector("#customersList"),
+  toggleCustomerForm: document.querySelector("#toggleCustomerForm"),
+  customerForm: document.querySelector("#customerForm"),
+  customerNameInput: document.querySelector("#customerNameInput"),
+  customerPhoneInput: document.querySelector("#customerPhoneInput"),
+  customerMemberTier: document.querySelector("#customerMemberTier"),
+  customerCreatedAt: document.querySelector("#customerCreatedAt"),
+  cancelCustomerForm: document.querySelector("#cancelCustomerForm"),
+  closeCustomers: document.querySelector("#closeCustomers"),
   purchaseOrderFields: document.querySelector("#purchaseOrderFields"),
   purchaseOrderDate: document.querySelector("#purchaseOrderDate"),
   purchaseItems: document.querySelector("#purchaseItems"),
@@ -574,6 +587,31 @@ els.salesCatalogList.addEventListener("click", (event) => {
   selectSalesCatalogItem(item.dataset.selectSalesCatalogItem);
 });
 
+els.openCustomers.addEventListener("click", openCustomersModal);
+
+els.closeCustomers.addEventListener("click", closeCustomersModal);
+
+els.customersModal.addEventListener("click", (event) => {
+  if (event.target === els.customersModal) closeCustomersModal();
+});
+
+els.toggleCustomerForm.addEventListener("click", () => {
+  openCustomerForm();
+});
+
+els.cancelCustomerForm.addEventListener("click", closeCustomerForm);
+
+els.customerForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  saveCustomerFromForm(new FormData(els.customerForm));
+});
+
+els.customersList.addEventListener("click", (event) => {
+  const customer = event.target.closest("[data-edit-customer]");
+  if (!customer) return;
+  openCustomerById(customer.dataset.editCustomer);
+});
+
 els.salesOrderTable.addEventListener("click", (event) => {
   if (event.target.closest("[data-delete-order]")) return;
   const row = event.target.closest("[data-open-sales-order]");
@@ -721,6 +759,7 @@ function normalizeState(data) {
     entries: store.entries || [],
     orders: store.orders || [],
     draftOrders: store.draftOrders || [],
+    customers: store.customers || [],
     purchaseCategories: store.purchaseCategories || [],
     purchaseOrders: store.purchaseOrders || [],
     inventoryLogs: store.inventoryLogs || [],
@@ -1118,6 +1157,9 @@ function render() {
   renderReports(store);
   renderInventory(store);
   renderInventoryLogs(store);
+  if (!els.customersModal.hidden && !uiState.customerFormOpen) {
+    renderCustomers(store);
+  }
   els.tabBar.dataset.pinTop = "";
   updateQuickEntryButton();
   updatePinnedTabs();
@@ -1756,6 +1798,7 @@ function saveSalesOrder() {
     groupName: item.groupName || groupLookup.get(normalizeSearchText(item.name)) || "Chưa phân nhóm"
   }));
   deductInventoryForSales(store, items);
+  ensureCustomerFromSalesOrder(store, { customerName, customerPhone, createdAt });
   store.orders.push({
     id: orderId,
     customerName,
@@ -1777,6 +1820,195 @@ function saveSalesOrder() {
 
   saveAndRender();
   return true;
+}
+
+function getCustomerKey(name, phone) {
+  return `${normalizeSearchText(name)}::${normalizeSearchText(phone)}`;
+}
+
+function ensureCustomerFromSalesOrder(store, order) {
+  const name = String(order.customerName || "").trim();
+  const phone = String(order.customerPhone || "").trim();
+  if (!name || !phone) return null;
+
+  store.customers = [...(store.customers || [])];
+  const key = getCustomerKey(name, phone);
+  const existing = store.customers.find((customer) => getCustomerKey(customer.name, customer.phone) === key);
+  if (existing) return existing;
+
+  const customer = {
+    id: createId(),
+    name,
+    phone,
+    memberTier: "Thường",
+    createdAt: order.createdAt || new Date().toISOString(),
+    updatedAt: order.createdAt || new Date().toISOString(),
+    source: "order"
+  };
+  store.customers.push(customer);
+  return customer;
+}
+
+function getStoreCustomers(store) {
+  const customerMap = new Map();
+
+  (store.customers || []).forEach((customer) => {
+    const name = String(customer.name || "").trim();
+    const phone = String(customer.phone || "").trim();
+    if (!name || !phone) return;
+    customerMap.set(getCustomerKey(name, phone), {
+      id: customer.id || createId(),
+      name,
+      phone,
+      memberTier: customer.memberTier || "Thường",
+      createdAt: customer.createdAt || customer.updatedAt || new Date().toISOString(),
+      updatedAt: customer.updatedAt || customer.createdAt || new Date().toISOString(),
+      source: customer.source || "manual"
+    });
+  });
+
+  (store.orders || []).forEach((order) => {
+    const name = String(order.customerName || "").trim();
+    const phone = String(order.customerPhone || "").trim();
+    if (!name || !phone) return;
+    const key = getCustomerKey(name, phone);
+    if (customerMap.has(key)) return;
+    customerMap.set(key, {
+      id: `order-${key}`,
+      name,
+      phone,
+      memberTier: "Thường",
+      createdAt: order.createdAt || `${order.date || today}T00:00:00`,
+      updatedAt: order.createdAt || `${order.date || today}T00:00:00`,
+      source: "order"
+    });
+  });
+
+  return [...customerMap.values()].sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+}
+
+function openCustomersModal() {
+  const store = getActiveStore();
+  if (!store) return;
+
+  uiState.customerFormOpen = false;
+  renderCustomers(store);
+  els.customersModal.hidden = false;
+}
+
+function closeCustomersModal() {
+  els.customersModal.hidden = true;
+  closeCustomerForm();
+}
+
+function openCustomerForm(customer = null) {
+  uiState.customerFormOpen = true;
+  els.customerForm.hidden = false;
+  els.customerForm.elements.customerId.value = customer?.id && !String(customer.id).startsWith("order-") ? customer.id : "";
+  els.customerNameInput.value = customer?.name || "";
+  els.customerPhoneInput.value = customer?.phone || "";
+  els.customerMemberTier.value = customer?.memberTier || "Thường";
+  els.customerCreatedAt.value = toDateTimeLocalValue(customer?.createdAt || new Date().toISOString());
+  els.customerNameInput.focus();
+}
+
+function closeCustomerForm() {
+  uiState.customerFormOpen = false;
+  els.customerForm.hidden = true;
+  els.customerForm.reset();
+  els.customerMemberTier.value = "Thường";
+}
+
+function renderCustomers(store) {
+  const customers = getStoreCustomers(store);
+  els.customersCount.textContent = `${customers.length} khách`;
+  els.customerForm.hidden = !uiState.customerFormOpen;
+
+  if (!customers.length) {
+    els.customersList.innerHTML = '<div class="empty-list">Chưa có thông tin khách hàng</div>';
+    return;
+  }
+
+  els.customersList.innerHTML = customers
+    .map((customer) => {
+      const createdDate = formatDate(String(customer.createdAt || today).slice(0, 10));
+      const createdTime = formatTime(customer.createdAt);
+      return `
+        <button class="customer-card" type="button" data-edit-customer="${customer.id}">
+          <span class="date-stack">
+            <span>${createdDate}</span>
+            ${createdTime ? `<small>${createdTime}</small>` : ""}
+          </span>
+          <span>
+            <small>Tên Khách Hàng</small>
+            <strong>${escapeHtml(customer.name)}</strong>
+          </span>
+          <span>
+            <small>Số điện thoại</small>
+            <strong>${escapeHtml(customer.phone)}</strong>
+          </span>
+          <span>
+            <small>Gói thành viên</small>
+            <strong>${escapeHtml(customer.memberTier || "Thường")}</strong>
+          </span>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function saveCustomerFromForm(formData) {
+  const store = getActiveStore();
+  if (!store) return false;
+
+  const name = String(formData.get("customerName") || "").trim();
+  const phone = String(formData.get("customerPhone") || "").trim();
+  const memberTier = String(formData.get("memberTier") || "").trim() || "Thường";
+  const createdAt = fromDateTimeLocalValue(String(formData.get("createdAt") || "")) || new Date().toISOString();
+  if (!name || !phone) {
+    window.alert("Vui lòng nhập tên khách hàng và số điện thoại.");
+    return false;
+  }
+
+  store.customers = [...(store.customers || [])];
+  const id = String(formData.get("customerId") || "");
+  const key = getCustomerKey(name, phone);
+  const existing =
+    store.customers.find((customer) => customer.id === id) ||
+    store.customers.find((customer) => getCustomerKey(customer.name, customer.phone) === key);
+  const now = new Date().toISOString();
+
+  if (existing) {
+    existing.name = name;
+    existing.phone = phone;
+    existing.memberTier = memberTier;
+    existing.createdAt = createdAt;
+    existing.updatedAt = now;
+    existing.source = existing.source || "manual";
+  } else {
+    store.customers.push({
+      id: createId(),
+      name,
+      phone,
+      memberTier,
+      createdAt,
+      updatedAt: now,
+      source: "manual"
+    });
+  }
+
+  closeCustomerForm();
+  saveAndRender();
+  renderCustomers(store);
+  return true;
+}
+
+function openCustomerById(customerId) {
+  const store = getActiveStore();
+  if (!store || !customerId) return;
+  const customer = getStoreCustomers(store).find((item) => item.id === customerId);
+  if (!customer) return;
+  openCustomerForm(customer);
 }
 
 function openPurchaseOrderModal(store) {
@@ -3164,6 +3396,20 @@ function formatTime(value) {
     minute: "2-digit",
     hour12: false
   }).format(date);
+}
+
+function toDateTimeLocalValue(value) {
+  const date = value ? new Date(value) : new Date();
+  if (Number.isNaN(date.getTime())) return "";
+  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return offsetDate.toISOString().slice(0, 16);
+}
+
+function fromDateTimeLocalValue(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString();
 }
 
 function getStoreStartDate(store) {

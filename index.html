@@ -207,6 +207,7 @@
                   <span id="salesOrderCount">0 đơn</span>
                 </div>
                 <div class="empty-list">Bấm nút + để tạo đơn hàng mới cho khách.</div>
+                <button class="ghost-button customer-manager-button" id="openCustomers" type="button">Khách Hàng</button>
                 <div class="draft-order-list" id="salesDraftList"></div>
               </article>
               <article class="panel">
@@ -492,6 +493,47 @@
         <div class="sales-catalog-list" id="salesCatalogList"></div>
         <div class="modal-actions">
           <button class="ghost-button" id="closeSalesCatalog" type="button">Đóng</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop customers-backdrop" id="customersModal" hidden>
+      <section class="modal-card customers-card">
+        <div class="panel-heading">
+          <h2>Thông tin khách hàng</h2>
+          <span id="customersCount">0 khách</span>
+        </div>
+        <button class="ghost-button customer-form-toggle" id="toggleCustomerForm" type="button">Thêm / Cập nhật khách hàng</button>
+        <form class="customer-form" id="customerForm" hidden>
+          <input type="hidden" name="customerId" />
+          <div class="form-row">
+            <div class="field">
+              <label for="customerNameInput">Tên khách hàng</label>
+              <input id="customerNameInput" name="customerName" type="text" autocomplete="off" required />
+            </div>
+            <div class="field">
+              <label for="customerPhoneInput">Số điện thoại</label>
+              <input id="customerPhoneInput" name="customerPhone" type="tel" autocomplete="off" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="customerMemberTier">Gói thành viên</label>
+              <input id="customerMemberTier" name="memberTier" type="text" value="Thường" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label for="customerCreatedAt">Ngày giờ khởi tạo</label>
+              <input id="customerCreatedAt" name="createdAt" type="datetime-local" required />
+            </div>
+          </div>
+          <div class="modal-actions customer-form-actions">
+            <button class="ghost-button" id="cancelCustomerForm" type="button">Hủy</button>
+            <button type="submit">Hoàn thành</button>
+          </div>
+        </form>
+        <div class="customers-list" id="customersList"></div>
+        <div class="modal-actions">
+          <button class="ghost-button" id="closeCustomers" type="button">Đóng</button>
         </div>
       </section>
     </div>
