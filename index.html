@@ -511,6 +511,13 @@
             </select>
           </div>
         </div>
+        <div class="customer-search-row">
+          <div class="field">
+            <label for="customerSearchInput">Tìm khách hàng</label>
+            <input id="customerSearchInput" type="search" list="customerSearchSuggestions" placeholder="Nhập tên hoặc số điện thoại..." autocomplete="off" />
+            <datalist id="customerSearchSuggestions"></datalist>
+          </div>
+        </div>
         <button class="ghost-button customer-form-toggle" id="toggleCustomerForm" type="button">Thêm / Cập nhật khách hàng</button>
         <form class="customer-form" id="customerForm" hidden>
           <input type="hidden" name="customerId" />

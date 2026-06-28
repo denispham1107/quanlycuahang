@@ -33,6 +33,7 @@ const uiState = {
   salesCatalogRow: null,
   customerFormOpen: false,
   customerMemberFilter: "all",
+  customerSearch: "",
   inventoryLogsExpanded: false,
   salesGoodsFilter: "all",
   salesDraftId: null,
@@ -141,6 +142,8 @@ const els = {
   customerPhoneInput: document.querySelector("#customerPhoneInput"),
   customerMemberTier: document.querySelector("#customerMemberTier"),
   customerMemberFilter: document.querySelector("#customerMemberFilter"),
+  customerSearchInput: document.querySelector("#customerSearchInput"),
+  customerSearchSuggestions: document.querySelector("#customerSearchSuggestions"),
   customerCreatedAt: document.querySelector("#customerCreatedAt"),
   cancelCustomerForm: document.querySelector("#cancelCustomerForm"),
   closeCustomers: document.querySelector("#closeCustomers"),
@@ -610,6 +613,16 @@ els.customerForm.addEventListener("submit", (event) => {
 
 els.customerMemberFilter.addEventListener("change", () => {
   uiState.customerMemberFilter = els.customerMemberFilter.value;
+  renderCustomers(getActiveStore());
+});
+
+els.customerSearchInput.addEventListener("input", () => {
+  uiState.customerSearch = els.customerSearchInput.value;
+  renderCustomers(getActiveStore());
+});
+
+els.customerSearchInput.addEventListener("change", () => {
+  uiState.customerSearch = els.customerSearchInput.value;
   renderCustomers(getActiveStore());
 });
 
@@ -1900,6 +1913,7 @@ function openCustomersModal() {
 
   uiState.customerFormOpen = false;
   uiState.customerMemberFilter = "all";
+  uiState.customerSearch = "";
   renderCustomers(store);
   els.customersModal.hidden = false;
 }
@@ -1930,11 +1944,24 @@ function closeCustomerForm() {
 function renderCustomers(store) {
   const allCustomers = getStoreCustomers(store);
   renderCustomerMemberFilter(allCustomers);
+  renderCustomerSearchSuggestions(allCustomers);
+  if (els.customerSearchInput.value !== uiState.customerSearch) {
+    els.customerSearchInput.value = uiState.customerSearch;
+  }
   const selectedTier = uiState.customerMemberFilter || "all";
-  const customers =
+  const tierCustomers =
     selectedTier === "all"
       ? allCustomers
       : allCustomers.filter((customer) => normalizeSearchText(customer.memberTier || "Thường") === selectedTier);
+  const query = normalizeSearchText(uiState.customerSearch || "");
+  const customers = query
+    ? tierCustomers.filter((customer) => {
+        const name = normalizeSearchText(customer.name || "");
+        const phone = normalizeSearchText(customer.phone || "");
+        const joined = normalizeSearchText(`${customer.name || ""} ${customer.phone || ""}`);
+        return name.includes(query) || phone.includes(query) || joined.includes(query);
+      })
+    : tierCustomers;
   els.customersCount.textContent = `${customers.length} khách`;
   els.customerForm.hidden = !uiState.customerFormOpen;
 
@@ -1944,7 +1971,9 @@ function renderCustomers(store) {
   }
 
   if (!customers.length) {
-    els.customersList.innerHTML = '<div class="empty-list">Không có khách hàng trong gói thành viên này</div>';
+    els.customersList.innerHTML = query
+      ? '<div class="empty-list">Không tìm thấy khách hàng phù hợp</div>'
+      : '<div class="empty-list">Không có khách hàng trong gói thành viên này</div>';
     return;
   }
 
@@ -1994,6 +2023,20 @@ function renderCustomerMemberFilter(customers) {
     ...tiers.map(([key, name]) => `<option value="${key}">${escapeHtml(name)}</option>`)
   ].join("");
   els.customerMemberFilter.value = uiState.customerMemberFilter;
+}
+
+function renderCustomerSearchSuggestions(customers) {
+  const suggestions = customers
+    .map((customer) => {
+      const name = String(customer.name || "").trim();
+      const phone = String(customer.phone || "").trim();
+      if (!name && !phone) return "";
+      return phone ? `${name} - ${phone}` : name;
+    })
+    .filter(Boolean);
+  els.customerSearchSuggestions.innerHTML = [...new Set(suggestions)]
+    .map((value) => `<option value="${escapeHtml(value)}"></option>`)
+    .join("");
 }
 
 function saveCustomerFromForm(formData) {

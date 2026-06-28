@@ -417,6 +417,12 @@ form button:disabled {
   margin-bottom: 14px;
 }
 
+.customer-search-row {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr);
+  margin-bottom: 14px;
+}
+
 .customer-form {
   display: grid;
   gap: 12px;
