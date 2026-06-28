@@ -2235,9 +2235,7 @@ function renderSalesOrderTable(container, orders) {
   container.innerHTML = orders
     .map((order) => {
       const cancelled = isCancelledEntry(order);
-      const items = (order.items || [])
-        .map(renderSalesOrderItemLine)
-        .join("<br>");
+      const items = renderSalesOrderItemLines(order.items || []);
       const customer = [
         escapeHtml(order.customerName || ""),
         cancelled ? '<span class="cancelled-pill">Hủy</span>' : ""
@@ -2260,6 +2258,11 @@ function renderSalesOrderTable(container, orders) {
     .join("");
 }
 
+function renderSalesOrderItemLines(items) {
+  if (!items.length) return "";
+  return `<div class="sales-item-lines">${items.map(renderSalesOrderItemLine).join("")}</div>`;
+}
+
 function renderSalesOrderItemLine(item) {
   const quantity = Number(item.quantity || 0);
   const originalPrice = Number(item.originalPrice || item.price || 0);
@@ -2268,15 +2271,22 @@ function renderSalesOrderItemLine(item) {
   const hasDiscount = Number(item.discountPercent || 0) > 0 && originalTotal > finalTotal;
 
   if (!hasDiscount) {
-    return `${escapeHtml(item.name || "")} x${quantity} - ${formatCurrency(finalTotal)}`;
+    return `
+      <div class="sales-detail-line">
+        <span class="sales-detail-name">${escapeHtml(item.name || "")} x${quantity}</span>
+        <span class="sales-detail-total">${formatCurrency(finalTotal)}</span>
+      </div>
+    `;
   }
 
   return `
-    ${escapeHtml(item.name || "")} x${quantity}
-    <span class="sales-discount-price">
-      <span class="old-value">${formatCurrency(originalTotal)}</span>
-      <span class="new-value">${formatCurrency(finalTotal)}</span>
-    </span>
+    <div class="sales-detail-line">
+      <span class="sales-detail-name">${escapeHtml(item.name || "")} x${quantity}</span>
+      <span class="sales-discount-price">
+        <span class="old-value">${formatCurrency(originalTotal)}</span>
+        <span class="new-value">${formatCurrency(finalTotal)}</span>
+      </span>
+    </div>
   `;
 }
 
@@ -2292,9 +2302,7 @@ function renderSalesDraftList(drafts) {
     .sort((a, b) => String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || "")))
     .map((draft) => {
       const title = draft.customerName || "Đơn chưa có tên khách";
-      const items = (draft.items || [])
-        .map(renderSalesOrderItemLine)
-        .join("<br>");
+      const items = renderSalesOrderItemLines(draft.items || []);
 
       return `
         <tr class="draft-order-row" data-open-sales-draft="${draft.id}">

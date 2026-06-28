@@ -1394,11 +1394,31 @@ th:last-child {
   transform: translateY(1px);
 }
 
+.sales-item-lines {
+  display: grid;
+  gap: 8px;
+}
+
+.sales-detail-line {
+  display: grid;
+  grid-template-columns: minmax(0, max-content) auto;
+  align-items: start;
+  justify-content: start;
+  gap: 10px;
+}
+
+.sales-detail-name {
+  white-space: nowrap;
+}
+
+.sales-detail-total {
+  font-weight: 800;
+}
+
 .sales-discount-price {
   display: inline-flex;
   flex-direction: column;
   gap: 2px;
-  margin-left: 6px;
   vertical-align: top;
 }
 
