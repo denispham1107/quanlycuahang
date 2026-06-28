@@ -116,6 +116,10 @@ const els = {
   salesRangeLabel: document.querySelector("#salesRangeLabel"),
   salesHistoryDateLabel: document.querySelector("#salesHistoryDateLabel"),
   salesOrderTable: document.querySelector("#salesOrderTable"),
+  salesOrderDetailModal: document.querySelector("#salesOrderDetailModal"),
+  salesOrderDetailStatus: document.querySelector("#salesOrderDetailStatus"),
+  salesOrderDetailContent: document.querySelector("#salesOrderDetailContent"),
+  closeSalesOrderDetail: document.querySelector("#closeSalesOrderDetail"),
   purchaseOrderFields: document.querySelector("#purchaseOrderFields"),
   purchaseOrderDate: document.querySelector("#purchaseOrderDate"),
   purchaseItems: document.querySelector("#purchaseItems"),
@@ -525,6 +529,19 @@ els.closeInventory.addEventListener("click", closeInventoryModal);
 
 els.inventoryModal.addEventListener("click", (event) => {
   if (event.target === els.inventoryModal) closeInventoryModal();
+});
+
+els.closeSalesOrderDetail.addEventListener("click", closeSalesOrderDetailModal);
+
+els.salesOrderDetailModal.addEventListener("click", (event) => {
+  if (event.target === els.salesOrderDetailModal) closeSalesOrderDetailModal();
+});
+
+els.salesOrderTable.addEventListener("click", (event) => {
+  if (event.target.closest("[data-delete-order]")) return;
+  const row = event.target.closest("[data-open-sales-order]");
+  if (!row) return;
+  openSalesOrderDetail(row.dataset.openSalesOrder);
 });
 
 els.inventorySearch.addEventListener("input", () => {
@@ -2364,7 +2381,7 @@ function renderSalesOrderTable(container, orders) {
         : `<button class="delete-small" type="button" data-delete-order="${order.id}" title="Xóa đơn" aria-label="Xóa đơn">×</button>`;
 
       return `
-        <tr class="${cancelled ? "entry-cancelled" : ""}">
+        <tr class="sales-order-row ${cancelled ? "entry-cancelled" : ""}" data-open-sales-order="${order.id}">
           <td>
             <span class="date-stack">
               <span>${formatDate(order.date)}</span>
@@ -2379,6 +2396,83 @@ function renderSalesOrderTable(container, orders) {
       `;
     })
     .join("");
+}
+
+function openSalesOrderDetail(orderId) {
+  const store = getActiveStore();
+  if (!store || !orderId) return;
+
+  const order = (store.orders || []).find((item) => item.id === orderId);
+  if (!order) return;
+
+  const cancelled = isCancelledEntry(order);
+  const createdTime = formatTime(order.createdAt || order.updatedAt);
+  const dateText = [formatDate(order.date || today), createdTime].filter(Boolean).join(" ");
+  const subtotal = Number(order.subtotal || order.items?.reduce((sum, item) => sum + Number(item.total || 0), 0) || order.total || 0);
+  const discountTotal = Number(order.discountTotal || 0);
+  const total = Number(order.total || 0);
+
+  els.salesOrderDetailStatus.innerHTML = cancelled ? '<span class="cancelled-pill">Hủy</span>' : "Đơn bán hàng";
+  els.salesOrderDetailContent.innerHTML = `
+    <div class="order-detail-grid">
+      <div class="order-detail-field">
+        <span>Ngày</span>
+        <strong>${escapeHtml(dateText)}</strong>
+      </div>
+      <div class="order-detail-field">
+        <span>Khách hàng</span>
+        <strong>${escapeHtml(order.customerName || "")}</strong>
+      </div>
+      <div class="order-detail-field">
+        <span>Số điện thoại</span>
+        <strong>${escapeHtml(order.customerPhone || "")}</strong>
+      </div>
+      <div class="order-detail-field">
+        <span>Trạng thái</span>
+        <strong>${cancelled ? "Đã hủy" : "Hoàn thành"}</strong>
+      </div>
+    </div>
+    <div class="order-detail-section">
+      <h3>Chi tiết</h3>
+      ${renderSalesOrderItemLines(order.items || []) || '<div class="empty-list">Không có hàng hóa</div>'}
+    </div>
+    <div class="order-detail-summary">
+      <div>
+        <span>Tổng bill</span>
+        <strong>${formatCurrency(subtotal)}</strong>
+      </div>
+      ${
+        discountTotal > 0
+          ? `
+            <div>
+              <span>Chiết khấu</span>
+              <strong>${formatCurrency(discountTotal)}</strong>
+            </div>
+            <div>
+              <span>Còn lại</span>
+              <strong>${formatCurrency(total)}</strong>
+            </div>
+          `
+          : ""
+      }
+      ${
+        cancelled
+          ? `
+            <div>
+              <span>Trạng thái</span>
+              <strong>Đã hủy</strong>
+            </div>
+          `
+          : ""
+      }
+    </div>
+  `;
+  els.salesOrderDetailModal.hidden = false;
+}
+
+function closeSalesOrderDetailModal() {
+  els.salesOrderDetailModal.hidden = true;
+  els.salesOrderDetailContent.innerHTML = "";
 }
 
 function renderSalesOrderItemLines(items) {
