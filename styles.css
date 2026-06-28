@@ -450,9 +450,10 @@ form button:disabled {
 
 .customer-card {
   display: grid;
-  grid-template-columns: minmax(120px, 0.7fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 0.8fr);
+  grid-template-columns: minmax(120px, 0.7fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 0.8fr) auto;
   align-items: center;
   gap: 14px;
+  position: relative;
   width: 100%;
   border: 1px solid rgba(8, 120, 247, 0.16);
   border-radius: 18px;
@@ -482,6 +483,96 @@ form button:disabled {
 
 .customer-card strong {
   overflow-wrap: anywhere;
+}
+
+.customer-history-button {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 34px;
+  border: 2px solid rgba(222, 42, 77, 0.32);
+  border-radius: 10px;
+  background: rgba(255, 232, 239, 0.92);
+  color: #d62d56;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 10px 22px rgba(214, 45, 86, 0.14);
+}
+
+.customer-history-button:hover {
+  border-color: rgba(222, 42, 77, 0.58);
+  background: #ffe2eb;
+}
+
+.customer-history-card {
+  width: min(980px, calc(100vw - 32px));
+  max-height: min(88vh, 920px);
+  overflow: auto;
+}
+
+.customer-history-content,
+.customer-history-list {
+  display: grid;
+  gap: 14px;
+}
+
+.customer-history-hero,
+.customer-history-order {
+  border: 1px solid rgba(8, 120, 247, 0.16);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 16px 36px rgba(83, 96, 222, 0.08);
+}
+
+.customer-history-hero {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+
+.customer-history-hero div {
+  display: grid;
+  gap: 5px;
+}
+
+.customer-history-hero small,
+.customer-history-summary span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.customer-history-hero strong {
+  overflow-wrap: anywhere;
+}
+
+.customer-history-order {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.customer-history-order-head,
+.customer-history-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.customer-history-order-head strong,
+.customer-history-summary strong {
+  font-weight: 900;
+}
+
+.customer-history-lines {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 10px 0;
+}
+
+.cancelled-text strong {
+  color: #e55f9a;
 }
 
 .category-list {
@@ -2428,10 +2519,34 @@ th:last-child {
   .customer-card {
     grid-template-columns: 1fr;
     gap: 10px;
+    padding-right: 72px;
+    padding-bottom: 22px;
+  }
+
+  .customer-history-button {
+    position: absolute;
+    right: 18px;
+    bottom: 18px;
+    width: 44px;
+    height: 32px;
   }
 
   .customer-form-actions {
     flex-direction: column-reverse;
+  }
+
+  .customer-history-card {
+    width: min(100%, calc(100vw - 24px));
+    padding: 18px;
+  }
+
+  .customer-history-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .customer-history-order-head,
+  .customer-history-summary {
+    align-items: flex-start;
   }
 
   .draft-order-table {

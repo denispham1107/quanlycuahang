@@ -147,6 +147,10 @@ const els = {
   customerCreatedAt: document.querySelector("#customerCreatedAt"),
   cancelCustomerForm: document.querySelector("#cancelCustomerForm"),
   closeCustomers: document.querySelector("#closeCustomers"),
+  customerHistoryModal: document.querySelector("#customerHistoryModal"),
+  customerHistoryStatus: document.querySelector("#customerHistoryStatus"),
+  customerHistoryContent: document.querySelector("#customerHistoryContent"),
+  closeCustomerHistory: document.querySelector("#closeCustomerHistory"),
   purchaseOrderFields: document.querySelector("#purchaseOrderFields"),
   purchaseOrderDate: document.querySelector("#purchaseOrderDate"),
   purchaseItems: document.querySelector("#purchaseItems"),
@@ -600,6 +604,12 @@ els.customersModal.addEventListener("click", (event) => {
   if (event.target === els.customersModal) closeCustomersModal();
 });
 
+els.closeCustomerHistory.addEventListener("click", closeCustomerHistoryModal);
+
+els.customerHistoryModal.addEventListener("click", (event) => {
+  if (event.target === els.customerHistoryModal) closeCustomerHistoryModal();
+});
+
 els.toggleCustomerForm.addEventListener("click", () => {
   openCustomerForm();
 });
@@ -627,6 +637,13 @@ els.customerSearchInput.addEventListener("change", () => {
 });
 
 els.customersList.addEventListener("click", (event) => {
+  const historyButton = event.target.closest("[data-customer-history]");
+  if (historyButton) {
+    event.stopPropagation();
+    openCustomerHistory(historyButton.dataset.customerHistory);
+    return;
+  }
+
   const customer = event.target.closest("[data-edit-customer]");
   if (!customer) return;
   openCustomerById(customer.dataset.editCustomer);
@@ -1982,7 +1999,7 @@ function renderCustomers(store) {
       const createdDate = formatDate(String(customer.createdAt || today).slice(0, 10));
       const createdTime = formatTime(customer.createdAt);
       return `
-        <button class="customer-card" type="button" data-edit-customer="${customer.id}">
+        <div class="customer-card" role="button" tabindex="0" data-edit-customer="${customer.id}">
           <span class="date-stack">
             <span>${createdDate}</span>
             ${createdTime ? `<small>${createdTime}</small>` : ""}
@@ -1999,7 +2016,8 @@ function renderCustomers(store) {
             <small>Gói thành viên</small>
             <strong>${escapeHtml(customer.memberTier || "Thường")}</strong>
           </span>
-        </button>
+          <button class="customer-history-button" type="button" data-customer-history="${customer.id}" title="Lịch sử giao dịch" aria-label="Lịch sử giao dịch">LS</button>
+        </div>
       `;
     })
     .join("");
@@ -2091,6 +2109,95 @@ function openCustomerById(customerId) {
   const customer = getStoreCustomers(store).find((item) => item.id === customerId);
   if (!customer) return;
   openCustomerForm(customer);
+}
+
+function openCustomerHistory(customerId) {
+  const store = getActiveStore();
+  if (!store || !customerId) return;
+
+  const customer = getStoreCustomers(store).find((item) => item.id === customerId);
+  if (!customer) return;
+
+  const customerKey = getCustomerKey(customer.name, customer.phone);
+  const orders = (store.orders || [])
+    .filter((order) => getCustomerKey(order.customerName, order.customerPhone) === customerKey)
+    .sort((a, b) => String(b.createdAt || b.date || "").localeCompare(String(a.createdAt || a.date || "")));
+  const total = orders.reduce((sum, order) => (isCancelledEntry(order) ? sum : sum + Number(order.total || 0)), 0);
+
+  els.customerHistoryStatus.textContent = `${orders.length} đơn`;
+  els.customerHistoryContent.innerHTML = `
+    <div class="customer-history-hero">
+      <div>
+        <small>Khách hàng</small>
+        <strong>${escapeHtml(customer.name || "")}</strong>
+      </div>
+      <div>
+        <small>Số điện thoại</small>
+        <strong>${escapeHtml(customer.phone || "")}</strong>
+      </div>
+      <div>
+        <small>Tổng giao dịch</small>
+        <strong>${formatCurrency(total)}</strong>
+      </div>
+    </div>
+    ${
+      orders.length
+        ? `<div class="customer-history-list">${orders.map(renderCustomerHistoryOrder).join("")}</div>`
+        : '<div class="empty-list">Khách hàng này chưa có đơn hàng nào</div>'
+    }
+  `;
+  els.customerHistoryModal.hidden = false;
+}
+
+function closeCustomerHistoryModal() {
+  els.customerHistoryModal.hidden = true;
+  els.customerHistoryContent.innerHTML = "";
+}
+
+function renderCustomerHistoryOrder(order) {
+  const cancelled = isCancelledEntry(order);
+  const createdTime = formatTime(order.createdAt || order.updatedAt);
+  const subtotal = Number(order.subtotal || order.items?.reduce((sum, item) => sum + Number(item.total || 0), 0) || order.total || 0);
+  const discountTotal = Number(order.discountTotal || 0);
+  const total = Number(order.total || 0);
+
+  return `
+    <article class="customer-history-order ${cancelled ? "entry-cancelled" : ""}">
+      <div class="customer-history-order-head">
+        <span class="date-stack">
+          <span>${formatDate(order.date || today)}</span>
+          ${createdTime ? `<small>${createdTime}</small>` : ""}
+        </span>
+        <strong>${formatCurrency(total)}</strong>
+      </div>
+      <div class="customer-history-lines">
+        ${renderSalesOrderItemLines(order.items || []) || '<div class="empty-list">Không có hàng hóa</div>'}
+      </div>
+      <div class="customer-history-summary">
+        <span>Tổng bill</span>
+        <strong>${formatCurrency(subtotal)}</strong>
+      </div>
+      ${
+        discountTotal > 0
+          ? `
+            <div class="customer-history-summary">
+              <span>Chiết khấu</span>
+              <strong>${formatCurrency(discountTotal)}</strong>
+            </div>
+            <div class="customer-history-summary">
+              <span>Còn lại</span>
+              <strong>${formatCurrency(total)}</strong>
+            </div>
+          `
+          : ""
+      }
+      ${
+        cancelled
+          ? '<div class="customer-history-summary cancelled-text"><span>Trạng thái</span><strong>Đã hủy</strong></div>'
+          : ""
+      }
+    </article>
+  `;
 }
 
 function openPurchaseOrderModal(store) {
