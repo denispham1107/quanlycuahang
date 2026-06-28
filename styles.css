@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   color-scheme: light;
   --bg: #edf6ff;
   --surface: #ffffff;
@@ -530,6 +530,17 @@ form button:disabled {
 
 .draft-order-row:hover td {
   border-color: rgba(8, 120, 247, 0.34);
+}
+
+.date-stack {
+  display: inline-grid;
+  gap: 4px;
+}
+
+.date-stack small {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .store-name,
@@ -1940,26 +1951,22 @@ th:last-child {
   }
 
   .sales-table td:nth-child(4)::before {
-    content: "Chi tiết";
-  }
-
-  .sales-table td:nth-child(5)::before {
     content: "Tổng bill";
   }
 
-  .sales-table td:nth-child(5) {
+  .sales-table td:nth-child(4) {
     display: block;
     padding: 6px 0;
   }
 
-  .sales-table td:nth-child(6) {
+  .sales-table td:nth-child(5) {
     display: flex;
     gap: 8px;
     justify-content: flex-end;
     padding-top: 8px;
   }
 
-  .sales-table td:nth-child(6)::before {
+  .sales-table td:nth-child(5)::before {
     content: "";
   }
 
@@ -2081,3 +2088,4 @@ th:last-child {
     text-align: left;
   }
 }
+

@@ -2347,14 +2347,14 @@ function renderSalesOrderTable(container, orders) {
   if (!container) return;
 
   if (!orders.length) {
-    container.innerHTML = '<tr><td colspan="6" class="empty-list">Chưa có đơn hàng trong khoảng thời gian này</td></tr>';
+    container.innerHTML = '<tr><td colspan="5" class="empty-list">Chưa có đơn hàng trong khoảng thời gian này</td></tr>';
     return;
   }
 
   container.innerHTML = orders
     .map((order) => {
       const cancelled = isCancelledEntry(order);
-      const items = renderSalesOrderItemLines(order.items || []);
+      const createdTime = formatTime(order.createdAt || order.updatedAt);
       const customer = [
         escapeHtml(order.customerName || ""),
         cancelled ? '<span class="cancelled-pill">Hủy</span>' : ""
@@ -2365,10 +2365,14 @@ function renderSalesOrderTable(container, orders) {
 
       return `
         <tr class="${cancelled ? "entry-cancelled" : ""}">
-          <td>${formatDate(order.date)}</td>
+          <td>
+            <span class="date-stack">
+              <span>${formatDate(order.date)}</span>
+              ${createdTime ? `<small>${createdTime}</small>` : ""}
+            </span>
+          </td>
           <td>${customer}</td>
           <td>${escapeHtml(order.customerPhone || "")}</td>
-          <td class="note-cell">${items}</td>
           <td class="amount-cell">${formatCurrency(order.total || 0)}</td>
           <td>${actions}</td>
         </tr>
@@ -2421,14 +2425,18 @@ function renderSalesDraftList(drafts) {
     .sort((a, b) => String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || "")))
     .map((draft) => {
       const title = draft.customerName || "Đơn chưa có tên khách";
-      const items = renderSalesOrderItemLines(draft.items || []);
+      const draftTime = formatTime(draft.updatedAt || draft.createdAt);
 
       return `
         <tr class="draft-order-row" data-open-sales-draft="${draft.id}">
-          <td>${formatDate(draft.date || today)}</td>
+          <td>
+            <span class="date-stack">
+              <span>${formatDate(draft.date || today)}</span>
+              ${draftTime ? `<small>${draftTime}</small>` : ""}
+            </span>
+          </td>
           <td>${escapeHtml(title)}</td>
           <td>${escapeHtml(draft.customerPhone || "")}</td>
-          <td class="note-cell">${items || "Chưa có khoản thu"}</td>
           <td class="amount-cell">${formatCurrency(draft.total || 0)}</td>
           <td>
             <button class="delete-small" type="button" data-delete-sales-draft="${draft.id}" title="Xóa đơn đang lưu" aria-label="Xóa đơn đang lưu">×</button>
@@ -2447,7 +2455,6 @@ function renderSalesDraftList(drafts) {
             <th>Ngày</th>
             <th>Khách hàng</th>
             <th>Số điện thoại</th>
-            <th>Chi tiết</th>
             <th>Tổng bill</th>
             <th></th>
           </tr>
@@ -2883,6 +2890,17 @@ function formatCurrency(value) {
 function formatDate(value) {
   const [year, month, day] = value.split("-");
   return `${day}/${month}/${year}`;
+}
+
+function formatTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).format(date);
 }
 
 function getStoreStartDate(store) {
