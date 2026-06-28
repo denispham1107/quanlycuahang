@@ -380,10 +380,12 @@ els.addSalesItem.addEventListener("click", () => {
 els.salesItems.addEventListener("input", (event) => {
   if (event.target.matches('[data-sales-item="price"]')) {
     event.target.value = formatAmountInput(event.target.value);
+    updateSalesOriginalPrice(event.target.closest(".sales-item-row"));
   }
 
   if (event.target.matches('[data-sales-item="discount"]')) {
     event.target.value = formatPercentInput(event.target.value);
+    applySalesDiscountToRow(event.target.closest(".sales-item-row"));
   }
 
   if (event.target.matches('[data-sales-item="name"]')) {
@@ -1205,9 +1207,13 @@ function addSalesItemRow(item = {}) {
   const row = document.createElement("div");
   row.className = "sales-item-row";
   const originalPrice = Number(item.originalPrice || item.price || 0);
+  const displayPrice = Number(item.discountPercent || 0) > 0 ? Number(item.price || getDiscountedPrice(originalPrice, item.discountPercent)) : originalPrice;
+  if (Number(item.discountPercent || 0) > 0 && originalPrice > 0) {
+    row.dataset.originalPrice = String(originalPrice);
+  }
   row.innerHTML = `
     <input type="text" data-sales-item="name" placeholder="Hàng hóa" autocomplete="off" list="salesItemSuggestions" value="${escapeHtml(item.name || "")}" />
-    <input type="text" data-sales-item="price" inputmode="numeric" placeholder="Giá" autocomplete="off" value="${originalPrice ? formatAmountInput(originalPrice) : ""}" />
+    <input type="text" data-sales-item="price" inputmode="numeric" placeholder="Giá" autocomplete="off" value="${displayPrice ? formatAmountInput(displayPrice) : ""}" />
     <div class="discount-field">
       <input type="text" data-sales-item="discount" inputmode="numeric" placeholder="Chiết khấu" autocomplete="off" value="${item.discountPercent ? formatPercentInput(item.discountPercent) : ""}" />
       <span aria-hidden="true">%</span>
@@ -1226,39 +1232,33 @@ function getSalesOrderItems() {
   return [...els.salesItems.querySelectorAll(".sales-item-row")]
     .map((row) => {
       const name = String(row.querySelector('[data-sales-item="name"]')?.value || "").trim();
-      const originalPrice = parseAmountInput(row.querySelector('[data-sales-item="price"]')?.value);
-      const discountPercent = parsePercentInput(row.querySelector('[data-sales-item="discount"]')?.value);
-      const price = getDiscountedPrice(originalPrice, discountPercent);
+      const pricing = getSalesRowPricing(row);
       const quantity = Math.max(1, Number.parseInt(row.querySelector('[data-sales-item="quantity"]')?.value, 10) || 1);
       return {
         name,
-        price,
-        originalPrice,
-        discountPercent,
+        price: pricing.price,
+        originalPrice: pricing.originalPrice,
+        discountPercent: pricing.discountPercent,
         quantity,
-        total: price * quantity
+        total: pricing.price * quantity
       };
     })
-    .filter((item) => item.name && Number.isFinite(item.originalPrice) && item.originalPrice > 0);
+    .filter((item) => item.name && Number.isFinite(item.originalPrice) && item.originalPrice > 0 && item.price > 0);
 }
 
 function getSalesDraftItems() {
   return [...els.salesItems.querySelectorAll(".sales-item-row")]
     .map((row) => {
       const name = String(row.querySelector('[data-sales-item="name"]')?.value || "").trim();
-      const rawPrice = row.querySelector('[data-sales-item="price"]')?.value;
-      const parsedPrice = parseAmountInput(rawPrice);
-      const originalPrice = Number.isFinite(parsedPrice) ? parsedPrice : 0;
-      const discountPercent = parsePercentInput(row.querySelector('[data-sales-item="discount"]')?.value);
-      const price = getDiscountedPrice(originalPrice, discountPercent);
+      const pricing = getSalesRowPricing(row);
       const quantity = Math.max(1, Number.parseInt(row.querySelector('[data-sales-item="quantity"]')?.value, 10) || 1);
       return {
         name,
-        price,
-        originalPrice,
-        discountPercent,
+        price: pricing.price,
+        originalPrice: pricing.originalPrice,
+        discountPercent: pricing.discountPercent,
         quantity,
-        total: price * quantity
+        total: pricing.price * quantity
       };
     })
     .filter((item) => item.name || item.originalPrice > 0);
@@ -1280,6 +1280,56 @@ function getSalesFormData({ completeOnly = false } = {}) {
 function updateSalesOrderTotal() {
   const total = getSalesOrderItems().reduce((sum, item) => sum + item.total, 0);
   els.salesOrderTotal.textContent = formatCurrency(total);
+}
+
+function updateSalesOriginalPrice(row) {
+  if (!row) return;
+  const priceInput = row.querySelector('[data-sales-item="price"]');
+  const discountInput = row.querySelector('[data-sales-item="discount"]');
+  const currentPrice = parseAmountInput(priceInput?.value);
+  if (currentPrice <= 0) {
+    delete row.dataset.originalPrice;
+    return;
+  }
+
+  if (!parsePercentInput(discountInput?.value)) {
+    row.dataset.originalPrice = String(currentPrice);
+  }
+}
+
+function applySalesDiscountToRow(row) {
+  if (!row) return;
+  const priceInput = row.querySelector('[data-sales-item="price"]');
+  const discountInput = row.querySelector('[data-sales-item="discount"]');
+  if (!priceInput || !discountInput) return;
+
+  const discountPercent = parsePercentInput(discountInput.value);
+  const visiblePrice = parseAmountInput(priceInput.value);
+  const originalPrice = Number(row.dataset.originalPrice || visiblePrice || 0);
+
+  if (!discountPercent) {
+    if (originalPrice > 0) priceInput.value = formatAmountInput(originalPrice);
+    delete row.dataset.originalPrice;
+    return;
+  }
+
+  if (!row.dataset.originalPrice && visiblePrice > 0) {
+    row.dataset.originalPrice = String(visiblePrice);
+  }
+
+  priceInput.value = formatAmountInput(getDiscountedPrice(originalPrice, discountPercent));
+}
+
+function getSalesRowPricing(row) {
+  const discountPercent = parsePercentInput(row.querySelector('[data-sales-item="discount"]')?.value);
+  const price = parseAmountInput(row.querySelector('[data-sales-item="price"]')?.value);
+  const originalPrice = discountPercent > 0 ? Number(row.dataset.originalPrice || price || 0) : price;
+
+  return {
+    price,
+    originalPrice,
+    discountPercent
+  };
 }
 
 function applySalesItemSuggestion(row) {
