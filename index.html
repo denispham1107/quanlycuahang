@@ -385,9 +385,19 @@
           </div>
           <div class="sales-items" id="salesItems"></div>
           <button class="ghost-button add-sales-item" id="addSalesItem" type="button">Thêm hàng hóa</button>
-          <div class="sales-total">
-            <span>Tổng bill</span>
-            <strong id="salesOrderTotal">0 đ</strong>
+          <div class="sales-total sales-total-stack">
+            <div class="sales-total-row">
+              <span>Tổng bill</span>
+              <strong id="salesOrderTotal">0 đ</strong>
+            </div>
+            <div class="sales-total-row sales-total-discount" id="salesOrderDiscountLine" hidden>
+              <span>Chiết khấu</span>
+              <strong id="salesOrderDiscountTotal">0 đ</strong>
+            </div>
+            <div class="sales-total-row sales-total-remaining" id="salesOrderRemainingLine" hidden>
+              <span>Còn lại</span>
+              <strong id="salesOrderRemainingTotal">0 đ</strong>
+            </div>
           </div>
           <datalist id="salesItemSuggestions"></datalist>
         </div>
@@ -418,10 +428,37 @@
         <div class="modal-actions">
           <button class="ghost-button" id="cancelQuickEntry" type="button">Hủy</button>
           <button class="ghost-button danger" id="deleteSalesDraft" type="button" hidden>Xóa</button>
+          <button class="ghost-button" id="openOrderDiscount" type="button" hidden>Chiết Khấu</button>
           <button class="ghost-button" id="saveSalesDraft" type="button" hidden>Lưu</button>
           <button id="quickEntrySubmit" type="submit">Lưu</button>
         </div>
       </form>
+    </div>
+
+    <div class="modal-backdrop order-discount-backdrop" id="orderDiscountModal" hidden>
+      <section class="modal-card order-discount-card">
+        <div class="panel-heading">
+          <h2>Chiết Khấu</h2>
+          <span>Tổng bill</span>
+        </div>
+        <div class="order-discount-fields">
+          <div class="field">
+            <label for="orderDiscountPercent">Chiết Khấu</label>
+            <div class="discount-field">
+              <input id="orderDiscountPercent" type="text" inputmode="numeric" placeholder="Chiết khấu" autocomplete="off" />
+              <span aria-hidden="true">%</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="orderDiscountAmount">Giảm Tiền</label>
+            <input id="orderDiscountAmount" type="text" inputmode="numeric" placeholder="Giảm tiền" autocomplete="off" />
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="ghost-button" id="cancelOrderDiscount" type="button">Hủy</button>
+          <button id="applyOrderDiscount" type="button">Xác nhận</button>
+        </div>
+      </section>
     </div>
 
     <div class="modal-backdrop inventory-backdrop" id="inventoryModal" hidden>

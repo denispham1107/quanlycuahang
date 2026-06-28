@@ -1460,6 +1460,41 @@ th:last-child {
   text-align: right;
 }
 
+.sales-total-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.sales-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sales-total-discount strong {
+  color: var(--expense);
+}
+
+.sales-total-remaining {
+  border-top: 1px solid rgba(8, 120, 247, 0.16);
+  padding-top: 8px;
+}
+
+.sales-total-remaining strong {
+  color: var(--accent-strong);
+  font-size: 24px;
+}
+
+.order-discount-card {
+  width: min(520px, calc(100vw - 32px));
+}
+
+.order-discount-fields {
+  display: grid;
+  gap: 14px;
+}
+
 .inventory-toggle {
   width: 100%;
   justify-content: center;

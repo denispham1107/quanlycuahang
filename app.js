@@ -30,7 +30,9 @@ const uiState = {
   inventoryFilter: "all",
   inventoryLogsExpanded: false,
   salesGoodsFilter: "all",
-  salesDraftId: null
+  salesDraftId: null,
+  salesOrderDiscountPercent: 0,
+  salesOrderDiscountAmount: 0
 };
 
 const els = {
@@ -101,6 +103,10 @@ const els = {
   salesItems: document.querySelector("#salesItems"),
   addSalesItem: document.querySelector("#addSalesItem"),
   salesOrderTotal: document.querySelector("#salesOrderTotal"),
+  salesOrderDiscountLine: document.querySelector("#salesOrderDiscountLine"),
+  salesOrderDiscountTotal: document.querySelector("#salesOrderDiscountTotal"),
+  salesOrderRemainingLine: document.querySelector("#salesOrderRemainingLine"),
+  salesOrderRemainingTotal: document.querySelector("#salesOrderRemainingTotal"),
   salesItemSuggestions: document.querySelector("#salesItemSuggestions"),
   salesOrderCount: document.querySelector("#salesOrderCount"),
   salesDraftList: document.querySelector("#salesDraftList"),
@@ -138,6 +144,12 @@ const els = {
   editInventoryPrice: document.querySelector("#editInventoryPrice"),
   cancelEditInventory: document.querySelector("#cancelEditInventory"),
   quickEntrySubmit: document.querySelector("#quickEntrySubmit"),
+  openOrderDiscount: document.querySelector("#openOrderDiscount"),
+  orderDiscountModal: document.querySelector("#orderDiscountModal"),
+  orderDiscountPercent: document.querySelector("#orderDiscountPercent"),
+  orderDiscountAmount: document.querySelector("#orderDiscountAmount"),
+  cancelOrderDiscount: document.querySelector("#cancelOrderDiscount"),
+  applyOrderDiscount: document.querySelector("#applyOrderDiscount"),
   saveSalesDraft: document.querySelector("#saveSalesDraft"),
   deleteSalesDraft: document.querySelector("#deleteSalesDraft"),
   cancelQuickEntry: document.querySelector("#cancelQuickEntry"),
@@ -352,6 +364,31 @@ els.saveSalesDraft.addEventListener("click", () => {
 
 els.deleteSalesDraft.addEventListener("click", () => {
   if (deleteSalesDraft(uiState.salesDraftId)) closeQuickEntryModal();
+});
+
+els.openOrderDiscount.addEventListener("click", openOrderDiscountModal);
+
+els.cancelOrderDiscount.addEventListener("click", closeOrderDiscountModal);
+
+els.orderDiscountModal.addEventListener("click", (event) => {
+  if (event.target === els.orderDiscountModal) closeOrderDiscountModal();
+});
+
+els.orderDiscountPercent.addEventListener("input", () => {
+  els.orderDiscountPercent.value = formatPercentInput(els.orderDiscountPercent.value);
+  if (els.orderDiscountPercent.value) els.orderDiscountAmount.value = "";
+});
+
+els.orderDiscountAmount.addEventListener("input", () => {
+  els.orderDiscountAmount.value = formatAmountInput(els.orderDiscountAmount.value);
+  if (els.orderDiscountAmount.value) els.orderDiscountPercent.value = "";
+});
+
+els.applyOrderDiscount.addEventListener("click", () => {
+  uiState.salesOrderDiscountPercent = parsePercentInput(els.orderDiscountPercent.value);
+  uiState.salesOrderDiscountAmount = parseAmountInput(els.orderDiscountAmount.value);
+  updateSalesOrderTotal();
+  closeOrderDiscountModal();
 });
 
 els.quickEntryModal.addEventListener("click", (event) => {
@@ -1145,6 +1182,7 @@ function openQuickEntryModal(type) {
   els.quickEntryAmount.value = "";
   els.quickEntryNote.value = "";
   els.quickEntrySubmit.textContent = "Lưu";
+  els.openOrderDiscount.hidden = true;
   els.saveSalesDraft.hidden = true;
   els.quickEntryDate.value = els.singleDate.value || today;
   els.quickEntryCategory.innerHTML = [
@@ -1163,6 +1201,9 @@ function closeQuickEntryModal() {
   els.quickEntryModal.classList.remove("sales-page-mode");
   els.quickEntryForm.reset();
   uiState.salesDraftId = null;
+  uiState.salesOrderDiscountPercent = 0;
+  uiState.salesOrderDiscountAmount = 0;
+  closeOrderDiscountModal();
   els.salesItems.innerHTML = "";
   els.purchaseItems.innerHTML = "";
   els.quickEntryFields.hidden = false;
@@ -1172,6 +1213,7 @@ function closeQuickEntryModal() {
   els.bulkPurchaseText.value = "";
   updateBulkPurchaseSummary();
   els.quickEntrySubmit.disabled = false;
+  els.openOrderDiscount.hidden = true;
   els.saveSalesDraft.hidden = true;
   els.deleteSalesDraft.hidden = true;
   els.quickEntrySubmit.textContent = "Lưu";
@@ -1200,6 +1242,8 @@ function openSalesOrderModal(store, draft = null) {
   els.purchaseOrderFields.hidden = true;
   els.bulkPurchaseFields.hidden = true;
   uiState.salesDraftId = draft?.id || null;
+  uiState.salesOrderDiscountPercent = Number(draft?.orderDiscountPercent || 0);
+  uiState.salesOrderDiscountAmount = Number(draft?.orderDiscountAmount || 0);
   els.salesCustomerName.value = draft?.customerName || "";
   els.salesCustomerPhone.value = draft?.customerPhone || "";
   els.salesOrderDate.value = draft?.date || els.singleDate.value || today;
@@ -1208,6 +1252,7 @@ function openSalesOrderModal(store, draft = null) {
   (draft?.items?.length ? draft.items : [{}]).forEach((item) => addSalesItemRow(item));
   updateSalesOrderTotal();
   els.quickEntrySubmit.disabled = false;
+  els.openOrderDiscount.hidden = false;
   els.saveSalesDraft.hidden = false;
   els.deleteSalesDraft.hidden = !uiState.salesDraftId;
   els.quickEntrySubmit.textContent = "Hoàn Thành";
@@ -1281,20 +1326,58 @@ function getSalesDraftItems() {
 
 function getSalesFormData({ completeOnly = false } = {}) {
   const items = completeOnly ? getSalesOrderItems() : getSalesDraftItems();
-  const total = items.reduce((sum, item) => sum + item.total, 0);
+  const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+  const orderDiscountPercent = Number(uiState.salesOrderDiscountPercent || 0);
+  const orderDiscountAmount = Number(uiState.salesOrderDiscountAmount || 0);
+  const discountTotal = getOrderDiscountAmount(subtotal);
+  const total = Math.max(0, subtotal - discountTotal);
 
   return {
     customerName: String(els.salesCustomerName.value || "").trim(),
     customerPhone: String(els.salesCustomerPhone.value || "").trim(),
     date: els.salesOrderDate.value || today,
     items,
+    subtotal,
+    orderDiscountPercent,
+    orderDiscountAmount,
+    discountTotal,
     total
   };
 }
 
 function updateSalesOrderTotal() {
-  const total = getSalesOrderItems().reduce((sum, item) => sum + item.total, 0);
-  els.salesOrderTotal.textContent = formatCurrency(total);
+  const subtotal = getSalesItemsSubtotal();
+  const discountTotal = getOrderDiscountAmount(subtotal);
+  const remainingTotal = Math.max(0, subtotal - discountTotal);
+
+  els.salesOrderTotal.textContent = formatCurrency(subtotal);
+  els.salesOrderDiscountLine.hidden = discountTotal <= 0;
+  els.salesOrderRemainingLine.hidden = discountTotal <= 0;
+  els.salesOrderDiscountTotal.textContent = formatCurrency(discountTotal);
+  els.salesOrderRemainingTotal.textContent = formatCurrency(remainingTotal);
+}
+
+function getSalesItemsSubtotal() {
+  return getSalesOrderItems().reduce((sum, item) => sum + item.total, 0);
+}
+
+function getOrderDiscountAmount(subtotal) {
+  const total = Math.max(0, Number(subtotal || 0));
+  const directAmount = Math.min(total, Math.max(0, Number(uiState.salesOrderDiscountAmount || 0)));
+  if (directAmount > 0) return directAmount;
+
+  const percent = Math.min(100, Math.max(0, Number(uiState.salesOrderDiscountPercent || 0)));
+  return Math.min(total, Math.round(total * percent / 100));
+}
+
+function openOrderDiscountModal() {
+  els.orderDiscountPercent.value = uiState.salesOrderDiscountPercent ? formatPercentInput(uiState.salesOrderDiscountPercent) : "";
+  els.orderDiscountAmount.value = uiState.salesOrderDiscountAmount ? formatAmountInput(uiState.salesOrderDiscountAmount) : "";
+  els.orderDiscountModal.hidden = false;
+}
+
+function closeOrderDiscountModal() {
+  els.orderDiscountModal.hidden = true;
 }
 
 function updateSalesOriginalPrice(row) {
@@ -1450,7 +1533,17 @@ function saveSalesOrder() {
   const store = getActiveStore();
   if (!store) return false;
 
-  const { customerName, customerPhone, date, items, total } = getSalesFormData({ completeOnly: true });
+  const {
+    customerName,
+    customerPhone,
+    date,
+    items,
+    subtotal,
+    orderDiscountPercent,
+    orderDiscountAmount,
+    discountTotal,
+    total
+  } = getSalesFormData({ completeOnly: true });
 
   if (!customerName) {
     window.alert("Vui lòng nhập tên khách hàng.");
@@ -1483,6 +1576,10 @@ function saveSalesOrder() {
     customerPhone,
     date,
     items: orderItems,
+    subtotal,
+    orderDiscountPercent,
+    orderDiscountAmount,
+    discountTotal,
     total,
     inventoryDeducted: true,
     createdAt
@@ -1510,6 +1607,7 @@ function openPurchaseOrderModal(store) {
   addPurchaseItemRow();
   updatePurchaseOrderTotal();
   els.quickEntrySubmit.disabled = false;
+  els.openOrderDiscount.hidden = true;
   els.saveSalesDraft.hidden = true;
   els.deleteSalesDraft.hidden = true;
   els.quickEntrySubmit.textContent = "Hoàn Thành";
@@ -1530,6 +1628,7 @@ function openBulkPurchaseModal(store) {
   els.bulkPurchaseText.value = "";
   updateBulkPurchaseSummary();
   els.quickEntrySubmit.disabled = false;
+  els.openOrderDiscount.hidden = true;
   els.saveSalesDraft.hidden = true;
   els.deleteSalesDraft.hidden = true;
   els.quickEntrySubmit.textContent = "Hoàn Thành";
