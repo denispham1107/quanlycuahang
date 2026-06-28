@@ -1208,7 +1208,10 @@ function addSalesItemRow(item = {}) {
   row.innerHTML = `
     <input type="text" data-sales-item="name" placeholder="Hàng hóa" autocomplete="off" list="salesItemSuggestions" value="${escapeHtml(item.name || "")}" />
     <input type="text" data-sales-item="price" inputmode="numeric" placeholder="Giá" autocomplete="off" value="${originalPrice ? formatAmountInput(originalPrice) : ""}" />
-    <input type="text" data-sales-item="discount" inputmode="numeric" placeholder="Chiết khấu %" autocomplete="off" value="${item.discountPercent ? formatPercentInput(item.discountPercent) : ""}" />
+    <div class="discount-field">
+      <input type="text" data-sales-item="discount" inputmode="numeric" placeholder="Chiết khấu" autocomplete="off" value="${item.discountPercent ? formatPercentInput(item.discountPercent) : ""}" />
+      <span aria-hidden="true">%</span>
+    </div>
     <div class="quantity-stepper" aria-label="Số lượng">
       <button class="quantity-step" type="button" data-sales-quantity-step="-1" aria-label="Giảm số lượng">-</button>
       <input type="number" data-sales-item="quantity" min="1" step="1" placeholder="SL" value="${item.quantity || 1}" />
@@ -2680,7 +2683,7 @@ function parsePercentInput(value) {
 function formatPercentInput(value) {
   const percent = parsePercentInput(value);
   if (!percent) return "";
-  return `${Number.isInteger(percent) ? percent : percent.toFixed(2).replace(/\.?0+$/, "")}%`;
+  return Number.isInteger(percent) ? String(percent) : percent.toFixed(2).replace(/\.?0+$/, "");
 }
 
 function getDiscountedPrice(price, discountPercent) {

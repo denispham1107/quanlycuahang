@@ -1336,6 +1336,26 @@ th:last-child {
   min-height: 40px;
 }
 
+.discount-field {
+  position: relative;
+  min-width: 0;
+}
+
+.discount-field input {
+  width: 100%;
+  padding-right: 32px;
+}
+
+.discount-field span {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-weight: 900;
+  pointer-events: none;
+}
+
 .quantity-stepper {
   display: grid;
   grid-template-columns: 34px minmax(44px, 1fr) 34px;
