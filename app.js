@@ -385,7 +385,18 @@ els.salesItems.addEventListener("input", (event) => {
 
   if (event.target.matches('[data-sales-item="discount"]')) {
     event.target.value = formatPercentInput(event.target.value);
-    applySalesDiscountToRow(event.target.closest(".sales-item-row"));
+    const row = event.target.closest(".sales-item-row");
+    const amountInput = row?.querySelector('[data-sales-item="discountAmount"]');
+    if (event.target.value && amountInput) amountInput.value = "";
+    applySalesDiscountToRow(row);
+  }
+
+  if (event.target.matches('[data-sales-item="discountAmount"]')) {
+    event.target.value = formatAmountInput(event.target.value);
+    const row = event.target.closest(".sales-item-row");
+    const percentInput = row?.querySelector('[data-sales-item="discount"]');
+    if (event.target.value && percentInput) percentInput.value = "";
+    applySalesDiscountToRow(row);
   }
 
   if (event.target.matches('[data-sales-item="name"]')) {
@@ -1207,8 +1218,9 @@ function addSalesItemRow(item = {}) {
   const row = document.createElement("div");
   row.className = "sales-item-row";
   const originalPrice = Number(item.originalPrice || item.price || 0);
-  const displayPrice = Number(item.discountPercent || 0) > 0 ? Number(item.price || getDiscountedPrice(originalPrice, item.discountPercent)) : originalPrice;
-  if (Number(item.discountPercent || 0) > 0 && originalPrice > 0) {
+  const hasDiscount = Number(item.discountPercent || 0) > 0 || Number(item.discountAmount || 0) > 0;
+  const displayPrice = hasDiscount ? Number(item.price || getDiscountedPrice(originalPrice, item.discountPercent, item.discountAmount)) : originalPrice;
+  if (hasDiscount && originalPrice > 0) {
     row.dataset.originalPrice = String(originalPrice);
   }
   row.innerHTML = `
@@ -1218,6 +1230,7 @@ function addSalesItemRow(item = {}) {
       <input type="text" data-sales-item="discount" inputmode="numeric" placeholder="Chiết khấu" autocomplete="off" value="${item.discountPercent ? formatPercentInput(item.discountPercent) : ""}" />
       <span aria-hidden="true">%</span>
     </div>
+    <input type="text" data-sales-item="discountAmount" inputmode="numeric" placeholder="Giảm tiền" autocomplete="off" value="${item.discountAmount ? formatAmountInput(item.discountAmount) : ""}" />
     <div class="quantity-stepper" aria-label="Số lượng">
       <button class="quantity-step" type="button" data-sales-quantity-step="-1" aria-label="Giảm số lượng">-</button>
       <input type="number" data-sales-item="quantity" min="1" step="1" placeholder="SL" value="${item.quantity || 1}" />
@@ -1239,6 +1252,7 @@ function getSalesOrderItems() {
         price: pricing.price,
         originalPrice: pricing.originalPrice,
         discountPercent: pricing.discountPercent,
+        discountAmount: pricing.discountAmount,
         quantity,
         total: pricing.price * quantity
       };
@@ -1257,6 +1271,7 @@ function getSalesDraftItems() {
         price: pricing.price,
         originalPrice: pricing.originalPrice,
         discountPercent: pricing.discountPercent,
+        discountAmount: pricing.discountAmount,
         quantity,
         total: pricing.price * quantity
       };
@@ -1286,13 +1301,14 @@ function updateSalesOriginalPrice(row) {
   if (!row) return;
   const priceInput = row.querySelector('[data-sales-item="price"]');
   const discountInput = row.querySelector('[data-sales-item="discount"]');
+  const discountAmountInput = row.querySelector('[data-sales-item="discountAmount"]');
   const currentPrice = parseAmountInput(priceInput?.value);
   if (currentPrice <= 0) {
     delete row.dataset.originalPrice;
     return;
   }
 
-  if (!parsePercentInput(discountInput?.value)) {
+  if (!parsePercentInput(discountInput?.value) && !parseAmountInput(discountAmountInput?.value)) {
     row.dataset.originalPrice = String(currentPrice);
   }
 }
@@ -1301,13 +1317,15 @@ function applySalesDiscountToRow(row) {
   if (!row) return;
   const priceInput = row.querySelector('[data-sales-item="price"]');
   const discountInput = row.querySelector('[data-sales-item="discount"]');
+  const discountAmountInput = row.querySelector('[data-sales-item="discountAmount"]');
   if (!priceInput || !discountInput) return;
 
   const discountPercent = parsePercentInput(discountInput.value);
+  const discountAmount = parseAmountInput(discountAmountInput?.value);
   const visiblePrice = parseAmountInput(priceInput.value);
   const originalPrice = Number(row.dataset.originalPrice || visiblePrice || 0);
 
-  if (!discountPercent) {
+  if (!discountPercent && !discountAmount) {
     if (originalPrice > 0) priceInput.value = formatAmountInput(originalPrice);
     delete row.dataset.originalPrice;
     return;
@@ -1317,18 +1335,20 @@ function applySalesDiscountToRow(row) {
     row.dataset.originalPrice = String(visiblePrice);
   }
 
-  priceInput.value = formatAmountInput(getDiscountedPrice(originalPrice, discountPercent));
+  priceInput.value = formatAmountInput(getDiscountedPrice(originalPrice, discountPercent, discountAmount));
 }
 
 function getSalesRowPricing(row) {
   const discountPercent = parsePercentInput(row.querySelector('[data-sales-item="discount"]')?.value);
+  const discountAmount = parseAmountInput(row.querySelector('[data-sales-item="discountAmount"]')?.value);
   const price = parseAmountInput(row.querySelector('[data-sales-item="price"]')?.value);
-  const originalPrice = discountPercent > 0 ? Number(row.dataset.originalPrice || price || 0) : price;
+  const originalPrice = discountPercent > 0 || discountAmount > 0 ? Number(row.dataset.originalPrice || price || 0) : price;
 
   return {
     price,
     originalPrice,
-    discountPercent
+    discountPercent,
+    discountAmount
   };
 }
 
@@ -2268,7 +2288,7 @@ function renderSalesOrderItemLine(item) {
   const originalPrice = Number(item.originalPrice || item.price || 0);
   const originalTotal = originalPrice * quantity;
   const finalTotal = Number(item.total || 0);
-  const hasDiscount = Number(item.discountPercent || 0) > 0 && originalTotal > finalTotal;
+  const hasDiscount = (Number(item.discountPercent || 0) > 0 || Number(item.discountAmount || 0) > 0) && originalTotal > finalTotal;
 
   if (!hasDiscount) {
     return `
@@ -2744,8 +2764,11 @@ function formatPercentInput(value) {
   return Number.isInteger(percent) ? String(percent) : percent.toFixed(2).replace(/\.?0+$/, "");
 }
 
-function getDiscountedPrice(price, discountPercent) {
+function getDiscountedPrice(price, discountPercent, discountAmount = 0) {
   const originalPrice = Number(price || 0);
+  const amount = Math.min(originalPrice, Math.max(0, Number(discountAmount || 0)));
+  if (amount > 0) return Math.max(0, Math.round(originalPrice - amount));
+
   const discount = Math.min(100, Math.max(0, Number(discountPercent || 0)));
   return Math.max(0, Math.round(originalPrice * (100 - discount) / 100));
 }
