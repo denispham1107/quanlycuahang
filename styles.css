@@ -1724,10 +1724,13 @@ th:last-child {
 }
 
 .inventory-backdrop {
-  align-items: start;
+  align-items: center;
   justify-items: center;
   padding: clamp(14px, 3vw, 32px);
+  padding-bottom: max(clamp(18px, 4vw, 42px), env(safe-area-inset-bottom));
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   background:
     radial-gradient(circle at 8% 10%, rgba(255, 215, 207, 0.86), transparent 32%),
     radial-gradient(circle at 88% 4%, rgba(208, 188, 255, 0.84), transparent 34%),
@@ -1735,8 +1738,13 @@ th:last-child {
 }
 
 .inventory-card {
+  display: flex;
+  flex-direction: column;
   width: min(1180px, 100%);
-  max-height: none;
+  max-height: calc(100vh - max(48px, env(safe-area-inset-bottom)));
+  max-height: calc(100dvh - max(48px, env(safe-area-inset-bottom)));
+  min-height: 0;
+  overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.78);
   border-radius: 28px;
   padding: clamp(18px, 3vw, 28px);
@@ -1745,6 +1753,7 @@ th:last-child {
 }
 
 .inventory-card .panel-heading {
+  flex: 0 0 auto;
   position: static;
   margin: 0 0 18px;
   padding: 0;
@@ -1757,13 +1766,33 @@ th:last-child {
   font-size: clamp(28px, 4vw, 42px);
 }
 
-.inventory-card .inventory-list {
+.inventory-card .inventory-tools,
+.inventory-card .inventory-summary {
+  flex: 0 0 auto;
+}
+
+.inventory-summary {
   max-width: 980px;
   width: 100%;
+  margin: 0 auto 10px;
+}
+
+.inventory-card .inventory-list {
+  flex: 1 1 auto;
+  max-width: 980px;
+  width: 100%;
+  min-height: 0;
+  max-height: min(52vh, 620px);
+  max-height: min(52dvh, 620px);
   margin-inline: auto;
+  overflow-y: auto;
+  padding-right: 4px;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .inventory-card .modal-actions {
+  flex: 0 0 auto;
   position: static;
   max-width: 980px;
   width: 100%;
@@ -2745,6 +2774,43 @@ th:last-child {
 
   .sales-catalog-card .modal-actions .ghost-button,
   .sales-catalog-card .modal-actions button {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .inventory-card {
+    width: min(100%, calc(100vw - 24px));
+    max-height: calc(100vh - max(36px, env(safe-area-inset-bottom)));
+    max-height: calc(100dvh - max(36px, env(safe-area-inset-bottom)));
+    padding: 18px;
+  }
+
+  .inventory-card .panel-heading {
+    margin-bottom: 12px;
+  }
+
+  .inventory-card .inventory-tools {
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .inventory-summary {
+    margin-bottom: 8px;
+  }
+
+  .inventory-card .inventory-list {
+    max-height: min(42vh, 460px);
+    max-height: min(42dvh, 460px);
+    padding-right: 0;
+  }
+
+  .inventory-card .modal-actions {
+    margin-top: 12px;
+    padding-bottom: max(2px, env(safe-area-inset-bottom));
+  }
+
+  .inventory-card .modal-actions .ghost-button,
+  .inventory-card .modal-actions button {
     width: 100%;
     min-height: 48px;
   }

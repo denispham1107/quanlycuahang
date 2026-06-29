@@ -182,6 +182,7 @@ const els = {
   inventoryModalCount: document.querySelector("#inventoryModalCount"),
   inventorySearch: document.querySelector("#inventorySearch"),
   inventoryFilter: document.querySelector("#inventoryFilter"),
+  inventorySummary: document.querySelector("#inventorySummary"),
   inventoryList: document.querySelector("#inventoryList"),
   closeInventory: document.querySelector("#closeInventory"),
   editInventoryModal: document.querySelector("#editInventoryModal"),
@@ -3479,18 +3480,22 @@ function renderInventory(store) {
 
   els.inventoryCount.textContent = `${allInventory.length} mặt hàng`;
   els.inventoryModalCount.textContent = `${inventory.length} mặt hàng`;
+  const totalCost = inventory.reduce((sum, item) => sum + Number(item.totalCost || 0), 0);
+  if (els.inventorySummary) {
+    els.inventorySummary.innerHTML = `
+      <div class="report-item report-total">
+        <span>Tổng giá trị kho</span>
+        <span class="report-amount">${formatCurrency(totalCost)}</span>
+      </div>
+    `;
+  }
 
   if (!inventory.length) {
     els.inventoryList.innerHTML = '<div class="empty-list">Không có hàng hóa phù hợp</div>';
     return;
   }
 
-  const totalCost = inventory.reduce((sum, item) => sum + Number(item.totalCost || 0), 0);
   els.inventoryList.innerHTML = `
-    <div class="report-item report-total">
-      <span>Tổng giá trị kho</span>
-      <span class="report-amount">${formatCurrency(totalCost)}</span>
-    </div>
     ${inventory
       .map(
         (item) => `
