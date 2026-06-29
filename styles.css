@@ -910,11 +910,14 @@ form button:disabled {
   text-align: right;
 }
 
-.sales-catalog-backdrop {
+.sales-catalog-backdrop,
+.sales-customer-catalog-backdrop {
   align-items: start;
   justify-items: center;
   padding: clamp(14px, 3vw, 32px);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   background:
     radial-gradient(circle at 8% 10%, rgba(255, 215, 207, 0.86), transparent 32%),
     radial-gradient(circle at 88% 4%, rgba(208, 188, 255, 0.84), transparent 34%),
@@ -922,8 +925,11 @@ form button:disabled {
 }
 
 .sales-catalog-card {
+  display: flex;
+  flex-direction: column;
   width: min(980px, 100%);
-  max-height: none;
+  max-height: calc(100dvh - clamp(28px, 6vw, 64px));
+  min-height: 0;
   border: 1px solid rgba(255, 255, 255, 0.78);
   border-radius: 28px;
   padding: clamp(18px, 3vw, 28px);
@@ -941,12 +947,17 @@ form button:disabled {
 }
 
 .sales-catalog-tools {
+  flex: 0 0 auto;
   margin-bottom: 16px;
 }
 
 .sales-catalog-list {
   display: grid;
   gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .sales-catalog-item {
