@@ -664,6 +664,32 @@
       </form>
     </div>
 
+    <div class="modal-backdrop" id="exportInventoryModal" hidden>
+      <form class="modal-card export-inventory-card" id="exportInventoryForm">
+        <div class="panel-heading">
+          <h2>Xuất hàng hóa</h2>
+          <span id="exportInventoryName">Kho hàng</span>
+        </div>
+        <input type="hidden" name="inventoryId" />
+        <div class="field">
+          <label for="exportInventoryDate">Ngày xuất</label>
+          <input id="exportInventoryDate" name="date" type="date" required />
+        </div>
+        <div class="field">
+          <label for="exportInventoryQuantity">Số lượng</label>
+          <div class="quantity-stepper" aria-label="Số lượng xuất">
+            <button class="quantity-step" type="button" data-export-quantity-step="-1" aria-label="Giảm số lượng">-</button>
+            <input id="exportInventoryQuantity" name="quantity" type="number" min="1" step="1" required />
+            <button class="quantity-step" type="button" data-export-quantity-step="1" aria-label="Tăng số lượng">+</button>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="ghost-button" id="cancelExportInventory" type="button">Hủy</button>
+          <button type="submit">Hoàn Thành</button>
+        </div>
+      </form>
+    </div>
+
     <div class="modal-backdrop" id="editEntryModal" hidden>
       <form class="modal-card" id="editEntryForm">
         <div class="panel-heading">

@@ -192,6 +192,12 @@ const els = {
   editInventoryQuantity: document.querySelector("#editInventoryQuantity"),
   editInventoryPrice: document.querySelector("#editInventoryPrice"),
   cancelEditInventory: document.querySelector("#cancelEditInventory"),
+  exportInventoryModal: document.querySelector("#exportInventoryModal"),
+  exportInventoryForm: document.querySelector("#exportInventoryForm"),
+  exportInventoryName: document.querySelector("#exportInventoryName"),
+  exportInventoryDate: document.querySelector("#exportInventoryDate"),
+  exportInventoryQuantity: document.querySelector("#exportInventoryQuantity"),
+  cancelExportInventory: document.querySelector("#cancelExportInventory"),
   quickEntrySubmit: document.querySelector("#quickEntrySubmit"),
   openOrderDiscount: document.querySelector("#openOrderDiscount"),
   orderDiscountModal: document.querySelector("#orderDiscountModal"),
@@ -718,6 +724,13 @@ els.inventoryFilter.addEventListener("change", () => {
 });
 
 els.inventoryList.addEventListener("click", (event) => {
+  const exportButton = event.target.closest("[data-export-inventory]");
+  if (exportButton) {
+    event.stopPropagation();
+    openExportInventoryModal(exportButton.dataset.exportInventory);
+    return;
+  }
+
   const item = event.target.closest("[data-edit-inventory]");
   if (!item) return;
   openEditInventoryModal(item.dataset.editInventory);
@@ -725,9 +738,28 @@ els.inventoryList.addEventListener("click", (event) => {
 
 els.cancelEditInventory.addEventListener("click", closeEditInventoryModal);
 
+els.cancelExportInventory.addEventListener("click", closeExportInventoryModal);
+
 els.editInventoryModal.addEventListener("click", (event) => {
   if (event.target === els.editInventoryModal) closeEditInventoryModal();
 });
+
+els.exportInventoryModal.addEventListener("click", (event) => {
+  if (event.target === els.exportInventoryModal) closeExportInventoryModal();
+});
+
+els.exportInventoryForm.addEventListener("click", (event) => {
+  const stepButton = event.target.closest("[data-export-quantity-step]");
+  if (!stepButton) return;
+  applyQuantityStep(stepButton, "#exportInventoryQuantity", "exportQuantityStep");
+});
+
+els.exportInventoryForm.addEventListener("touchend", (event) => {
+  const stepButton = event.target.closest("[data-export-quantity-step]");
+  if (!stepButton) return;
+  event.preventDefault();
+  applyQuantityStep(stepButton, "#exportInventoryQuantity", "exportQuantityStep");
+}, { passive: false });
 
 els.editInventoryPrice.addEventListener("input", () => {
   els.editInventoryPrice.value = formatAmountInput(els.editInventoryPrice.value);
@@ -736,6 +768,11 @@ els.editInventoryPrice.addEventListener("input", () => {
 els.editInventoryForm.addEventListener("submit", (event) => {
   event.preventDefault();
   saveEditedInventory(new FormData(els.editInventoryForm));
+});
+
+els.exportInventoryForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  exportInventoryItem(new FormData(els.exportInventoryForm));
 });
 
 els.cancelEditEntry.addEventListener("click", closeEditEntryModal);
@@ -1259,14 +1296,16 @@ function renderHistoryFilters(store) {
 }
 
 function applyQuantityStep(button, inputSelector, stepDatasetKey, onChange) {
-  const row = button.closest(".sales-item-row");
+  const row = button.closest(".sales-item-row") || button.closest("form") || document;
   const quantityInput = row?.querySelector(inputSelector);
   if (!quantityInput) return;
 
   const step = Number(button.dataset[stepDatasetKey] || 0);
   const current = Number.parseInt(quantityInput.value, 10) || 1;
-  quantityInput.value = Math.max(1, current + step);
-  onChange();
+  const max = Number.parseInt(quantityInput.max, 10);
+  const next = Math.max(1, current + step);
+  quantityInput.value = Number.isFinite(max) && max > 0 ? Math.min(max, next) : next;
+  if (typeof onChange === "function") onChange();
 }
 
 function renderEntrySuggestions(store) {
@@ -2520,6 +2559,25 @@ function closeEditInventoryModal() {
   els.editInventoryForm.reset();
 }
 
+function openExportInventoryModal(inventoryId) {
+  const store = getActiveStore();
+  const item = (store?.inventory || []).find((stock) => stock.id === inventoryId);
+  if (!item) return;
+
+  els.exportInventoryForm.elements.inventoryId.value = item.id;
+  els.exportInventoryName.textContent = item.name || "Kho hàng";
+  els.exportInventoryDate.value = els.singleDate.value || today;
+  els.exportInventoryQuantity.value = Math.min(1, Math.max(0, Number(item.quantity || 0))) || 1;
+  els.exportInventoryQuantity.max = Math.max(0, Number(item.quantity || 0));
+  els.exportInventoryModal.hidden = false;
+}
+
+function closeExportInventoryModal() {
+  els.exportInventoryModal.hidden = true;
+  els.exportInventoryForm.reset();
+  els.exportInventoryQuantity.removeAttribute("max");
+}
+
 function saveEditedInventory(formData) {
   const store = getActiveStore();
   if (!store) return false;
@@ -2562,6 +2620,51 @@ function saveEditedInventory(formData) {
   saveAndRender();
   renderInventory(store);
   closeEditInventoryModal();
+  return true;
+}
+
+function exportInventoryItem(formData) {
+  const store = getActiveStore();
+  if (!store) return false;
+
+  const item = (store.inventory || []).find((stock) => stock.id === formData.get("inventoryId"));
+  if (!item) return false;
+
+  const date = String(formData.get("date") || today);
+  const quantity = Number.parseInt(formData.get("quantity"), 10);
+  const oldQuantity = Number(item.quantity || 0);
+  const lastPrice = Number(item.lastPrice || 0);
+
+  if (!isValidDateInput(date) || !Number.isFinite(quantity) || quantity <= 0) {
+    window.alert("Vui lòng chọn ngày xuất và nhập số lượng lớn hơn 0.");
+    return false;
+  }
+
+  if (quantity > oldQuantity) {
+    window.alert(`Số lượng xuất không được lớn hơn tồn kho hiện tại (${oldQuantity.toLocaleString("vi-VN")}).`);
+    return false;
+  }
+
+  const updatedAt = new Date().toISOString();
+  const oldTotalCost = Number(item.totalCost || 0);
+  const averageCost = oldQuantity > 0 ? oldTotalCost / oldQuantity : lastPrice;
+  item.quantity = oldQuantity - quantity;
+  item.totalCost = Math.max(0, oldTotalCost - averageCost * quantity);
+  item.updatedAt = updatedAt;
+  addInventoryLog(store, {
+    date,
+    type: "export",
+    itemName: item.name,
+    groupName: item.groupName,
+    oldQuantity,
+    newQuantity: Number(item.quantity || 0),
+    oldPrice: lastPrice,
+    newPrice: lastPrice
+  });
+
+  saveAndRender();
+  renderInventory(store);
+  closeExportInventoryModal();
   return true;
 }
 
@@ -3498,20 +3601,26 @@ function renderInventory(store) {
   els.inventoryList.innerHTML = `
     ${inventory
       .map(
-        (item) => `
-          <button class="inventory-item" type="button" data-edit-inventory="${escapeHtml(item.id || "")}">
-            <div>
-              <span class="inventory-group">${escapeHtml(item.groupName || "Chưa phân nhóm")}</span>
+        (item) => {
+          const quantity = Number(item.quantity || 0);
+          return `
+          <div class="inventory-item" data-edit-inventory="${escapeHtml(item.id || "")}" role="button" tabindex="0">
+            <div class="inventory-main">
+              <span class="inventory-group-row">
+                <span class="inventory-group">${escapeHtml(item.groupName || "Chưa phân nhóm")}</span>
+                <button class="inventory-export-button" type="button" data-export-inventory="${escapeHtml(item.id || "")}" ${quantity <= 0 ? "disabled" : ""}>Xuất</button>
+              </span>
               <strong>${escapeHtml(item.name || "")}</strong>
               <span class="inventory-date">Cập nhật: ${formatDate(String(item.updatedAt || item.createdAt || today).slice(0, 10))}</span>
             </div>
             <div class="inventory-meta">
-              <span>SL: ${Number(item.quantity || 0).toLocaleString("vi-VN")}</span>
+              <span>SL: ${quantity.toLocaleString("vi-VN")}</span>
               <span>Giá gần nhất: ${formatCurrency(item.lastPrice || 0)}</span>
               <span>Tổng: ${formatCurrency(item.totalCost || 0)}</span>
             </div>
-          </button>
-        `
+          </div>
+        `;
+        }
       )
       .join("")}
   `;

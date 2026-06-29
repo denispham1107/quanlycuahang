@@ -2252,6 +2252,18 @@ th:last-child {
   overflow-wrap: anywhere;
 }
 
+.inventory-main {
+  min-width: 0;
+}
+
+.inventory-group-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
 .inventory-date {
   display: block;
   margin-top: 8px;
@@ -2262,12 +2274,30 @@ th:last-child {
 
 .inventory-group {
   display: inline-flex;
+  width: fit-content;
   border-radius: 999px;
   padding: 4px 9px;
   background: rgba(216, 92, 255, 0.12);
   color: #9d37da;
   font-size: 12px;
   font-weight: 900;
+}
+
+.inventory-export-button {
+  min-height: 28px;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: linear-gradient(135deg, #0878f7, #8b48ff, #ff6f91);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 10px 20px rgba(83, 96, 222, 0.18);
+}
+
+.inventory-export-button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  filter: grayscale(0.25);
 }
 
 .inventory-meta {
@@ -2277,6 +2307,10 @@ th:last-child {
   font-size: 13px;
   font-weight: 800;
   text-align: right;
+}
+
+.export-inventory-card {
+  width: min(460px, calc(100vw - 32px));
 }
 
 @keyframes quick-entry-pop {
