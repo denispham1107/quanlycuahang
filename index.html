@@ -429,7 +429,7 @@
           </div>
           <div class="field">
             <label for="bulkPurchaseText">Danh sách hàng hóa</label>
-            <textarea id="bulkPurchaseText" name="bulkPurchaseText" rows="18" maxlength="12000" placeholder="Coca,30,Nước ngọt,18000&#10;Bò húc,30,Nước ngọt,25000&#10;Mì cay,30,Mì,40000"></textarea>
+            <textarea id="bulkPurchaseText" name="bulkPurchaseText" rows="18" maxlength="12000" placeholder="Coca,30,Nước ngọt,18000,20000&#10;Bò húc,30,Nước ngọt,25000,30000&#10;Mì cay,30,Mì,40000,49000"></textarea>
           </div>
           <div class="bulk-purchase-summary" id="bulkPurchaseSummary">0 dòng hợp lệ</div>
         </div>
@@ -654,8 +654,12 @@
           <input id="editInventoryQuantity" name="quantity" type="number" step="1" autocomplete="off" required />
         </div>
         <div class="field">
-          <label for="editInventoryPrice">Giá</label>
+          <label for="editInventoryPrice">Giá vốn</label>
           <input id="editInventoryPrice" name="lastPrice" type="text" inputmode="numeric" autocomplete="off" required />
+        </div>
+        <div class="field">
+          <label for="editInventorySalePrice">Giá bán</label>
+          <input id="editInventorySalePrice" name="salePrice" type="text" inputmode="numeric" autocomplete="off" required />
         </div>
         <div class="modal-actions">
           <button class="ghost-button" id="cancelEditInventory" type="button">Hủy</button>

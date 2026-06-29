@@ -192,6 +192,7 @@ const els = {
   editInventoryGroup: document.querySelector("#editInventoryGroup"),
   editInventoryQuantity: document.querySelector("#editInventoryQuantity"),
   editInventoryPrice: document.querySelector("#editInventoryPrice"),
+  editInventorySalePrice: document.querySelector("#editInventorySalePrice"),
   cancelEditInventory: document.querySelector("#cancelEditInventory"),
   exportInventoryModal: document.querySelector("#exportInventoryModal"),
   exportInventoryForm: document.querySelector("#exportInventoryForm"),
@@ -540,7 +541,7 @@ els.addPurchaseItem.addEventListener("click", () => {
 });
 
 els.purchaseItems.addEventListener("input", (event) => {
-  if (event.target.matches('[data-purchase-item="price"]')) {
+  if (event.target.matches('[data-purchase-item="price"], [data-purchase-item="salePrice"]')) {
     event.target.value = formatAmountInput(event.target.value);
   }
 
@@ -766,6 +767,10 @@ els.editInventoryPrice.addEventListener("input", () => {
   els.editInventoryPrice.value = formatAmountInput(els.editInventoryPrice.value);
 });
 
+els.editInventorySalePrice.addEventListener("input", () => {
+  els.editInventorySalePrice.value = formatAmountInput(els.editInventorySalePrice.value);
+});
+
 els.editInventoryForm.addEventListener("submit", (event) => {
   event.preventDefault();
   saveEditedInventory(new FormData(els.editInventoryForm));
@@ -897,7 +902,10 @@ function normalizeState(data) {
     purchaseCategories: store.purchaseCategories || [],
     purchaseOrders: store.purchaseOrders || [],
     inventoryLogs: store.inventoryLogs || [],
-    inventory: store.inventory || [],
+    inventory: (store.inventory || []).map((item) => ({
+      ...item,
+      salePrice: Number(item.salePrice ?? item.lastPrice ?? 0)
+    })),
     createdAt: store.createdAt || getEarliestEntryDate(store.entries || []) || today
   }));
 
@@ -1347,7 +1355,7 @@ function renderInventorySuggestionList(store) {
   els.salesItemSuggestions.innerHTML = (store.inventory || [])
     .filter((item) => Number(item.quantity || 0) > 0)
     .map((item) => {
-      const label = `${item.name} - tồn ${Number(item.quantity || 0).toLocaleString("vi-VN")} - ${formatAmountInput(item.lastPrice || 0)} đ`;
+      const label = `${item.name} - tồn ${Number(item.quantity || 0).toLocaleString("vi-VN")} - ${formatAmountInput(getInventorySalePrice(item))} đ`;
       return `<option value="${escapeHtml(item.name)}" label="${escapeHtml(label)}"></option>`;
     })
     .join("");
@@ -1689,7 +1697,9 @@ function applySalesItemSuggestion(row) {
   const suggestion = (store.inventory || []).find((item) => item.name.toLowerCase() === name && Number(item.quantity || 0) > 0);
   if (!suggestion) return;
 
-  priceInput.value = formatAmountInput(suggestion.lastPrice || 0);
+  const salePrice = getInventorySalePrice(suggestion);
+  priceInput.value = formatAmountInput(salePrice);
+  row.dataset.originalPrice = String(salePrice);
 }
 
 function openSalesCatalogModal(row) {
@@ -1779,7 +1789,7 @@ function renderSalesCatalog() {
             <small>${escapeHtml(item.groupName || "Chưa phân nhóm")}</small>
           </span>
           <span class="sales-catalog-meta">
-            <strong>${formatCurrency(item.lastPrice || 0)}</strong>
+            <strong>${formatCurrency(getInventorySalePrice(item))}</strong>
             <small>Tồn: ${quantity.toLocaleString("vi-VN")}</small>
           </span>
         </button>
@@ -1801,7 +1811,7 @@ function selectSalesCatalogItem(itemId) {
   const quantityInput = row.querySelector('[data-sales-item="quantity"]');
   const discountInput = row.querySelector('[data-sales-item="discount"]');
   const discountAmountInput = row.querySelector('[data-sales-item="discountAmount"]');
-  const price = Number(item.lastPrice || 0);
+  const price = getInventorySalePrice(item);
 
   if (nameInput) nameInput.value = item.name || "";
   if (priceInput) priceInput.value = price ? formatAmountInput(price) : "";
@@ -1979,6 +1989,7 @@ function restoreInventoryFromSales(store, items) {
           quantity: Number(item.quantity || 0),
           totalCost: 0,
           lastPrice: Number(item.price || 0),
+          salePrice: Number(item.originalPrice || item.price || 0),
           createdAt: now,
           updatedAt: now
         }
@@ -2560,6 +2571,7 @@ function openEditInventoryModal(inventoryId) {
   els.editInventoryGroup.value = item.groupName || "";
   els.editInventoryQuantity.value = Number(item.quantity || 0);
   els.editInventoryPrice.value = formatAmountInput(item.lastPrice || 0);
+  els.editInventorySalePrice.value = formatAmountInput(getInventorySalePrice(item));
   els.editInventoryModal.hidden = false;
 }
 
@@ -2598,14 +2610,16 @@ function saveEditedInventory(formData) {
   const groupName = String(formData.get("groupName") || "").trim();
   const quantity = Number.parseInt(formData.get("quantity"), 10);
   const lastPrice = parseAmountInput(formData.get("lastPrice"));
+  const salePrice = parseAmountInput(formData.get("salePrice"));
 
-  if (!name || !groupName || !Number.isFinite(quantity) || !Number.isFinite(lastPrice) || lastPrice < 0) {
-    window.alert("Vui lòng nhập đầy đủ tên hàng hóa, nhóm, số lượng và giá.");
+  if (!name || !groupName || !Number.isFinite(quantity) || !Number.isFinite(lastPrice) || lastPrice < 0 || !Number.isFinite(salePrice) || salePrice < 0) {
+    window.alert("Vui lòng nhập đầy đủ tên hàng hóa, nhóm, số lượng, giá vốn và giá bán.");
     return false;
   }
 
   const oldQuantity = Number(item.quantity || 0);
   const oldPrice = Number(item.lastPrice || 0);
+  const oldSalePrice = getInventorySalePrice(item);
   const category = ensurePurchaseCategory(store, groupName);
   const updatedAt = new Date().toISOString();
   item.name = name;
@@ -2613,6 +2627,7 @@ function saveEditedInventory(formData) {
   item.groupName = category.name;
   item.quantity = quantity;
   item.lastPrice = lastPrice;
+  item.salePrice = salePrice;
   item.totalCost = Math.max(0, quantity * lastPrice);
   item.updatedAt = updatedAt;
   addInventoryLog(store, {
@@ -2623,7 +2638,9 @@ function saveEditedInventory(formData) {
     oldQuantity,
     newQuantity: Number(item.quantity || 0),
     oldPrice,
-    newPrice: Number(item.lastPrice || 0)
+    newPrice: Number(item.lastPrice || 0),
+    oldSalePrice,
+    newSalePrice: getInventorySalePrice(item)
   });
 
   saveAndRender();
@@ -2643,6 +2660,7 @@ function exportInventoryItem(formData) {
   const quantity = Number.parseInt(formData.get("quantity"), 10);
   const oldQuantity = Number(item.quantity || 0);
   const lastPrice = Number(item.lastPrice || 0);
+  const salePrice = getInventorySalePrice(item);
 
   if (!isValidDateInput(date) || !Number.isFinite(quantity) || quantity <= 0) {
     window.alert("Vui lòng chọn ngày xuất và nhập số lượng lớn hơn 0.");
@@ -2668,7 +2686,9 @@ function exportInventoryItem(formData) {
     oldQuantity,
     newQuantity: Number(item.quantity || 0),
     oldPrice: lastPrice,
-    newPrice: lastPrice
+    newPrice: lastPrice,
+    oldSalePrice: salePrice,
+    newSalePrice: salePrice
   });
 
   saveAndRender();
@@ -2688,7 +2708,8 @@ function addPurchaseItemRow(item = {}) {
       <input type="number" data-purchase-item="quantity" min="1" step="1" placeholder="SL" value="${item.quantity || 1}" />
       <button class="quantity-step" type="button" data-purchase-quantity-step="1" aria-label="Tăng số lượng">+</button>
     </div>
-    <input type="text" data-purchase-item="price" inputmode="numeric" placeholder="Giá tiền" autocomplete="off" value="${item.price ? formatAmountInput(item.price) : ""}" />
+    <input type="text" data-purchase-item="price" inputmode="numeric" placeholder="Giá vốn" autocomplete="off" value="${item.price ? formatAmountInput(item.price) : ""}" />
+    <input type="text" data-purchase-item="salePrice" inputmode="numeric" placeholder="Giá bán" autocomplete="off" value="${item.salePrice ? formatAmountInput(item.salePrice) : ""}" />
     <button class="delete-small" type="button" data-remove-purchase-item title="Xóa hàng hóa" aria-label="Xóa hàng hóa">×</button>
   `;
   els.purchaseItems.append(row);
@@ -2701,15 +2722,24 @@ function getPurchaseOrderItems() {
       const groupName = String(row.querySelector('[data-purchase-item="group"]')?.value || "").trim();
       const quantity = Math.max(1, Number.parseInt(row.querySelector('[data-purchase-item="quantity"]')?.value, 10) || 1);
       const price = parseAmountInput(row.querySelector('[data-purchase-item="price"]')?.value);
+      const salePrice = parseAmountInput(row.querySelector('[data-purchase-item="salePrice"]')?.value);
       return {
         name,
         groupName,
         quantity,
         price,
+        salePrice,
         total: quantity * price
       };
     })
-    .filter((item) => item.name && item.groupName && Number.isFinite(item.price) && item.price > 0);
+    .filter((item) =>
+      item.name &&
+      item.groupName &&
+      Number.isFinite(item.price) &&
+      item.price > 0 &&
+      Number.isFinite(item.salePrice) &&
+      item.salePrice > 0
+    );
 }
 
 function updatePurchaseOrderTotal() {
@@ -2749,9 +2779,11 @@ function applyPurchaseItemsToInventory(store, date, items, createdAt) {
     if (current) {
       const oldQuantity = Number(current.quantity || 0);
       const oldPrice = Number(current.lastPrice || 0);
+      const oldSalePrice = getInventorySalePrice(current);
       current.quantity = Number(current.quantity || 0) + item.quantity;
       current.totalCost = Number(current.totalCost || 0) + item.total;
       current.lastPrice = item.price;
+      current.salePrice = item.salePrice;
       current.updatedAt = createdAt;
       addInventoryLog(store, {
         date,
@@ -2761,7 +2793,9 @@ function applyPurchaseItemsToInventory(store, date, items, createdAt) {
         oldQuantity,
         newQuantity: Number(current.quantity || 0),
         oldPrice,
-        newPrice: Number(current.lastPrice || 0)
+        newPrice: Number(current.lastPrice || 0),
+        oldSalePrice,
+        newSalePrice: getInventorySalePrice(current)
       });
     } else {
       const stock = {
@@ -2772,6 +2806,7 @@ function applyPurchaseItemsToInventory(store, date, items, createdAt) {
         quantity: item.quantity,
         totalCost: item.total,
         lastPrice: item.price,
+        salePrice: item.salePrice,
         createdAt,
         updatedAt: createdAt
       };
@@ -2784,7 +2819,9 @@ function applyPurchaseItemsToInventory(store, date, items, createdAt) {
         oldQuantity: 0,
         newQuantity: Number(stock.quantity || 0),
         oldPrice: 0,
-        newPrice: Number(stock.lastPrice || 0)
+        newPrice: Number(stock.lastPrice || 0),
+        oldSalePrice: 0,
+        newSalePrice: getInventorySalePrice(stock)
       });
     }
   });
@@ -2804,7 +2841,7 @@ function savePurchaseOrder() {
   }
 
   if (!items.length) {
-    window.alert("Vui lòng nhập hàng hóa, nhóm hàng hóa, số lượng và giá tiền.");
+    window.alert("Vui lòng nhập hàng hóa, nhóm hàng hóa, số lượng, giá vốn và giá bán.");
     return false;
   }
 
@@ -2845,16 +2882,17 @@ function parseBulkPurchaseItems({ silent = false } = {}) {
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
     const parts = line.split(",").map((part) => part.trim());
-    if (parts.length !== 4) {
-      if (!silent) window.alert(`Dòng ${index + 1} chưa đúng định dạng: Tên,Số lượng,Nhóm,Giá.`);
+    if (parts.length !== 4 && parts.length !== 5) {
+      if (!silent) window.alert(`Dòng ${index + 1} chưa đúng định dạng: Tên,Số lượng,Nhóm,Giá vốn,Giá bán.`);
       return null;
     }
 
-    const [name, rawQuantity, groupName, rawPrice] = parts;
+    const [name, rawQuantity, groupName, rawPrice, rawSalePrice] = parts;
     const quantity = Number.parseInt(rawQuantity, 10);
     const price = parseAmountInput(rawPrice);
-    if (!name || !groupName || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price) || price <= 0) {
-      if (!silent) window.alert(`Dòng ${index + 1} chưa hợp lệ. Vui lòng kiểm tra tên, số lượng, nhóm và giá.`);
+    const salePrice = parseAmountInput(rawSalePrice || rawPrice);
+    if (!name || !groupName || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price) || price <= 0 || !Number.isFinite(salePrice) || salePrice <= 0) {
+      if (!silent) window.alert(`Dòng ${index + 1} chưa hợp lệ. Vui lòng kiểm tra tên, số lượng, nhóm, giá vốn và giá bán.`);
       return null;
     }
 
@@ -2863,6 +2901,7 @@ function parseBulkPurchaseItems({ silent = false } = {}) {
       groupName,
       quantity,
       price,
+      salePrice,
       total: quantity * price
     });
   }
@@ -3624,7 +3663,8 @@ function renderInventory(store) {
             </div>
             <div class="inventory-meta">
               <span>SL: ${quantity.toLocaleString("vi-VN")}</span>
-              <span>Giá gần nhất: ${formatCurrency(item.lastPrice || 0)}</span>
+              <span>Giá vốn: ${formatCurrency(item.lastPrice || 0)}</span>
+              <span>Giá bán: ${formatCurrency(getInventorySalePrice(item))}</span>
               <span>Tổng: ${formatCurrency(item.totalCost || 0)}</span>
             </div>
           </div>
@@ -3679,7 +3719,8 @@ function renderInventoryLogs(store) {
             <th>Tên Nhóm</th>
             <th>Mục đích</th>
             <th>Số lượng</th>
-            <th>Giá tiền</th>
+            <th>Giá vốn</th>
+            <th>Giá bán</th>
             <th>Tổng tiền</th>
           </tr>
         </thead>
@@ -3707,6 +3748,13 @@ function renderInventoryLogs(store) {
                         <span class="old-value">${formatCurrency(log.oldPrice || 0)}</span>
                         <span class="change-arrow">→</span>
                         <span class="new-value">${formatCurrency(log.newPrice || 0)}</span>
+                      </span>
+                    </td>
+                    <td>
+                      <span class="inventory-log-change">
+                        <span class="old-value">${formatCurrency(getInventoryLogOldSalePrice(log))}</span>
+                        <span class="change-arrow">→</span>
+                        <span class="new-value">${formatCurrency(getInventoryLogNewSalePrice(log))}</span>
                       </span>
                     </td>
                     <td><span class="inventory-log-total">${formatCurrency(total)}</span></td>
@@ -3769,8 +3817,20 @@ function getInventoryLogTotal(log) {
   return Math.max(0, changedQuantity * price);
 }
 
+function getInventoryLogOldSalePrice(log) {
+  return Number(log?.oldSalePrice ?? log?.oldPrice ?? 0);
+}
+
+function getInventoryLogNewSalePrice(log) {
+  return Number(log?.newSalePrice ?? log?.newPrice ?? 0);
+}
+
 function getInventoryLogDate(log) {
   return String(log?.date || log?.updatedAt || today).slice(0, 10);
+}
+
+function getInventorySalePrice(item) {
+  return Number(item?.salePrice ?? item?.lastPrice ?? 0);
 }
 
 function filterEntriesByCategory(entries, categoryId) {

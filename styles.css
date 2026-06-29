@@ -1875,7 +1875,7 @@ th:last-child {
 }
 
 .purchase-item-row {
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(128px, 0.46fr) minmax(0, 1fr) 40px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(128px, 0.46fr) minmax(0, 0.86fr) minmax(0, 0.86fr) 40px;
 }
 
 .sales-name-picker {
@@ -2175,7 +2175,7 @@ th:last-child {
 
 .inventory-log-table {
   width: 100%;
-  min-width: 980px;
+  min-width: 1120px;
   border-collapse: collapse;
 }
 
@@ -2741,15 +2741,20 @@ th:last-child {
   }
 
   .inventory-log-table td:nth-child(6)::before {
-    content: "Giá tiền";
+    content: "Giá vốn";
   }
 
   .inventory-log-table td:nth-child(7)::before {
+    content: "Giá bán";
+  }
+
+  .inventory-log-table td:nth-child(8)::before {
     content: "Tổng tiền";
   }
 
   .inventory-log-table td:nth-child(6),
-  .inventory-log-table td:nth-child(7) {
+  .inventory-log-table td:nth-child(7),
+  .inventory-log-table td:nth-child(8) {
     display: grid;
     grid-template-columns: 76px minmax(0, 1fr);
     gap: 7px;
