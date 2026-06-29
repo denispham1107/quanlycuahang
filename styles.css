@@ -2151,6 +2151,22 @@ th:last-child {
   margin-top: 0;
 }
 
+.inventory-log-filter {
+  display: grid;
+  gap: 7px;
+  width: min(320px, 100%);
+}
+
+.inventory-log-filter label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.inventory-log-filter select {
+  min-height: 46px;
+}
+
 .inventory-log-table-wrap {
   border: 1px solid rgba(8, 120, 247, 0.16);
   border-radius: 18px;
@@ -2159,7 +2175,7 @@ th:last-child {
 
 .inventory-log-table {
   width: 100%;
-  min-width: 760px;
+  min-width: 860px;
   border-collapse: collapse;
 }
 
@@ -2200,6 +2216,28 @@ th:last-child {
   flex-wrap: wrap;
   gap: 8px;
   font-weight: 900;
+}
+
+.inventory-log-purpose {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: rgba(8, 120, 247, 0.1);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.inventory-log-purpose.export {
+  background: rgba(236, 72, 153, 0.12);
+  color: #e64b91;
+}
+
+.inventory-log-purpose.edit {
+  background: rgba(107, 114, 128, 0.12);
+  color: var(--muted);
 }
 
 .old-value {
@@ -2690,14 +2728,18 @@ th:last-child {
   }
 
   .inventory-log-table td:nth-child(4)::before {
-    content: "Số lượng";
+    content: "Mục đích";
   }
 
   .inventory-log-table td:nth-child(5)::before {
+    content: "Số lượng";
+  }
+
+  .inventory-log-table td:nth-child(6)::before {
     content: "Giá tiền";
   }
 
-  .inventory-log-table td:nth-child(5) {
+  .inventory-log-table td:nth-child(6) {
     display: grid;
     grid-template-columns: 76px minmax(0, 1fr);
     gap: 7px;

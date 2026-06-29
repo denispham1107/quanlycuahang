@@ -37,6 +37,7 @@ const uiState = {
   customerMemberFilter: "all",
   customerSearch: "",
   inventoryLogsExpanded: false,
+  inventoryLogFilter: "all",
   salesGoodsFilter: "all",
   salesDraftId: null,
   salesOrderDiscountPercent: 0,
@@ -860,6 +861,14 @@ document.addEventListener("click", (event) => {
 
   if (draftButton && !draftDeleteButton) {
     openSalesDraft(draftButton.dataset.openSalesDraft);
+  }
+});
+
+document.addEventListener("change", (event) => {
+  if (event.target.matches("[data-inventory-log-filter]")) {
+    uiState.inventoryLogFilter = event.target.value;
+    uiState.inventoryLogsExpanded = false;
+    renderInventoryLogs(getActiveStore());
   }
 });
 
@@ -3630,17 +3639,27 @@ function renderInventoryLogs(store) {
   if (!els.inventoryLogPanel) return;
 
   const range = getDateRange();
+  const allowedFilters = new Set(["all", "purchase", "export"]);
+  if (!allowedFilters.has(uiState.inventoryLogFilter)) {
+    uiState.inventoryLogFilter = "all";
+  }
   const logs = [...(store?.inventoryLogs || [])]
     .filter((log) => {
       const logDate = getInventoryLogDate(log);
-      return logDate >= range.start && logDate <= range.end;
+      const purpose = getInventoryLogPurpose(log);
+      const matchesPurpose = uiState.inventoryLogFilter === "all" || purpose.value === uiState.inventoryLogFilter;
+      return logDate >= range.start && logDate <= range.end && matchesPurpose;
     })
     .sort((a, b) =>
       String(b.updatedAt || b.date || "").localeCompare(String(a.updatedAt || a.date || ""))
     );
 
   if (!logs.length) {
-    els.inventoryLogPanel.innerHTML = '<div class="empty-list inventory-log-empty">Chưa có cập nhật kho.</div>';
+    els.inventoryLogPanel.innerHTML = `
+      <div class="inventory-log-heading">Lịch sử cập nhật kho</div>
+      ${renderInventoryLogFilter()}
+      <div class="empty-list inventory-log-empty">Chưa có cập nhật kho.</div>
+    `;
     return;
   }
 
@@ -3650,6 +3669,7 @@ function renderInventoryLogs(store) {
 
   els.inventoryLogPanel.innerHTML = `
     <div class="inventory-log-heading">Lịch sử cập nhật kho</div>
+    ${renderInventoryLogFilter()}
     <div class="table-wrap inventory-log-table-wrap">
       <table class="inventory-log-table">
         <thead>
@@ -3657,6 +3677,7 @@ function renderInventoryLogs(store) {
             <th>Ngày Cập Nhật</th>
             <th>Tên Hàng Hóa</th>
             <th>Tên Nhóm</th>
+            <th>Mục đích</th>
             <th>Số lượng</th>
             <th>Giá tiền</th>
           </tr>
@@ -3664,27 +3685,31 @@ function renderInventoryLogs(store) {
         <tbody>
           ${logs
             .map(
-              (log, index) => `
-                <tr class="${index > 0 ? "inventory-log-extra" : ""}">
-                  <td>${formatDate(getInventoryLogDate(log))}</td>
-                  <td>${escapeHtml(log.itemName || "")}</td>
-                  <td>${escapeHtml(log.groupName || "")}</td>
-                  <td>
-                    <span class="inventory-log-change">
-                      <span class="old-value">${Number(log.oldQuantity || 0).toLocaleString("vi-VN")}</span>
-                      <span class="change-arrow">→</span>
-                      <span class="new-value">${Number(log.newQuantity || 0).toLocaleString("vi-VN")}</span>
-                    </span>
-                  </td>
-                  <td>
-                    <span class="inventory-log-change">
-                      <span class="old-value">${formatCurrency(log.oldPrice || 0)}</span>
-                      <span class="change-arrow">→</span>
-                      <span class="new-value">${formatCurrency(log.newPrice || 0)}</span>
-                    </span>
-                  </td>
-                </tr>
-              `
+              (log, index) => {
+                const purpose = getInventoryLogPurpose(log);
+                return `
+                  <tr class="${index > 0 ? "inventory-log-extra" : ""}">
+                    <td>${formatDate(getInventoryLogDate(log))}</td>
+                    <td>${escapeHtml(log.itemName || "")}</td>
+                    <td>${escapeHtml(log.groupName || "")}</td>
+                    <td><span class="inventory-log-purpose ${purpose.value}">${purpose.label}</span></td>
+                    <td>
+                      <span class="inventory-log-change">
+                        <span class="old-value">${Number(log.oldQuantity || 0).toLocaleString("vi-VN")}</span>
+                        <span class="change-arrow">→</span>
+                        <span class="new-value">${Number(log.newQuantity || 0).toLocaleString("vi-VN")}</span>
+                      </span>
+                    </td>
+                    <td>
+                      <span class="inventory-log-change">
+                        <span class="old-value">${formatCurrency(log.oldPrice || 0)}</span>
+                        <span class="change-arrow">→</span>
+                        <span class="new-value">${formatCurrency(log.newPrice || 0)}</span>
+                      </span>
+                    </td>
+                  </tr>
+                `;
+              }
             )
             .join("")}
         </tbody>
@@ -3702,6 +3727,31 @@ function renderInventoryLogs(store) {
         : ""
     }
   `;
+}
+
+function renderInventoryLogFilter() {
+  const options = [
+    ["all", "Tất cả"],
+    ["purchase", "Nhập kho"],
+    ["export", "Xuất kho"]
+  ];
+
+  return `
+    <div class="inventory-log-filter">
+      <label for="inventoryLogFilter">Phân loại</label>
+      <select id="inventoryLogFilter" data-inventory-log-filter>
+        ${options
+          .map(([value, label]) => `<option value="${value}" ${uiState.inventoryLogFilter === value ? "selected" : ""}>${label}</option>`)
+          .join("")}
+      </select>
+    </div>
+  `;
+}
+
+function getInventoryLogPurpose(log) {
+  if (log?.type === "export") return { value: "export", label: "Xuất kho" };
+  if (log?.type === "purchase" || log?.type === "import") return { value: "purchase", label: "Nhập kho" };
+  return { value: "edit", label: "Cập nhật kho" };
 }
 
 function getInventoryLogDate(log) {
