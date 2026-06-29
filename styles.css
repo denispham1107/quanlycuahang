@@ -928,8 +928,10 @@ form button:disabled {
   display: flex;
   flex-direction: column;
   width: min(980px, 100%);
+  max-height: calc(100vh - clamp(28px, 6vw, 64px));
   max-height: calc(100dvh - clamp(28px, 6vw, 64px));
   min-height: 0;
+  overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.78);
   border-radius: 28px;
   padding: clamp(18px, 3vw, 28px);
@@ -953,11 +955,19 @@ form button:disabled {
 
 .sales-catalog-list {
   display: grid;
+  flex: 1 1 auto;
   gap: 10px;
   min-height: 0;
+  max-height: min(58vh, 620px);
+  max-height: min(58dvh, 620px);
   overflow-y: auto;
   padding-right: 4px;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+}
+
+.sales-catalog-card .modal-actions {
+  flex: 0 0 auto;
 }
 
 .sales-catalog-item {
