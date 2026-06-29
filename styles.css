@@ -485,6 +485,43 @@ form button:disabled {
   overflow-wrap: anywhere;
 }
 
+.member-tier-field {
+  cursor: pointer;
+}
+
+.member-tier-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  max-width: 100%;
+  border: 0;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.member-tier-badge.is-regular {
+  background: rgba(8, 120, 247, 0.1);
+  color: #0878f7;
+  box-shadow: inset 0 0 0 1px rgba(8, 120, 247, 0.16);
+}
+
+.member-tier-badge.is-premium {
+  background: linear-gradient(135deg, #0878f7 0%, #8b48ff 48%, #ff8a4a 100%);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(139, 72, 255, 0.26);
+}
+
+.member-tier-badge:hover {
+  transform: translateY(-1px);
+}
+
 .customer-history-button {
   display: inline-grid;
   place-items: center;
@@ -573,6 +610,48 @@ form button:disabled {
 
 .cancelled-text strong {
   color: #e55f9a;
+}
+
+.member-tier-card {
+  width: min(520px, calc(100vw - 32px));
+}
+
+.member-tier-content {
+  display: grid;
+  gap: 12px;
+}
+
+.member-tier-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.member-tier-info-card {
+  display: grid;
+  gap: 6px;
+  border: 1px solid rgba(8, 120, 247, 0.16);
+  border-radius: 18px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 14px 28px rgba(83, 96, 222, 0.08);
+}
+
+.member-tier-info-card small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.member-tier-info-card strong {
+  overflow-wrap: anywhere;
+}
+
+.member-tier-info-card.is-active strong {
+  color: var(--accent);
+}
+
+.member-tier-info-card.is-expired strong {
+  color: var(--expense);
 }
 
 .category-list {
@@ -2570,6 +2649,10 @@ th:last-child {
   .customer-history-order-head,
   .customer-history-summary {
     align-items: flex-start;
+  }
+
+  .member-tier-info-grid {
+    grid-template-columns: 1fr;
   }
 
   .draft-order-table {

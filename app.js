@@ -160,6 +160,10 @@ const els = {
   customerHistoryStatus: document.querySelector("#customerHistoryStatus"),
   customerHistoryContent: document.querySelector("#customerHistoryContent"),
   closeCustomerHistory: document.querySelector("#closeCustomerHistory"),
+  memberTierModal: document.querySelector("#memberTierModal"),
+  memberTierStatus: document.querySelector("#memberTierStatus"),
+  memberTierContent: document.querySelector("#memberTierContent"),
+  closeMemberTier: document.querySelector("#closeMemberTier"),
   purchaseOrderFields: document.querySelector("#purchaseOrderFields"),
   purchaseOrderDate: document.querySelector("#purchaseOrderDate"),
   purchaseItems: document.querySelector("#purchaseItems"),
@@ -643,6 +647,12 @@ els.customerHistoryModal.addEventListener("click", (event) => {
   if (event.target === els.customerHistoryModal) closeCustomerHistoryModal();
 });
 
+els.closeMemberTier.addEventListener("click", closeMemberTierModal);
+
+els.memberTierModal.addEventListener("click", (event) => {
+  if (event.target === els.memberTierModal) closeMemberTierModal();
+});
+
 els.toggleCustomerForm.addEventListener("click", () => {
   openCustomerForm();
 });
@@ -670,6 +680,13 @@ els.customerSearchInput.addEventListener("change", () => {
 });
 
 els.customersList.addEventListener("click", (event) => {
+  const tierButton = event.target.closest("[data-member-tier-customer]");
+  if (tierButton) {
+    event.stopPropagation();
+    openMemberTierInfo(tierButton.dataset.memberTierCustomer);
+    return;
+  }
+
   const historyButton = event.target.closest("[data-customer-history]");
   if (historyButton) {
     event.stopPropagation();
@@ -2005,6 +2022,7 @@ function ensureCustomerFromSalesOrder(store, order) {
     name,
     phone,
     memberTier: "Thường",
+    memberTierStartedAt: "",
     createdAt: order.createdAt || new Date().toISOString(),
     updatedAt: order.createdAt || new Date().toISOString(),
     source: "order"
@@ -2025,6 +2043,7 @@ function getStoreCustomers(store) {
       name,
       phone,
       memberTier: customer.memberTier || "Thường",
+      memberTierStartedAt: customer.memberTierStartedAt || "",
       createdAt: customer.createdAt || customer.updatedAt || new Date().toISOString(),
       updatedAt: customer.updatedAt || customer.createdAt || new Date().toISOString(),
       source: customer.source || "manual"
@@ -2042,6 +2061,7 @@ function getStoreCustomers(store) {
       name,
       phone,
       memberTier: "Thường",
+      memberTierStartedAt: "",
       createdAt: order.createdAt || `${order.date || today}T00:00:00`,
       updatedAt: order.createdAt || `${order.date || today}T00:00:00`,
       source: "order"
@@ -2125,6 +2145,8 @@ function renderCustomers(store) {
     .map((customer) => {
       const createdDate = formatDate(String(customer.createdAt || today).slice(0, 10));
       const createdTime = formatTime(customer.createdAt);
+      const tierName = customer.memberTier || "Thường";
+      const tierClass = isRegularMemberTier(tierName) ? "is-regular" : "is-premium";
       return `
         <div class="customer-card" role="button" tabindex="0" data-edit-customer="${customer.id}">
           <span class="date-stack">
@@ -2139,9 +2161,9 @@ function renderCustomers(store) {
             <small>Số điện thoại</small>
             <strong>${escapeHtml(customer.phone)}</strong>
           </span>
-          <span>
+          <span class="member-tier-field" data-member-tier-customer="${customer.id}" title="Xem thời hạn gói">
             <small>Gói thành viên</small>
-            <strong>${escapeHtml(customer.memberTier || "Thường")}</strong>
+            <button class="member-tier-badge ${tierClass}" type="button" data-member-tier-customer="${customer.id}" title="Xem thời hạn gói" aria-label="Xem thời hạn gói ${escapeHtml(tierName)}">${escapeHtml(tierName)}</button>
           </span>
           <button class="customer-history-button" type="button" data-customer-history="${customer.id}" title="Lịch sử giao dịch" aria-label="Lịch sử giao dịch">LS</button>
         </div>
@@ -2184,6 +2206,95 @@ function renderCustomerSearchSuggestions(customers) {
     .join("");
 }
 
+function isRegularMemberTier(tier) {
+  return normalizeSearchText(tier || "Thường") === "thuong";
+}
+
+function openMemberTierInfo(customerId) {
+  const store = getActiveStore();
+  if (!store || !customerId) return;
+
+  const customer = getStoreCustomers(store).find((item) => item.id === customerId);
+  if (!customer) return;
+
+  const tierName = customer.memberTier || "Thường";
+  const regular = isRegularMemberTier(tierName);
+  els.memberTierStatus.innerHTML = `<span class="member-tier-badge ${regular ? "is-regular" : "is-premium"}">${escapeHtml(tierName)}</span>`;
+
+  if (regular) {
+    els.memberTierContent.innerHTML = `
+      <div class="member-tier-info-card">
+        <small>Khách hàng</small>
+        <strong>${escapeHtml(customer.name || "")}</strong>
+      </div>
+      <div class="member-tier-info-card">
+        <small>Thời hạn</small>
+        <strong>Gói Thường không giới hạn thời gian</strong>
+      </div>
+    `;
+    els.memberTierModal.hidden = false;
+    return;
+  }
+
+  const start = getMemberTierStartDate(customer);
+  const end = addMonths(start, 6);
+  const now = new Date();
+  const daysLeft = Math.ceil((end.getTime() - startOfDay(now).getTime()) / 86400000);
+  const expired = daysLeft < 0;
+
+  els.memberTierContent.innerHTML = `
+    <div class="member-tier-info-card">
+      <small>Khách hàng</small>
+      <strong>${escapeHtml(customer.name || "")}</strong>
+    </div>
+    <div class="member-tier-info-grid">
+      <div class="member-tier-info-card">
+        <small>Bắt đầu</small>
+        <strong>${formatDate(toDateInputValue(start))}</strong>
+      </div>
+      <div class="member-tier-info-card">
+        <small>Hết hạn</small>
+        <strong>${formatDate(toDateInputValue(end))}</strong>
+      </div>
+    </div>
+    <div class="member-tier-info-card ${expired ? "is-expired" : "is-active"}">
+      <small>Thời gian còn lại</small>
+      <strong>${expired ? `Đã hết hạn ${Math.abs(daysLeft).toLocaleString("vi-VN")} ngày` : `Còn ${daysLeft.toLocaleString("vi-VN")} ngày`}</strong>
+    </div>
+  `;
+  els.memberTierModal.hidden = false;
+}
+
+function closeMemberTierModal() {
+  els.memberTierModal.hidden = true;
+  els.memberTierContent.innerHTML = "";
+}
+
+function getMemberTierStartDate(customer) {
+  const value = customer.memberTierStartedAt || customer.updatedAt || customer.createdAt || new Date().toISOString();
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? new Date() : date;
+}
+
+function addMonths(date, months) {
+  const result = new Date(date);
+  const day = result.getDate();
+  result.setMonth(result.getMonth() + months);
+  if (result.getDate() !== day) result.setDate(0);
+  return result;
+}
+
+function startOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function toDateInputValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function saveCustomerFromForm(formData) {
   const store = getActiveStore();
   if (!store) return false;
@@ -2204,11 +2315,18 @@ function saveCustomerFromForm(formData) {
     store.customers.find((customer) => customer.id === id) ||
     store.customers.find((customer) => getCustomerKey(customer.name, customer.phone) === key);
   const now = new Date().toISOString();
+  const premiumTier = !isRegularMemberTier(memberTier);
 
   if (existing) {
+    const previousTier = existing.memberTier || "Thường";
     existing.name = name;
     existing.phone = phone;
     existing.memberTier = memberTier;
+    existing.memberTierStartedAt = premiumTier
+      ? !isRegularMemberTier(previousTier) && normalizeSearchText(previousTier) === normalizeSearchText(memberTier) && existing.memberTierStartedAt
+        ? existing.memberTierStartedAt
+        : now
+      : "";
     existing.createdAt = createdAt;
     existing.updatedAt = now;
     existing.source = existing.source || "manual";
@@ -2218,6 +2336,7 @@ function saveCustomerFromForm(formData) {
       name,
       phone,
       memberTier,
+      memberTierStartedAt: premiumTier ? now : "",
       createdAt,
       updatedAt: now,
       source: "manual"
