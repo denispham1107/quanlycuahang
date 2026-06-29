@@ -2697,7 +2697,6 @@ th:last-child {
   .draft-order-row td {
     background: transparent;
     border: 0;
-    border-bottom: 1px solid var(--line);
   }
 
   .draft-order-row td:first-child,
