@@ -3365,11 +3365,30 @@ function renderSalesDraftList(drafts) {
     return;
   }
 
+  const store = getActiveStore();
+  const customerLookup = new Map(
+    (store ? getStoreCustomers(store) : []).map((customerInfo) => [
+      getCustomerKey(customerInfo.name, customerInfo.phone),
+      customerInfo
+    ])
+  );
+
   const rows = [...drafts]
     .sort((a, b) => String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || "")))
     .map((draft) => {
       const title = draft.customerName || "Đơn chưa có tên khách";
       const draftTime = formatTime(draft.updatedAt || draft.createdAt);
+      const customerInfo = customerLookup.get(getCustomerKey(draft.customerName, draft.customerPhone));
+      const memberTier = customerInfo?.memberTier || "Thường";
+      const memberTierClass = isRegularMemberTier(memberTier) ? "is-regular" : "is-premium";
+      const customer = draft.customerName
+        ? `
+          <span class="sales-history-customer">
+            <span class="sales-history-customer-name">${escapeHtml(title)}</span>
+            <span class="member-tier-badge sales-history-member-tier ${memberTierClass}">${escapeHtml(memberTier)}</span>
+          </span>
+        `
+        : escapeHtml(title);
 
       return `
         <tr class="draft-order-row" data-open-sales-draft="${draft.id}">
@@ -3379,7 +3398,7 @@ function renderSalesDraftList(drafts) {
               ${draftTime ? `<small>${draftTime}</small>` : ""}
             </span>
           </td>
-          <td>${escapeHtml(title)}</td>
+          <td>${customer}</td>
           <td>${escapeHtml(draft.customerPhone || "")}</td>
           <td class="amount-cell">${formatCurrency(draft.total || 0)}</td>
           <td>
