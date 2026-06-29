@@ -821,6 +821,23 @@ form button:disabled {
   background: rgba(8, 120, 247, 0.035);
 }
 
+.sales-history-customer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sales-history-member-tier {
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: default;
+}
+
+.sales-history-member-tier:hover {
+  transform: none;
+}
+
 .order-detail-card {
   width: min(980px, calc(100vw - 32px));
   max-height: min(88vh, 920px);

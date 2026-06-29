@@ -3204,12 +3204,26 @@ function renderSalesOrderTable(container, orders) {
     return;
   }
 
+  const store = getActiveStore();
+  const customerLookup = new Map(
+    (store ? getStoreCustomers(store) : []).map((customerInfo) => [
+      getCustomerKey(customerInfo.name, customerInfo.phone),
+      customerInfo
+    ])
+  );
+
   container.innerHTML = orders
     .map((order) => {
       const cancelled = isCancelledEntry(order);
       const createdTime = formatTime(order.createdAt || order.updatedAt);
+      const customerInfo = customerLookup.get(getCustomerKey(order.customerName, order.customerPhone));
+      const memberTier = customerInfo?.memberTier || "Thường";
+      const memberTierClass = isRegularMemberTier(memberTier) ? "is-regular" : "is-premium";
       const customer = [
-        escapeHtml(order.customerName || ""),
+        `<span class="sales-history-customer-name">${escapeHtml(order.customerName || "")}</span>`,
+        order.customerName
+          ? `<span class="member-tier-badge sales-history-member-tier ${memberTierClass}">${escapeHtml(memberTier)}</span>`
+          : "",
         cancelled ? '<span class="cancelled-pill">Hủy</span>' : ""
       ].join("");
       const actions = cancelled
@@ -3224,7 +3238,7 @@ function renderSalesOrderTable(container, orders) {
               ${createdTime ? `<small>${createdTime}</small>` : ""}
             </span>
           </td>
-          <td>${customer}</td>
+          <td><span class="sales-history-customer">${customer}</span></td>
           <td>${escapeHtml(order.customerPhone || "")}</td>
           <td class="amount-cell">${formatCurrency(order.total || 0)}</td>
           <td>${actions}</td>
