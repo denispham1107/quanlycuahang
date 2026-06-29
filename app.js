@@ -3680,6 +3680,7 @@ function renderInventoryLogs(store) {
             <th>Mục đích</th>
             <th>Số lượng</th>
             <th>Giá tiền</th>
+            <th>Tổng tiền</th>
           </tr>
         </thead>
         <tbody>
@@ -3687,6 +3688,7 @@ function renderInventoryLogs(store) {
             .map(
               (log, index) => {
                 const purpose = getInventoryLogPurpose(log);
+                const total = getInventoryLogTotal(log);
                 return `
                   <tr class="${index > 0 ? "inventory-log-extra" : ""}">
                     <td>${formatDate(getInventoryLogDate(log))}</td>
@@ -3707,6 +3709,7 @@ function renderInventoryLogs(store) {
                         <span class="new-value">${formatCurrency(log.newPrice || 0)}</span>
                       </span>
                     </td>
+                    <td><span class="inventory-log-total">${formatCurrency(total)}</span></td>
                   </tr>
                 `;
               }
@@ -3749,9 +3752,21 @@ function renderInventoryLogFilter() {
 }
 
 function getInventoryLogPurpose(log) {
-  if (log?.type === "export") return { value: "export", label: "Xuất kho" };
-  if (log?.type === "purchase" || log?.type === "import") return { value: "purchase", label: "Nhập kho" };
+  const oldQuantity = Number(log?.oldQuantity || 0);
+  const newQuantity = Number(log?.newQuantity || 0);
+  if (newQuantity > oldQuantity) return { value: "purchase", label: "Nhập kho" };
+  if (newQuantity < oldQuantity) return { value: "export", label: "Xuất kho" };
   return { value: "edit", label: "Cập nhật kho" };
+}
+
+function getInventoryLogTotal(log) {
+  const oldQuantity = Number(log?.oldQuantity || 0);
+  const newQuantity = Number(log?.newQuantity || 0);
+  const changedQuantity = Math.abs(newQuantity - oldQuantity);
+  if (!changedQuantity) return 0;
+
+  const price = Number(log?.newPrice || log?.oldPrice || 0);
+  return Math.max(0, changedQuantity * price);
 }
 
 function getInventoryLogDate(log) {

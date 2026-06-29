@@ -2175,7 +2175,7 @@ th:last-child {
 
 .inventory-log-table {
   width: 100%;
-  min-width: 860px;
+  min-width: 980px;
   border-collapse: collapse;
 }
 
@@ -2215,6 +2215,11 @@ th:last-child {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+  font-weight: 900;
+}
+
+.inventory-log-total {
+  color: var(--accent);
   font-weight: 900;
 }
 
@@ -2739,7 +2744,12 @@ th:last-child {
     content: "Giá tiền";
   }
 
-  .inventory-log-table td:nth-child(6) {
+  .inventory-log-table td:nth-child(7)::before {
+    content: "Tổng tiền";
+  }
+
+  .inventory-log-table td:nth-child(6),
+  .inventory-log-table td:nth-child(7) {
     display: grid;
     grid-template-columns: 76px minmax(0, 1fr);
     gap: 7px;
