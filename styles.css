@@ -912,9 +912,10 @@ form button:disabled {
 
 .sales-catalog-backdrop,
 .sales-customer-catalog-backdrop {
-  align-items: start;
+  align-items: center;
   justify-items: center;
   padding: clamp(14px, 3vw, 32px);
+  padding-bottom: max(clamp(18px, 4vw, 42px), env(safe-area-inset-bottom));
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
@@ -928,8 +929,8 @@ form button:disabled {
   display: flex;
   flex-direction: column;
   width: min(980px, 100%);
-  max-height: calc(100vh - clamp(28px, 6vw, 64px));
-  max-height: calc(100dvh - clamp(28px, 6vw, 64px));
+  max-height: calc(100vh - max(48px, env(safe-area-inset-bottom)));
+  max-height: calc(100dvh - max(48px, env(safe-area-inset-bottom)));
   min-height: 0;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.78);
@@ -958,8 +959,8 @@ form button:disabled {
   flex: 1 1 auto;
   gap: 10px;
   min-height: 0;
-  max-height: min(58vh, 620px);
-  max-height: min(58dvh, 620px);
+  max-height: min(54vh, 620px);
+  max-height: min(54dvh, 620px);
   overflow-y: auto;
   padding-right: 4px;
   overscroll-behavior: contain;
@@ -968,6 +969,7 @@ form button:disabled {
 
 .sales-catalog-card .modal-actions {
   flex: 0 0 auto;
+  margin-top: 14px;
 }
 
 .sales-catalog-item {
@@ -985,6 +987,7 @@ form button:disabled {
   text-align: left;
   box-shadow: 0 12px 28px rgba(83, 96, 222, 0.08);
   cursor: pointer;
+  overflow: hidden;
 }
 
 .sales-catalog-item:hover {
@@ -997,6 +1000,8 @@ form button:disabled {
   display: grid;
   gap: 4px;
   min-width: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .sales-catalog-item strong {
@@ -1014,6 +1019,23 @@ form button:disabled {
 
 .sales-catalog-meta strong {
   color: var(--accent);
+}
+
+.inventory-catalog-item {
+  grid-template-columns: minmax(0, 1fr) minmax(108px, auto);
+}
+
+.inventory-catalog-item .sales-catalog-meta {
+  justify-items: end;
+  min-width: 108px;
+}
+
+.inventory-catalog-item .sales-catalog-meta strong,
+.inventory-catalog-item .sales-catalog-meta small,
+.customer-catalog-item .sales-catalog-meta strong,
+.customer-catalog-item .sales-catalog-meta small {
+  overflow-wrap: anywhere;
+  line-height: 1.2;
 }
 
 .sales-catalog-item.is-disabled {
@@ -2658,12 +2680,50 @@ th:last-child {
 
   .sales-catalog-card {
     width: min(100%, calc(100vw - 24px));
+    max-height: calc(100vh - max(36px, env(safe-area-inset-bottom)));
+    max-height: calc(100dvh - max(36px, env(safe-area-inset-bottom)));
     padding: 18px;
   }
 
+  .sales-catalog-card .panel-heading {
+    margin-bottom: 12px;
+  }
+
+  .sales-catalog-tools {
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .sales-catalog-list {
+    gap: 10px;
+    max-height: min(44vh, 440px);
+    max-height: min(44dvh, 440px);
+    padding-right: 0;
+  }
+
   .sales-catalog-item {
-    grid-template-columns: 1fr;
-    gap: 8px;
+    min-height: 84px;
+    padding: 12px 14px;
+    border-radius: 16px;
+  }
+
+  .inventory-catalog-item {
+    grid-template-columns: minmax(0, 1fr) minmax(92px, auto);
+    gap: 10px;
+  }
+
+  .inventory-catalog-item .sales-catalog-meta {
+    justify-items: end;
+    text-align: right;
+    min-width: 92px;
+  }
+
+  .inventory-catalog-item .sales-catalog-meta strong {
+    font-size: 15px;
+  }
+
+  .inventory-catalog-item .sales-catalog-meta small {
+    font-size: 12px;
   }
 
   .customer-catalog-item {
@@ -2676,6 +2736,17 @@ th:last-child {
 
   .sales-catalog-meta {
     text-align: left;
+  }
+
+  .sales-catalog-card .modal-actions {
+    margin-top: 12px;
+    padding-bottom: max(2px, env(safe-area-inset-bottom));
+  }
+
+  .sales-catalog-card .modal-actions .ghost-button,
+  .sales-catalog-card .modal-actions button {
+    width: 100%;
+    min-height: 48px;
   }
 
   .customer-catalog-item .sales-catalog-meta {

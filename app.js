@@ -1720,7 +1720,7 @@ function renderSalesCatalog() {
       const disabled = quantity <= 0;
       return `
         <button
-          class="sales-catalog-item ${disabled ? "is-disabled" : ""}"
+          class="sales-catalog-item inventory-catalog-item ${disabled ? "is-disabled" : ""}"
           type="button"
           data-select-sales-catalog-item="${item.id}"
           ${disabled ? 'aria-disabled="true"' : ""}
