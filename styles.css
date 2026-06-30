@@ -1808,6 +1808,11 @@ th:last-child {
   -webkit-overflow-scrolling: touch;
 }
 
+.inventory-history-item {
+  cursor: default;
+  pointer-events: none;
+}
+
 .inventory-card .modal-actions {
   flex: 0 0 auto;
   position: static;

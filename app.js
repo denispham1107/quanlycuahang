@@ -3794,7 +3794,7 @@ function buildInventorySnapshotAtStartOfDay(store, targetDate) {
   });
 
   (store.orders || [])
-    .filter((order) => !isCancelledEntry(order) && String(order.date || order.createdAt || today).slice(0, 10) >= targetDate)
+    .filter((order) => !isCancelledEntry(order) && String(order.date || order.createdAt || today).slice(0, 10) > targetDate)
     .forEach((order) => {
       (order.items || []).forEach((soldItem) => {
         const matchedItem =
@@ -3823,7 +3823,7 @@ function buildInventorySnapshotAtStartOfDay(store, targetDate) {
     });
 
   [...(store.inventoryLogs || [])]
-    .filter((log) => getInventoryLogDate(log) >= targetDate)
+    .filter((log) => getInventoryLogDate(log) > targetDate)
     .sort((a, b) => String(b.updatedAt || b.date || "").localeCompare(String(a.updatedAt || a.date || "")))
     .forEach((log) => {
       const key = getInventorySnapshotKey({
