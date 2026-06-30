@@ -1,4 +1,5 @@
 const STORAGE_KEY = "store-cashbook-v1";
+const AI_CHAT_STORAGE_KEY = "store-cashbook-ai-chat-v1";
 const FIREBASE_CONFIG_PLACEHOLDER = "PASTE_YOUR_FIREBASE_CONFIG_HERE";
 const FIRESTORE_COLLECTION = "quanlycuahang";
 const FIRESTORE_DOCUMENT = "shared-state";
@@ -99,6 +100,14 @@ const els = {
   tabSpacer: document.querySelector("#tabSpacer"),
   quickEntryButton: document.querySelector("#quickEntryButton"),
   aiButton: document.querySelector("#aiButton"),
+  aiChatModal: document.querySelector("#aiChatModal"),
+  aiChatClose: document.querySelector("#aiChatClose"),
+  aiChatMessages: document.querySelector("#aiChatMessages"),
+  aiChatForm: document.querySelector("#aiChatForm"),
+  aiChatInput: document.querySelector("#aiChatInput"),
+  aiChatMode: document.querySelector("#aiChatMode"),
+  aiAdminPin: document.querySelector("#aiAdminPin"),
+  aiQuickPrompts: document.querySelector("#aiQuickPrompts"),
   quickEntryModal: document.querySelector("#quickEntryModal"),
   quickEntryForm: document.querySelector("#quickEntryForm"),
   quickEntryTitle: document.querySelector("#quickEntryTitle"),
@@ -416,6 +425,35 @@ els.editEntryAmount.addEventListener("input", () => {
 els.quickEntryButton.addEventListener("click", () => {
   openQuickEntryModal(els.quickEntryButton.dataset.type);
 });
+
+if (els.aiButton) {
+  els.aiButton.addEventListener("click", openAIChat);
+}
+
+if (els.aiChatClose) {
+  els.aiChatClose.addEventListener("click", closeAIChat);
+}
+
+if (els.aiChatModal) {
+  els.aiChatModal.addEventListener("click", (event) => {
+    if (event.target === els.aiChatModal) closeAIChat();
+  });
+}
+
+if (els.aiChatForm) {
+  els.aiChatForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    sendAIChatMessage(els.aiChatInput.value);
+  });
+}
+
+if (els.aiQuickPrompts) {
+  els.aiQuickPrompts.addEventListener("click", (event) => {
+    const button = event.target.closest("button");
+    if (!button) return;
+    sendAIChatMessage(button.textContent.trim());
+  });
+}
 
 els.quickEntryAmount.addEventListener("input", () => {
   els.quickEntryAmount.value = formatAmountInput(els.quickEntryAmount.value);
@@ -3056,6 +3094,202 @@ function deleteSalesDraft(draftId) {
   if (uiState.salesDraftId === draftId) uiState.salesDraftId = null;
   saveAndRender();
   return true;
+}
+
+const aiChatState = {
+  conversationId: loadAIConversationId(),
+  messages: loadAIChatMessages(),
+  pending: false
+};
+
+function loadAIConversationId() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(AI_CHAT_STORAGE_KEY) || "{}");
+    return saved.conversationId || createId();
+  } catch (error) {
+    return createId();
+  }
+}
+
+function loadAIChatMessages() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(AI_CHAT_STORAGE_KEY) || "{}");
+    return Array.isArray(saved.messages) ? saved.messages.slice(-30) : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function saveAIChatMessages() {
+  try {
+    localStorage.setItem(
+      AI_CHAT_STORAGE_KEY,
+      JSON.stringify({
+        conversationId: aiChatState.conversationId,
+        messages: aiChatState.messages.slice(-30)
+      })
+    );
+  } catch (error) {
+    console.warn("Cannot write AI chat cache", error);
+  }
+}
+
+function getAIEndpoint(name) {
+  const config = window.aiFunctionConfig || {};
+  return config[name] || "";
+}
+
+function openAIChat() {
+  if (!els.aiChatModal) return;
+  els.aiChatModal.hidden = false;
+  document.body.classList.add("modal-open");
+  if (!aiChatState.messages.length) {
+    aiChatState.messages.push({
+      role: "assistant",
+      content:
+        "Xin chào, tôi là trợ lý AI quản lý cửa hàng. Bạn có thể hỏi về doanh thu, chi phí, lợi nhuận, tồn kho, khách hàng hoặc đơn hàng."
+    });
+  }
+  renderAIChat();
+  setTimeout(() => els.aiChatInput?.focus(), 50);
+}
+
+function closeAIChat() {
+  if (!els.aiChatModal) return;
+  els.aiChatModal.hidden = true;
+  document.body.classList.remove("modal-open");
+}
+
+function addAIMessage(role, content, actions = []) {
+  aiChatState.messages.push({
+    role,
+    content: String(content || ""),
+    actions: Array.isArray(actions) ? actions : []
+  });
+  saveAIChatMessages();
+  renderAIChat();
+}
+
+function renderAIChat() {
+  if (!els.aiChatMessages) return;
+
+  els.aiChatMessages.innerHTML = aiChatState.messages
+    .map((message) => {
+      const actions = (message.actions || []).map(renderAIActionCard).join("");
+      return `
+        <div class="ai-message ${message.role === "user" ? "user" : "assistant"}">
+          <div>${escapeHtml(message.content).replace(/\n/g, "<br>")}</div>
+          ${actions}
+        </div>
+      `;
+    })
+    .join("");
+
+  if (aiChatState.pending) {
+    els.aiChatMessages.insertAdjacentHTML(
+      "beforeend",
+      '<div class="ai-message assistant ai-loading">AI đang phân tích dữ liệu...</div>'
+    );
+  }
+
+  els.aiChatMessages.scrollTop = els.aiChatMessages.scrollHeight;
+}
+
+function renderAIActionCard(action) {
+  const id = action.id || action.actionId || "";
+  const title = action.type || "Đề xuất thao tác";
+  const payload = action.payload ? JSON.stringify(action.payload, null, 2) : "";
+  const disabled = action.status && action.status !== "pending_confirmation";
+
+  return `
+    <div class="ai-action-card" data-action-id="${escapeHtml(id)}">
+      <strong>${escapeHtml(title)}</strong>
+      <pre>${escapeHtml(payload)}</pre>
+      <div class="ai-action-buttons">
+        <button type="button" data-confirm-ai-action="${escapeHtml(id)}" ${disabled ? "disabled" : ""}>Xác nhận</button>
+        <button type="button" data-cancel-ai-action="${escapeHtml(id)}" ${disabled ? "disabled" : ""}>Hủy</button>
+      </div>
+    </div>
+  `;
+}
+
+async function sendAIChatMessage(rawMessage) {
+  const message = String(rawMessage || "").trim();
+  if (!message || aiChatState.pending) return;
+
+  const endpoint = getAIEndpoint("chatWithAIUrl");
+  if (!endpoint) {
+    addAIMessage(
+      "assistant",
+      "Chưa cấu hình URL Firebase Function chatWithAI. Hãy deploy Functions rồi dán URL vào window.aiFunctionConfig trong firebase-config.js."
+    );
+    return;
+  }
+
+  addAIMessage("user", message);
+  els.aiChatInput.value = "";
+  aiChatState.pending = true;
+  renderAIChat();
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message,
+        conversationId: aiChatState.conversationId,
+        mode: els.aiChatMode?.value || "read_only",
+        pin: els.aiAdminPin?.value || ""
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Không gọi được AI.");
+    addAIMessage("assistant", data.reply || "AI chưa có câu trả lời.", data.actions || []);
+  } catch (error) {
+    addAIMessage("assistant", `Lỗi AI: ${error.message}`);
+  } finally {
+    aiChatState.pending = false;
+    renderAIChat();
+  }
+}
+
+if (els.aiChatMessages) {
+  els.aiChatMessages.addEventListener("click", async (event) => {
+    const confirmButton = event.target.closest("[data-confirm-ai-action]");
+    const cancelButton = event.target.closest("[data-cancel-ai-action]");
+    if (cancelButton) {
+      cancelButton.closest(".ai-action-card")?.remove();
+      return;
+    }
+    if (!confirmButton) return;
+    const actionId = confirmButton.dataset.confirmAiAction;
+    await confirmAIAction(actionId);
+  });
+}
+
+async function confirmAIAction(actionId) {
+  const endpoint = getAIEndpoint("confirmAIActionUrl");
+  if (!endpoint) {
+    addAIMessage("assistant", "Chưa cấu hình URL Firebase Function confirmAIAction.");
+    return;
+  }
+  if (!actionId) return;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        actionId,
+        pin: els.aiAdminPin?.value || ""
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Không xác nhận được thao tác.");
+    addAIMessage("assistant", data.message || "Đã xác nhận thao tác AI.");
+  } catch (error) {
+    addAIMessage("assistant", `Lỗi xác nhận: ${error.message}`);
+  }
 }
 
 function getActiveTabName() {

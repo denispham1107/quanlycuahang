@@ -12,3 +12,8 @@ window.appCloudOptions = {
   collection: "quanlycuahang",
   document: "shared-state"
 };
+
+window.aiFunctionConfig = {
+  chatWithAIUrl: "",
+  confirmAIActionUrl: ""
+};
