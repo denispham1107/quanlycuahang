@@ -3704,12 +3704,17 @@ function renderInventoryLogs(store) {
   }
 
   const expanded = uiState.inventoryLogsExpanded;
+  const logsTotal = logs.reduce((sum, log) => sum + getInventoryLogTotal(log), 0);
   els.inventoryLogPanel.classList.toggle("inventory-log-expanded", expanded);
   els.inventoryLogPanel.classList.toggle("inventory-log-collapsed", !expanded);
 
   els.inventoryLogPanel.innerHTML = `
     <div class="inventory-log-heading">Lịch sử cập nhật kho</div>
     ${renderInventoryLogFilter()}
+    <div class="inventory-log-summary">
+      <span>Tổng cộng</span>
+      <strong>${formatCurrency(logsTotal)}</strong>
+    </div>
     <div class="table-wrap inventory-log-table-wrap">
       <table class="inventory-log-table">
         <thead>

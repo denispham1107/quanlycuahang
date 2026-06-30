@@ -2137,17 +2137,20 @@ th:last-child {
 
 .inventory-log-panel {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
   margin-top: 14px;
 }
 
 .inventory-log-heading {
+  grid-column: 1 / -1;
   font-size: 16px;
   font-weight: 900;
   color: var(--text);
 }
 
 .inventory-log-empty {
+  grid-column: 1 / -1;
   margin-top: 0;
 }
 
@@ -2167,7 +2170,31 @@ th:last-child {
   min-height: 46px;
 }
 
+.inventory-log-summary {
+  display: flex;
+  width: min(360px, 100%);
+  min-height: 46px;
+  align-items: center;
+  justify-content: space-between;
+  justify-self: end;
+  gap: 14px;
+  padding: 10px 16px;
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  background: rgba(8, 120, 247, 0.08);
+  color: var(--text);
+  font-weight: 800;
+}
+
+.inventory-log-summary strong {
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: 950;
+  text-align: right;
+}
+
 .inventory-log-table-wrap {
+  grid-column: 1 / -1;
   border: 1px solid rgba(8, 120, 247, 0.16);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.72);
@@ -2199,6 +2226,7 @@ th:last-child {
 
 .inventory-log-toggle {
   display: inline-grid;
+  grid-column: 1 / -1;
   margin: 2px auto 0;
 }
 
@@ -2399,6 +2427,16 @@ th:last-child {
 }
 
 @media (max-width: 700px) {
+  .inventory-log-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-log-filter,
+  .inventory-log-summary {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
   .topbar,
   .layout {
     padding-inline: 12px;
