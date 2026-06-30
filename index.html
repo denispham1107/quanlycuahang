@@ -614,7 +614,10 @@
       <section class="modal-card inventory-card">
         <div class="panel-heading">
           <h2>Kho hàng</h2>
-          <span id="inventoryModalCount">0 mặt hàng</span>
+          <div class="inventory-heading-actions">
+            <span id="inventoryModalCount">0 mặt hàng</span>
+            <button class="ghost-button compact-button" id="openInventoryHistory" type="button">Lịch sử Kho</button>
+          </div>
         </div>
         <div class="history-tools inventory-tools">
           <div class="history-search">
@@ -630,6 +633,30 @@
         <div class="report-list inventory-list" id="inventoryList"></div>
         <div class="modal-actions">
           <button class="ghost-button" id="closeInventory" type="button">Đóng</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop inventory-history-backdrop" id="inventoryHistoryModal" hidden>
+      <section class="modal-card inventory-card inventory-history-card">
+        <div class="panel-heading">
+          <h2>Lịch sử Kho</h2>
+          <span id="inventoryHistoryCount">0 mặt hàng</span>
+        </div>
+        <div class="history-tools inventory-tools">
+          <div class="history-search">
+            <label for="inventoryHistorySearch">Tìm hàng hóa</label>
+            <input id="inventoryHistorySearch" type="text" placeholder="Nhập tên hàng hóa..." autocomplete="off" />
+          </div>
+          <div class="history-filter">
+            <label for="inventoryHistoryDate">Ngày xem kho</label>
+            <input id="inventoryHistoryDate" type="date" />
+          </div>
+        </div>
+        <div class="inventory-summary" id="inventoryHistorySummary"></div>
+        <div class="report-list inventory-list" id="inventoryHistoryList"></div>
+        <div class="modal-actions">
+          <button class="ghost-button" id="closeInventoryHistory" type="button">Đóng</button>
         </div>
       </section>
     </div>

@@ -28,6 +28,8 @@ const uiState = {
   rangeMode: "today",
   inventorySearch: "",
   inventoryFilter: "all",
+  inventoryHistorySearch: "",
+  inventoryHistoryDate: "",
   salesCatalogSearch: "",
   salesCatalogFilter: "all",
   salesCatalogRow: null,
@@ -181,6 +183,14 @@ const els = {
   toggleInventory: document.querySelector("#toggleInventory"),
   inventoryModal: document.querySelector("#inventoryModal"),
   inventoryModalCount: document.querySelector("#inventoryModalCount"),
+  openInventoryHistory: document.querySelector("#openInventoryHistory"),
+  inventoryHistoryModal: document.querySelector("#inventoryHistoryModal"),
+  inventoryHistoryCount: document.querySelector("#inventoryHistoryCount"),
+  inventoryHistorySearch: document.querySelector("#inventoryHistorySearch"),
+  inventoryHistoryDate: document.querySelector("#inventoryHistoryDate"),
+  inventoryHistorySummary: document.querySelector("#inventoryHistorySummary"),
+  inventoryHistoryList: document.querySelector("#inventoryHistoryList"),
+  closeInventoryHistory: document.querySelector("#closeInventoryHistory"),
   inventorySearch: document.querySelector("#inventorySearch"),
   inventoryFilter: document.querySelector("#inventoryFilter"),
   inventorySummary: document.querySelector("#inventorySummary"),
@@ -590,6 +600,16 @@ els.inventoryModal.addEventListener("click", (event) => {
   if (event.target === els.inventoryModal) closeInventoryModal();
 });
 
+els.openInventoryHistory.addEventListener("click", () => {
+  openInventoryHistoryModal();
+});
+
+els.closeInventoryHistory.addEventListener("click", closeInventoryHistoryModal);
+
+els.inventoryHistoryModal.addEventListener("click", (event) => {
+  if (event.target === els.inventoryHistoryModal) closeInventoryHistoryModal();
+});
+
 els.closeSalesOrderDetail.addEventListener("click", closeSalesOrderDetailModal);
 
 els.salesOrderDetailModal.addEventListener("click", (event) => {
@@ -723,6 +743,16 @@ els.inventorySearch.addEventListener("input", () => {
 els.inventoryFilter.addEventListener("change", () => {
   uiState.inventoryFilter = els.inventoryFilter.value;
   renderInventory(getActiveStore());
+});
+
+els.inventoryHistorySearch.addEventListener("input", () => {
+  uiState.inventoryHistorySearch = els.inventoryHistorySearch.value;
+  renderInventoryHistory(getActiveStore());
+});
+
+els.inventoryHistoryDate.addEventListener("change", () => {
+  uiState.inventoryHistoryDate = els.inventoryHistoryDate.value || today;
+  renderInventoryHistory(getActiveStore());
 });
 
 els.inventoryList.addEventListener("click", (event) => {
@@ -2561,6 +2591,21 @@ function closeInventoryModal() {
   els.inventoryModal.hidden = true;
 }
 
+function openInventoryHistoryModal() {
+  const store = getActiveStore();
+  if (!store) return;
+
+  if (!uiState.inventoryHistoryDate) uiState.inventoryHistoryDate = els.singleDate.value || today;
+  els.inventoryHistoryDate.value = uiState.inventoryHistoryDate;
+  els.inventoryHistorySearch.value = uiState.inventoryHistorySearch || "";
+  renderInventoryHistory(store);
+  els.inventoryHistoryModal.hidden = false;
+}
+
+function closeInventoryHistoryModal() {
+  els.inventoryHistoryModal.hidden = true;
+}
+
 function openEditInventoryModal(inventoryId) {
   const store = getActiveStore();
   const item = (store?.inventory || []).find((stock) => stock.id === inventoryId);
@@ -3673,6 +3718,142 @@ function renderInventory(store) {
       )
       .join("")}
   `;
+}
+
+function renderInventoryHistory(store) {
+  if (!els.inventoryHistoryList || !store) return;
+
+  const selectedDate = uiState.inventoryHistoryDate || today;
+  const query = normalizeSearchText(uiState.inventoryHistorySearch || "");
+  const snapshot = buildInventorySnapshotAtStartOfDay(store, selectedDate)
+    .filter((item) => Number(item.quantity || 0) > 0)
+    .filter((item) => !query || normalizeSearchText(item.name || "").includes(query))
+    .sort((a, b) =>
+      String(a.groupName || "").localeCompare(String(b.groupName || ""), "vi") ||
+      String(a.name || "").localeCompare(String(b.name || ""), "vi")
+    );
+
+  if (els.inventoryHistoryDate && els.inventoryHistoryDate.value !== selectedDate) {
+    els.inventoryHistoryDate.value = selectedDate;
+  }
+
+  els.inventoryHistoryCount.textContent = `${snapshot.length} mặt hàng`;
+  const totalCost = snapshot.reduce(
+    (sum, item) => sum + Number(item.quantity || 0) * Number(item.lastPrice || 0),
+    0
+  );
+
+  if (els.inventoryHistorySummary) {
+    els.inventoryHistorySummary.innerHTML = `
+      <div class="report-item report-total">
+        <span>Đầu ngày ${formatDate(selectedDate)}</span>
+        <span class="report-amount">${formatCurrency(totalCost)}</span>
+      </div>
+    `;
+  }
+
+  if (!snapshot.length) {
+    els.inventoryHistoryList.innerHTML = '<div class="empty-list">Không có hàng hóa phù hợp trong ngày đã chọn.</div>';
+    return;
+  }
+
+  els.inventoryHistoryList.innerHTML = snapshot
+    .map(
+      (item) => `
+        <div class="inventory-item inventory-history-item">
+          <div class="inventory-main">
+            <span class="inventory-group-row">
+              <span class="inventory-group">${escapeHtml(item.groupName || "Chưa phân nhóm")}</span>
+            </span>
+            <strong>${escapeHtml(item.name || "")}</strong>
+            <span class="inventory-date">Đầu ngày: ${formatDate(selectedDate)}</span>
+          </div>
+          <div class="inventory-meta">
+            <span>SL: ${Number(item.quantity || 0).toLocaleString("vi-VN")}</span>
+            <span>Giá vốn: ${formatCurrency(item.lastPrice || 0)}</span>
+            <span>Giá bán: ${formatCurrency(getInventorySalePrice(item))}</span>
+            <span>Tổng: ${formatCurrency(Number(item.quantity || 0) * Number(item.lastPrice || 0))}</span>
+          </div>
+        </div>
+      `
+    )
+    .join("");
+}
+
+function buildInventorySnapshotAtStartOfDay(store, targetDate) {
+  const itemsByKey = new Map();
+
+  (store.inventory || []).forEach((item) => {
+    const snapshot = {
+      ...item,
+      quantity: Number(item.quantity || 0),
+      lastPrice: Number(item.lastPrice || 0),
+      salePrice: getInventorySalePrice(item)
+    };
+    itemsByKey.set(getInventorySnapshotKey(snapshot), snapshot);
+  });
+
+  (store.orders || [])
+    .filter((order) => !isCancelledEntry(order) && String(order.date || order.createdAt || today).slice(0, 10) >= targetDate)
+    .forEach((order) => {
+      (order.items || []).forEach((soldItem) => {
+        const matchedItem =
+          [...itemsByKey.values()].find(
+            (item) => normalizeSearchText(item.name || "") === normalizeSearchText(soldItem.name || "")
+          ) || null;
+        const key = matchedItem
+          ? getInventorySnapshotKey(matchedItem)
+          : getInventorySnapshotKey({
+              name: soldItem.name,
+              groupName: soldItem.groupName || "Bán hàng"
+            });
+        const item = itemsByKey.get(key) || {
+          id: key,
+          name: soldItem.name || "",
+          groupName: soldItem.groupName || "Bán hàng",
+          quantity: 0,
+          lastPrice: 0,
+          salePrice: Number(soldItem.originalPrice || soldItem.price || 0)
+        };
+
+        item.quantity = Number(item.quantity || 0) + Number(soldItem.quantity || 0);
+        item.totalCost = Math.max(0, item.quantity * Number(item.lastPrice || 0));
+        itemsByKey.set(key, item);
+      });
+    });
+
+  [...(store.inventoryLogs || [])]
+    .filter((log) => getInventoryLogDate(log) >= targetDate)
+    .sort((a, b) => String(b.updatedAt || b.date || "").localeCompare(String(a.updatedAt || a.date || "")))
+    .forEach((log) => {
+      const key = getInventorySnapshotKey({
+        name: log.itemName,
+        groupName: log.groupName
+      });
+      const item = itemsByKey.get(key) || {
+        id: key,
+        name: log.itemName || "",
+        groupName: log.groupName || "",
+        quantity: Number(log.newQuantity || 0),
+        lastPrice: Number(log.newPrice || 0),
+        salePrice: getInventoryLogNewSalePrice(log)
+      };
+
+      item.quantity = Number(log.oldQuantity || 0);
+      item.lastPrice = Number(log.oldPrice || 0);
+      item.salePrice = getInventoryLogOldSalePrice(log);
+      item.totalCost = Math.max(0, item.quantity * item.lastPrice);
+      itemsByKey.set(key, item);
+    });
+
+  return [...itemsByKey.values()].map((item) => ({
+    ...item,
+    totalCost: Math.max(0, Number(item.quantity || 0) * Number(item.lastPrice || 0))
+  }));
+}
+
+function getInventorySnapshotKey(item) {
+  return normalizeSearchText(`${item?.groupName || ""} ${item?.name || ""}`);
 }
 
 function renderInventoryLogs(store) {
