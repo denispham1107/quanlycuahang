@@ -14,6 +14,6 @@ window.appCloudOptions = {
 };
 
 window.aiFunctionConfig = {
-  chatWithAIUrl: "",
-  confirmAIActionUrl: ""
+  chatWithAIUrl: "https://asia-southeast1-quanlycuahang-d3ab7.cloudfunctions.net/chatWithAI",
+  confirmAIActionUrl: "https://asia-southeast1-quanlycuahang-d3ab7.cloudfunctions.net/confirmAIAction"
 };
