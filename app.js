@@ -98,6 +98,7 @@ const els = {
   tabBar: document.querySelector("#tabBar"),
   tabSpacer: document.querySelector("#tabSpacer"),
   quickEntryButton: document.querySelector("#quickEntryButton"),
+  aiButton: document.querySelector("#aiButton"),
   quickEntryModal: document.querySelector("#quickEntryModal"),
   quickEntryForm: document.querySelector("#quickEntryForm"),
   quickEntryTitle: document.querySelector("#quickEntryTitle"),
@@ -3064,6 +3065,9 @@ function getActiveTabName() {
 function updateQuickEntryButton() {
   const store = getActiveStore();
   const tabName = getActiveTabName();
+  if (els.aiButton) {
+    els.aiButton.hidden = !(store && tabName === "overview");
+  }
   const type =
     tabName === "income"
       ? "income"

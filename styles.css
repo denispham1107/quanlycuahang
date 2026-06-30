@@ -1631,6 +1631,20 @@ th:last-child {
   transform: translateY(1px) scale(0.98);
 }
 
+.ai-fab {
+  font-size: 17px;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.ai-fab span {
+  position: relative;
+  z-index: 1;
+  color: #7654ff;
+  line-height: 1;
+  filter: drop-shadow(0 6px 12px rgba(61, 126, 245, 0.28));
+}
+
 .modal-card {
   display: grid;
   gap: 12px;
