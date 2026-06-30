@@ -1,7 +1,8 @@
-"use strict";
+﻿"use strict";
 
 const { onRequest } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
+const { logger } = require("firebase-functions");
 const admin = require("firebase-admin");
 const OpenAI = require("openai");
 
@@ -14,7 +15,7 @@ const db = admin.firestore();
 const REGION = process.env.FUNCTION_REGION || "asia-southeast1";
 const APP_STATE_COLLECTION = process.env.APP_STATE_COLLECTION || "quanlycuahang";
 const APP_STATE_DOCUMENT = process.env.APP_STATE_DOCUMENT || "shared-state";
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4.1-mini";
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 const MAX_MESSAGE_LENGTH = 2000;
 const MAX_CONTEXT_CHARS = 14000;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -43,6 +44,45 @@ function applyCors(req, res) {
 
 function sendError(res, status, message) {
   res.status(status).json({ error: message });
+}
+
+function getPublicError(error) {
+  const status = error?.status || error?.code || 500;
+  const message = String(error?.message || "");
+  const type = String(error?.type || "");
+
+  if (message === "UNAUTHORIZED") {
+    return {
+      status: 401,
+      message: "Ban chua duoc phep dung AI. Hay nhap dung PIN admin roi thu lai."
+    };
+  }
+
+  if (status === 401 || /invalid api key|incorrect api key|unauthorized/i.test(message)) {
+    return {
+      status: 500,
+      message: "OpenAI API key chua dung hoac chua duoc cau hinh dung trong Firebase Secret Manager."
+    };
+  }
+
+  if (status === 429 || /quota|rate limit|billing|insufficient_quota/i.test(`${message} ${type}`)) {
+    return {
+      status: 500,
+      message: "OpenAI dang bi gioi han quota/rate limit hoac tai khoan OpenAI chua bat thanh toan."
+    };
+  }
+
+  if (status === 404 || /model/i.test(message)) {
+    return {
+      status: 500,
+      message: `Model OpenAI "${OPENAI_MODEL}" chua dung duoc voi API key hien tai. Hay doi OPENAI_MODEL hoac kiem tra quyen model.`
+    };
+  }
+
+  return {
+    status: status >= 400 && status < 600 ? status : 500,
+    message: "AI tam thoi khong phan hoi. Vui long kiem tra Firebase Functions log roi thu lai."
+  };
 }
 
 function getClientIp(req) {
@@ -90,7 +130,7 @@ function normalizeText(value) {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d");
+    .replace(/Ä‘/g, "d");
 }
 
 function toDateKey(value) {
@@ -146,7 +186,7 @@ function detectContextNeed(message) {
 function buildContext(state, message) {
   const store = getActiveStore(state);
   if (!store) {
-    return { notice: "Chưa có cửa hàng trong dữ liệu Firestore." };
+    return { notice: "ChÆ°a cÃ³ cá»­a hÃ ng trong dá»¯ liá»‡u Firestore." };
   }
 
   const need = detectContextNeed(message);
@@ -237,7 +277,7 @@ function buildContext(state, message) {
       id: customer.id,
       name: customer.name,
       phone: customer.phone || "",
-      memberTier: customer.memberTier || "Thường",
+      memberTier: customer.memberTier || "ThÆ°á»ng",
       createdAt: customer.createdAt || ""
     }));
   }
@@ -246,7 +286,7 @@ function buildContext(state, message) {
   if (serialized.length <= MAX_CONTEXT_CHARS) return context;
   return {
     ...context,
-    note: "Context đã được rút gọn vì dữ liệu cửa hàng lớn."
+    note: "Context Ä‘Ã£ Ä‘Æ°á»£c rÃºt gá»n vÃ¬ dá»¯ liá»‡u cá»­a hÃ ng lá»›n."
   };
 }
 
@@ -295,7 +335,7 @@ exports.chatWithAI = onRequest(
       return;
     }
     if (req.method !== "POST") {
-      sendError(res, 405, "Chỉ hỗ trợ POST.");
+      sendError(res, 405, "Chá»‰ há»— trá»£ POST.");
       return;
     }
 
@@ -303,7 +343,7 @@ exports.chatWithAI = onRequest(
       const adminUser = await requireAdmin(req);
       const rateKey = `${adminUser.userId}:${getClientIp(req)}`;
       if (!checkRateLimit(rateKey)) {
-        sendError(res, 429, "Bạn gửi quá nhanh. Vui lòng thử lại sau một phút.");
+        sendError(res, 429, "Báº¡n gá»­i quÃ¡ nhanh. Vui lÃ²ng thá»­ láº¡i sau má»™t phÃºt.");
         return;
       }
 
@@ -312,36 +352,36 @@ exports.chatWithAI = onRequest(
       const mode = req.body?.mode === "propose_action" ? "propose_action" : "read_only";
 
       if (!message) {
-        sendError(res, 400, "message là bắt buộc.");
+        sendError(res, 400, "message lÃ  báº¯t buá»™c.");
         return;
       }
       if (message.length > MAX_MESSAGE_LENGTH) {
-        sendError(res, 400, `message tối đa ${MAX_MESSAGE_LENGTH} ký tự.`);
+        sendError(res, 400, `message tá»‘i Ä‘a ${MAX_MESSAGE_LENGTH} kÃ½ tá»±.`);
         return;
       }
 
       const state = await loadSharedState();
       const context = buildContext(state, message);
       const systemPrompt = [
-        "Bạn là trợ lý quản lý cửa hàng cho website quản lý cửa hàng của chủ shop.",
-        "Bạn có thể phân tích thu chi, doanh thu, lợi nhuận, tồn kho, đơn hàng, sản phẩm và khách hàng dựa trên dữ liệu Firestore được cung cấp.",
-        "Không bịa số liệu nếu không có dữ liệu. Nếu thiếu dữ liệu hãy nói rõ: Chưa có đủ dữ liệu để kết luận.",
-        "Với các hành động thêm/sửa/xóa dữ liệu, không tự ý thực hiện ngay. Hãy tạo đề xuất hành động để chủ shop xác nhận.",
-        "Trả lời bằng tiếng Việt, rõ ràng, ngắn gọn, có số liệu khi có dữ liệu.",
+        "Báº¡n lÃ  trá»£ lÃ½ quáº£n lÃ½ cá»­a hÃ ng cho website quáº£n lÃ½ cá»­a hÃ ng cá»§a chá»§ shop.",
+        "Báº¡n cÃ³ thá»ƒ phÃ¢n tÃ­ch thu chi, doanh thu, lá»£i nhuáº­n, tá»“n kho, Ä‘Æ¡n hÃ ng, sáº£n pháº©m vÃ  khÃ¡ch hÃ ng dá»±a trÃªn dá»¯ liá»‡u Firestore Ä‘Æ°á»£c cung cáº¥p.",
+        "KhÃ´ng bá»‹a sá»‘ liá»‡u náº¿u khÃ´ng cÃ³ dá»¯ liá»‡u. Náº¿u thiáº¿u dá»¯ liá»‡u hÃ£y nÃ³i rÃµ: ChÆ°a cÃ³ Ä‘á»§ dá»¯ liá»‡u Ä‘á»ƒ káº¿t luáº­n.",
+        "Vá»›i cÃ¡c hÃ nh Ä‘á»™ng thÃªm/sá»­a/xÃ³a dá»¯ liá»‡u, khÃ´ng tá»± Ã½ thá»±c hiá»‡n ngay. HÃ£y táº¡o Ä‘á» xuáº¥t hÃ nh Ä‘á»™ng Ä‘á»ƒ chá»§ shop xÃ¡c nháº­n.",
+        "Tráº£ lá»i báº±ng tiáº¿ng Viá»‡t, rÃµ rÃ ng, ngáº¯n gá»n, cÃ³ sá»‘ liá»‡u khi cÃ³ dá»¯ liá»‡u.",
         mode === "propose_action"
-          ? "Nếu cần đề xuất thao tác, trả về JSON hợp lệ dạng {\"reply\":\"...\",\"actions\":[{\"type\":\"create_transaction\",\"payload\":{...}}]}. Không thực hiện thao tác nguy hiểm như xóa toàn bộ dữ liệu."
-          : "Chế độ hiện tại là read_only: chỉ trả lời, actions phải là mảng rỗng."
+          ? "Náº¿u cáº§n Ä‘á» xuáº¥t thao tÃ¡c, tráº£ vá» JSON há»£p lá»‡ dáº¡ng {\"reply\":\"...\",\"actions\":[{\"type\":\"create_transaction\",\"payload\":{...}}]}. KhÃ´ng thá»±c hiá»‡n thao tÃ¡c nguy hiá»ƒm nhÆ° xÃ³a toÃ n bá»™ dá»¯ liá»‡u."
+          : "Cháº¿ Ä‘á»™ hiá»‡n táº¡i lÃ  read_only: chá»‰ tráº£ lá»i, actions pháº£i lÃ  máº£ng rá»—ng."
       ].join(" ");
 
       const client = new OpenAI({ apiKey: OPENAI_API_KEY.value() });
       const response = await client.responses.create({
         model: OPENAI_MODEL,
         temperature: 0.2,
+        instructions: systemPrompt,
         input: [
-          { role: "system", content: systemPrompt },
           {
             role: "user",
-            content: `Dữ liệu cửa hàng đã được rút gọn:\n${JSON.stringify(context)}`
+            content: `Dá»¯ liá»‡u cá»­a hÃ ng Ä‘Ã£ Ä‘Æ°á»£c rÃºt gá»n:\n${JSON.stringify(context)}`
           },
           { role: "user", content: message }
         ]
@@ -379,8 +419,13 @@ exports.chatWithAI = onRequest(
         usage: response.usage || null
       });
     } catch (error) {
-      const status = error.status || (error.message === "UNAUTHORIZED" ? 401 : 500);
-      sendError(res, status, status === 401 ? "Bạn chưa được phép dùng AI." : "AI tạm thời không phản hồi. Vui lòng thử lại.");
+      logger.error("chatWithAI failed", {
+        status: error?.status || error?.code || 500,
+        type: error?.type || "",
+        message: error?.message || ""
+      });
+      const publicError = getPublicError(error);
+      sendError(res, publicError.status, publicError.message);
     }
   }
 );
@@ -399,7 +444,7 @@ exports.confirmAIAction = onRequest(
       return;
     }
     if (req.method !== "POST") {
-      sendError(res, 405, "Chỉ hỗ trợ POST.");
+      sendError(res, 405, "Chá»‰ há»— trá»£ POST.");
       return;
     }
 
@@ -407,7 +452,7 @@ exports.confirmAIAction = onRequest(
       const adminUser = await requireAdmin(req);
       const actionId = typeof req.body?.actionId === "string" ? req.body.actionId.trim() : "";
       if (!actionId) {
-        sendError(res, 400, "actionId là bắt buộc.");
+        sendError(res, 400, "actionId lÃ  báº¯t buá»™c.");
         return;
       }
 
@@ -446,7 +491,7 @@ exports.confirmAIAction = onRequest(
           id: `ai-entry-${Date.now()}`,
           type,
           categoryId: category.id,
-          note: String(payload.note || "Tạo từ AI").slice(0, 200),
+          note: String(payload.note || "Táº¡o tá»« AI").slice(0, 200),
           amount: money(payload.amount),
           date: toDateKey(payload.date) || new Date().toISOString().slice(0, 10),
           status: "active",
@@ -475,16 +520,16 @@ exports.confirmAIAction = onRequest(
         createdAt: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      res.json({ ok: true, message: "Đã thực hiện thao tác AI và cập nhật Firestore." });
+      res.json({ ok: true, message: "ÄÃ£ thá»±c hiá»‡n thao tÃ¡c AI vÃ  cáº­p nháº­t Firestore." });
     } catch (error) {
       const status = error.status || (error.message === "UNAUTHORIZED" ? 401 : 500);
       const messages = {
-        ACTION_NOT_FOUND: "Không tìm thấy thao tác AI.",
-        ACTION_DONE: "Thao tác này đã được xử lý.",
-        UNSUPPORTED_ACTION: "Loại thao tác này chưa được hỗ trợ tự động.",
-        NO_STORE: "Chưa có cửa hàng để cập nhật."
+        ACTION_NOT_FOUND: "KhÃ´ng tÃ¬m tháº¥y thao tÃ¡c AI.",
+        ACTION_DONE: "Thao tÃ¡c nÃ y Ä‘Ã£ Ä‘Æ°á»£c xá»­ lÃ½.",
+        UNSUPPORTED_ACTION: "Loáº¡i thao tÃ¡c nÃ y chÆ°a Ä‘Æ°á»£c há»— trá»£ tá»± Ä‘á»™ng.",
+        NO_STORE: "ChÆ°a cÃ³ cá»­a hÃ ng Ä‘á»ƒ cáº­p nháº­t."
       };
-      sendError(res, status, messages[error.message] || (status === 401 ? "Bạn chưa được phép xác nhận." : "Không thể xác nhận thao tác."));
+      sendError(res, status, messages[error.message] || (status === 401 ? "Báº¡n chÆ°a Ä‘Æ°á»£c phÃ©p xÃ¡c nháº­n." : "KhÃ´ng thá»ƒ xÃ¡c nháº­n thao tÃ¡c."));
     }
   }
 );
