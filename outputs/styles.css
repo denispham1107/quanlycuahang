@@ -3254,3 +3254,107 @@ th:last-child {
   }
 }
 
+.modal-backdrop.ai-chat-backdrop {
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
+  background:
+    radial-gradient(circle at 8% 8%, rgba(255, 219, 208, 0.92), transparent 30%),
+    radial-gradient(circle at 92% 2%, rgba(206, 190, 255, 0.92), transparent 34%),
+    linear-gradient(135deg, rgba(255, 236, 230, 0.94), rgba(230, 226, 255, 0.94), rgba(205, 238, 255, 0.96));
+}
+
+.modal-backdrop.ai-chat-backdrop[hidden] {
+  display: none;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+.modal-card.ai-chat-card {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  padding: clamp(16px, 3vw, 34px);
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
+  gap: clamp(10px, 1.6vw, 16px);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(255, 255, 255, 0.91)),
+    linear-gradient(135deg, rgba(255, 128, 96, 0.22), rgba(169, 80, 255, 0.2), rgba(0, 138, 255, 0.22));
+  box-shadow: none;
+}
+
+.ai-chat-heading {
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.ai-chat-settings,
+.ai-quick-prompts,
+.ai-chat-messages,
+.ai-chat-form,
+.ai-chat-note {
+  width: min(1180px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ai-chat-messages {
+  padding: 10px 6px;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ai-chat-form {
+  position: sticky;
+  bottom: 0;
+  padding-top: 4px;
+}
+
+@media (max-width: 700px) {
+  .modal-card.ai-chat-card {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
+    border-radius: 0;
+  }
+
+  .ai-chat-heading {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .ai-chat-settings {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-quick-prompts {
+    padding-bottom: 4px;
+  }
+
+  .ai-message {
+    max-width: 94%;
+  }
+
+  .ai-chat-form {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .ai-chat-form input {
+    min-height: 54px;
+  }
+
+  .ai-chat-form button {
+    min-height: 54px;
+    padding: 0 18px;
+  }
+}
+
