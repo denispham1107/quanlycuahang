@@ -1318,6 +1318,70 @@ form button:disabled {
   gap: 12px;
 }
 
+.time-filters {
+  position: sticky;
+  position: -webkit-sticky;
+  top: calc(var(--tab-bar-sticky-height, 0px) + 10px);
+  z-index: 58;
+  grid-template-columns: minmax(190px, 1.08fr) repeat(4, minmax(170px, 1fr));
+  align-items: end;
+  gap: 10px;
+  margin-top: -4px;
+  margin-bottom: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  border-radius: 28px;
+  padding: 12px;
+  background:
+    linear-gradient(135deg, rgba(255, 246, 241, 0.9), rgba(245, 241, 255, 0.9) 52%, rgba(232, 249, 255, 0.94)),
+    rgba(255, 255, 255, 0.74);
+  box-shadow:
+    0 18px 38px rgba(80, 98, 155, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transform: translateZ(0);
+}
+
+.time-filters[hidden] {
+  display: none;
+}
+
+.time-filters .field {
+  gap: 7px;
+}
+
+.time-filters label {
+  padding-left: 8px;
+  color: #687184;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.time-filters input,
+.time-filters select {
+  min-height: 48px;
+  border-color: rgba(210, 220, 232, 0.92);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #151922;
+  padding-inline: 18px;
+  font-weight: 650;
+  box-shadow:
+    0 10px 24px rgba(112, 126, 172, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.time-filters select:focus,
+.time-filters input:focus {
+  border-color: #0c82f4;
+  outline: 3px solid rgba(12, 130, 244, 0.18);
+}
+
+.time-filters .field:first-child select {
+  border-color: rgba(12, 130, 244, 0.22);
+  background: linear-gradient(135deg, rgba(12, 130, 244, 0.11), rgba(216, 92, 255, 0.1), rgba(255, 154, 74, 0.1)), #fff;
+}
+
 .field {
   display: grid;
   gap: 6px;
@@ -3432,6 +3496,45 @@ body.modal-open {
   position: sticky;
   bottom: 0;
   padding-top: 4px;
+}
+
+@media (max-width: 700px) {
+  .time-filters {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    margin-inline: -2px;
+    padding: 10px;
+    border-radius: 24px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .time-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .time-filters[hidden] {
+    display: none;
+  }
+
+  .time-filters .field {
+    flex: 0 0 190px;
+    min-width: 0;
+  }
+
+  .time-filters .field:first-child {
+    flex-basis: 178px;
+  }
+
+  .time-filters input,
+  .time-filters select {
+    min-height: 46px;
+    font-size: 16px;
+    padding-inline: 16px;
+  }
 }
 
 @media (max-width: 700px) {

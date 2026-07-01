@@ -71,40 +71,40 @@
               <button class="tab-button" type="button" data-tab="expense" aria-selected="false">Chi</button>
             </nav>
 
+            <section class="panel filters time-filters" id="timeFilters">
+              <div class="field">
+                <label for="rangeMode">Khoảng thời gian</label>
+                <select id="rangeMode">
+                  <option value="all">Toàn thời gian</option>
+                  <option value="today">Hôm nay</option>
+                  <option value="yesterday">Hôm qua</option>
+                  <option value="this-month">Tháng này</option>
+                  <option value="last-month">Tháng trước</option>
+                  <option value="week">Theo tuần</option>
+                  <option value="custom">Tùy chọn</option>
+                </select>
+              </div>
+              <div class="field" id="singleDateField">
+                <label for="singleDate">Theo ngày</label>
+                <input id="singleDate" type="date" />
+              </div>
+              <div class="field" id="monthField">
+                <label for="monthDate">Theo tháng</label>
+                <input id="monthDate" type="month" />
+              </div>
+              <div class="field" id="fromField">
+                <label for="fromDate">Từ ngày</label>
+                <input id="fromDate" type="date" />
+              </div>
+              <div class="field" id="toField">
+                <label for="toDate">Đến ngày</label>
+                <input id="toDate" type="date" />
+              </div>
+            </section>
+
             <section class="tab-panel active" data-tab-panel="stores"></section>
 
             <section class="tab-panel" data-tab-panel="overview" hidden>
-              <section class="panel filters">
-                <div class="field">
-                  <label for="rangeMode">Khoảng thời gian</label>
-                  <select id="rangeMode">
-                    <option value="all">Toàn thời gian</option>
-                    <option value="today">Hôm nay</option>
-                    <option value="yesterday">Hôm qua</option>
-                    <option value="this-month">Tháng này</option>
-                    <option value="last-month">Tháng trước</option>
-                    <option value="week">Theo tuần</option>
-                    <option value="custom">Tùy chọn</option>
-                  </select>
-                </div>
-                <div class="field" id="singleDateField">
-                  <label for="singleDate">Theo ngày</label>
-                  <input id="singleDate" type="date" />
-                </div>
-                <div class="field" id="monthField" hidden>
-                  <label for="monthDate">Theo tháng</label>
-                  <input id="monthDate" type="month" />
-                </div>
-                <div class="field" id="fromField" hidden>
-                  <label for="fromDate">Từ ngày</label>
-                  <input id="fromDate" type="date" />
-                </div>
-                <div class="field" id="toField" hidden>
-                  <label for="toDate">Đến ngày</label>
-                  <input id="toDate" type="date" />
-                </div>
-              </section>
-
               <section class="selected-range-card">
                 <span>Đang xem</span>
                 <strong id="selectedRangeLabel">Hôm nay</strong>

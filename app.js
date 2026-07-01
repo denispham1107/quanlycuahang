@@ -102,6 +102,7 @@ const els = {
   syncStatus: document.querySelector("#syncStatus"),
   tabBar: document.querySelector("#tabBar"),
   tabSpacer: document.querySelector("#tabSpacer"),
+  timeFilters: document.querySelector("#timeFilters"),
   quickEntryButton: document.querySelector("#quickEntryButton"),
   aiButton: document.querySelector("#aiButton"),
   aiChatModal: document.querySelector("#aiChatModal"),
@@ -1415,6 +1416,7 @@ function render() {
     els.heroStoreName.textContent = "Chưa chọn cửa hàng";
     els.heroStoreMeta.textContent = "Tạo hoặc chọn một cửa hàng";
     activateTab("stores");
+    updateTimeFiltersVisibility();
     updateQuickEntryButton();
     updatePinnedTabs();
     return;
@@ -1436,6 +1438,7 @@ function render() {
     renderCustomers(store);
   }
   els.tabBar.dataset.pinTop = "";
+  updateTimeFiltersVisibility();
   updateQuickEntryButton();
   updatePinnedTabs();
 }
@@ -3604,8 +3607,25 @@ function activateTab(tabName) {
     panel.classList.toggle("active", isActive);
     panel.hidden = !isActive;
   });
+  updateTimeFiltersVisibility(tabName);
   updateQuickEntryButton();
   updatePinnedTabs();
+}
+
+function getActiveTabName() {
+  return document.querySelector(".tab-button.active")?.dataset.tab || "stores";
+}
+
+function updateTimeFiltersVisibility(tabName = getActiveTabName()) {
+  if (!els.timeFilters) return;
+  const visibleTabs = new Set(["overview", "income", "expense", "purchase", "sales"]);
+  const store = getActiveStore();
+  els.timeFilters.hidden = !store || !visibleTabs.has(tabName);
+}
+
+function updateStickyControlMetrics() {
+  const tabHeight = els.tabBar?.offsetHeight || 0;
+  document.documentElement.style.setProperty("--tab-bar-sticky-height", `${tabHeight}px`);
 }
 
 function updatePinnedTabs() {
@@ -3613,6 +3633,8 @@ function updatePinnedTabs() {
     resetPinnedTabs();
     return;
   }
+
+  updateStickyControlMetrics();
 
   const spacerRect = els.tabSpacer.getBoundingClientRect();
   const dashboardRect = els.dashboard.getBoundingClientRect();
@@ -3639,6 +3661,7 @@ function resetPinnedTabs() {
   els.tabBar.style.width = "";
   els.tabBar.dataset.pinTop = "";
   els.tabSpacer.style.height = "0px";
+  updateStickyControlMetrics();
 }
 
 function renderStores() {
@@ -4665,11 +4688,10 @@ function renderEntryTable(container, store, entries) {
     .join("");
 }
 function updateFilterFields() {
-  const mode = uiState.rangeMode;
   els.singleDateField.hidden = false;
   els.monthField.hidden = false;
-  els.fromField.hidden = mode !== "custom";
-  els.toField.hidden = mode !== "custom";
+  els.fromField.hidden = false;
+  els.toField.hidden = false;
 }
 
 function syncQuickRangeInputs() {
