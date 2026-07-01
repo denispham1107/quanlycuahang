@@ -1,5 +1,6 @@
 const STORAGE_KEY = "store-cashbook-v1";
 const AI_CHAT_STORAGE_KEY = "store-cashbook-ai-chat-v1";
+const AI_CLIENT_STATE_MAX_CHARS = 180000;
 const FIREBASE_CONFIG_PLACEHOLDER = "PASTE_YOUR_FIREBASE_CONFIG_HERE";
 const FIRESTORE_COLLECTION = "quanlycuahang";
 const FIRESTORE_DOCUMENT = "shared-state";
@@ -252,6 +253,29 @@ els.singleDate.value = today;
 els.monthDate.value = today.slice(0, 7);
 els.fromDate.value = today;
 els.toDate.value = today;
+
+function createStateExportPayload() {
+  return JSON.parse(JSON.stringify(state || defaultData));
+}
+
+function createAIClientStateSnapshot() {
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    source: "frontend_json_export_for_ai",
+    format: "same_data_as_export_button",
+    data: createStateExportPayload()
+  };
+  const serialized = JSON.stringify(payload);
+  if (serialized.length <= AI_CLIENT_STATE_MAX_CHARS) return payload;
+  return {
+    exportedAt: payload.exportedAt,
+    source: payload.source,
+    format: payload.format,
+    truncated: true,
+    maxChars: AI_CLIENT_STATE_MAX_CHARS,
+    dataPreview: serialized.slice(0, AI_CLIENT_STATE_MAX_CHARS)
+  };
+}
 
 function moveStoreSectionsIntoTab() {
   const storesPanel = document.querySelector('[data-tab-panel="stores"]');
@@ -866,7 +890,7 @@ els.editEntryForm.addEventListener("submit", (event) => {
 });
 
 els.exportData.addEventListener("click", () => {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify(createStateExportPayload(), null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -3103,7 +3127,9 @@ function deleteSalesDraft(draftId) {
 const aiChatState = {
   conversationId: loadAIConversationId(),
   messages: loadAIChatMessages(),
-  pending: false
+  pending: false,
+  dataSnapshot: null,
+  dataSnapshotAt: ""
 };
 
 function loadAIConversationId() {
@@ -3145,6 +3171,8 @@ function getAIEndpoint(name) {
 
 function openAIChat() {
   if (!els.aiChatModal) return;
+  aiChatState.dataSnapshot = createAIClientStateSnapshot();
+  aiChatState.dataSnapshotAt = aiChatState.dataSnapshot.exportedAt || new Date().toISOString();
   els.aiChatModal.hidden = false;
   document.body.classList.add("modal-open");
   if (!aiChatState.messages.length) {
@@ -3244,7 +3272,8 @@ async function sendAIChatMessage(rawMessage) {
         message,
         conversationId: aiChatState.conversationId,
         mode: els.aiChatMode?.value || "read_only",
-        pin: adminPin
+        pin: adminPin,
+        clientState: aiChatState.dataSnapshot || createAIClientStateSnapshot()
       })
     });
     const data = await response.json().catch(() => ({}));
