@@ -242,6 +242,10 @@ const els = {
 
 moveStoreSectionsIntoTab();
 
+if (els.aiChatMode) {
+  els.aiChatMode.value = "propose_action";
+}
+
 const today = toDateInputValue(new Date());
 els.rangeMode.value = "today";
 els.singleDate.value = today;

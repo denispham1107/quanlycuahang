@@ -3358,3 +3358,130 @@ body.modal-open {
   }
 }
 
+/* Compact fullscreen AI chat */
+.modal-card.ai-chat-card {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  padding: clamp(10px, 1.8vw, 18px);
+  gap: 8px;
+}
+
+.ai-chat-heading {
+  position: absolute;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  z-index: 5;
+  width: auto;
+  max-width: none;
+  margin: 0;
+}
+
+.ai-chat-heading > div,
+.ai-chat-note {
+  display: none;
+}
+
+.ai-chat-close {
+  width: 42px;
+  height: 42px;
+  min-height: 42px;
+  border-radius: 16px;
+  font-size: 24px;
+  box-shadow: 0 12px 28px rgba(13, 42, 82, 0.12);
+}
+
+.ai-chat-settings {
+  grid-template-columns: minmax(132px, 190px) minmax(180px, 280px);
+  gap: 8px;
+  padding-right: 56px;
+}
+
+.ai-chat-settings label,
+.ai-quick-prompts {
+  font-size: 12px;
+}
+
+.ai-chat-settings select,
+.ai-chat-settings input {
+  min-height: 42px;
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+.ai-quick-prompts {
+  gap: 7px;
+  padding-bottom: 2px;
+}
+
+.ai-quick-prompts button {
+  min-height: 38px;
+  padding: 7px 12px;
+  font-size: 14px;
+  border-radius: 999px;
+}
+
+.ai-chat-messages {
+  gap: 8px;
+  padding: 4px 2px;
+}
+
+.ai-message {
+  max-width: min(78%, 760px);
+  padding: 10px 12px;
+  border-radius: 15px;
+  font-size: 14px;
+  line-height: 1.42;
+}
+
+.ai-chat-form {
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.ai-chat-form input {
+  min-height: 46px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+.ai-chat-form button {
+  min-height: 46px;
+  padding: 0 20px;
+  font-size: 14px;
+}
+
+@media (max-width: 700px) {
+  .modal-card.ai-chat-card {
+    padding: max(9px, env(safe-area-inset-top)) 10px max(9px, env(safe-area-inset-bottom));
+    gap: 7px;
+  }
+
+  .ai-chat-close {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    border-radius: 14px;
+  }
+
+  .ai-chat-settings {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.3fr);
+    padding-right: 48px;
+  }
+
+  .ai-chat-settings select,
+  .ai-chat-settings input {
+    min-height: 40px;
+    font-size: 13px;
+  }
+
+  .ai-message {
+    max-width: 90%;
+    padding: 9px 11px;
+    font-size: 13.5px;
+  }
+
+  .ai-chat-form input,
+  .ai-chat-form button {
+    min-height: 44px;
+  }
+}
+

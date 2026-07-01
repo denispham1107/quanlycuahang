@@ -17,7 +17,7 @@ const APP_STATE_COLLECTION = process.env.APP_STATE_COLLECTION || "quanlycuahang"
 const APP_STATE_DOCUMENT = process.env.APP_STATE_DOCUMENT || "shared-state";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 const MAX_MESSAGE_LENGTH = 2000;
-const MAX_CONTEXT_CHARS = 14000;
+const MAX_CONTEXT_CHARS = Number(process.env.MAX_AI_CONTEXT_CHARS || 60000);
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX = 20;
 const allowedOrigins = new Set([
@@ -174,12 +174,13 @@ function orderTotal(order) {
 function detectContextNeed(message) {
   const text = normalizeText(message);
   return {
-    inventory: /ton kho|kho|hang hoa|san pham|het hang/.test(text),
-    customers: /khach|thanh vien|vip|so dien thoai/.test(text),
-    orders: /don hang|ban hang|bill|ban chay|doanh thu ban/.test(text),
-    income: /thu|doanh thu|khoan thu/.test(text),
-    expense: /chi|chi phi|khoan chi|lo|loi nhuan/.test(text),
-    overview: /tong quan|bao cao|hom nay|thang|tuan|loi nhuan|lai|lo/.test(text)
+    inventory: true,
+    customers: true,
+    orders: true,
+    income: true,
+    expense: true,
+    overview: true,
+    matchedText: text
   };
 }
 
@@ -209,6 +210,30 @@ function buildContext(state, message) {
   const monthSales = activeOrders.filter((order) => toDateKey(order.date).startsWith(month)).reduce((sum, order) => sum + orderTotal(order), 0);
 
   const context = {
+    schema: {
+      rootKeys: Object.keys(state || {}),
+      storeKeys: Object.keys(store || {}),
+      storeCount: Array.isArray(state && state.stores) ? state.stores.length : 0,
+      counts: {
+        entries: entries.length,
+        orders: orders.length,
+        inventory: inventory.length,
+        customers: customers.length,
+        incomeCategories: Array.isArray(store.incomeCategories) ? store.incomeCategories.length : 0,
+        expenseCategories: Array.isArray(store.expenseCategories) ? store.expenseCategories.length : 0,
+        inventoryLogs: Array.isArray(store.inventoryLogs) ? store.inventoryLogs.length : 0,
+        savedOrders: Array.isArray(store.savedOrders) ? store.savedOrders.length : 0
+      }
+    },
+    allStores: limited(Array.isArray(state && state.stores) ? state.stores : [], 50).map((item) => ({
+      id: item.id,
+      name: item.name,
+      keys: Object.keys(item || {}),
+      entries: Array.isArray(item.entries) ? item.entries.length : 0,
+      orders: Array.isArray(item.orders) ? item.orders.length : 0,
+      inventory: Array.isArray(item.inventory) ? item.inventory.length : 0,
+      customers: Array.isArray(item.customers) ? item.customers.length : 0
+    })),
     store: {
       id: store.id,
       name: store.name,
@@ -229,8 +254,15 @@ function buildContext(state, message) {
     }
   };
 
+  const fullStateJson = JSON.stringify(state || {});
+  if (fullStateJson.length <= MAX_CONTEXT_CHARS) {
+    context.fullState = state;
+  } else {
+    context.fullStateNote = "Full Firestore state is larger than MAX_AI_CONTEXT_CHARS, so the assistant receives schema, counts, summaries and high-limit arrays instead.";
+  }
+
   if (need.income || need.expense || need.overview) {
-    context.transactions = limited(activeEntries, 100).map((entry) => ({
+    context.transactions = limited(activeEntries, 1000).map((entry) => ({
       id: entry.id,
       type: entry.type,
       date: entry.date,
@@ -241,7 +273,7 @@ function buildContext(state, message) {
   }
 
   if (need.orders || need.overview) {
-    context.orders = limited(activeOrders, 80).map((order) => ({
+    context.orders = limited(activeOrders, 1000).map((order) => ({
       id: order.id,
       date: toDateKey(order.date),
       time: order.time || "",
@@ -260,7 +292,7 @@ function buildContext(state, message) {
   }
 
   if (need.inventory || need.orders || need.overview) {
-    context.inventory = limited(inventory, 100).map((item) => ({
+    context.inventory = limited(inventory, 1000).map((item) => ({
       id: item.id,
       name: item.name,
       groupName: item.groupName || "",
@@ -273,7 +305,7 @@ function buildContext(state, message) {
   }
 
   if (need.customers || need.orders) {
-    context.customers = limited(customers, 100).map((customer) => ({
+    context.customers = limited(customers, 1000).map((customer) => ({
       id: customer.id,
       name: customer.name,
       phone: customer.phone || "",
@@ -365,6 +397,8 @@ exports.chatWithAI = onRequest(
       const systemPrompt = [
         "Báº¡n lÃ  trá»£ lÃ½ quáº£n lÃ½ cá»­a hÃ ng cho website quáº£n lÃ½ cá»­a hÃ ng cá»§a chá»§ shop.",
         "Báº¡n cÃ³ thá»ƒ phÃ¢n tÃ­ch thu chi, doanh thu, lá»£i nhuáº­n, tá»“n kho, Ä‘Æ¡n hÃ ng, sáº£n pháº©m vÃ  khÃ¡ch hÃ ng dá»±a trÃªn dá»¯ liá»‡u Firestore Ä‘Æ°á»£c cung cáº¥p.",
+        "Báº¡n Ä‘Æ°á»£c cung cáº¥p snapshot/schema rá»™ng nháº¥t cÃ³ thá»ƒ cá»§a dá»¯ liá»‡u hiá»‡n táº¡i. Khi website cÃ³ thÃªm trÆ°á»ng hoáº·c chá»©c nÄƒng má»›i, hÃ£y Ä‘á»c schema/fullState Ä‘á»ƒ hiá»ƒu dá»¯ liá»‡u má»›i thay vÃ¬ giáº£ Ä‘á»‹nh.",
+        "Báº¡n cÃ³ thá»ƒ phÃ¢n tÃ­ch táº¥t cáº£ module Ä‘ang cÃ³ trong dá»¯ liá»‡u; vá»›i thao tÃ¡c ghi/sá»­a/xÃ³a, chá»‰ táº¡o Ä‘á» xuáº¥t action vÃ  chá» chá»§ shop xÃ¡c nháº­n.",
         "KhÃ´ng bá»‹a sá»‘ liá»‡u náº¿u khÃ´ng cÃ³ dá»¯ liá»‡u. Náº¿u thiáº¿u dá»¯ liá»‡u hÃ£y nÃ³i rÃµ: ChÆ°a cÃ³ Ä‘á»§ dá»¯ liá»‡u Ä‘á»ƒ káº¿t luáº­n.",
         "Vá»›i cÃ¡c hÃ nh Ä‘á»™ng thÃªm/sá»­a/xÃ³a dá»¯ liá»‡u, khÃ´ng tá»± Ã½ thá»±c hiá»‡n ngay. HÃ£y táº¡o Ä‘á» xuáº¥t hÃ nh Ä‘á»™ng Ä‘á»ƒ chá»§ shop xÃ¡c nháº­n.",
         "Tráº£ lá»i báº±ng tiáº¿ng Viá»‡t, rÃµ rÃ ng, ngáº¯n gá»n, cÃ³ sá»‘ liá»‡u khi cÃ³ dá»¯ liá»‡u.",
@@ -381,7 +415,7 @@ exports.chatWithAI = onRequest(
         input: [
           {
             role: "user",
-            content: `Dá»¯ liá»‡u cá»­a hÃ ng Ä‘Ã£ Ä‘Æ°á»£c rÃºt gá»n:\n${JSON.stringify(context)}`
+            content: `Dá»¯ liá»‡u cá»­a hÃ ng/schema Firestore hiá»‡n táº¡i:\n${JSON.stringify(context)}`
           },
           { role: "user", content: message }
         ]
