@@ -3485,3 +3485,19 @@ body.modal-open {
   }
 }
 
+/* iOS Safari auto-zooms focused inputs smaller than 16px. Keep AI inputs at
+   16px even in the compact fullscreen layout. */
+.ai-chat-settings input,
+.ai-chat-form input {
+  font-size: 16px !important;
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
+@media (max-width: 700px) {
+  .ai-chat-settings input,
+  .ai-chat-form input {
+    font-size: 16px !important;
+  }
+}
+
