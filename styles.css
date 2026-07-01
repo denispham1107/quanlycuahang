@@ -3498,6 +3498,37 @@ body.modal-open {
   padding-top: 4px;
 }
 
+@media (max-width: 1180px) and (orientation: portrait) {
+  .time-filters {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding: 12px;
+    border-radius: 28px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .time-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .time-filters[hidden] {
+    display: none;
+  }
+
+  .time-filters .field {
+    flex: 0 0 min(42vw, 360px);
+    min-width: 0;
+  }
+
+  .time-filters .field:first-child {
+    flex-basis: min(36vw, 320px);
+  }
+}
+
 @media (max-width: 700px) {
   .time-filters {
     display: flex;
