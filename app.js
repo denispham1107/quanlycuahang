@@ -42,6 +42,7 @@ const uiState = {
   customerSearch: "",
   inventoryLogsExpanded: false,
   inventoryLogFilter: "all",
+  inventoryLogReasonFilter: "all",
   salesGoodsFilter: "all",
   salesDraftId: null,
   salesOrderDiscountPercent: 0,
@@ -220,6 +221,7 @@ const els = {
   exportInventoryName: document.querySelector("#exportInventoryName"),
   exportInventoryDate: document.querySelector("#exportInventoryDate"),
   exportInventoryQuantity: document.querySelector("#exportInventoryQuantity"),
+  exportInventoryReason: document.querySelector("#exportInventoryReason"),
   cancelExportInventory: document.querySelector("#cancelExportInventory"),
   quickEntrySubmit: document.querySelector("#quickEntrySubmit"),
   openOrderDiscount: document.querySelector("#openOrderDiscount"),
@@ -969,6 +971,15 @@ document.addEventListener("click", (event) => {
 document.addEventListener("change", (event) => {
   if (event.target.matches("[data-inventory-log-filter]")) {
     uiState.inventoryLogFilter = event.target.value;
+    if (uiState.inventoryLogFilter !== "export") {
+      uiState.inventoryLogReasonFilter = "all";
+    }
+    uiState.inventoryLogsExpanded = false;
+    renderInventoryLogs(getActiveStore());
+  }
+
+  if (event.target.matches("[data-inventory-log-reason-filter]")) {
+    uiState.inventoryLogReasonFilter = event.target.value;
     uiState.inventoryLogsExpanded = false;
     renderInventoryLogs(getActiveStore());
   }
@@ -2702,6 +2713,9 @@ function openExportInventoryModal(inventoryId) {
   els.exportInventoryDate.value = els.singleDate.value || today;
   els.exportInventoryQuantity.value = Math.min(1, Math.max(0, Number(item.quantity || 0))) || 1;
   els.exportInventoryQuantity.max = Math.max(0, Number(item.quantity || 0));
+  if (els.exportInventoryReason) {
+    els.exportInventoryReason.value = "";
+  }
   els.exportInventoryModal.hidden = false;
 }
 
@@ -2770,6 +2784,7 @@ function exportInventoryItem(formData) {
 
   const date = String(formData.get("date") || today);
   const quantity = Number.parseInt(formData.get("quantity"), 10);
+  const reason = String(formData.get("reason") || "").trim();
   const oldQuantity = Number(item.quantity || 0);
   const lastPrice = Number(item.lastPrice || 0);
   const salePrice = getInventorySalePrice(item);
@@ -2800,7 +2815,8 @@ function exportInventoryItem(formData) {
     oldPrice: lastPrice,
     newPrice: lastPrice,
     oldSalePrice: salePrice,
-    newSalePrice: salePrice
+    newSalePrice: salePrice,
+    exportReason: reason
   });
 
   saveAndRender();
@@ -4137,12 +4153,25 @@ function renderInventoryLogs(store) {
   if (!allowedFilters.has(uiState.inventoryLogFilter)) {
     uiState.inventoryLogFilter = "all";
   }
+  if (uiState.inventoryLogFilter !== "export") {
+    uiState.inventoryLogReasonFilter = "all";
+  } else if (
+    uiState.inventoryLogReasonFilter !== "all" &&
+    !getInventoryExportReasons(store).includes(uiState.inventoryLogReasonFilter)
+  ) {
+    uiState.inventoryLogReasonFilter = "all";
+  }
   const logs = [...(store?.inventoryLogs || [])]
     .filter((log) => {
       const logDate = getInventoryLogDate(log);
       const purpose = getInventoryLogPurpose(log);
       const matchesPurpose = uiState.inventoryLogFilter === "all" || purpose.value === uiState.inventoryLogFilter;
-      return logDate >= range.start && logDate <= range.end && matchesPurpose;
+      const logReason = getInventoryLogReason(log);
+      const matchesReason =
+        uiState.inventoryLogFilter !== "export" ||
+        uiState.inventoryLogReasonFilter === "all" ||
+        logReason === uiState.inventoryLogReasonFilter;
+      return logDate >= range.start && logDate <= range.end && matchesPurpose && matchesReason;
     })
     .sort((a, b) =>
       String(b.updatedAt || b.date || "").localeCompare(String(a.updatedAt || a.date || ""))
@@ -4151,7 +4180,7 @@ function renderInventoryLogs(store) {
   if (!logs.length) {
     els.inventoryLogPanel.innerHTML = `
       <div class="inventory-log-heading">Lịch sử cập nhật kho</div>
-      ${renderInventoryLogFilter()}
+      ${renderInventoryLogFilter(store)}
       <div class="empty-list inventory-log-empty">Chưa có cập nhật kho.</div>
     `;
     return;
@@ -4164,7 +4193,7 @@ function renderInventoryLogs(store) {
 
   els.inventoryLogPanel.innerHTML = `
     <div class="inventory-log-heading">Lịch sử cập nhật kho</div>
-    ${renderInventoryLogFilter()}
+    ${renderInventoryLogFilter(store)}
     <div class="inventory-log-summary">
       <span>Tổng cộng</span>
       <strong>${formatCurrency(logsTotal)}</strong>
@@ -4177,6 +4206,7 @@ function renderInventoryLogs(store) {
             <th>Tên Hàng Hóa</th>
             <th>Tên Nhóm</th>
             <th>Mục đích</th>
+            <th>Lý Do Xuất</th>
             <th>Số lượng</th>
             <th>Giá vốn</th>
             <th>Giá bán</th>
@@ -4189,12 +4219,14 @@ function renderInventoryLogs(store) {
               (log, index) => {
                 const purpose = getInventoryLogPurpose(log);
                 const total = getInventoryLogTotal(log);
+                const reason = getInventoryLogReason(log);
                 return `
                   <tr class="${index > 0 ? "inventory-log-extra" : ""}">
                     <td>${formatDate(getInventoryLogDate(log))}</td>
                     <td>${escapeHtml(log.itemName || "")}</td>
                     <td>${escapeHtml(log.groupName || "")}</td>
                     <td><span class="inventory-log-purpose ${purpose.value}">${purpose.label}</span></td>
+                    <td>${purpose.value === "export" ? escapeHtml(reason || "Chưa ghi") : "—"}</td>
                     <td>
                       <span class="inventory-log-change">
                         <span class="old-value">${Number(log.oldQuantity || 0).toLocaleString("vi-VN")}</span>
@@ -4239,12 +4271,13 @@ function renderInventoryLogs(store) {
   `;
 }
 
-function renderInventoryLogFilter() {
+function renderInventoryLogFilter(store) {
   const options = [
     ["all", "Tất cả"],
     ["purchase", "Nhập kho"],
     ["export", "Xuất kho"]
   ];
+  const reasonOptions = getInventoryExportReasons(store);
 
   return `
     <div class="inventory-log-filter">
@@ -4255,7 +4288,43 @@ function renderInventoryLogFilter() {
           .join("")}
       </select>
     </div>
+    ${
+      uiState.inventoryLogFilter === "export"
+        ? `
+          <div class="inventory-log-filter inventory-log-reason-filter">
+            <label for="inventoryLogReasonFilter">Lý do xuất</label>
+            <select id="inventoryLogReasonFilter" data-inventory-log-reason-filter>
+              <option value="all" ${uiState.inventoryLogReasonFilter === "all" ? "selected" : ""}>Tất cả</option>
+              ${reasonOptions
+                .map((reason) => `<option value="${escapeHtml(reason)}" ${uiState.inventoryLogReasonFilter === reason ? "selected" : ""}>${escapeHtml(reason)}</option>`)
+                .join("")}
+            </select>
+          </div>
+        `
+        : ""
+    }
   `;
+}
+
+function getInventoryLogReason(log) {
+  return String(log?.exportReason || log?.reason || "").trim();
+}
+
+function getInventoryExportReasons(store) {
+  const range = getDateRange();
+  return [...new Set(
+    [...(store?.inventoryLogs || [])]
+      .filter((log) => {
+        const logDate = getInventoryLogDate(log);
+        return (
+          logDate >= range.start &&
+          logDate <= range.end &&
+          getInventoryLogPurpose(log).value === "export"
+        );
+      })
+      .map(getInventoryLogReason)
+      .filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, "vi"));
 }
 
 function getInventoryLogPurpose(log) {

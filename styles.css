@@ -2392,7 +2392,7 @@ th:last-child {
 
 .inventory-log-table {
   width: 100%;
-  min-width: 1120px;
+  min-width: 1260px;
   border-collapse: collapse;
 }
 
@@ -2993,24 +2993,28 @@ th:last-child {
   }
 
   .inventory-log-table td:nth-child(5)::before {
-    content: "Số lượng";
+    content: "Lý do xuất";
   }
 
   .inventory-log-table td:nth-child(6)::before {
-    content: "Giá vốn";
+    content: "Số lượng";
   }
 
   .inventory-log-table td:nth-child(7)::before {
-    content: "Giá bán";
+    content: "Giá vốn";
   }
 
   .inventory-log-table td:nth-child(8)::before {
+    content: "Giá bán";
+  }
+
+  .inventory-log-table td:nth-child(9)::before {
     content: "Tổng tiền";
   }
 
-  .inventory-log-table td:nth-child(6),
   .inventory-log-table td:nth-child(7),
-  .inventory-log-table td:nth-child(8) {
+  .inventory-log-table td:nth-child(8),
+  .inventory-log-table td:nth-child(9) {
     display: grid;
     grid-template-columns: 76px minmax(0, 1fr);
     gap: 7px;
