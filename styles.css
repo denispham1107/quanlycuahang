@@ -2346,8 +2346,14 @@ th:last-child {
 
 .inventory-log-filter {
   display: grid;
+  grid-column: 1;
   gap: 7px;
   width: min(320px, 100%);
+}
+
+.inventory-log-reason-filter {
+  grid-column: 1;
+  grid-row: 3;
 }
 
 .inventory-log-filter label {
@@ -2362,6 +2368,8 @@ th:last-child {
 
 .inventory-log-summary {
   display: flex;
+  grid-column: 2;
+  grid-row: 2;
   width: min(360px, 100%);
   min-height: 46px;
   align-items: center;
@@ -2652,7 +2660,13 @@ th:last-child {
   .inventory-log-filter,
   .inventory-log-summary {
     grid-column: 1 / -1;
+    grid-row: auto;
     width: 100%;
+  }
+
+  .inventory-log-reason-filter {
+    grid-column: 1 / -1;
+    grid-row: auto;
   }
 
   .topbar,
