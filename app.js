@@ -1,6 +1,8 @@
 const STORAGE_KEY = "store-cashbook-v1";
 const AI_CHAT_STORAGE_KEY = "store-cashbook-ai-chat-v1";
 const AI_CLIENT_STATE_MAX_CHARS = 180000;
+const AI_FILE_MAX_BYTES = 8 * 1024 * 1024;
+const AI_FILE_TEXT_MAX_CHARS = 80000;
 const FIREBASE_CONFIG_PLACEHOLDER = "PASTE_YOUR_FIREBASE_CONFIG_HERE";
 const FIRESTORE_COLLECTION = "quanlycuahang";
 const FIRESTORE_DOCUMENT = "shared-state";
@@ -110,6 +112,9 @@ const els = {
   aiChatMode: document.querySelector("#aiChatMode"),
   aiAdminPin: document.querySelector("#aiAdminPin"),
   aiQuickPrompts: document.querySelector("#aiQuickPrompts"),
+  aiFileButton: document.querySelector("#aiFileButton"),
+  aiFileInput: document.querySelector("#aiFileInput"),
+  aiFileStatus: document.querySelector("#aiFileStatus"),
   quickEntryModal: document.querySelector("#quickEntryModal"),
   quickEntryForm: document.querySelector("#quickEntryForm"),
   quickEntryTitle: document.querySelector("#quickEntryTitle"),
@@ -482,6 +487,26 @@ if (els.aiQuickPrompts) {
     const button = event.target.closest("button");
     if (!button) return;
     sendAIChatMessage(button.textContent.trim());
+  });
+}
+
+if (els.aiFileButton) {
+  els.aiFileButton.addEventListener("click", () => {
+    els.aiFileInput?.click();
+  });
+}
+
+if (els.aiFileInput) {
+  els.aiFileInput.addEventListener("change", handleAIFileSelect);
+}
+
+if (els.aiFileStatus) {
+  els.aiFileStatus.addEventListener("click", (event) => {
+    const clearButton = event.target.closest("[data-clear-ai-files]");
+    if (!clearButton) return;
+    aiChatState.attachments = [];
+    if (els.aiFileInput) els.aiFileInput.value = "";
+    renderAIFileStatus();
   });
 }
 
@@ -3145,7 +3170,8 @@ const aiChatState = {
   messages: loadAIChatMessages(),
   pending: false,
   dataSnapshot: null,
-  dataSnapshotAt: ""
+  dataSnapshotAt: "",
+  attachments: []
 };
 
 function loadAIConversationId() {
@@ -3185,6 +3211,166 @@ function getAIEndpoint(name) {
   return config[name] || "";
 }
 
+function renderAIFileStatus() {
+  if (!els.aiFileStatus) return;
+  const files = aiChatState.attachments || [];
+  if (!files.length) {
+    els.aiFileStatus.hidden = true;
+    els.aiFileStatus.innerHTML = "";
+    return;
+  }
+
+  els.aiFileStatus.hidden = false;
+  els.aiFileStatus.innerHTML = `
+    <div class="ai-file-status-inner">
+      <div class="ai-file-list">
+        ${files
+          .map(
+            (file) => `
+              <span class="ai-file-chip" title="${escapeHtml(file.name)}">
+                <span>${escapeHtml(file.name)}</span>
+                <small>${escapeHtml(file.kind || file.type || "file")}${file.truncated ? " · rút gọn" : ""}</small>
+              </span>
+            `
+          )
+          .join("")}
+      </div>
+      <button class="ai-file-clear" type="button" data-clear-ai-files>Gỡ file</button>
+    </div>
+  `;
+}
+
+function getAIFileKind(file) {
+  const name = String(file.name || "").toLowerCase();
+  if (/\.(xlsx|xls)$/i.test(name)) return "excel";
+  if (/\.(docx|doc)$/i.test(name)) return "word";
+  if (/\.(json)$/i.test(name)) return "json";
+  if (/\.(html|htm)$/i.test(name)) return "html";
+  if (/\.(csv|tsv)$/i.test(name)) return "csv";
+  if (/\.(txt|md|js|css|xml|log)$/i.test(name)) return "text";
+  if ((file.type || "").startsWith("text/")) return "text";
+  return "unknown";
+}
+
+function clampAIFileText(text) {
+  const value = String(text || "");
+  if (value.length <= AI_FILE_TEXT_MAX_CHARS) {
+    return { text: value, truncated: false };
+  }
+  return {
+    text: value.slice(0, AI_FILE_TEXT_MAX_CHARS),
+    truncated: true
+  };
+}
+
+async function readAITextFile(file) {
+  return clampAIFileText(await file.text());
+}
+
+async function readAIExcelFile(file) {
+  if (!window.XLSX) {
+    return {
+      text: "Không thể đọc nội dung Excel vì thư viện XLSX chưa tải được. Hãy thử lại khi có mạng hoặc đổi sang CSV/TXT.",
+      truncated: false,
+      note: "xlsx_library_missing"
+    };
+  }
+
+  const workbook = window.XLSX.read(await file.arrayBuffer(), { type: "array" });
+  const parts = workbook.SheetNames.slice(0, 8).map((sheetName) => {
+    const sheet = workbook.Sheets[sheetName];
+    const rows = window.XLSX.utils.sheet_to_json(sheet, {
+      header: 1,
+      raw: false,
+      defval: ""
+    });
+    return [`# Sheet: ${sheetName}`, ...rows.slice(0, 300).map((row) => row.join("\t"))].join("\n");
+  });
+  return clampAIFileText(parts.join("\n\n"));
+}
+
+async function readAIWordFile(file) {
+  if (!window.mammoth || !/\.docx$/i.test(file.name || "")) {
+    return {
+      text:
+        "Không thể đọc trực tiếp file Word dạng này trên trình duyệt. Hãy dùng file .docx hoặc chuyển nội dung sang TXT nếu cần AI đọc chính xác.",
+      truncated: false,
+      note: "word_reader_unavailable"
+    };
+  }
+
+  const result = await window.mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+  return clampAIFileText(result.value || "");
+}
+
+async function readAIFile(file) {
+  const kind = getAIFileKind(file);
+  if (file.size > AI_FILE_MAX_BYTES) {
+    return {
+      name: file.name,
+      type: file.type || "",
+      size: file.size,
+      kind,
+      text: `File "${file.name}" quá lớn để gửi cho AI trong một lần. Vui lòng rút gọn file dưới 8MB hoặc tách thành file nhỏ hơn.`,
+      truncated: true,
+      extractionNote: "file_too_large"
+    };
+  }
+
+  let extracted;
+  if (kind === "excel") {
+    extracted = await readAIExcelFile(file);
+  } else if (kind === "word") {
+    extracted = await readAIWordFile(file);
+  } else if (["text", "json", "html", "csv"].includes(kind)) {
+    extracted = await readAITextFile(file);
+  } else {
+    extracted = {
+      text:
+        "Định dạng file này chưa trích xuất được nội dung trực tiếp trong trình duyệt. AI chỉ biết tên, loại và dung lượng file.",
+      truncated: false,
+      note: "unsupported_browser_extraction"
+    };
+  }
+
+  return {
+    name: file.name,
+    type: file.type || "",
+    size: file.size,
+    kind,
+    text: extracted.text,
+    truncated: extracted.truncated,
+    extractionNote: extracted.note || ""
+  };
+}
+
+async function handleAIFileSelect(event) {
+  const files = Array.from(event.target.files || []).slice(0, 5);
+  if (!files.length) return;
+
+  const previousLabel = els.aiFileButton?.getAttribute("aria-label") || "";
+  if (els.aiFileButton) {
+    els.aiFileButton.disabled = true;
+    els.aiFileButton.setAttribute("aria-label", "Đang đọc file");
+  }
+
+  try {
+    aiChatState.attachments = await Promise.all(files.map(readAIFile));
+    renderAIFileStatus();
+    addAIMessage(
+      "assistant",
+      `Đã nạp ${aiChatState.attachments.length} file cho AI. Bạn hãy nhập câu hỏi về nội dung file hoặc dữ liệu cửa hàng.`
+    );
+  } catch (error) {
+    addAIMessage("assistant", `Không đọc được file: ${error.message}`);
+  } finally {
+    if (els.aiFileButton) {
+      els.aiFileButton.disabled = false;
+      els.aiFileButton.setAttribute("aria-label", previousLabel || "Tải file lên cho AI");
+    }
+  }
+}
+
 function openAIChat() {
   if (!els.aiChatModal) return;
   aiChatState.dataSnapshot = createAIClientStateSnapshot();
@@ -3198,6 +3384,7 @@ function openAIChat() {
         "Xin chào, tôi là trợ lý AI quản lý cửa hàng. Bạn có thể hỏi về doanh thu, chi phí, lợi nhuận, tồn kho, khách hàng hoặc đơn hàng."
     });
   }
+  renderAIFileStatus();
   renderAIChat();
   setTimeout(() => els.aiChatInput?.focus(), 50);
 }
@@ -3274,7 +3461,11 @@ async function sendAIChatMessage(rawMessage) {
     return;
   }
 
-  addAIMessage("user", message);
+  const attachments = (aiChatState.attachments || []).slice();
+  const visibleMessage = attachments.length
+    ? `${message}\n\nFile gửi kèm: ${attachments.map((file) => file.name).join(", ")}`
+    : message;
+  addAIMessage("user", visibleMessage);
   els.aiChatInput.value = "";
   aiChatState.pending = true;
   renderAIChat();
@@ -3289,7 +3480,8 @@ async function sendAIChatMessage(rawMessage) {
         conversationId: aiChatState.conversationId,
         mode: els.aiChatMode?.value || "read_only",
         pin: adminPin,
-        clientState: aiChatState.dataSnapshot || createAIClientStateSnapshot()
+        clientState: aiChatState.dataSnapshot || createAIClientStateSnapshot(),
+        attachments
       })
     });
     const data = await response.json().catch(() => ({}));
