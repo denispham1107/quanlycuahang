@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 
 const { onRequest } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
@@ -13,11 +13,15 @@ const ADMIN_PIN = defineSecret("ADMIN_PIN");
 
 const db = admin.firestore();
 const REGION = process.env.FUNCTION_REGION || "asia-southeast1";
-const APP_STATE_COLLECTION = process.env.APP_STATE_COLLECTION || "quanlycuahang";
-const APP_STATE_DOCUMENT = process.env.APP_STATE_DOCUMENT || "shared-state";
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
+const APP_STATE_COLLECTION =
+  process.env.APP_STATE_COLLECTION || process.env.FIRESTORE_COLLECTION || "quanlycuahang";
+const APP_STATE_DOCUMENT =
+  process.env.APP_STATE_DOCUMENT || process.env.FIRESTORE_DOCUMENT || "shared-state";
+const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "Asia/Ho_Chi_Minh";
+const OPENAI_FALLBACK_MODEL = process.env.OPENAI_FALLBACK_MODEL || "gpt-5.4";
 const MAX_MESSAGE_LENGTH = 2000;
-const MAX_CONTEXT_CHARS = Number(process.env.MAX_AI_CONTEXT_CHARS || 60000);
+const MAX_ATTACHMENT_COUNT = Number(process.env.MAX_AI_ATTACHMENT_COUNT || 5);
+const MAX_ATTACHMENT_CHARS = Number(process.env.MAX_AI_ATTACHMENT_CHARS || 120000);
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX = 20;
 const allowedOrigins = new Set([
@@ -32,6 +36,22 @@ const allowedOrigins = new Set([
 
 const rateBuckets = new Map();
 
+const SYSTEM_PROMPT = [
+  "Bạn là trợ lý quản lý cửa hàng.",
+  "Quy tắc bắt buộc:",
+  "1. Không được tự bịa số liệu.",
+  "2. Không được tự thêm tên người, sản phẩm, cửa hàng, ngày tháng, ghi chú nếu dữ liệu hệ thống không cung cấp.",
+  "3. Không được tự cộng nhẩm tổng tiền hoặc tổng số lượng.",
+  "4. Mọi tổng tiền, tổng số lượng, tồn kho, doanh thu, chi phí, lợi nhuận phải lấy từ kết quả backend đã tính.",
+  "5. Nếu backend trả về không có dữ liệu, phải nói “Chưa có dữ liệu phù hợp”, không được tự tạo số liệu mẫu.",
+  "6. Nếu câu hỏi thiếu ngày, thiếu cửa hàng hoặc thiếu phạm vi dữ liệu, phải hỏi lại hoặc dùng mặc định rõ ràng.",
+  "7. Khi báo cáo, phải ghi rõ cửa hàng, khoảng thời gian, số bản ghi đã dùng, danh sách khoản đã tính và tổng cuối cùng.",
+  "8. Nếu có khoản bị nghi trùng, phải báo riêng, không tự xóa trùng nếu người dùng chưa yêu cầu.",
+  "9. Khi người dùng yêu cầu không tính trùng, chỉ loại các khoản trùng 100%.",
+  "10. Không được kết luận người nào lấy tiền, ăn cắp, chi sai nếu dữ liệu không chứng minh rõ ràng.",
+  "Bạn chỉ được diễn giải JSON đã được backend tính sẵn. Không sửa số liệu."
+].join("\n");
+
 function applyCors(req, res) {
   const origin = req.headers.origin;
   if (!origin || allowedOrigins.has(origin)) {
@@ -42,55 +62,12 @@ function applyCors(req, res) {
   res.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Admin-Pin");
 }
 
-function sendError(res, status, message) {
-  res.status(status).json({ error: message });
-}
-
-function getPublicError(error) {
-  const status = error?.status || error?.code || 500;
-  const message = String(error?.message || "");
-  const type = String(error?.type || "");
-
-  if (message === "UNAUTHORIZED") {
-    return {
-      status: 401,
-      message: "Ban chua duoc phep dung AI. Hay nhap dung PIN admin roi thu lai."
-    };
-  }
-
-  if (status === 401 || /invalid api key|incorrect api key|unauthorized/i.test(message)) {
-    return {
-      status: 500,
-      message: "OpenAI API key chua dung hoac chua duoc cau hinh dung trong Firebase Secret Manager."
-    };
-  }
-
-  if (status === 429 || /quota|rate limit|billing|insufficient_quota/i.test(`${message} ${type}`)) {
-    return {
-      status: 500,
-      message: "OpenAI dang bi gioi han quota/rate limit hoac tai khoan OpenAI chua bat thanh toan."
-    };
-  }
-
-  if (status === 404 || /model/i.test(message)) {
-    return {
-      status: 500,
-      message: `Model OpenAI "${OPENAI_MODEL}" chua dung duoc voi API key hien tai. Hay doi OPENAI_MODEL hoac kiem tra quyen model.`
-    };
-  }
-
-  return {
-    status: status >= 400 && status < 600 ? status : 500,
-    message: "AI tam thoi khong phan hoi. Vui long kiem tra Firebase Functions log roi thu lai."
-  };
+function sendError(res, status, message, extra = {}) {
+  res.status(status).json({ error: message, ...extra });
 }
 
 function getClientIp(req) {
-  return (
-    String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() ||
-    req.ip ||
-    "unknown"
-  );
+  return String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.ip || "unknown";
 }
 
 function checkRateLimit(key) {
@@ -107,8 +84,7 @@ function checkRateLimit(key) {
 async function requireAdmin(req) {
   const authHeader = String(req.headers.authorization || "");
   if (authHeader.startsWith("Bearer ")) {
-    const token = authHeader.slice("Bearer ".length);
-    const decoded = await admin.auth().verifyIdToken(token);
+    const decoded = await admin.auth().verifyIdToken(authHeader.slice("Bearer ".length));
     if (decoded.admin === true || decoded.email_verified === true) {
       return { userId: decoded.uid, authMode: "firebase_auth" };
     }
@@ -130,12 +106,29 @@ function normalizeText(value) {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/Ä‘/g, "d");
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function money(value) {
+  const number = Number(value || 0);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function formatCurrency(value) {
+  return `${money(value).toLocaleString("vi-VN")} đ`;
 }
 
 function toDateKey(value) {
   if (!value) return "";
-  if (typeof value === "string") return value.slice(0, 10);
+  if (typeof value === "string") {
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
+      const [day, month, year] = value.split("/");
+      return `${year}-${month}-${day}`;
+    }
+    return value.slice(0, 10);
+  }
   if (value.toDate) return value.toDate().toISOString().slice(0, 10);
   try {
     return new Date(value).toISOString().slice(0, 10);
@@ -144,18 +137,114 @@ function toDateKey(value) {
   }
 }
 
-function money(value) {
-  const number = Number(value || 0);
-  return Number.isFinite(number) ? number : 0;
+function displayDate(ymd) {
+  if (!ymd) return "";
+  const [year, month, day] = ymd.split("-");
+  return `${day}/${month}/${year}`;
 }
 
-function limited(items, limit = 80) {
-  return Array.isArray(items) ? items.slice(-limit) : [];
+function vietnamDateParts(date = new Date(), timeZone = DEFAULT_TIMEZONE) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(date);
+  const get = (type) => parts.find((part) => part.type === type)?.value;
+  return { year: get("year"), month: get("month"), day: get("day") };
 }
 
-function getActiveStore(state) {
-  const stores = Array.isArray(state?.stores) ? state.stores : [];
-  return stores.find((store) => store.id === state.activeStoreId) || stores[0] || null;
+function todayKey(timeZone = DEFAULT_TIMEZONE) {
+  const parts = vietnamDateParts(new Date(), timeZone);
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function addDays(dateKey, days) {
+  const date = new Date(`${dateKey}T00:00:00+07:00`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function monthStart(dateKey) {
+  return `${dateKey.slice(0, 7)}-01`;
+}
+
+function monthEnd(dateKey) {
+  const [year, month] = dateKey.split("-").map(Number);
+  return new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
+}
+
+function previousMonthRange(dateKey) {
+  const [year, month] = dateKey.split("-").map(Number);
+  const first = new Date(Date.UTC(year, month - 2, 1));
+  const key = first.toISOString().slice(0, 10);
+  return { fromDate: monthStart(key), toDate: monthEnd(key), label: "Tháng trước" };
+}
+
+function parseVietnameseDate(raw) {
+  const text = String(raw || "");
+  const slash = text.match(/\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})\b/);
+  if (slash) {
+    const day = slash[1].padStart(2, "0");
+    const month = slash[2].padStart(2, "0");
+    return `${slash[3]}-${month}-${day}`;
+  }
+  const iso = text.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
+  return iso ? iso[0] : "";
+}
+
+function getDateRangeFromUserQuestion(question, timeZone = DEFAULT_TIMEZONE) {
+  const text = normalizeText(question);
+  const today = todayKey(timeZone);
+  const dates = [...String(question || "").matchAll(/\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}\b|\b\d{4}-\d{2}-\d{2}\b/g)]
+    .map((match) => parseVietnameseDate(match[0]))
+    .filter(Boolean);
+
+  if (dates.length >= 2) {
+    const [fromDate, toDate] = dates[0] <= dates[1] ? [dates[0], dates[1]] : [dates[1], dates[0]];
+    return makeDateRange(fromDate, toDate, timeZone, `${displayDate(fromDate)} - ${displayDate(toDate)}`);
+  }
+  if (dates.length === 1) return makeDateRange(dates[0], dates[0], timeZone, displayDate(dates[0]));
+  if (text.includes("hom qua")) {
+    const day = addDays(today, -1);
+    return makeDateRange(day, day, timeZone, "Hôm qua");
+  }
+  if (text.includes("thang truoc")) {
+    const range = previousMonthRange(today);
+    return makeDateRange(range.fromDate, range.toDate, timeZone, range.label);
+  }
+  if (text.includes("thang nay")) {
+    return makeDateRange(monthStart(today), today, timeZone, "Tháng này");
+  }
+  if (text.includes("toan thoi gian") || text.includes("tat ca")) {
+    return makeDateRange("", today, timeZone, "Toàn thời gian");
+  }
+  return makeDateRange(today, today, timeZone, "Hôm nay");
+}
+
+function makeDateRange(fromDate, toDate, timeZone, label) {
+  return {
+    fromDate,
+    toDate,
+    timezone: timeZone,
+    label,
+    from: fromDate ? `${fromDate}T00:00:00+07:00` : "",
+    to: toDate ? `${toDate}T23:59:59+07:00` : ""
+  };
+}
+
+function inDateRange(value, range) {
+  const key = toDateKey(value);
+  if (!key) return false;
+  if (range.fromDate && key < range.fromDate) return false;
+  if (range.toDate && key > range.toDate) return false;
+  return true;
+}
+
+function isCancelled(item) {
+  const status = normalizeText(item?.status);
+  return Boolean(item?.cancelled || item?.deleted || item?.deletedAt || item?.cancelledAt) ||
+    ["cancelled", "canceled", "deleted", "huy", "da huy"].includes(status);
 }
 
 function categoryName(store, type, categoryId) {
@@ -163,163 +252,768 @@ function categoryName(store, type, categoryId) {
   return categories.find((category) => category.id === categoryId)?.name || "";
 }
 
+function getInventorySalePrice(item) {
+  return money(item?.salePrice ?? item?.lastPrice ?? item?.price);
+}
+
 function orderTotal(order) {
-  if (typeof order.total === "number") return order.total;
-  if (typeof order.remainingTotal === "number") return order.remainingTotal;
-  const items = Array.isArray(order.items) ? order.items : [];
-  const total = items.reduce((sum, item) => sum + money(item.price) * money(item.quantity || 1), 0);
-  return Math.max(0, total - money(order.discountAmount));
+  if (Number.isFinite(Number(order?.total))) return money(order.total);
+  if (Number.isFinite(Number(order?.remainingTotal))) return money(order.remainingTotal);
+  const subtotal = (order?.items || []).reduce(
+    (sum, item) => sum + money(item.price) * Math.max(1, money(item.quantity || 1)),
+    0
+  );
+  return Math.max(0, subtotal - money(order?.discountTotal || order?.discountAmount));
 }
 
-function detectContextNeed(message) {
-  const text = normalizeText(message);
-  return {
-    inventory: true,
-    customers: true,
-    orders: true,
-    income: true,
-    expense: true,
-    overview: true,
-    matchedText: text
-  };
+function orderCost(order) {
+  let missingCost = false;
+  const cost = (order?.items || []).reduce((sum, item) => {
+    const quantity = Math.max(1, money(item.quantity || 1));
+    const explicit =
+      item.costPrice ?? item.lastPrice ?? item.originalCost ?? item.capitalPrice ?? item.importPrice;
+    const unitCost = explicit === undefined || explicit === null || explicit === "" ? 0 : money(explicit);
+    if (unitCost <= 0) missingCost = true;
+    return sum + unitCost * quantity;
+  }, 0);
+  return { cost, missingCost };
 }
 
-function buildContext(state, message) {
-  const store = getActiveStore(state);
-  if (!store) {
-    return { notice: "ChÆ°a cÃ³ cá»­a hÃ ng trong dá»¯ liá»‡u Firestore." };
+function loadStores(state) {
+  return Array.isArray(state?.stores) ? state.stores : [];
+}
+
+function getActiveStore(state) {
+  const stores = loadStores(state);
+  return stores.find((store) => store.id === state?.activeStoreId) || stores[0] || null;
+}
+
+function resolveStore(question, stores, state) {
+  const text = normalizeText(question);
+  const matched = stores.find((store) => store?.name && text.includes(normalizeText(store.name)));
+  const active = getActiveStore(state);
+  return matched || active || stores[0] || null;
+}
+
+function detectIntent(question) {
+  const text = normalizeText(question);
+  if (text.includes("trung")) return "duplicate_report";
+  if (text.includes("chinh sua so luong") || text.includes("sua so luong") || text.includes("dieu chinh")) {
+    return "quantity_edit_report";
   }
+  if (text.includes("xuat kho thu cong") || text.includes("xuat thu cong")) return "manual_export_report";
+  if (text.includes("xuat kho do ban") || text.includes("xuat do ban")) return "sales_export_report";
+  if (text.includes("xuat kho")) return "inventory_export_report";
+  if (text.includes("nhap kho") || text.includes("nhap hang")) return "inventory_import_report";
+  if (text.includes("ban chay")) return "best_selling_products";
+  if (text.includes("ton kho") || text.includes("kho hang") || text.includes("con hang")) return "inventory_report";
+  if (text.includes("khach hang")) return "customer_report";
+  if (text.includes("don hang") || text.includes("bill")) return "order_report";
+  if (text.includes("loi nhuan") || text.includes("loi hay lo") || /\blo\b/.test(text)) return "profit_report";
+  if (text.includes("chi") || text.includes("chi tieu") || text.includes("khoan chi")) return "expense_report";
+  if (text.includes("doanh thu") || text.includes("tong thu") || text.includes("ban hang")) return "revenue_report";
+  return "overview_report";
+}
 
-  const need = detectContextNeed(message);
-  const today = new Date().toISOString().slice(0, 10);
-  const month = today.slice(0, 7);
-  const entries = Array.isArray(store.entries) ? store.entries : [];
-  const orders = Array.isArray(store.orders) ? store.orders : [];
-  const inventory = Array.isArray(store.inventory) ? store.inventory : [];
-  const customers = Array.isArray(store.customers) ? store.customers : [];
+function makeFilters(question, store) {
+  const text = normalizeText(question);
+  const productNames = new Set([
+    ...(store.inventory || []).map((item) => item.name),
+    ...(store.orders || []).flatMap((order) => (order.items || []).map((item) => item.name)),
+    ...(store.inventoryLogs || []).map((log) => log.itemName)
+  ].filter(Boolean));
+  const productName = [...productNames].find((name) => text.includes(normalizeText(name))) || "";
+  const customers = store.customers || [];
+  const customer = customers.find((item) => {
+    const name = normalizeText(item.name);
+    const phone = normalizeText(item.phone);
+    return (name && text.includes(name)) || (phone && text.includes(phone));
+  });
+  const categoryNames = [
+    ...(store.categories?.income || []),
+    ...(store.categories?.expense || []),
+    ...(store.purchaseCategories || [])
+  ];
+  const category = categoryNames.find((item) => item?.name && text.includes(normalizeText(item.name)))?.name || "";
+  const person = customer?.name || "";
+  return { productName, customerName: person, customerPhone: customer?.phone || "", category };
+}
 
-  const activeEntries = entries.filter((entry) => entry.status !== "cancelled");
-  const activeOrders = orders.filter((order) => order.status !== "cancelled");
-  const incomeEntries = activeEntries.filter((entry) => entry.type === "income");
-  const expenseEntries = activeEntries.filter((entry) => entry.type === "expense");
-  const todayIncome = incomeEntries.filter((entry) => entry.date === today).reduce((sum, entry) => sum + money(entry.amount), 0);
-  const todayExpense = expenseEntries.filter((entry) => entry.date === today).reduce((sum, entry) => sum + money(entry.amount), 0);
-  const todaySales = activeOrders.filter((order) => toDateKey(order.date) === today).reduce((sum, order) => sum + orderTotal(order), 0);
-  const monthIncome = incomeEntries.filter((entry) => String(entry.date || "").startsWith(month)).reduce((sum, entry) => sum + money(entry.amount), 0);
-  const monthExpense = expenseEntries.filter((entry) => String(entry.date || "").startsWith(month)).reduce((sum, entry) => sum + money(entry.amount), 0);
-  const monthSales = activeOrders.filter((order) => toDateKey(order.date).startsWith(month)).reduce((sum, order) => sum + orderTotal(order), 0);
-
-  const context = {
-    schema: {
-      rootKeys: Object.keys(state || {}),
-      storeKeys: Object.keys(store || {}),
-      storeCount: Array.isArray(state && state.stores) ? state.stores.length : 0,
-      counts: {
-        entries: entries.length,
-        orders: orders.length,
-        inventory: inventory.length,
-        customers: customers.length,
-        incomeCategories: Array.isArray(store.incomeCategories) ? store.incomeCategories.length : 0,
-        expenseCategories: Array.isArray(store.expenseCategories) ? store.expenseCategories.length : 0,
-        inventoryLogs: Array.isArray(store.inventoryLogs) ? store.inventoryLogs.length : 0,
-        savedOrders: Array.isArray(store.savedOrders) ? store.savedOrders.length : 0
-      }
-    },
-    allStores: limited(Array.isArray(state && state.stores) ? state.stores : [], 50).map((item) => ({
-      id: item.id,
-      name: item.name,
-      keys: Object.keys(item || {}),
-      entries: Array.isArray(item.entries) ? item.entries.length : 0,
-      orders: Array.isArray(item.orders) ? item.orders.length : 0,
-      inventory: Array.isArray(item.inventory) ? item.inventory.length : 0,
-      customers: Array.isArray(item.customers) ? item.customers.length : 0
-    })),
-    store: {
-      id: store.id,
-      name: store.name,
-      today,
-      summary: {
-        todayIncome,
-        todayExpense,
-        todaySales,
-        todayProfitEstimate: todayIncome + todaySales - todayExpense,
-        monthIncome,
-        monthExpense,
-        monthSales,
-        monthProfitEstimate: monthIncome + monthSales - monthExpense,
-        inventoryCount: inventory.length,
-        customerCount: customers.length,
-        orderCount: activeOrders.length
-      }
-    }
-  };
-
-  const fullStateJson = JSON.stringify(state || {});
-  if (fullStateJson.length <= MAX_CONTEXT_CHARS) {
-    context.fullState = state;
-  } else {
-    context.fullStateNote = "Full Firestore state is larger than MAX_AI_CONTEXT_CHARS, so the assistant receives schema, counts, summaries and high-limit arrays instead.";
-  }
-
-  if (need.income || need.expense || need.overview) {
-    context.transactions = limited(activeEntries, 1000).map((entry) => ({
-      id: entry.id,
+function getTransactions(store, fromDate, toDate, filters = {}) {
+  const range = makeDateRange(fromDate, toDate, DEFAULT_TIMEZONE, "");
+  return (store.entries || [])
+    .filter((entry) => !isCancelled(entry))
+    .filter((entry) => inDateRange(entry.date, range))
+    .filter((entry) => {
+      if (filters.type && entry.type !== filters.type) return false;
+      const text = normalizeText([
+        entry.note,
+        entry.createdBy,
+        entry.productName,
+        categoryName(store, entry.type, entry.categoryId),
+        entry.categoryName
+      ].join(" "));
+      if (filters.category && !text.includes(normalizeText(filters.category))) return false;
+      if (filters.person && !text.includes(normalizeText(filters.person))) return false;
+      if (filters.productName && !text.includes(normalizeText(filters.productName))) return false;
+      return true;
+    })
+    .map((entry) => ({
+      id: entry.id || "",
       type: entry.type,
-      date: entry.date,
-      category: categoryName(store, entry.type, entry.categoryId) || entry.categoryName || "",
+      date: toDateKey(entry.date),
+      amount: money(entry.amount),
       note: entry.note || "",
-      amount: money(entry.amount)
+      category: categoryName(store, entry.type, entry.categoryId) || entry.categoryName || "",
+      categoryId: entry.categoryId || "",
+      createdBy: entry.createdBy || ""
     }));
-  }
+}
 
-  if (need.orders || need.overview) {
-    context.orders = limited(activeOrders, 1000).map((order) => ({
-      id: order.id,
-      date: toDateKey(order.date),
-      time: order.time || "",
-      customerName: order.customerName || "",
-      customerPhone: order.customerPhone || "",
-      total: orderTotal(order),
-      discountAmount: money(order.discountAmount),
-      items: limited(order.items, 20).map((item) => ({
-        name: item.name,
-        groupName: item.groupName || "",
-        quantity: money(item.quantity || 1),
-        price: money(item.price),
-        originalPrice: money(item.originalPrice || item.price)
+function getExpenses(store, fromDate, toDate, filters = {}) {
+  return getTransactions(store, fromDate, toDate, { ...filters, type: "expense" });
+}
+
+function getRevenueEntries(store, fromDate, toDate, filters = {}) {
+  return getTransactions(store, fromDate, toDate, { ...filters, type: "income" });
+}
+
+function getOrders(store, fromDate, toDate, filters = {}) {
+  const range = makeDateRange(fromDate, toDate, DEFAULT_TIMEZONE, "");
+  return (store.orders || [])
+    .filter((order) => !isCancelled(order))
+    .filter((order) => inDateRange(order.date || order.createdAt, range))
+    .filter((order) => {
+      const text = normalizeText([
+        order.customerName,
+        order.customerPhone,
+        ...(order.items || []).flatMap((item) => [item.name, item.groupName])
+      ].join(" "));
+      if (filters.productName && !text.includes(normalizeText(filters.productName))) return false;
+      if (filters.customerName && !text.includes(normalizeText(filters.customerName))) return false;
+      if (filters.person && !text.includes(normalizeText(filters.person))) return false;
+      return true;
+    })
+    .map((order) => ({
+      ...order,
+      date: toDateKey(order.date || order.createdAt),
+      total: orderTotal(order)
+    }));
+}
+
+function getInventoryMovements(store, fromDate, toDate, filters = {}) {
+  const range = makeDateRange(fromDate, toDate, DEFAULT_TIMEZONE, "");
+  return (store.inventoryLogs || [])
+    .filter((log) => inDateRange(log.date || log.updatedAt, range))
+    .filter((log) => {
+      const productMatch = !filters.productName ||
+        normalizeText(log.itemName).includes(normalizeText(filters.productName));
+      const reasonMatch = !filters.exportReason ||
+        normalizeText(log.exportReason).includes(normalizeText(filters.exportReason));
+      return productMatch && reasonMatch;
+    })
+    .map((log) => ({
+      id: log.id || "",
+      date: toDateKey(log.date || log.updatedAt),
+      type: log.type || "",
+      itemName: log.itemName || "",
+      groupName: log.groupName || "",
+      oldQuantity: money(log.oldQuantity),
+      newQuantity: money(log.newQuantity),
+      oldPrice: money(log.oldPrice),
+      newPrice: money(log.newPrice),
+      oldSalePrice: money(log.oldSalePrice),
+      newSalePrice: money(log.newSalePrice),
+      exportReason: log.exportReason || "",
+      purpose: getInventoryMovementPurpose(log),
+      total: getInventoryMovementTotal(log)
+    }));
+}
+
+function getInventoryMovementPurpose(log) {
+  const oldQuantity = money(log.oldQuantity);
+  const newQuantity = money(log.newQuantity);
+  if (newQuantity > oldQuantity) return "Nhập kho";
+  if (newQuantity < oldQuantity) return "Xuất kho";
+  return "Cập nhật kho";
+}
+
+function getInventoryMovementTotal(log) {
+  const diff = Math.abs(money(log.newQuantity) - money(log.oldQuantity));
+  if (diff === 0) return 0;
+  return diff * money(log.newPrice || log.oldPrice);
+}
+
+function calculateExpenseReport(store, fromDate, toDate, options = {}) {
+  const expenses = getExpenses(store, fromDate, toDate, {
+    category: options.category,
+    person: options.customerName || options.person,
+    productName: options.productName
+  });
+  return {
+    items: expenses,
+    totals: { expense: sumBy(expenses, "amount") },
+    recordCount: expenses.length
+  };
+}
+
+function calculateRevenueReport(store, fromDate, toDate, options = {}) {
+  const incomeEntries = getRevenueEntries(store, fromDate, toDate, options);
+  const orders = getOrders(store, fromDate, toDate, options);
+  const incomeTotal = sumBy(incomeEntries, "amount");
+  const salesTotal = sumBy(orders, "total");
+  return {
+    items: [
+      ...incomeEntries.map((item) => ({ source: "Thu", ...item })),
+      ...orders.map((order) => ({
+        id: order.id,
+        source: "Bán hàng",
+        date: order.date,
+        customerName: order.customerName || "",
+        customerPhone: order.customerPhone || "",
+        total: order.total,
+        items: order.items || []
       }))
-    }));
-  }
+    ],
+    totals: { income: incomeTotal, sales: salesTotal, revenue: incomeTotal + salesTotal },
+    recordCount: incomeEntries.length + orders.length
+  };
+}
 
-  if (need.inventory || need.orders || need.overview) {
-    context.inventory = limited(inventory, 1000).map((item) => ({
-      id: item.id,
-      name: item.name,
+function calculateProfitReport(store, fromDate, toDate, options = {}) {
+  const revenue = calculateRevenueReport(store, fromDate, toDate, options);
+  const expense = calculateExpenseReport(store, fromDate, toDate, options);
+  let missingCost = false;
+  const cogs = getOrders(store, fromDate, toDate, options).reduce((sum, order) => {
+    const result = orderCost(order);
+    if (result.missingCost) missingCost = true;
+    return sum + result.cost;
+  }, 0);
+  const profit = missingCost ? null : revenue.totals.revenue - cogs - expense.totals.expense;
+  return {
+    items: [...revenue.items, ...expense.items],
+    totals: { ...revenue.totals, expense: expense.totals.expense, costOfGoods: cogs, profit },
+    warnings: missingCost ? ["Chưa đủ dữ liệu giá vốn để tính lợi nhuận chính xác."] : [],
+    recordCount: revenue.recordCount + expense.recordCount
+  };
+}
+
+function calculateInventoryReport(store, fromDate, toDate, options = {}) {
+  const inventory = (store.inventory || [])
+    .filter((item) => !options.productName || normalizeText(item.name).includes(normalizeText(options.productName)))
+    .map((item) => ({
+      id: item.id || "",
+      name: item.name || "",
       groupName: item.groupName || "",
       quantity: money(item.quantity),
-      costPrice: money(item.price),
-      salePrice: money(item.salePrice || item.price),
-      valueAtCost: money(item.quantity) * money(item.price),
-      updatedAt: item.updatedAt || ""
+      costPrice: money(item.lastPrice),
+      salePrice: getInventorySalePrice(item),
+      valueAtCost: money(item.quantity) * money(item.lastPrice),
+      updatedAt: item.updatedAt || item.createdAt || ""
     }));
-  }
-
-  if (need.customers || need.orders) {
-    context.customers = limited(customers, 1000).map((customer) => ({
-      id: customer.id,
-      name: customer.name,
-      phone: customer.phone || "",
-      memberTier: customer.memberTier || "ThÆ°á»ng",
-      createdAt: customer.createdAt || ""
-    }));
-  }
-
-  const serialized = JSON.stringify(context);
-  if (serialized.length <= MAX_CONTEXT_CHARS) return context;
   return {
-    ...context,
-    note: "Context Ä‘Ã£ Ä‘Æ°á»£c rÃºt gá»n vÃ¬ dá»¯ liá»‡u cá»­a hÃ ng lá»›n."
+    items: inventory,
+    totals: {
+      inventoryValue: sumBy(inventory, "valueAtCost"),
+      quantityInStock: sumBy(inventory, "quantity")
+    },
+    recordCount: inventory.length
   };
+}
+
+function calculateManualExportReport(store, fromDate, toDate, options = {}) {
+  const exports = getInventoryMovements(store, fromDate, toDate, options)
+    .filter((log) => log.newQuantity < log.oldQuantity);
+  return {
+    items: exports,
+    totals: {
+      manualOut: exports.reduce((sum, log) => sum + (log.oldQuantity - log.newQuantity), 0),
+      manualOutValue: sumBy(exports, "total")
+    },
+    recordCount: exports.length
+  };
+}
+
+function calculateInventoryImportReport(store, fromDate, toDate, options = {}) {
+  const imports = getInventoryMovements(store, fromDate, toDate, options)
+    .filter((log) => log.newQuantity > log.oldQuantity);
+  return {
+    items: imports,
+    totals: {
+      quantityIn: imports.reduce((sum, log) => sum + (log.newQuantity - log.oldQuantity), 0),
+      importValue: sumBy(imports, "total")
+    },
+    recordCount: imports.length
+  };
+}
+
+function calculateSalesExportReport(store, fromDate, toDate, options = {}) {
+  const orders = getOrders(store, fromDate, toDate, options);
+  const items = [];
+  orders.forEach((order) => {
+    (order.items || []).forEach((item) => {
+      if (options.productName && !normalizeText(item.name).includes(normalizeText(options.productName))) return;
+      items.push({
+        orderId: order.id,
+        date: order.date,
+        customerName: order.customerName || "",
+        productName: item.name || "",
+        groupName: item.groupName || "",
+        quantity: money(item.quantity || 1),
+        saleAmount: money(item.price) * money(item.quantity || 1)
+      });
+    });
+  });
+  return {
+    items,
+    totals: { salesOut: sumBy(items, "quantity"), salesOutValue: sumBy(items, "saleAmount") },
+    recordCount: items.length
+  };
+}
+
+function calculateBestSellingProducts(store, fromDate, toDate, options = {}) {
+  const orders = getOrders(store, fromDate, toDate, options);
+  const map = new Map();
+  orders.forEach((order) => {
+    (order.items || []).forEach((item) => {
+      if (options.productName && !normalizeText(item.name).includes(normalizeText(options.productName))) return;
+      const key = normalizeText(item.name);
+      const current = map.get(key) || {
+        productName: item.name || "",
+        groupName: item.groupName || "",
+        quantity: 0,
+        revenue: 0
+      };
+      current.quantity += money(item.quantity || 1);
+      current.revenue += money(item.price) * money(item.quantity || 1);
+      map.set(key, current);
+    });
+  });
+  const items = [...map.values()].sort((a, b) => b.quantity - a.quantity || b.revenue - a.revenue);
+  return {
+    items,
+    totals: { quantitySold: sumBy(items, "quantity"), revenue: sumBy(items, "revenue") },
+    recordCount: items.length
+  };
+}
+
+function calculateCustomerReport(store, fromDate, toDate, options = {}) {
+  const range = makeDateRange(fromDate, toDate, DEFAULT_TIMEZONE, "");
+  const customers = getStoreCustomers(store)
+    .filter((customer) => inDateRange(customer.createdAt || customer.updatedAt, range))
+    .filter((customer) => {
+      const text = normalizeText([customer.name, customer.phone, customer.memberTier].join(" "));
+      return !options.customerName || text.includes(normalizeText(options.customerName));
+    });
+  return {
+    items: customers,
+    totals: { customers: customers.length },
+    recordCount: customers.length
+  };
+}
+
+function calculateOrderReport(store, fromDate, toDate, options = {}) {
+  const orders = getOrders(store, fromDate, toDate, options);
+  return {
+    items: orders.map((order) => ({
+      id: order.id,
+      date: order.date,
+      time: getTimeFromISO(order.createdAt),
+      customerName: order.customerName || "",
+      customerPhone: order.customerPhone || "",
+      total: order.total,
+      items: order.items || []
+    })),
+    totals: { orders: orders.length, sales: sumBy(orders, "total") },
+    recordCount: orders.length
+  };
+}
+
+function findDuplicateTransactions(store, fromDate, toDate, options = {}) {
+  const transactions = [
+    ...getTransactions(store, fromDate, toDate, options),
+    ...getOrders(store, fromDate, toDate, options).map((order) => ({
+      id: order.id,
+      type: "order",
+      date: order.date,
+      amount: order.total,
+      note: order.customerName || "",
+      category: "Bán hàng",
+      productName: (order.items || []).map((item) => item.name).join(", "),
+      quantity: (order.items || []).reduce((sum, item) => sum + money(item.quantity || 1), 0),
+      createdBy: ""
+    }))
+  ];
+  const groups = detectDuplicateTransactions(transactions, store.id);
+  return {
+    items: transactions,
+    duplicates: groups,
+    totals: { duplicateGroups: groups.length },
+    recordCount: transactions.length
+  };
+}
+
+function detectDuplicateTransactions(transactions, storeId) {
+  const map = new Map();
+  transactions.forEach((item) => {
+    const key = [
+      storeId,
+      item.type || "",
+      item.date || "",
+      money(item.amount),
+      normalizeText(item.note),
+      normalizeText(item.category),
+      normalizeText(item.productName),
+      money(item.quantity),
+      normalizeText(item.createdBy)
+    ].join("|");
+    const group = map.get(key) || [];
+    group.push(item);
+    map.set(key, group);
+  });
+  return [...map.values()].filter((group) => group.length > 1);
+}
+
+function findQuantityEdits(store, productName, fromDate, toDate) {
+  const edits = getInventoryMovements(store, fromDate, toDate, { productName })
+    .filter((log) => normalizeText(log.type).includes("edit") || log.oldQuantity === log.newQuantity);
+  return {
+    items: edits,
+    totals: { edits: edits.length },
+    recordCount: edits.length
+  };
+}
+
+function getStoreCustomers(store) {
+  const map = new Map();
+  (store.customers || []).forEach((customer) => {
+    const name = String(customer.name || "").trim();
+    const phone = String(customer.phone || "").trim();
+    if (!name && !phone) return;
+    map.set(`${normalizeText(name)}::${normalizeText(phone)}`, {
+      id: customer.id || "",
+      name,
+      phone,
+      memberTier: customer.memberTier || "Thường",
+      createdAt: customer.createdAt || customer.updatedAt || "",
+      updatedAt: customer.updatedAt || customer.createdAt || ""
+    });
+  });
+  (store.orders || []).forEach((order) => {
+    const name = String(order.customerName || "").trim();
+    const phone = String(order.customerPhone || "").trim();
+    if (!name || !phone) return;
+    const key = `${normalizeText(name)}::${normalizeText(phone)}`;
+    if (!map.has(key)) {
+      map.set(key, {
+        id: order.id || "",
+        name,
+        phone,
+        memberTier: "Thường",
+        createdAt: order.createdAt || order.date || "",
+        updatedAt: order.createdAt || order.date || ""
+      });
+    }
+  });
+  return [...map.values()];
+}
+
+function sumBy(items, field) {
+  return (items || []).reduce((sum, item) => sum + money(item[field]), 0);
+}
+
+function getTimeFromISO(value) {
+  if (!value || typeof value !== "string" || !value.includes("T")) return "";
+  return value.slice(11, 16);
+}
+
+function normalizeAIFileAttachments(value) {
+  if (!Array.isArray(value)) return [];
+  let remainingChars = MAX_ATTACHMENT_CHARS;
+  const files = [];
+  for (const file of value.slice(0, MAX_ATTACHMENT_COUNT)) {
+    if (!file || typeof file !== "object") continue;
+    const text = String(file.text || "").slice(0, Math.max(0, remainingChars));
+    remainingChars -= text.length;
+    files.push({
+      name: String(file.name || "file").slice(0, 180),
+      type: String(file.type || "").slice(0, 120),
+      size: Number(file.size || 0),
+      text,
+      truncated: Boolean(file.truncated) || remainingChars <= 0
+    });
+    if (remainingChars <= 0) break;
+  }
+  return files;
+}
+
+async function loadSharedState() {
+  const snapshot = await db.collection(APP_STATE_COLLECTION).doc(APP_STATE_DOCUMENT).get();
+  const data = snapshot.exists ? snapshot.data() : {};
+  return data.state || data || {};
+}
+
+function buildReport(state, question) {
+  const stores = loadStores(state);
+  const store = resolveStore(question, stores, state);
+  const dateRange = getDateRangeFromUserQuestion(question, DEFAULT_TIMEZONE);
+  const intent = detectIntent(question);
+
+  if (!store) {
+    return {
+      ok: false,
+      reason: "missing_store",
+      message: "Bạn cần tạo hoặc chọn cửa hàng trước khi xem báo cáo."
+    };
+  }
+
+  const filters = makeFilters(question, store);
+  let calculation = {};
+  let warnings = [];
+  switch (intent) {
+    case "expense_report":
+      calculation = calculateExpenseReport(store, dateRange.fromDate, dateRange.toDate, filters);
+      break;
+    case "revenue_report":
+      calculation = calculateRevenueReport(store, dateRange.fromDate, dateRange.toDate, filters);
+      break;
+    case "profit_report":
+      calculation = calculateProfitReport(store, dateRange.fromDate, dateRange.toDate, filters);
+      warnings = calculation.warnings || [];
+      break;
+    case "inventory_report":
+      calculation = calculateInventoryReport(store, dateRange.fromDate, dateRange.toDate, filters);
+      break;
+    case "manual_export_report":
+    case "inventory_export_report":
+      calculation = calculateManualExportReport(store, dateRange.fromDate, dateRange.toDate, filters);
+      break;
+    case "sales_export_report":
+      calculation = calculateSalesExportReport(store, dateRange.fromDate, dateRange.toDate, filters);
+      break;
+    case "inventory_import_report":
+      calculation = calculateInventoryImportReport(store, dateRange.fromDate, dateRange.toDate, filters);
+      break;
+    case "best_selling_products":
+      calculation = calculateBestSellingProducts(store, dateRange.fromDate, dateRange.toDate, filters);
+      break;
+    case "customer_report":
+      calculation = calculateCustomerReport(store, dateRange.fromDate, dateRange.toDate, filters);
+      break;
+    case "order_report":
+      calculation = calculateOrderReport(store, dateRange.fromDate, dateRange.toDate, filters);
+      break;
+    case "duplicate_report":
+      calculation = findDuplicateTransactions(store, dateRange.fromDate, dateRange.toDate, filters);
+      break;
+    case "quantity_edit_report":
+      calculation = findQuantityEdits(store, filters.productName, dateRange.fromDate, dateRange.toDate);
+      if (!filters.productName) warnings.push("Câu hỏi chưa nêu rõ tên hàng hóa cần kiểm tra chỉnh sửa số lượng.");
+      break;
+    default: {
+      const revenue = calculateRevenueReport(store, dateRange.fromDate, dateRange.toDate, filters);
+      const expense = calculateExpenseReport(store, dateRange.fromDate, dateRange.toDate, filters);
+      const inventory = calculateInventoryReport(store, dateRange.fromDate, dateRange.toDate, filters);
+      calculation = {
+        items: [...revenue.items.slice(0, 30), ...expense.items.slice(0, 30), ...inventory.items.slice(0, 30)],
+        totals: {
+          income: revenue.totals.income,
+          sales: revenue.totals.sales,
+          revenue: revenue.totals.revenue,
+          expense: expense.totals.expense,
+          profit: revenue.totals.revenue - expense.totals.expense,
+          inventoryValue: inventory.totals.inventoryValue,
+          inventoryCount: inventory.recordCount
+        },
+        recordCount: revenue.recordCount + expense.recordCount + inventory.recordCount
+      };
+    }
+  }
+
+  const report = {
+    ok: true,
+    intent,
+    store: { id: store.id || "", name: store.name || "" },
+    dateRange: {
+      from: dateRange.from,
+      to: dateRange.to,
+      timezone: dateRange.timezone,
+      label: dateRange.label
+    },
+    recordCount: calculation.recordCount || 0,
+    filters,
+    totals: {
+      revenue: 0,
+      income: 0,
+      sales: 0,
+      expense: 0,
+      profit: null,
+      costOfGoods: 0,
+      quantityIn: 0,
+      quantityOut: 0,
+      manualOut: 0,
+      salesOut: 0,
+      inventoryValue: 0,
+      ...(calculation.totals || {})
+    },
+    items: calculation.items || [],
+    duplicates: calculation.duplicates || [],
+    warnings,
+    answerMarkdown: ""
+  };
+
+  report.answerMarkdown = buildDeterministicMarkdown(report);
+  return report;
+}
+
+function buildDeterministicMarkdown(report) {
+  if (!report.ok) return report.message || "Không thể tạo báo cáo.";
+  const lines = [
+    `**Cửa hàng:** ${report.store.name || "Chưa rõ"}`,
+    `**Khoảng thời gian:** ${report.dateRange.label || `${report.dateRange.from} - ${report.dateRange.to}`}`,
+    `**Dữ liệu dùng để tính:** ${report.recordCount} bản ghi.`
+  ];
+
+  if (report.warnings?.length) {
+    lines.push("", ...report.warnings.map((warning) => `- Cảnh báo: ${warning}`));
+  }
+
+  lines.push("");
+  switch (report.intent) {
+    case "expense_report":
+      lines.push(`**Tổng chi:** ${formatCurrency(report.totals.expense)}`);
+      break;
+    case "revenue_report":
+      lines.push(`**Tổng thu:** ${formatCurrency(report.totals.income)}`);
+      lines.push(`**Tổng bán hàng:** ${formatCurrency(report.totals.sales)}`);
+      lines.push(`**Tổng doanh thu:** ${formatCurrency(report.totals.revenue)}`);
+      break;
+    case "profit_report":
+      lines.push(`**Doanh thu:** ${formatCurrency(report.totals.revenue)}`);
+      lines.push(`**Giá vốn:** ${formatCurrency(report.totals.costOfGoods)}`);
+      lines.push(`**Chi phí:** ${formatCurrency(report.totals.expense)}`);
+      lines.push(`**Lợi nhuận:** ${report.totals.profit === null ? "Chưa đủ dữ liệu" : formatCurrency(report.totals.profit)}`);
+      break;
+    case "inventory_report":
+      lines.push(`**Tổng giá trị kho theo giá vốn:** ${formatCurrency(report.totals.inventoryValue)}`);
+      lines.push(`**Tổng số lượng tồn:** ${report.totals.quantityInStock || 0}`);
+      break;
+    case "manual_export_report":
+    case "inventory_export_report":
+      lines.push(`**Tổng xuất kho thủ công:** ${report.totals.manualOut || 0}`);
+      lines.push(`**Giá trị xuất kho:** ${formatCurrency(report.totals.manualOutValue)}`);
+      break;
+    case "sales_export_report":
+      lines.push(`**Tổng xuất kho do bán hàng:** ${report.totals.salesOut || 0}`);
+      lines.push(`**Doanh số hàng đã bán:** ${formatCurrency(report.totals.salesOutValue)}`);
+      break;
+    case "inventory_import_report":
+      lines.push(`**Tổng nhập kho:** ${report.totals.quantityIn || 0}`);
+      lines.push(`**Giá trị nhập kho:** ${formatCurrency(report.totals.importValue)}`);
+      break;
+    case "best_selling_products":
+      lines.push(`**Tổng số lượng bán:** ${report.totals.quantitySold || 0}`);
+      lines.push(`**Doanh thu:** ${formatCurrency(report.totals.revenue)}`);
+      break;
+    case "duplicate_report":
+      lines.push(`**Nhóm trùng 100%:** ${report.totals.duplicateGroups || 0}`);
+      break;
+    default:
+      Object.entries(report.totals || {}).forEach(([key, value]) => {
+        if (value !== null && value !== 0) lines.push(`**${key}:** ${typeof value === "number" ? formatCurrency(value) : value}`);
+      });
+  }
+
+  if (!report.recordCount) {
+    lines.push("", "Chưa có dữ liệu phù hợp.");
+    return lines.join("\n");
+  }
+
+  lines.push("", "**Danh sách đã tính:**");
+  report.items.slice(0, 20).forEach((item, index) => {
+    lines.push(`- ${index + 1}. ${formatReportItem(item, report.intent)}`);
+  });
+  if (report.items.length > 20) lines.push(`- ... còn ${report.items.length - 20} bản ghi khác.`);
+  return lines.join("\n");
+}
+
+function formatReportItem(item, intent) {
+  if (intent === "best_selling_products") {
+    return `${item.productName} (${item.groupName || "Chưa phân nhóm"}): ${item.quantity} món, ${formatCurrency(item.revenue)}`;
+  }
+  if (intent.includes("inventory") || intent.includes("export")) {
+    return `${displayDate(item.date)} - ${item.itemName || item.name || item.productName} (${item.groupName || ""}): ${item.oldQuantity ?? ""} -> ${item.newQuantity ?? item.quantity ?? ""}, ${formatCurrency(item.total || item.valueAtCost || item.saleAmount || 0)}`;
+  }
+  if (item.source === "Bán hàng" || item.customerName) {
+    return `${displayDate(item.date)} - ${item.customerName || "Khách lẻ"}: ${formatCurrency(item.total || 0)}`;
+  }
+  return `${displayDate(item.date)} - ${item.category || item.type || ""} - ${item.note || ""}: ${formatCurrency(item.amount || item.total || 0)}`;
+}
+
+async function askOpenAIToFormat(report, message) {
+  const apiKey = OPENAI_API_KEY.value() || process.env.OPENAI_API_KEY;
+  if (!apiKey) return { text: report.answerMarkdown, usage: null, model: null, usedFallback: false };
+
+  const primaryModel = process.env.OPENAI_MODEL || "gpt-5.5";
+  const client = new OpenAI({ apiKey });
+  const input = [
+    {
+      role: "user",
+      content: [
+        "Hãy trình bày báo cáo sau bằng tiếng Việt dễ đọc.",
+        "Không thay đổi, không tự cộng lại, không thêm số liệu ngoài JSON.",
+        `Câu hỏi người dùng: ${message}`,
+        `JSON backend đã tính:\n${JSON.stringify(report)}`
+      ].join("\n\n")
+    }
+  ];
+
+  try {
+    const response = await client.responses.create({
+      model: primaryModel,
+      instructions: SYSTEM_PROMPT,
+      input
+    });
+    return {
+      text: getOutputText(response) || report.answerMarkdown,
+      usage: response.usage || null,
+      model: primaryModel,
+      usedFallback: false
+    };
+  } catch (error) {
+    if (OPENAI_FALLBACK_MODEL && OPENAI_FALLBACK_MODEL !== primaryModel) {
+      try {
+        const response = await client.responses.create({
+          model: OPENAI_FALLBACK_MODEL,
+          instructions: SYSTEM_PROMPT,
+          input
+        });
+        return {
+          text: getOutputText(response) || report.answerMarkdown,
+          usage: response.usage || null,
+          model: OPENAI_FALLBACK_MODEL,
+          usedFallback: true
+        };
+      } catch (fallbackError) {
+        logger.warn("OpenAI formatting fallback failed", {
+          status: fallbackError?.status || fallbackError?.code || 500,
+          type: fallbackError?.type || "",
+          message: fallbackError?.message || ""
+        });
+      }
+    }
+    logger.warn("OpenAI formatting failed; deterministic report returned", {
+      status: error?.status || error?.code || 500,
+      type: error?.type || "",
+      message: error?.message || ""
+    });
+    return {
+      text: `${report.answerMarkdown}\n\n_Ghi chú: AI chỉ dùng báo cáo backend đã tính; OpenAI tạm thời không định dạng được câu trả lời._`,
+      usage: null,
+      model: primaryModel,
+      usedFallback: false
+    };
+  }
 }
 
 function getOutputText(response) {
@@ -333,124 +1027,91 @@ function getOutputText(response) {
   return chunks.join("\n").trim();
 }
 
-function parseAIEnvelope(text) {
-  try {
-    const parsed = JSON.parse(text);
-    if (parsed && typeof parsed.reply === "string") {
-      return {
-        reply: parsed.reply,
-        actions: Array.isArray(parsed.actions) ? parsed.actions : []
-      };
-    }
-  } catch (error) {
-    // Plain text responses are acceptable.
+function getPublicError(error) {
+  if (error?.message === "UNAUTHORIZED") {
+    return { status: 401, message: "Bạn chưa được phép dùng AI. Hãy nhập đúng PIN admin rồi thử lại." };
   }
-  return { reply: text, actions: [] };
-}
-
-async function loadSharedState() {
-  const snapshot = await db.collection(APP_STATE_COLLECTION).doc(APP_STATE_DOCUMENT).get();
-  return snapshot.exists ? snapshot.data().state || snapshot.data() : {};
+  return {
+    status: error?.status >= 400 && error?.status < 600 ? error.status : 500,
+    message: "AI tạm thời không phản hồi. Vui lòng kiểm tra Firebase Functions log rồi thử lại."
+  };
 }
 
 exports.chatWithAI = onRequest(
   {
     region: REGION,
-    timeoutSeconds: 60,
+    timeoutSeconds: 90,
     memory: "512MiB",
     secrets: [OPENAI_API_KEY, ADMIN_PIN]
   },
   async (req, res) => {
     applyCors(req, res);
-    if (req.method === "OPTIONS") {
-      res.status(204).send("");
-      return;
-    }
-    if (req.method !== "POST") {
-      sendError(res, 405, "Chá»‰ há»— trá»£ POST.");
-      return;
-    }
+    if (req.method === "OPTIONS") return res.status(204).send("");
+    if (req.method !== "POST") return sendError(res, 405, "Chỉ hỗ trợ POST.");
 
+    const startedAt = Date.now();
     try {
       const adminUser = await requireAdmin(req);
       const rateKey = `${adminUser.userId}:${getClientIp(req)}`;
       if (!checkRateLimit(rateKey)) {
-        sendError(res, 429, "Báº¡n gá»­i quÃ¡ nhanh. Vui lÃ²ng thá»­ láº¡i sau má»™t phÃºt.");
-        return;
+        return sendError(res, 429, "Bạn gửi quá nhanh. Vui lòng thử lại sau một phút.");
       }
 
       const message = typeof req.body?.message === "string" ? req.body.message.trim() : "";
-      const conversationId = typeof req.body?.conversationId === "string" ? req.body.conversationId.slice(0, 120) : "";
+      const conversationId =
+        typeof req.body?.conversationId === "string" ? req.body.conversationId.slice(0, 120) : "";
       const mode = req.body?.mode === "propose_action" ? "propose_action" : "read_only";
+      const attachments = normalizeAIFileAttachments(req.body?.attachments);
 
-      if (!message) {
-        sendError(res, 400, "message lÃ  báº¯t buá»™c.");
-        return;
-      }
+      if (!message) return sendError(res, 400, "message là bắt buộc.");
       if (message.length > MAX_MESSAGE_LENGTH) {
-        sendError(res, 400, `message tá»‘i Ä‘a ${MAX_MESSAGE_LENGTH} kÃ½ tá»±.`);
-        return;
+        return sendError(res, 400, `message tối đa ${MAX_MESSAGE_LENGTH} ký tự.`);
       }
 
       const state = await loadSharedState();
-      const context = buildContext(state, message);
-      const systemPrompt = [
-        "Báº¡n lÃ  trá»£ lÃ½ quáº£n lÃ½ cá»­a hÃ ng cho website quáº£n lÃ½ cá»­a hÃ ng cá»§a chá»§ shop.",
-        "Báº¡n cÃ³ thá»ƒ phÃ¢n tÃ­ch thu chi, doanh thu, lá»£i nhuáº­n, tá»“n kho, Ä‘Æ¡n hÃ ng, sáº£n pháº©m vÃ  khÃ¡ch hÃ ng dá»±a trÃªn dá»¯ liá»‡u Firestore Ä‘Æ°á»£c cung cáº¥p.",
-        "Báº¡n Ä‘Æ°á»£c cung cáº¥p snapshot/schema rá»™ng nháº¥t cÃ³ thá»ƒ cá»§a dá»¯ liá»‡u hiá»‡n táº¡i. Khi website cÃ³ thÃªm trÆ°á»ng hoáº·c chá»©c nÄƒng má»›i, hÃ£y Ä‘á»c schema/fullState Ä‘á»ƒ hiá»ƒu dá»¯ liá»‡u má»›i thay vÃ¬ giáº£ Ä‘á»‹nh.",
-        "Báº¡n cÃ³ thá»ƒ phÃ¢n tÃ­ch táº¥t cáº£ module Ä‘ang cÃ³ trong dá»¯ liá»‡u; vá»›i thao tÃ¡c ghi/sá»­a/xÃ³a, chá»‰ táº¡o Ä‘á» xuáº¥t action vÃ  chá» chá»§ shop xÃ¡c nháº­n.",
-        "KhÃ´ng bá»‹a sá»‘ liá»‡u náº¿u khÃ´ng cÃ³ dá»¯ liá»‡u. Náº¿u thiáº¿u dá»¯ liá»‡u hÃ£y nÃ³i rÃµ: ChÆ°a cÃ³ Ä‘á»§ dá»¯ liá»‡u Ä‘á»ƒ káº¿t luáº­n.",
-        "Vá»›i cÃ¡c hÃ nh Ä‘á»™ng thÃªm/sá»­a/xÃ³a dá»¯ liá»‡u, khÃ´ng tá»± Ã½ thá»±c hiá»‡n ngay. HÃ£y táº¡o Ä‘á» xuáº¥t hÃ nh Ä‘á»™ng Ä‘á»ƒ chá»§ shop xÃ¡c nháº­n.",
-        "Tráº£ lá»i báº±ng tiáº¿ng Viá»‡t, rÃµ rÃ ng, ngáº¯n gá»n, cÃ³ sá»‘ liá»‡u khi cÃ³ dá»¯ liá»‡u.",
-        mode === "propose_action"
-          ? "Náº¿u cáº§n Ä‘á» xuáº¥t thao tÃ¡c, tráº£ vá» JSON há»£p lá»‡ dáº¡ng {\"reply\":\"...\",\"actions\":[{\"type\":\"create_transaction\",\"payload\":{...}}]}. KhÃ´ng thá»±c hiá»‡n thao tÃ¡c nguy hiá»ƒm nhÆ° xÃ³a toÃ n bá»™ dá»¯ liá»‡u."
-          : "Cháº¿ Ä‘á»™ hiá»‡n táº¡i lÃ  read_only: chá»‰ tráº£ lá»i, actions pháº£i lÃ  máº£ng rá»—ng."
-      ].join(" ");
-
-      const client = new OpenAI({ apiKey: OPENAI_API_KEY.value() });
-      const response = await client.responses.create({
-        model: OPENAI_MODEL,
-        temperature: 0.2,
-        instructions: systemPrompt,
-        input: [
-          {
-            role: "user",
-            content: `Dá»¯ liá»‡u cá»­a hÃ ng/schema Firestore hiá»‡n táº¡i:\n${JSON.stringify(context)}`
-          },
-          { role: "user", content: message }
-        ]
-      });
-
-      const envelope = parseAIEnvelope(getOutputText(response));
-      const actionRefs = [];
-      if (mode === "propose_action") {
-        for (const action of envelope.actions.slice(0, 5)) {
-          const actionRef = await db.collection("ai_action_requests").add({
-            type: action.type || "unknown",
-            status: "pending_confirmation",
-            payload: action.payload || {},
-            conversationId,
-            userId: adminUser.userId,
-            createdAt: admin.firestore.FieldValue.serverTimestamp()
-          });
-          actionRefs.push({ id: actionRef.id, ...action, status: "pending_confirmation" });
-        }
+      const report = buildReport(state, message);
+      if (attachments.length) {
+        report.attachments = attachments;
+        report.answerMarkdown += "\n\nCó file đính kèm. Nội dung file được gửi cho AI để đọc thêm, nhưng số liệu quản lý cửa hàng vẫn ưu tiên dữ liệu Firestore đã tính.";
       }
 
-      await db.collection("ai_logs").add({
+      const formatted = await askOpenAIToFormat(report, message);
+      report.answerMarkdown = formatted.text;
+
+      const logPayload = {
         conversationId,
         userId: adminUser.userId,
         mode,
-        message,
-        reply: envelope.reply,
-        actionCount: actionRefs.length,
+        userQuestion: message,
+        resolvedIntent: report.intent || "",
+        resolvedStore: report.store || null,
+        dateRange: report.dateRange || null,
+        firestoreCollections: [`${APP_STATE_COLLECTION}/${APP_STATE_DOCUMENT}`],
+        recordCount: report.recordCount || 0,
+        recordIds: (report.items || []).slice(0, 100).map((item) => item.id || item.orderId || ""),
+        totals: report.totals || {},
+        model: formatted.model || process.env.OPENAI_MODEL || "gpt-5.5",
+        usedFallbackModel: formatted.usedFallback,
+        responsePreview: formatted.text.slice(0, 2000),
+        elapsedMs: Date.now() - startedAt,
         createdAt: admin.firestore.FieldValue.serverTimestamp()
-      });
+      };
+      await db.collection("ai_logs").add(logPayload);
 
       res.json({
-        reply: envelope.reply,
-        actions: actionRefs,
-        usage: response.usage || null
+        reply: formatted.text,
+        actions: [],
+        usage: formatted.usage,
+        report,
+        debug: {
+          intent: report.intent,
+          store: report.store,
+          dateRange: report.dateRange,
+          recordCount: report.recordCount,
+          totals: report.totals,
+          model: formatted.model,
+          usedFallbackModel: formatted.usedFallback
+        }
       });
     } catch (error) {
       logger.error("chatWithAI failed", {
@@ -473,22 +1134,13 @@ exports.confirmAIAction = onRequest(
   },
   async (req, res) => {
     applyCors(req, res);
-    if (req.method === "OPTIONS") {
-      res.status(204).send("");
-      return;
-    }
-    if (req.method !== "POST") {
-      sendError(res, 405, "Chá»‰ há»— trá»£ POST.");
-      return;
-    }
+    if (req.method === "OPTIONS") return res.status(204).send("");
+    if (req.method !== "POST") return sendError(res, 405, "Chỉ hỗ trợ POST.");
 
     try {
       const adminUser = await requireAdmin(req);
       const actionId = typeof req.body?.actionId === "string" ? req.body.actionId.trim() : "";
-      if (!actionId) {
-        sendError(res, 400, "actionId lÃ  báº¯t buá»™c.");
-        return;
-      }
+      if (!actionId) return sendError(res, 400, "actionId là bắt buộc.");
 
       const actionRef = db.collection("ai_action_requests").doc(actionId);
       await db.runTransaction(async (transaction) => {
@@ -498,53 +1150,7 @@ exports.confirmAIAction = onRequest(
         if (action.status !== "pending_confirmation") {
           throw Object.assign(new Error("ACTION_DONE"), { status: 409 });
         }
-
-        if (action.type !== "create_transaction") {
-          throw Object.assign(new Error("UNSUPPORTED_ACTION"), { status: 400 });
-        }
-
-        const stateRef = db.collection(APP_STATE_COLLECTION).doc(APP_STATE_DOCUMENT);
-        const stateSnap = await transaction.get(stateRef);
-        const root = stateSnap.exists ? stateSnap.data() : {};
-        const state = root.state || root || { stores: [] };
-        const store = getActiveStore(state);
-        if (!store) throw Object.assign(new Error("NO_STORE"), { status: 400 });
-
-        const payload = action.payload || {};
-        const type = payload.kind === "expense" ? "expense" : "income";
-        const categoryNameValue = String(payload.category || payload.categoryName || "AI").trim();
-        store.categories = store.categories || { income: [], expense: [] };
-        store.categories[type] = store.categories[type] || [];
-        let category = store.categories[type].find((item) => normalizeText(item.name) === normalizeText(categoryNameValue));
-        if (!category) {
-          category = { id: `ai-${Date.now()}`, name: categoryNameValue };
-          store.categories[type].push(category);
-        }
-        store.entries = store.entries || [];
-        store.entries.push({
-          id: `ai-entry-${Date.now()}`,
-          type,
-          categoryId: category.id,
-          note: String(payload.note || "Táº¡o tá»« AI").slice(0, 200),
-          amount: money(payload.amount),
-          date: toDateKey(payload.date) || new Date().toISOString().slice(0, 10),
-          status: "active",
-          createdAt: new Date().toISOString()
-        });
-
-        transaction.set(
-          stateRef,
-          {
-            state,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
-          },
-          { merge: true }
-        );
-        transaction.update(actionRef, {
-          status: "done",
-          completedBy: adminUser.userId,
-          completedAt: admin.firestore.FieldValue.serverTimestamp()
-        });
+        throw Object.assign(new Error("UNSUPPORTED_ACTION"), { status: 400 });
       });
 
       await db.collection("ai_logs").add({
@@ -554,16 +1160,19 @@ exports.confirmAIAction = onRequest(
         createdAt: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      res.json({ ok: true, message: "ÄÃ£ thá»±c hiá»‡n thao tÃ¡c AI vÃ  cáº­p nháº­t Firestore." });
+      res.json({ ok: true });
     } catch (error) {
-      const status = error.status || (error.message === "UNAUTHORIZED" ? 401 : 500);
       const messages = {
-        ACTION_NOT_FOUND: "KhÃ´ng tÃ¬m tháº¥y thao tÃ¡c AI.",
-        ACTION_DONE: "Thao tÃ¡c nÃ y Ä‘Ã£ Ä‘Æ°á»£c xá»­ lÃ½.",
-        UNSUPPORTED_ACTION: "Loáº¡i thao tÃ¡c nÃ y chÆ°a Ä‘Æ°á»£c há»— trá»£ tá»± Ä‘á»™ng.",
-        NO_STORE: "ChÆ°a cÃ³ cá»­a hÃ ng Ä‘á»ƒ cáº­p nháº­t."
+        ACTION_NOT_FOUND: "Không tìm thấy thao tác AI.",
+        ACTION_DONE: "Thao tác này đã được xử lý.",
+        UNSUPPORTED_ACTION: "Vì an toàn dữ liệu, thao tác ghi từ AI hiện chỉ được ghi nhận để chủ shop xử lý thủ công."
       };
-      sendError(res, status, messages[error.message] || (status === 401 ? "Báº¡n chÆ°a Ä‘Æ°á»£c phÃ©p xÃ¡c nháº­n." : "KhÃ´ng thá»ƒ xÃ¡c nháº­n thao tÃ¡c."));
+      const status = error.status || (error.message === "UNAUTHORIZED" ? 401 : 500);
+      sendError(
+        res,
+        status,
+        messages[error.message] || (status === 401 ? "Bạn chưa được phép xác nhận." : "Không thể xác nhận thao tác.")
+      );
     }
   }
 );
