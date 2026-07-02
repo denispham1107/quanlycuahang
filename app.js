@@ -228,6 +228,7 @@ const els = {
   exportInventoryDate: document.querySelector("#exportInventoryDate"),
   exportInventoryQuantity: document.querySelector("#exportInventoryQuantity"),
   exportInventoryReason: document.querySelector("#exportInventoryReason"),
+  deleteExportInventoryReason: document.querySelector("#deleteExportInventoryReason"),
   toggleExportInventoryReason: document.querySelector("#toggleExportInventoryReason"),
   exportInventoryReasonPanel: document.querySelector("#exportInventoryReasonPanel"),
   exportInventoryNewReason: document.querySelector("#exportInventoryNewReason"),
@@ -337,6 +338,7 @@ els.storeForm.addEventListener("submit", (event) => {
     purchaseOrders: [],
     inventoryLogs: [],
     inventory: [],
+    exportReasons: [],
     createdAt: new Date().toISOString()
   };
 
@@ -878,6 +880,8 @@ els.toggleExportInventoryReason.addEventListener("click", () => {
 
 els.addExportInventoryReason.addEventListener("click", addExportInventoryReasonOption);
 
+els.deleteExportInventoryReason.addEventListener("click", deleteSelectedExportInventoryReason);
+
 els.exportInventoryNewReason.addEventListener("keydown", (event) => {
   if (event.key !== "Enter") return;
   event.preventDefault();
@@ -1037,6 +1041,23 @@ function loadCachedState() {
   }
 }
 
+function normalizeExportReasons(store) {
+  const reasons = new Set();
+  (Array.isArray(store.exportReasons) ? store.exportReasons : []).forEach((reason) => {
+    const value = String(reason || "").trim();
+    if (value) reasons.add(value);
+  });
+
+  if (!Array.isArray(store.exportReasons)) {
+    (store.inventoryLogs || []).forEach((log) => {
+      const reason = getInventoryLogReason(log);
+      if (reason) reasons.add(reason);
+    });
+  }
+
+  return Array.from(reasons).sort((a, b) => a.localeCompare(b, "vi"));
+}
+
 function normalizeState(data) {
   const source = data && typeof data === "object" ? data : cloneDefaultData();
   const stores = (source.stores || []).map((store) => ({
@@ -1053,6 +1074,7 @@ function normalizeState(data) {
     purchaseCategories: store.purchaseCategories || [],
     purchaseOrders: store.purchaseOrders || [],
     inventoryLogs: store.inventoryLogs || [],
+    exportReasons: normalizeExportReasons(store),
     inventory: (store.inventory || []).map((item) => ({
       ...item,
       salePrice: Number(item.salePrice ?? item.lastPrice ?? 0)
@@ -2796,13 +2818,43 @@ function setExportReasonCreator(open) {
 }
 
 function addExportInventoryReasonOption() {
+  const store = getActiveStore();
+  if (!store) return;
+
   const reason = String(els.exportInventoryNewReason.value || "").trim();
   if (!reason) {
     window.alert("Vui lòng nhập lý do xuất kho.");
     return;
   }
+
+  store.exportReasons = getInventoryExportReasons(store);
+  if (!store.exportReasons.some((current) => normalizeSearchText(current) === normalizeSearchText(reason))) {
+    store.exportReasons.push(reason);
+    store.exportReasons.sort((a, b) => a.localeCompare(b, "vi"));
+  }
+  saveStateToCache();
+  saveStateToCloud();
   renderExportInventoryReasonOptions(reason);
   setExportReasonCreator(false);
+}
+
+function deleteSelectedExportInventoryReason() {
+  const store = getActiveStore();
+  if (!store) return;
+
+  const reason = String(els.exportInventoryReason.value || "").trim();
+  if (!reason) {
+    window.alert("Vui lòng chọn một lý do đã tạo để xóa.");
+    return;
+  }
+
+  const confirmed = window.confirm(`Xóa lý do xuất "${reason}" khỏi danh sách lựa chọn?`);
+  if (!confirmed) return;
+
+  store.exportReasons = getInventoryExportReasons(store).filter((current) => normalizeSearchText(current) !== normalizeSearchText(reason));
+  saveStateToCache();
+  saveStateToCloud();
+  renderExportInventoryReasonOptions("");
 }
 
 function saveEditedInventory(formData) {
@@ -4578,20 +4630,21 @@ function getInventoryLogReason(log) {
 }
 
 function getInventoryExportReasons(store) {
-  const range = getDateRange();
-  return [...new Set(
-    [...(store?.inventoryLogs || [])]
-      .filter((log) => {
-        const logDate = getInventoryLogDate(log);
-        return (
-          logDate >= range.start &&
-          logDate <= range.end &&
-          getInventoryLogPurpose(log).value === "export"
-        );
-      })
-      .map(getInventoryLogReason)
-      .filter(Boolean)
-  )].sort((a, b) => a.localeCompare(b, "vi"));
+  const reasons = new Set();
+  (Array.isArray(store?.exportReasons) ? store.exportReasons : []).forEach((reason) => {
+    const value = String(reason || "").trim();
+    if (value) reasons.add(value);
+  });
+
+  if (!Array.isArray(store?.exportReasons)) {
+    (store?.inventoryLogs || []).forEach((log) => {
+      if (getInventoryLogPurpose(log).value !== "export") return;
+      const reason = getInventoryLogReason(log);
+      if (reason) reasons.add(reason);
+    });
+  }
+
+  return Array.from(reasons).sort((a, b) => a.localeCompare(b, "vi"));
 }
 
 function getInventoryLogPurpose(log) {

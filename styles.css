@@ -2749,6 +2749,14 @@ th:last-child {
   border-radius: 14px;
 }
 
+.export-reason-delete {
+  width: 100%;
+  min-height: 40px;
+  border-radius: 12px;
+  color: var(--danger);
+  background: rgba(255, 230, 236, 0.72);
+}
+
 .export-reason-panel {
   display: grid;
   gap: 10px;
