@@ -766,7 +766,17 @@
         </div>
         <div class="field">
           <label for="exportInventoryReason">Lý Do Xuất</label>
-          <input id="exportInventoryReason" name="reason" type="text" placeholder="Ví dụ: bán hàng, hư hỏng, kiểm kho..." autocomplete="off" />
+          <select id="exportInventoryReason" name="reason">
+            <option value="">Chưa lý do</option>
+          </select>
+        </div>
+        <button class="soft-button export-reason-toggle" id="toggleExportInventoryReason" type="button" aria-expanded="false">Tạo lý do xuất</button>
+        <div class="export-reason-panel" id="exportInventoryReasonPanel" hidden>
+          <div class="field">
+            <label for="exportInventoryNewReason">Lý do xuất mới</label>
+            <input id="exportInventoryNewReason" type="text" placeholder="Ví dụ: bán hàng, hư hỏng, kiểm kho..." autocomplete="off" />
+          </div>
+          <button class="soft-button" id="addExportInventoryReason" type="button">Thêm lý do</button>
         </div>
         <div class="modal-actions">
           <button class="ghost-button" id="cancelExportInventory" type="button">Hủy</button>

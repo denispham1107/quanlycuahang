@@ -228,6 +228,10 @@ const els = {
   exportInventoryDate: document.querySelector("#exportInventoryDate"),
   exportInventoryQuantity: document.querySelector("#exportInventoryQuantity"),
   exportInventoryReason: document.querySelector("#exportInventoryReason"),
+  toggleExportInventoryReason: document.querySelector("#toggleExportInventoryReason"),
+  exportInventoryReasonPanel: document.querySelector("#exportInventoryReasonPanel"),
+  exportInventoryNewReason: document.querySelector("#exportInventoryNewReason"),
+  addExportInventoryReason: document.querySelector("#addExportInventoryReason"),
   cancelExportInventory: document.querySelector("#cancelExportInventory"),
   quickEntrySubmit: document.querySelector("#quickEntrySubmit"),
   openOrderDiscount: document.querySelector("#openOrderDiscount"),
@@ -866,6 +870,19 @@ els.inventoryList.addEventListener("click", (event) => {
 els.cancelEditInventory.addEventListener("click", closeEditInventoryModal);
 
 els.cancelExportInventory.addEventListener("click", closeExportInventoryModal);
+
+els.toggleExportInventoryReason.addEventListener("click", () => {
+  const isOpening = els.exportInventoryReasonPanel.hidden;
+  setExportReasonCreator(isOpening);
+});
+
+els.addExportInventoryReason.addEventListener("click", addExportInventoryReasonOption);
+
+els.exportInventoryNewReason.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  addExportInventoryReasonOption();
+});
 
 els.editInventoryModal.addEventListener("click", (event) => {
   if (event.target === els.editInventoryModal) closeEditInventoryModal();
@@ -2741,9 +2758,8 @@ function openExportInventoryModal(inventoryId) {
   els.exportInventoryDate.value = els.singleDate.value || today;
   els.exportInventoryQuantity.value = Math.min(1, Math.max(0, Number(item.quantity || 0))) || 1;
   els.exportInventoryQuantity.max = Math.max(0, Number(item.quantity || 0));
-  if (els.exportInventoryReason) {
-    els.exportInventoryReason.value = "";
-  }
+  renderExportInventoryReasonOptions();
+  setExportReasonCreator(false);
   els.exportInventoryModal.hidden = false;
 }
 
@@ -2751,6 +2767,42 @@ function closeExportInventoryModal() {
   els.exportInventoryModal.hidden = true;
   els.exportInventoryForm.reset();
   els.exportInventoryQuantity.removeAttribute("max");
+  setExportReasonCreator(false);
+}
+
+function renderExportInventoryReasonOptions(selectedReason = "") {
+  const store = getActiveStore();
+  const reasons = getInventoryExportReasons(store);
+  const selected = String(selectedReason || "").trim();
+  const options = new Set(reasons);
+  if (selected) options.add(selected);
+
+  els.exportInventoryReason.innerHTML = [
+    `<option value="" ${selected ? "" : "selected"}>Chưa lý do</option>`,
+    ...Array.from(options).map((reason) => `<option value="${escapeHtml(reason)}" ${selected === reason ? "selected" : ""}>${escapeHtml(reason)}</option>`)
+  ].join("");
+}
+
+function setExportReasonCreator(open) {
+  if (!els.exportInventoryReasonPanel) return;
+  els.exportInventoryReasonPanel.hidden = !open;
+  els.toggleExportInventoryReason.setAttribute("aria-expanded", open ? "true" : "false");
+  els.toggleExportInventoryReason.textContent = open ? "Ẩn tạo lý do" : "Tạo lý do xuất";
+  if (open) {
+    window.setTimeout(() => els.exportInventoryNewReason.focus(), 60);
+  } else {
+    els.exportInventoryNewReason.value = "";
+  }
+}
+
+function addExportInventoryReasonOption() {
+  const reason = String(els.exportInventoryNewReason.value || "").trim();
+  if (!reason) {
+    window.alert("Vui lòng nhập lý do xuất kho.");
+    return;
+  }
+  renderExportInventoryReasonOptions(reason);
+  setExportReasonCreator(false);
 }
 
 function saveEditedInventory(formData) {

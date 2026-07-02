@@ -2743,6 +2743,40 @@ th:last-child {
   width: min(460px, calc(100vw - 32px));
 }
 
+.export-reason-toggle {
+  width: 100%;
+  min-height: 46px;
+  border-radius: 14px;
+}
+
+.export-reason-panel {
+  display: grid;
+  gap: 10px;
+  overflow: hidden;
+  animation: export-reason-slide 0.22s ease both;
+}
+
+.export-reason-panel[hidden] {
+  display: none;
+}
+
+.export-reason-panel .soft-button {
+  min-height: 42px;
+  border-radius: 12px;
+}
+
+@keyframes export-reason-slide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes quick-entry-pop {
   from {
     opacity: 0;
