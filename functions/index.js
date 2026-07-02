@@ -107,11 +107,55 @@ function normalizeText(value) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/đ/g, "d")
+    .replace(/[đĐ]/g, "d")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 }
 
+function asArray(value) {
+  if (Array.isArray(value)) return value;
+  if (value && typeof value === "object") return Object.values(value);
+  return [];
+}
+
+function firstDefined(...values) {
+  return values.find((value) => value !== undefined && value !== null && value !== "");
+}
+
+function firstKeyValue(object, keys) {
+  if (!object || typeof object !== "object") return undefined;
+  for (const key of keys) {
+    if (object[key] !== undefined && object[key] !== null && object[key] !== "") return object[key];
+  }
+  const normalizedKeys = Object.keys(object).reduce((map, key) => {
+    map.set(normalizeText(key), key);
+    return map;
+  }, new Map());
+  for (const key of keys) {
+    const realKey = normalizedKeys.get(normalizeText(key));
+    if (realKey && object[realKey] !== undefined && object[realKey] !== null && object[realKey] !== "") {
+      return object[realKey];
+    }
+  }
+  return undefined;
+}
+
 function money(value) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  if (typeof value === "string") {
+    let text = value.trim();
+    if (!text) return 0;
+    text = text.replace(/[^\d,.-]/g, "");
+    if (text.includes(",") && text.includes(".")) {
+      text = text.replace(/\./g, "").replace(",", ".");
+    } else if (text.includes(".") && /^\d{1,3}(\.\d{3})+$/.test(text)) {
+      text = text.replace(/\./g, "");
+    } else if (text.includes(",")) {
+      text = text.replace(",", ".");
+    }
+    const parsed = Number(text);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
   const number = Number(value || 0);
   return Number.isFinite(number) ? number : 0;
 }
@@ -122,16 +166,24 @@ function formatCurrency(value) {
 
 function toDateKey(value) {
   if (!value) return "";
+  if (value.toDate) return value.toDate().toISOString().slice(0, 10);
+  if (value.seconds) return new Date(value.seconds * 1000).toISOString().slice(0, 10);
   if (typeof value === "string") {
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
-      const [day, month, year] = value.split("/");
+    const slash = value.match(/\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})\b/);
+    if (slash) {
+      const day = slash[1].padStart(2, "0");
+      const month = slash[2].padStart(2, "0");
+      const year = slash[3];
       return `${year}-${month}-${day}`;
     }
-    return value.slice(0, 10);
+    const iso = value.match(/\b(\d{4})-(\d{1,2})-(\d{1,2})\b/);
+    if (iso) return `${iso[1]}-${iso[2].padStart(2, "0")}-${iso[3].padStart(2, "0")}`;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
   }
-  if (value.toDate) return value.toDate().toISOString().slice(0, 10);
   try {
-    return new Date(value).toISOString().slice(0, 10);
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
   } catch (error) {
     return "";
   }
@@ -288,8 +340,156 @@ function isCancelled(item) {
 }
 
 function categoryName(store, type, categoryId) {
-  const categories = store?.categories?.[type] || [];
-  return categories.find((category) => category.id === categoryId)?.name || "";
+  const categories = [
+    ...asArray(store?.categories?.[type]),
+    ...asArray(store?.categories?.income),
+    ...asArray(store?.categories?.expense),
+    ...asArray(store?.purchaseCategories)
+  ];
+  const normalizedId = normalizeText(categoryId);
+  return categories.find((category) =>
+    category?.id === categoryId || normalizeText(category?.name) === normalizedId
+  )?.name || "";
+}
+
+function unwrapState(data, depth = 0) {
+  if (!data || typeof data !== "object" || depth > 4) return data || {};
+  const candidates = [data.state, data.appState, data.data, data.payload, data.snapshot];
+  const nested = candidates.find((value) => value && typeof value === "object" && (value.stores || value.activeStoreId));
+  return nested ? unwrapState(nested, depth + 1) : data;
+}
+
+function normalizeEntryType(value, fallback = "") {
+  const text = normalizeText(value || fallback);
+  if (text.includes("expense") || text === "chi" || text.includes("khoan chi")) return "expense";
+  if (text.includes("income") || text === "thu" || text.includes("khoan thu")) return "income";
+  return fallback || text || "";
+}
+
+function normalizeEntry(store, entry, fallbackType = "") {
+  const rawType = firstDefined(
+    entry.type,
+    entry.kind,
+    entry.entryType,
+    entry.transactionType,
+    firstKeyValue(entry, ["Loại", "Loai", "Kiểu", "Kieu"])
+  );
+  let type = normalizeEntryType(rawType, fallbackType);
+  if (!type && firstKeyValue(entry, ["Khoản chi", "Khoan chi", "Tên khoản chi", "Ten khoan chi"])) type = "expense";
+  if (!type && firstKeyValue(entry, ["Khoản thu", "Khoan thu", "Tên khoản thu", "Ten khoan thu"])) type = "income";
+  const categoryId = firstDefined(
+    entry.categoryId,
+    entry.category,
+    entry.categoryName,
+    entry.groupName,
+    firstKeyValue(entry, ["Mục", "Muc", "Nhóm", "Nhom", "Danh mục", "Danh muc", "Phân loại", "Phan loai"])
+  );
+  return {
+    id: entry.id || entry.key || "",
+    type,
+    date: toDateKey(firstDefined(
+      entry.date,
+      entry.createdAt,
+      entry.updatedAt,
+      entry.timestamp,
+      firstKeyValue(entry, ["Ngày", "Ngay", "Ngày nhập", "Ngay nhap", "Ngày tạo", "Ngay tao"])
+    )),
+    amount: money(firstDefined(
+      entry.amount,
+      entry.total,
+      entry.value,
+      entry.money,
+      entry.price,
+      firstKeyValue(entry, ["Số tiền", "So tien", "Tiền", "Tien", "Thành tiền", "Thanh tien"])
+    )),
+    note: firstDefined(
+      entry.note,
+      entry.name,
+      entry.title,
+      entry.description,
+      entry.itemName,
+      firstKeyValue(entry, ["Khoản chi", "Khoan chi", "Khoản thu", "Khoan thu", "Tên khoản", "Ten khoan", "Ghi chú", "Ghi chu"])
+    ) || "",
+    category: categoryName(store, type, categoryId) || entry.categoryName || entry.category || categoryId || "",
+    categoryId: categoryId || "",
+    createdBy: firstDefined(
+      entry.createdBy,
+      entry.person,
+      entry.payer,
+      entry.staff,
+      entry.employeeName,
+      entry.userName,
+      firstKeyValue(entry, ["Người tạo", "Nguoi tao", "Người chi", "Nguoi chi", "Nhân viên", "Nhan vien"])
+    ) || "",
+    productName: firstDefined(entry.productName, entry.itemName, entry.goodsName, entry.name, firstKeyValue(entry, ["Hàng hóa", "Hang hoa"])) || "",
+    quantity: money(firstDefined(entry.quantity, entry.qty, entry.count, firstKeyValue(entry, ["Số lượng", "So luong"])))
+  };
+}
+
+function getStoreEntries(store) {
+  return [
+    ...asArray(store?.entries).map((entry) => normalizeEntry(store, entry)),
+    ...asArray(store?.transactions).map((entry) => normalizeEntry(store, entry)),
+    ...asArray(store?.incomeEntries).map((entry) => normalizeEntry(store, entry, "income")),
+    ...asArray(store?.expenseEntries).map((entry) => normalizeEntry(store, entry, "expense")),
+    ...asArray(store?.incomes).map((entry) => normalizeEntry(store, entry, "income")),
+    ...asArray(store?.expenses).map((entry) => normalizeEntry(store, entry, "expense"))
+  ].filter((entry) => entry.date || entry.amount || entry.note || entry.category);
+}
+
+function normalizeOrderItem(item = {}) {
+  const name = firstDefined(item.name, item.productName, item.itemName, item.goodsName, item.title) || "";
+  const quantity = Math.max(1, money(firstDefined(item.quantity, item.qty, item.count, 1)) || 1);
+  return {
+    ...item,
+    name,
+    groupName: firstDefined(item.groupName, item.categoryName, item.category, item.group) || "",
+    quantity,
+    price: money(firstDefined(item.price, item.salePrice, item.unitPrice, item.amount, item.total)),
+    costPrice: money(firstDefined(item.costPrice, item.lastPrice, item.originalCost, item.capitalPrice, item.importPrice))
+  };
+}
+
+function normalizeOrder(order = {}) {
+  const rawItems = asArray(order.items).length
+    ? order.items
+    : asArray(order.products).length
+      ? order.products
+      : asArray(order.lines).length
+        ? order.lines
+        : order.details;
+  const items = asArray(rawItems).map(normalizeOrderItem);
+  return {
+    ...order,
+    id: order.id || order.key || "",
+    date: toDateKey(firstDefined(order.date, order.createdAt, order.updatedAt, order.timestamp)),
+    createdAt: firstDefined(order.createdAt, order.updatedAt, order.date) || "",
+    customerName: firstDefined(order.customerName, order.customer, order.name, order.buyerName) || "",
+    customerPhone: firstDefined(order.customerPhone, order.phone, order.phoneNumber, order.mobile) || "",
+    items
+  };
+}
+
+function getStoreOrders(store) {
+  return [
+    ...asArray(store?.orders),
+    ...asArray(store?.salesOrders),
+    ...asArray(store?.sales),
+    ...asArray(store?.completedOrders),
+    ...asArray(store?.bills)
+  ].map(normalizeOrder).filter((order) => order.date || order.items.length || order.customerName || order.total);
+}
+
+function getStoreDiagnostics(store) {
+  return {
+    rawEntries: asArray(store?.entries).length,
+    normalizedEntries: getStoreEntries(store).length,
+    rawOrders: asArray(store?.orders).length,
+    normalizedOrders: getStoreOrders(store).length,
+    rawInventoryLogs: asArray(store?.inventoryLogs).length,
+    rawInventory: asArray(store?.inventory).length,
+    customers: asArray(store?.customers).length
+  };
 }
 
 function getInventorySalePrice(item) {
@@ -320,19 +520,82 @@ function orderCost(order) {
 }
 
 function loadStores(state) {
-  return Array.isArray(state?.stores) ? state.stores : [];
+  const root = unwrapState(state);
+  return asArray(root?.stores || root?.shops || root?.storesById).filter((store) => store && typeof store === "object");
 }
 
 function getActiveStore(state) {
-  const stores = loadStores(state);
-  return stores.find((store) => store.id === state?.activeStoreId) || stores[0] || null;
+  const root = unwrapState(state);
+  const stores = loadStores(root);
+  const activeStoreId = root?.activeStoreId || root?.selectedStoreId || root?.currentStoreId;
+  return stores.find((store) => store.id === activeStoreId) || stores[0] || null;
 }
 
 function resolveStore(question, stores, state) {
   const text = normalizeText(question);
   const matched = stores.find((store) => store?.name && text.includes(normalizeText(store.name)));
   const active = getActiveStore(state);
-  return matched || active || stores[0] || null;
+  if (matched) return matched;
+  const scored = stores
+    .map((store) => {
+      const tokens = normalizeText(store?.name).split(" ").filter((token) => token.length >= 3);
+      const score = tokens.reduce((sum, token) => sum + (text.includes(token) ? 1 : 0), 0);
+      return { store, score };
+    })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score);
+  return scored[0]?.store || active || stores[0] || null;
+}
+
+const QUESTION_STOPWORDS = new Set([
+  "bao", "cao", "tong", "tat", "ca", "cac", "khoan", "muc", "theo", "cho",
+  "toi", "minh", "nay", "qua", "hom", "ngay", "thang", "nam", "tuan", "cua",
+  "cua", "hang", "doanh", "thu", "chi", "tieu", "phi", "loi", "nhuan", "hay",
+  "nhap", "xuat", "kho", "ban", "hang", "san", "pham", "don", "bill", "lich",
+  "su", "ton", "con", "chay", "nhat", "bao", "nhiu", "nhieu", "bao nhieu"
+]);
+
+function extractQuestionKeywords(question, store) {
+  const storeTokens = new Set(normalizeText(store?.name).split(" ").filter(Boolean));
+  return normalizeText(question)
+    .split(" ")
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 3)
+    .filter((token) => !QUESTION_STOPWORDS.has(token))
+    .filter((token) => !storeTokens.has(token));
+}
+
+function getTransactionSearchText(entry, store) {
+  return normalizeText([
+    entry.note,
+    entry.createdBy,
+    entry.productName,
+    entry.category,
+    entry.categoryId,
+    categoryName(store, entry.type, entry.categoryId),
+    entry.name,
+    entry.title,
+    entry.description
+  ].join(" "));
+}
+
+function scoreTransactionForQuestion(entry, store, options = {}) {
+  const text = getTransactionSearchText(entry, store);
+  let score = 0;
+  const category = normalizeText(options.category);
+  const person = normalizeText(options.customerName || options.person);
+  const productName = normalizeText(options.productName);
+  const keywordText = normalizeText(options.keywordText);
+
+  if (category && text.includes(category)) score += 6;
+  if (person && text.includes(person)) score += 5;
+  if (productName && text.includes(productName)) score += 6;
+  if (keywordText && text.includes(keywordText)) score += 4;
+
+  for (const keyword of options.keywords || []) {
+    if (text.includes(keyword)) score += 1;
+  }
+  return score;
 }
 
 function detectIntent(question) {
@@ -358,30 +621,44 @@ function detectIntent(question) {
 function makeFilters(question, store) {
   const text = normalizeText(question);
   const productNames = new Set([
-    ...(store.inventory || []).map((item) => item.name),
-    ...(store.orders || []).flatMap((order) => (order.items || []).map((item) => item.name)),
-    ...(store.inventoryLogs || []).map((log) => log.itemName)
+    ...asArray(store.inventory).map((item) => item.name),
+    ...getStoreOrders(store).flatMap((order) => asArray(order.items).map((item) => item.name)),
+    ...asArray(store.inventoryLogs).map((log) => log.itemName),
+    ...getStoreEntries(store).map((entry) => entry.productName)
   ].filter(Boolean));
   const productName = [...productNames].find((name) => text.includes(normalizeText(name))) || "";
-  const customers = store.customers || [];
+  const customers = asArray(store.customers);
   const customer = customers.find((item) => {
     const name = normalizeText(item.name);
     const phone = normalizeText(item.phone);
     return (name && text.includes(name)) || (phone && text.includes(phone));
   });
   const categoryNames = [
-    ...(store.categories?.income || []),
-    ...(store.categories?.expense || []),
-    ...(store.purchaseCategories || [])
+    ...asArray(store.categories?.income),
+    ...asArray(store.categories?.expense),
+    ...asArray(store.purchaseCategories),
+    ...getStoreEntries(store).map((entry) => ({ name: entry.category }))
   ];
   const category = categoryNames.find((item) => item?.name && text.includes(normalizeText(item.name)))?.name || "";
-  const person = customer?.name || "";
-  return { productName, customerName: person, customerPhone: customer?.phone || "", category };
+  const knownPeople = new Set([
+    ...customers.map((item) => item.name),
+    ...getStoreEntries(store).flatMap((entry) => [entry.createdBy, entry.note])
+  ].filter(Boolean));
+  const person = customer?.name || [...knownPeople].find((name) => name && text.includes(normalizeText(name))) || "";
+  const keywords = extractQuestionKeywords(question, store);
+  return {
+    productName,
+    customerName: person,
+    customerPhone: customer?.phone || "",
+    category,
+    keywords,
+    keywordText: keywords.join(" ")
+  };
 }
 
 function getTransactions(store, fromDate, toDate, filters = {}) {
   const range = makeDateRange(fromDate, toDate, DEFAULT_TIMEZONE, "");
-  return (store.entries || [])
+  return getStoreEntries(store)
     .filter((entry) => !isCancelled(entry))
     .filter((entry) => inDateRange(entry.date, range))
     .filter((entry) => {
@@ -390,8 +667,12 @@ function getTransactions(store, fromDate, toDate, filters = {}) {
         entry.note,
         entry.createdBy,
         entry.productName,
+        entry.category,
+        entry.categoryId,
         categoryName(store, entry.type, entry.categoryId),
-        entry.categoryName
+        entry.name,
+        entry.title,
+        entry.description
       ].join(" "));
       if (filters.category && !text.includes(normalizeText(filters.category))) return false;
       if (filters.person && !text.includes(normalizeText(filters.person))) return false;
@@ -404,9 +685,11 @@ function getTransactions(store, fromDate, toDate, filters = {}) {
       date: toDateKey(entry.date),
       amount: money(entry.amount),
       note: entry.note || "",
-      category: categoryName(store, entry.type, entry.categoryId) || entry.categoryName || "",
+      category: entry.category || categoryName(store, entry.type, entry.categoryId) || "",
       categoryId: entry.categoryId || "",
-      createdBy: entry.createdBy || ""
+      createdBy: entry.createdBy || "",
+      productName: entry.productName || "",
+      quantity: money(entry.quantity)
     }));
 }
 
@@ -420,7 +703,7 @@ function getRevenueEntries(store, fromDate, toDate, filters = {}) {
 
 function getOrders(store, fromDate, toDate, filters = {}) {
   const range = makeDateRange(fromDate, toDate, DEFAULT_TIMEZONE, "");
-  return (store.orders || [])
+  return getStoreOrders(store)
     .filter((order) => !isCancelled(order))
     .filter((order) => inDateRange(order.date || order.createdAt, range))
     .filter((order) => {
@@ -443,7 +726,7 @@ function getOrders(store, fromDate, toDate, filters = {}) {
 
 function getInventoryMovements(store, fromDate, toDate, filters = {}) {
   const range = makeDateRange(fromDate, toDate, DEFAULT_TIMEZONE, "");
-  return (store.inventoryLogs || [])
+  return asArray(store.inventoryLogs)
     .filter((log) => inDateRange(log.date || log.updatedAt, range))
     .filter((log) => {
       const productMatch = !filters.productName ||
@@ -485,14 +768,39 @@ function getInventoryMovementTotal(log) {
 }
 
 function calculateExpenseReport(store, fromDate, toDate, options = {}) {
-  const expenses = getExpenses(store, fromDate, toDate, {
+  let expenses = getExpenses(store, fromDate, toDate, {
     category: options.category,
     person: options.customerName || options.person,
     productName: options.productName
   });
+  const warnings = [];
+  const baseExpenses = getExpenses(store, fromDate, toDate, {});
+
+  if (!expenses.length && baseExpenses.length && (options.keywords?.length || options.keywordText)) {
+    const scored = baseExpenses
+      .map((entry) => ({ entry, score: scoreTransactionForQuestion(entry, store, options) }))
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score);
+
+    if (scored.length) {
+      const threshold = Math.min(2, Math.max(1, options.keywords?.length || 1));
+      expenses = scored.filter((item) => item.score >= threshold).map((item) => item.entry);
+      if (!expenses.length) expenses = scored.slice(0, 20).map((item) => item.entry);
+      warnings.push(
+        "Backend đã dùng tìm kiếm mềm theo nội dung khoản chi vì bộ lọc trường cố định không tìm thấy bản ghi."
+      );
+    }
+  }
+
   return {
     items: expenses,
     totals: { expense: sumBy(expenses, "amount") },
+    warnings,
+    debug: {
+      baseExpenseCount: baseExpenses.length,
+      strictExpenseCount: expenses.length,
+      keywords: options.keywords || []
+    },
     recordCount: expenses.length
   };
 }
@@ -539,7 +847,7 @@ function calculateProfitReport(store, fromDate, toDate, options = {}) {
 }
 
 function calculateInventoryReport(store, fromDate, toDate, options = {}) {
-  const inventory = (store.inventory || [])
+  const inventory = asArray(store.inventory)
     .filter((item) => !options.productName || normalizeText(item.name).includes(normalizeText(options.productName)))
     .map((item) => ({
       id: item.id || "",
@@ -726,7 +1034,7 @@ function findQuantityEdits(store, productName, fromDate, toDate) {
 
 function getStoreCustomers(store) {
   const map = new Map();
-  (store.customers || []).forEach((customer) => {
+  asArray(store.customers).forEach((customer) => {
     const name = String(customer.name || "").trim();
     const phone = String(customer.phone || "").trim();
     if (!name && !phone) return;
@@ -739,7 +1047,7 @@ function getStoreCustomers(store) {
       updatedAt: customer.updatedAt || customer.createdAt || ""
     });
   });
-  (store.orders || []).forEach((order) => {
+  getStoreOrders(store).forEach((order) => {
     const name = String(order.customerName || "").trim();
     const phone = String(order.customerPhone || "").trim();
     if (!name || !phone) return;
@@ -787,10 +1095,118 @@ function normalizeAIFileAttachments(value) {
   return files;
 }
 
+function parseAttachmentJson(file) {
+  const text = String(file?.text || "").trim();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      try {
+        return JSON.parse(text.slice(start, end + 1));
+      } catch (nestedError) {
+        return null;
+      }
+    }
+    return null;
+  }
+}
+
+function ensureMutableStores(state) {
+  const root = unwrapState(state);
+  const stores = loadStores(root).map((store) => ({
+    ...store,
+    entries: asArray(store.entries).slice(),
+    transactions: asArray(store.transactions).slice(),
+    incomeEntries: asArray(store.incomeEntries).slice(),
+    expenseEntries: asArray(store.expenseEntries).slice(),
+    orders: asArray(store.orders).slice(),
+    inventory: asArray(store.inventory).slice(),
+    inventoryLogs: asArray(store.inventoryLogs).slice(),
+    customers: asArray(store.customers).slice()
+  }));
+  return { ...root, stores };
+}
+
+function mergeStore(target, source) {
+  const keys = [
+    "entries",
+    "transactions",
+    "incomeEntries",
+    "expenseEntries",
+    "orders",
+    "salesOrders",
+    "sales",
+    "inventory",
+    "inventoryLogs",
+    "customers"
+  ];
+  for (const key of keys) {
+    const items = asArray(source?.[key]);
+    if (items.length) target[key] = [...asArray(target[key]), ...items];
+  }
+  if (!target.name && source?.name) target.name = source.name;
+  if (!target.id && source?.id) target.id = source.id;
+}
+
+function appendRowsToStore(target, rows) {
+  const normalizedRows = asArray(rows).filter((row) => row && typeof row === "object");
+  if (!normalizedRows.length) return;
+  const hasExpense = normalizedRows.some((row) =>
+    firstKeyValue(row, ["Khoản chi", "Khoan chi", "Tên khoản chi", "Ten khoan chi"]) ||
+    normalizeEntryType(firstDefined(row.type, row.kind, firstKeyValue(row, ["Loại", "Loai"]))) === "expense"
+  );
+  const hasIncome = normalizedRows.some((row) =>
+    firstKeyValue(row, ["Khoản thu", "Khoan thu", "Tên khoản thu", "Ten khoan thu"]) ||
+    normalizeEntryType(firstDefined(row.type, row.kind, firstKeyValue(row, ["Loại", "Loai"]))) === "income"
+  );
+  if (hasExpense && !hasIncome) target.expenseEntries = [...asArray(target.expenseEntries), ...normalizedRows];
+  else if (hasIncome && !hasExpense) target.incomeEntries = [...asArray(target.incomeEntries), ...normalizedRows];
+  else target.entries = [...asArray(target.entries), ...normalizedRows];
+}
+
+function mergeAttachmentDataIntoState(baseState, attachments, question) {
+  const state = ensureMutableStores(baseState);
+  if (!state.stores.length) state.stores.push({ id: "attachment-store", name: "Dữ liệu đính kèm" });
+  const selectedStore = resolveStore(question, state.stores, state) || state.stores[0];
+
+  for (const file of attachments) {
+    const parsed = parseAttachmentJson(file);
+    if (!parsed) continue;
+    const root = unwrapState(parsed);
+    const attachedStores = loadStores(root);
+    if (attachedStores.length) {
+      for (const attachedStore of attachedStores) {
+        const attachedName = normalizeText(attachedStore.name);
+        const attachedId = attachedStore.id || "";
+        const target = state.stores.find((store) =>
+          (attachedId && store.id === attachedId) ||
+          (attachedName && normalizeText(store.name) === attachedName)
+        ) || state.stores.find((store) => store.id === selectedStore.id) || selectedStore;
+        mergeStore(target, attachedStore);
+      }
+      continue;
+    }
+
+    const storeName = firstDefined(root.storeName, root.shopName, root.store, root.name);
+    const target = storeName
+      ? state.stores.find((store) => normalizeText(store.name).includes(normalizeText(storeName)) || normalizeText(storeName).includes(normalizeText(store.name))) || selectedStore
+      : selectedStore;
+
+    mergeStore(target, root);
+    if (Array.isArray(root)) appendRowsToStore(target, root);
+    appendRowsToStore(target, firstDefined(root.rows, root.records, root.items, root.list, root.data));
+  }
+
+  return state;
+}
+
 async function loadSharedState() {
   const snapshot = await db.collection(APP_STATE_COLLECTION).doc(APP_STATE_DOCUMENT).get();
   const data = snapshot.exists ? snapshot.data() : {};
-  return data.state || data || {};
+  return unwrapState(data);
 }
 
 function buildReport(state, question) {
@@ -879,6 +1295,8 @@ function buildReport(state, question) {
     }
   }
 
+  warnings = [...warnings, ...(calculation.warnings || [])];
+
   const report = {
     ok: true,
     intent,
@@ -907,9 +1325,20 @@ function buildReport(state, question) {
     },
     items: calculation.items || [],
     duplicates: calculation.duplicates || [],
+    diagnostics: getStoreDiagnostics(store),
     warnings,
     answerMarkdown: ""
   };
+
+  if (report.recordCount === 0) {
+    const d = report.diagnostics;
+    if (d.normalizedEntries || d.normalizedOrders || d.rawInventoryLogs || d.rawInventory) {
+      report.warnings = [
+        ...(report.warnings || []),
+        `CÃ³ dá»¯ liá»‡u trong cá»­a hÃ ng nhÆ°ng khÃ´ng cÃ³ báº£n ghi phÃ¹ há»£p vá»›i bá»™ lá»c hiá»‡n táº¡i. Raw: ${d.normalizedEntries} thu/chi, ${d.normalizedOrders} Ä‘Æ¡n hÃ ng, ${d.rawInventoryLogs} lá»‹ch sá»­ kho, ${d.rawInventory} hÃ ng tá»“n.`
+      ];
+    }
+  }
 
   report.answerMarkdown = buildDeterministicMarkdown(report);
   return report;
@@ -1117,7 +1546,10 @@ exports.chatWithAI = onRequest(
         return sendError(res, 400, `message tối đa ${MAX_MESSAGE_LENGTH} ký tự.`);
       }
 
-      const state = await loadSharedState();
+      let state = await loadSharedState();
+      if (attachments.length) {
+        state = mergeAttachmentDataIntoState(state, attachments, message);
+      }
       const report = buildReport(state, message);
       if (attachments.length) {
         report.attachments = attachments;

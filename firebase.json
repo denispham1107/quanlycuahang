@@ -1,16 +1,17 @@
-.env
-.env.*
-!.env.example
-.secret.local
-*.local
-*serviceAccount*.json
-service-account*.json
-firebase-adminsdk*.json
-openai-key*.txt
-functions/node_modules/
-functions/.runtimeconfig.json
-node_modules/
-.firebase/
-firebase-debug.log
-firestore-debug.log
-ui-debug.log
+{
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log"
+      ]
+    }
+  ],
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}
