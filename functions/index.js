@@ -165,6 +165,13 @@ function addDays(dateKey, days) {
   return date.toISOString().slice(0, 10);
 }
 
+function weekStart(dateKey) {
+  const date = new Date(`${dateKey}T00:00:00+07:00`);
+  const day = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() - day + 1);
+  return date.toISOString().slice(0, 10);
+}
+
 function monthStart(dateKey) {
   return `${dateKey.slice(0, 7)}-01`;
 }
@@ -193,7 +200,28 @@ function parseVietnameseDate(raw) {
   return iso ? iso[0] : "";
 }
 
-function getDateRangeFromUserQuestion(question, timeZone = DEFAULT_TIMEZONE) {
+function hasExplicitDateRangeQuestion(question) {
+  const text = normalizeText(question);
+  return Boolean(
+    String(question || "").match(/\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}\b|\b\d{4}-\d{2}-\d{2}\b/) ||
+      [
+        "hom nay",
+        "hom qua",
+        "thang nay",
+        "thang truoc",
+        "tuan nay",
+        "7 ngay qua",
+        "bay ngay qua",
+        "nam nay",
+        "toan thoi gian",
+        "tat ca",
+        "tu ngay",
+        "den ngay"
+      ].some((keyword) => text.includes(keyword))
+  );
+}
+
+function getDateRangeFromUserQuestion(question, timeZone = DEFAULT_TIMEZONE, options = {}) {
   const text = normalizeText(question);
   const today = todayKey(timeZone);
   const dates = [...String(question || "").matchAll(/\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}\b|\b\d{4}-\d{2}-\d{2}\b/g)]
@@ -216,7 +244,19 @@ function getDateRangeFromUserQuestion(question, timeZone = DEFAULT_TIMEZONE) {
   if (text.includes("thang nay")) {
     return makeDateRange(monthStart(today), today, timeZone, "Tháng này");
   }
+  if (text.includes("tuan nay")) {
+    return makeDateRange(weekStart(today), today, timeZone, "Tuần này");
+  }
+  if (text.includes("7 ngay qua") || text.includes("bay ngay qua")) {
+    return makeDateRange(addDays(today, -6), today, timeZone, "7 ngày qua");
+  }
+  if (text.includes("nam nay")) {
+    return makeDateRange(`${today.slice(0, 4)}-01-01`, today, timeZone, "Năm nay");
+  }
   if (text.includes("toan thoi gian") || text.includes("tat ca")) {
+    return makeDateRange("", today, timeZone, "Toàn thời gian");
+  }
+  if (options.defaultRange === "all_time") {
     return makeDateRange("", today, timeZone, "Toàn thời gian");
   }
   return makeDateRange(today, today, timeZone, "Hôm nay");
@@ -756,8 +796,17 @@ async function loadSharedState() {
 function buildReport(state, question) {
   const stores = loadStores(state);
   const store = resolveStore(question, stores, state);
-  const dateRange = getDateRangeFromUserQuestion(question, DEFAULT_TIMEZONE);
   const intent = detectIntent(question);
+  const wideDefaultIntents = new Set([
+    "best_selling_products",
+    "inventory_report",
+    "customer_report",
+    "duplicate_report",
+    "quantity_edit_report"
+  ]);
+  const dateRange = getDateRangeFromUserQuestion(question, DEFAULT_TIMEZONE, {
+    defaultRange: wideDefaultIntents.has(intent) && !hasExplicitDateRangeQuestion(question) ? "all_time" : "today"
+  });
 
   if (!store) {
     return {
