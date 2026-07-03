@@ -3531,6 +3531,28 @@ body.modal-open {
   margin: 0 auto;
 }
 
+.ai-chat-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.ai-clear-chat {
+  border: 0;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: var(--accent-blue);
+  cursor: pointer;
+  font-weight: 800;
+  min-height: 40px;
+  padding: 0 14px;
+}
+
+.ai-clear-chat:hover {
+  background: #dceaff;
+}
+
 .ai-chat-settings,
 .ai-quick-prompts,
 .ai-chat-messages,
@@ -3681,9 +3703,13 @@ body.modal-open {
   margin: 0;
 }
 
-.ai-chat-heading > div,
+.ai-chat-heading > div:first-child,
 .ai-chat-note {
   display: none;
+}
+
+.ai-chat-heading > .ai-chat-heading-actions {
+  display: flex;
 }
 
 .ai-chat-close {

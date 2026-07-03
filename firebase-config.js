@@ -15,5 +15,6 @@ window.appCloudOptions = {
 
 window.aiFunctionConfig = {
   chatWithAIUrl: "https://asia-southeast1-quanlycuahang-d3ab7.cloudfunctions.net/chatWithAI",
+  chatGeneralAIUrl: "https://asia-southeast1-quanlycuahang-d3ab7.cloudfunctions.net/chatGeneralAI",
   confirmAIActionUrl: "https://asia-southeast1-quanlycuahang-d3ab7.cloudfunctions.net/confirmAIAction"
 };

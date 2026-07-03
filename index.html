@@ -346,17 +346,20 @@
       <section class="modal-card ai-chat-card" role="dialog" aria-modal="true" aria-labelledby="aiChatTitle">
         <div class="panel-heading ai-chat-heading">
           <div>
-            <span class="ai-chat-kicker">Trợ lý quản lý cửa hàng</span>
+            <span class="ai-chat-kicker">Trợ lý AI</span>
             <h2 id="aiChatTitle">ChatGPT AI</h2>
           </div>
-          <button class="icon-button ai-chat-close" id="aiChatClose" type="button" aria-label="Đóng AI">×</button>
+          <div class="ai-chat-heading-actions">
+            <button class="ai-clear-chat" id="aiClearChat" type="button">Xóa hội thoại</button>
+            <button class="icon-button ai-chat-close" id="aiChatClose" type="button" aria-label="Đóng AI">×</button>
+          </div>
         </div>
         <div class="ai-chat-settings">
           <div class="field">
             <label for="aiChatMode">Chế độ</label>
             <select id="aiChatMode">
-              <option value="read_only">Chỉ hỏi đáp</option>
-              <option value="propose_action">Đề xuất thao tác</option>
+              <option value="general" selected>ChatGPT tổng quát</option>
+              <option value="store">Quản lý cửa hàng</option>
             </select>
           </div>
           <div class="field">
@@ -365,13 +368,12 @@
           </div>
         </div>
         <div class="ai-quick-prompts" id="aiQuickPrompts" aria-label="Câu hỏi nhanh">
+          <button type="button">Viết cho tôi bài quảng cáo decor sinh nhật</button>
+          <button type="button">Giải thích API là gì</button>
+          <button type="button">Dịch câu này sang tiếng Anh</button>
+          <button type="button">Viết code HTML đơn giản</button>
+          <button type="button">Lên kế hoạch học tiếng Anh</button>
           <button type="button">Hôm nay doanh thu bao nhiêu?</button>
-          <button type="button">Tháng này lời hay lỗ?</button>
-          <button type="button">Liệt kê các khoản chi lớn nhất.</button>
-          <button type="button">Sản phẩm nào bán chạy nhất?</button>
-          <button type="button">Tồn kho còn những gì?</button>
-          <button type="button">Tạo báo cáo thu chi hôm nay.</button>
-          <button type="button">Gợi ý cách giảm chi phí.</button>
         </div>
         <div class="ai-chat-messages" id="aiChatMessages" aria-live="polite"></div>
         <div class="ai-file-status" id="aiFileStatus" hidden></div>
@@ -382,7 +384,7 @@
             </svg>
           </button>
           <input id="aiFileInput" type="file" hidden multiple accept=".txt,.json,.js,.html,.htm,.css,.csv,.tsv,.md,.xml,.log,.xlsx,.xls,.docx,.doc" />
-          <input id="aiChatInput" type="text" maxlength="2000" autocomplete="off" placeholder="Hỏi AI về thu chi, kho hàng, khách hàng, đơn hàng..." required />
+          <input id="aiChatInput" type="text" maxlength="4000" autocomplete="off" placeholder="Hỏi AI về học tập, kinh doanh, code, cửa hàng..." required />
           <button type="submit">Gửi</button>
         </form>
         <p class="ai-chat-note">Website chỉ gửi câu hỏi đến Firebase Cloud Function. API key OpenAI không nằm trong frontend.</p>

@@ -111,6 +111,7 @@ const els = {
   aiChatForm: document.querySelector("#aiChatForm"),
   aiChatInput: document.querySelector("#aiChatInput"),
   aiChatMode: document.querySelector("#aiChatMode"),
+  aiClearChat: document.querySelector("#aiClearChat"),
   aiAdminPin: document.querySelector("#aiAdminPin"),
   aiQuickPrompts: document.querySelector("#aiQuickPrompts"),
   aiFileButton: document.querySelector("#aiFileButton"),
@@ -257,7 +258,7 @@ const els = {
 moveStoreSectionsIntoTab();
 
 if (els.aiChatMode) {
-  els.aiChatMode.value = "propose_action";
+  els.aiChatMode.value = "general";
 }
 
 const today = toDateInputValue(new Date());
@@ -491,6 +492,14 @@ if (els.aiButton) {
 
 if (els.aiChatClose) {
   els.aiChatClose.addEventListener("click", closeAIChat);
+}
+
+if (els.aiClearChat) {
+  els.aiClearChat.addEventListener("click", clearAIConversation);
+}
+
+if (els.aiChatMode) {
+  els.aiChatMode.addEventListener("change", updateAIInputPlaceholder);
 }
 
 if (els.aiChatModal) {
@@ -3338,8 +3347,47 @@ function getAIEndpoint(name) {
   if (!projectId || projectId === FIREBASE_CONFIG_PLACEHOLDER) return "";
 
   const region = window.appCloudOptions?.functionsRegion || "asia-southeast1";
-  const functionName = name === "confirmAIActionUrl" ? "confirmAIAction" : "chatWithAI";
+  const functionNames = {
+    chatWithAIUrl: "chatWithAI",
+    chatGeneralAIUrl: "chatGeneralAI",
+    confirmAIActionUrl: "confirmAIAction"
+  };
+  const functionName = functionNames[name] || "chatWithAI";
   return `https://${region}-${projectId}.cloudfunctions.net/${functionName}`;
+}
+
+function getAISelectedMode() {
+  return els.aiChatMode?.value === "store" ? "store" : "general";
+}
+
+function getAIHistoryForRequest() {
+  return aiChatState.messages
+    .filter((message) => message.role === "user" || message.role === "assistant")
+    .slice(-20)
+    .map((message) => ({
+      role: message.role,
+      content: String(message.content || "").slice(0, 4000)
+    }));
+}
+
+function updateAIInputPlaceholder() {
+  if (!els.aiChatInput) return;
+  els.aiChatInput.placeholder =
+    getAISelectedMode() === "store"
+      ? "Hỏi AI về thu chi, kho hàng, khách hàng, đơn hàng..."
+      : "Hỏi AI về học tập, kinh doanh, code, cửa hàng...";
+}
+
+function clearAIConversation() {
+  aiChatState.messages = [];
+  aiChatState.conversationId = createId();
+  aiChatState.dataSnapshot = null;
+  aiChatState.dataSnapshotAt = "";
+  aiChatState.attachments = [];
+  if (els.aiFileInput) els.aiFileInput.value = "";
+  saveAIChatMessages();
+  renderAIFileStatus();
+  renderAIChat();
 }
 
 function renderAIFileStatus() {
@@ -3504,15 +3552,21 @@ async function handleAIFileSelect(event) {
 
 function openAIChat() {
   if (!els.aiChatModal) return;
-  aiChatState.dataSnapshot = createAIClientStateSnapshot();
-  aiChatState.dataSnapshotAt = aiChatState.dataSnapshot.exportedAt || new Date().toISOString();
+  updateAIInputPlaceholder();
+  if (getAISelectedMode() === "store") {
+    aiChatState.dataSnapshot = createAIClientStateSnapshot();
+    aiChatState.dataSnapshotAt = aiChatState.dataSnapshot.exportedAt || new Date().toISOString();
+  } else {
+    aiChatState.dataSnapshot = null;
+    aiChatState.dataSnapshotAt = "";
+  }
   els.aiChatModal.hidden = false;
   document.body.classList.add("modal-open");
   if (!aiChatState.messages.length) {
     aiChatState.messages.push({
       role: "assistant",
       content:
-        "Xin chào, tôi là trợ lý AI quản lý cửa hàng. Bạn có thể hỏi về doanh thu, chi phí, lợi nhuận, tồn kho, khách hàng hoặc đơn hàng."
+        "Xin chào, tôi là ChatGPT AI. Bạn có thể hỏi về học tập, kinh doanh, marketing, dịch thuật, lập trình, ý tưởng hoặc dữ liệu cửa hàng."
     });
   }
   renderAIFileStatus();
@@ -3554,7 +3608,7 @@ function renderAIChat() {
   if (aiChatState.pending) {
     els.aiChatMessages.insertAdjacentHTML(
       "beforeend",
-      '<div class="ai-message assistant ai-loading">AI đang phân tích dữ liệu...</div>'
+      '<div class="ai-message assistant ai-loading">AI đang trả lời...</div>'
     );
   }
 
@@ -3583,19 +3637,26 @@ async function sendAIChatMessage(rawMessage) {
   const message = String(rawMessage || "").trim();
   if (!message || aiChatState.pending) return;
 
-  const endpoint = getAIEndpoint("chatWithAIUrl");
+  const selectedMode = getAISelectedMode();
+  const endpoint = getAIEndpoint(selectedMode === "store" ? "chatWithAIUrl" : "chatGeneralAIUrl");
   if (!endpoint) {
     addAIMessage(
       "assistant",
-      "Chưa cấu hình URL Firebase Function chatWithAI. Hãy deploy Functions rồi dán URL vào window.aiFunctionConfig trong firebase-config.js."
+      "Chưa cấu hình URL Firebase Function AI. Hãy deploy Functions rồi dán URL vào window.aiFunctionConfig trong firebase-config.js."
     );
     return;
   }
 
   const attachments = (aiChatState.attachments || []).slice();
-  const clientState = createAIClientStateSnapshot();
-  aiChatState.dataSnapshot = clientState;
-  aiChatState.dataSnapshotAt = clientState.exportedAt || new Date().toISOString();
+  const clientState = selectedMode === "store" ? createAIClientStateSnapshot() : null;
+  if (clientState) {
+    aiChatState.dataSnapshot = clientState;
+    aiChatState.dataSnapshotAt = clientState.exportedAt || new Date().toISOString();
+  } else {
+    aiChatState.dataSnapshot = null;
+    aiChatState.dataSnapshotAt = "";
+  }
+  const history = selectedMode === "general" ? getAIHistoryForRequest() : [];
   const visibleMessage = attachments.length
     ? `${message}\n\nFile gửi kèm: ${attachments.map((file) => file.name).join(", ")}`
     : message;
@@ -3606,23 +3667,38 @@ async function sendAIChatMessage(rawMessage) {
 
   try {
     const adminPin = els.aiAdminPin?.value || "";
+    const body =
+      selectedMode === "store"
+        ? {
+            message,
+            conversationId: aiChatState.conversationId,
+            mode: "read_only",
+            pin: adminPin,
+            clientState,
+            attachments
+          }
+        : {
+            message,
+            conversationId: aiChatState.conversationId,
+            mode: "general",
+            history,
+            attachments
+          };
     const response = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Admin-Pin": adminPin },
-      body: JSON.stringify({
-        message,
-        conversationId: aiChatState.conversationId,
-        mode: els.aiChatMode?.value || "read_only",
-        pin: adminPin,
-        clientState,
-        attachments
-      })
+      body: JSON.stringify(body)
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || "Không gọi được AI.");
+    if (!response.ok) {
+      throw new Error(data.error || "AI đang bận hoặc đã vượt giới hạn sử dụng, vui lòng thử lại sau.");
+    }
     addAIMessage("assistant", data.reply || "AI chưa có câu trả lời.", data.actions || []);
   } catch (error) {
-    addAIMessage("assistant", `Lỗi AI: ${error.message}`);
+    addAIMessage(
+      "assistant",
+      error.message || "AI đang bận hoặc đã vượt giới hạn sử dụng, vui lòng thử lại sau."
+    );
   } finally {
     aiChatState.pending = false;
     renderAIChat();
