@@ -206,6 +206,7 @@ button {
 .panel {
   min-width: 0;
   padding: 18px;
+  scroll-margin-top: calc(var(--tab-bar-sticky-height, 0px) + 128px);
 }
 
 .panel-heading {
@@ -1499,6 +1500,19 @@ form button:disabled {
 .report-total {
   border-color: var(--accent);
   background: #eef6ff;
+}
+
+.report-category-link {
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.report-category-link:hover,
+.report-category-link:focus-visible {
+  border-color: var(--accent);
+  background: #f5fbff;
+  transform: translateY(-1px);
+  outline: none;
 }
 
 .report-amount {

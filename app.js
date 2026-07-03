@@ -440,6 +440,23 @@ function applyMonthFilter() {
   input.addEventListener("change", render);
 });
 
+document.addEventListener("click", (event) => {
+  const target = event.target.closest("[data-history-jump-category]");
+  if (!target) return;
+
+  jumpToHistoryCategory(target.dataset.historyJumpType, target.dataset.historyJumpCategory);
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+
+  const target = event.target.closest("[data-history-jump-category]");
+  if (!target) return;
+
+  event.preventDefault();
+  jumpToHistoryCategory(target.dataset.historyJumpType, target.dataset.historyJumpCategory);
+});
+
 els.tabButtons.forEach((button) => {
   button.addEventListener("click", () => {
     activateTab(button.dataset.tab);
@@ -3888,8 +3905,8 @@ function renderReports(store) {
 
   renderHistorySearchSuggestions(els.incomeHistorySearchSuggestions, incomeEntries);
   renderHistorySearchSuggestions(els.expenseHistorySearchSuggestions, expenseEntries);
-  renderReportList(els.incomeReport, store.categories.income, activeIncomeEntries);
-  renderReportList(els.expenseReport, store.categories.expense, activeExpenseEntries);
+  renderReportList(els.incomeReport, store.categories.income, activeIncomeEntries, "income");
+  renderReportList(els.expenseReport, store.categories.expense, activeExpenseEntries, "expense");
   renderSalesGoodsReport(els.salesGoodsReport, activeSalesOrders, store);
   renderEntryTable(els.incomeEntryTable, store, filteredIncomeEntries);
   renderEntryTable(els.expenseEntryTable, store, filteredExpenseEntries);
@@ -4729,7 +4746,25 @@ function normalizeSearchText(value) {
     .trim();
 }
 
-function renderReportList(container, categories, entries) {
+function jumpToHistoryCategory(type, categoryId) {
+  const isIncome = type === "income";
+  const filter = isIncome ? els.incomeHistoryFilter : els.expenseHistoryFilter;
+  const search = isIncome ? els.incomeHistorySearch : els.expenseHistorySearch;
+  const historySection = filter?.closest(".panel");
+
+  if (!filter || !categoryId) return;
+
+  filter.value = categoryId;
+  if (search) search.value = "";
+  render();
+
+  window.requestAnimationFrame(() => {
+    historySection?.scrollIntoView({ behavior: "smooth", block: "start" });
+    filter.focus({ preventScroll: true });
+  });
+}
+
+function renderReportList(container, categories, entries, type) {
   if (!categories.length) {
     container.innerHTML = '<div class="empty-list">Chưa có mục</div>';
     return;
@@ -4743,7 +4778,7 @@ function renderReportList(container, categories, entries) {
   const totalAmount = sumEntries(entries);
   const categoryRows = categories
     .map((category) => `
-      <div class="report-item">
+      <div class="report-item report-category-link" role="button" tabindex="0" data-history-jump-type="${type}" data-history-jump-category="${category.id}" title="Loc lich su theo muc nay">
         <span class="report-name">${escapeHtml(category.name)}</span>
         <span class="report-amount">${formatCurrency(totals.get(category.id) || 0)}</span>
       </div>
