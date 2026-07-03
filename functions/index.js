@@ -18,8 +18,13 @@ const APP_STATE_COLLECTION =
 const APP_STATE_DOCUMENT =
   process.env.APP_STATE_DOCUMENT || process.env.FIRESTORE_DOCUMENT || "shared-state";
 const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "Asia/Ho_Chi_Minh";
-const OPENAI_FALLBACK_MODEL = process.env.OPENAI_FALLBACK_MODEL || "gpt-5.4";
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-5.4-mini";
+const OPENAI_FALLBACK_MODEL = process.env.OPENAI_FALLBACK_MODEL || OPENAI_MODEL;
 const MAX_MESSAGE_LENGTH = 2000;
+const GENERAL_MAX_MESSAGE_LENGTH = 4000;
+const GENERAL_HISTORY_LIMIT = 20;
+const GENERAL_DAILY_LIMIT = Number(process.env.AI_GENERAL_DAILY_LIMIT || 30);
+const GENERAL_MIN_INTERVAL_MS = Number(process.env.AI_GENERAL_MIN_INTERVAL_MS || 1200);
 const MAX_ATTACHMENT_COUNT = Number(process.env.MAX_AI_ATTACHMENT_COUNT || 5);
 const MAX_ATTACHMENT_CHARS = Number(process.env.MAX_AI_ATTACHMENT_CHARS || 120000);
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -35,6 +40,8 @@ const allowedOrigins = new Set([
 ]);
 
 const rateBuckets = new Map();
+const dailyBuckets = new Map();
+const lastRequestAt = new Map();
 
 const SYSTEM_PROMPT = [
   "Bạn là trợ lý quản lý cửa hàng.",
@@ -50,6 +57,16 @@ const SYSTEM_PROMPT = [
   "9. Khi người dùng yêu cầu không tính trùng, chỉ loại các khoản trùng 100%.",
   "10. Không được kết luận người nào lấy tiền, ăn cắp, chi sai nếu dữ liệu không chứng minh rõ ràng.",
   "Bạn chỉ được diễn giải JSON đã được backend tính sẵn. Không sửa số liệu."
+].join("\n");
+
+const GENERAL_SYSTEM_PROMPT = [
+  "Bạn là trợ lý AI tổng quát trên website của Pham Quan.",
+  "Bạn trả lời như một ChatGPT thật sự, có thể hỗ trợ nhiều chủ đề: học tập, kinh doanh, marketing, viết nội dung, dịch thuật, lập trình, phân tích dữ liệu, lên kế hoạch, giải thích kiến thức, tư vấn ý tưởng và hỗ trợ công việc hằng ngày.",
+  "Mặc định trả lời bằng tiếng Việt, trừ khi người dùng yêu cầu ngôn ngữ khác.",
+  "Không tự giới hạn vào dữ liệu cửa hàng. Chỉ dùng dữ liệu cửa hàng khi người dùng hỏi rõ về cửa hàng, thu chi, kho hàng, khách hàng hoặc đơn hàng.",
+  "Không bịa số liệu. Nếu không có dữ liệu phù hợp, hãy nói rõ là chưa có đủ dữ liệu.",
+  "Với thông tin mới, giá cả, luật, tin tức, thời tiết, thị trường, model/API hoặc dữ liệu có thể thay đổi theo thời gian, hãy dùng web search khi công cụ được bật; nếu không có web search thì nói rõ dữ liệu có thể chưa cập nhật.",
+  "Không hỗ trợ nội dung nguy hiểm, bất hợp pháp, lừa đảo, xâm nhập tài khoản, đánh cắp dữ liệu, hướng dẫn gây hại, tự làm hại bản thân hoặc nội dung người lớn."
 ].join("\n");
 
 function applyCors(req, res) {
@@ -79,6 +96,88 @@ function checkRateLimit(key) {
   }
   bucket.count += 1;
   return bucket.count <= RATE_LIMIT_MAX;
+}
+
+function getDayKey(date = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: DEFAULT_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(date);
+}
+
+function checkGeneralDailyLimit(key) {
+  const todayKey = getDayKey();
+  const bucketKey = `${todayKey}:${key}`;
+  const count = dailyBuckets.get(bucketKey) || 0;
+  if (count >= GENERAL_DAILY_LIMIT) return false;
+  dailyBuckets.set(bucketKey, count + 1);
+  return true;
+}
+
+function checkMinInterval(key) {
+  const now = Date.now();
+  const last = lastRequestAt.get(key) || 0;
+  if (now - last < GENERAL_MIN_INTERVAL_MS) return false;
+  lastRequestAt.set(key, now);
+  return true;
+}
+
+function normalizeChatHistory(history) {
+  if (!Array.isArray(history)) return [];
+  return history
+    .filter((item) => item && (item.role === "user" || item.role === "assistant"))
+    .map((item) => ({
+      role: item.role,
+      content: String(item.content || "").slice(0, GENERAL_MAX_MESSAGE_LENGTH)
+    }))
+    .filter((item) => item.content.trim())
+    .slice(-GENERAL_HISTORY_LIMIT);
+}
+
+function shouldUseWebSearch(message) {
+  const text = normalizeText(message);
+  return /\b(tin moi|hom nay|hien tai|moi nhat|gia vang|gia bac|chung khoan|crypto|bitcoin|thoi tiet|luat moi|lich thi dau|su kien|api|model openai|gpt|ti gia|lai suat)\b/.test(text);
+}
+
+function normalizeGeneralAttachments(attachments) {
+  return normalizeAIFileAttachments(attachments).map((file) => ({
+    name: file.name,
+    kind: file.kind || file.type || "file",
+    text: String(file.text || "").slice(0, MAX_ATTACHMENT_CHARS),
+    truncated: Boolean(file.truncated)
+  }));
+}
+
+function buildGeneralInput(message, history, attachments) {
+  const input = history.map((item) => ({ role: item.role, content: item.content }));
+  let userContent = message;
+  if (attachments.length) {
+    userContent += "\n\nNgười dùng gửi kèm các file sau. Hãy đọc nội dung file để trả lời câu hỏi, nhưng không bịa nếu file không có dữ liệu liên quan:\n";
+    attachments.forEach((file, index) => {
+      userContent += `\n--- FILE ${index + 1}: ${file.name} (${file.kind}${file.truncated ? ", đã rút gọn" : ""}) ---\n${file.text}\n`;
+    });
+  }
+  input.push({ role: "user", content: userContent });
+  return input;
+}
+
+async function isModerationFlagged(client, message) {
+  if (process.env.OPENAI_DISABLE_MODERATION === "true") return false;
+  try {
+    const moderation = await client.moderations.create({
+      model: process.env.OPENAI_MODERATION_MODEL || "omni-moderation-latest",
+      input: message
+    });
+    return Boolean(moderation.results?.some((result) => result.flagged));
+  } catch (error) {
+    logger.warn("OpenAI moderation unavailable", {
+      status: error?.status || error?.code || 500,
+      message: error?.message || ""
+    });
+    return false;
+  }
 }
 
 async function requireAdmin(req) {
@@ -1443,7 +1542,7 @@ async function askOpenAIToFormat(report, message) {
   const apiKey = OPENAI_API_KEY.value() || process.env.OPENAI_API_KEY;
   if (!apiKey) return { text: report.answerMarkdown, usage: null, model: null, usedFallback: false };
 
-  const primaryModel = process.env.OPENAI_MODEL || "gpt-5.5";
+  const primaryModel = OPENAI_MODEL;
   const client = new OpenAI({ apiKey });
   const input = [
     {
@@ -1526,6 +1625,144 @@ function getPublicError(error) {
   };
 }
 
+async function callGeneralOpenAI({ message, history, attachments, useWebSearch }) {
+  const apiKey = OPENAI_API_KEY.value() || process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw Object.assign(new Error("OPENAI_API_KEY is not configured"), { status: 500 });
+  }
+
+  const client = new OpenAI({ apiKey });
+  if (await isModerationFlagged(client, message)) {
+    return {
+      reply: "Xin loi, toi khong the ho tro noi dung nay.",
+      usage: null,
+      model: null,
+      usedWebSearch: false
+    };
+  }
+
+  const model = OPENAI_MODEL;
+  const input = buildGeneralInput(message, history, attachments);
+  const maxOutputTokens = Number(process.env.OPENAI_MAX_OUTPUT_TOKENS || 1200);
+  const request = {
+    model,
+    instructions: GENERAL_SYSTEM_PROMPT,
+    input,
+    max_output_tokens: maxOutputTokens
+  };
+
+  if (useWebSearch) {
+    request.tools = [{ type: "web_search_preview", search_context_size: "low" }];
+  }
+
+  try {
+    const response = await client.responses.create(request);
+    return {
+      reply: getOutputText(response) || "Toi chua co cau tra loi phu hop.",
+      usage: response.usage || null,
+      model,
+      usedWebSearch: Boolean(useWebSearch)
+    };
+  } catch (error) {
+    if (useWebSearch) {
+      logger.warn("General AI web search failed; retrying without web search", {
+        status: error?.status || error?.code || 500,
+        type: error?.type || "",
+        message: error?.message || ""
+      });
+      const response = await client.responses.create({
+        model,
+        instructions: GENERAL_SYSTEM_PROMPT,
+        input,
+        max_output_tokens: maxOutputTokens
+      });
+      return {
+        reply: getOutputText(response) || "Toi chua co cau tra loi phu hop.",
+        usage: response.usage || null,
+        model,
+        usedWebSearch: false
+      };
+    }
+    throw error;
+  }
+}
+
+async function handleGeneralChatRequest(req, res) {
+  const startedAt = Date.now();
+  const ip = getClientIp(req);
+  const sessionId =
+    typeof req.body?.conversationId === "string" && req.body.conversationId.trim()
+      ? req.body.conversationId.trim().slice(0, 120)
+      : ip;
+  const rateKey = `general:${sessionId}:${ip}`;
+
+  if (!checkMinInterval(rateKey)) {
+    return sendError(res, 429, "Ban gui qua nhanh. Vui long cho mot chut roi thu lai.");
+  }
+  if (!checkGeneralDailyLimit(rateKey)) {
+    return sendError(res, 429, "Ban da vuot gioi han dung AI hom nay. Vui long thu lai sau.");
+  }
+
+  const message = typeof req.body?.message === "string" ? req.body.message.trim() : "";
+  if (!message) return sendError(res, 400, "message la bat buoc.");
+  if (message.length > GENERAL_MAX_MESSAGE_LENGTH) {
+    return sendError(res, 400, `message toi da ${GENERAL_MAX_MESSAGE_LENGTH} ky tu.`);
+  }
+
+  const history = normalizeChatHistory(req.body?.history);
+  const attachments = normalizeGeneralAttachments(req.body?.attachments);
+  const useWebSearch = shouldUseWebSearch(message);
+  const result = await callGeneralOpenAI({ message, history, attachments, useWebSearch });
+
+  await db.collection("ai_logs").add({
+    conversationId: sessionId,
+    mode: "general",
+    userQuestionLength: message.length,
+    historyCount: history.length,
+    attachmentCount: attachments.length,
+    usedWebSearch: result.usedWebSearch,
+    model: result.model,
+    elapsedMs: Date.now() - startedAt,
+    createdAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  res.json({
+    reply: result.reply,
+    actions: [],
+    usage: result.usage,
+    debug: {
+      mode: "general",
+      model: result.model,
+      usedWebSearch: result.usedWebSearch
+    }
+  });
+}
+
+exports.chatGeneralAI = onRequest(
+  {
+    region: REGION,
+    timeoutSeconds: 90,
+    memory: "512MiB",
+    secrets: [OPENAI_API_KEY]
+  },
+  async (req, res) => {
+    applyCors(req, res);
+    if (req.method === "OPTIONS") return res.status(204).send("");
+    if (req.method !== "POST") return sendError(res, 405, "Chi ho tro POST.");
+
+    try {
+      await handleGeneralChatRequest(req, res);
+    } catch (error) {
+      logger.error("chatGeneralAI failed", {
+        status: error?.status || error?.code || 500,
+        type: error?.type || "",
+        message: error?.message || ""
+      });
+      sendError(res, 500, "AI dang ban hoac da vuot gioi han su dung, vui long thu lai sau.");
+    }
+  }
+);
+
 exports.chatWithAI = onRequest(
   {
     region: REGION,
@@ -1537,6 +1774,19 @@ exports.chatWithAI = onRequest(
     applyCors(req, res);
     if (req.method === "OPTIONS") return res.status(204).send("");
     if (req.method !== "POST") return sendError(res, 405, "Chỉ hỗ trợ POST.");
+
+    if (req.body?.mode === "general") {
+      try {
+        return await handleGeneralChatRequest(req, res);
+      } catch (error) {
+        logger.error("chatWithAI general fallback failed", {
+          status: error?.status || error?.code || 500,
+          type: error?.type || "",
+          message: error?.message || ""
+        });
+        return sendError(res, 500, "AI dang ban hoac da vuot gioi han su dung, vui long thu lai sau.");
+      }
+    }
 
     const startedAt = Date.now();
     try {
@@ -1585,7 +1835,7 @@ exports.chatWithAI = onRequest(
         recordCount: report.recordCount || 0,
         recordIds: (report.items || []).slice(0, 100).map((item) => item.id || item.orderId || ""),
         totals: report.totals || {},
-        model: formatted.model || process.env.OPENAI_MODEL || "gpt-5.5",
+        model: formatted.model || OPENAI_MODEL,
         usedFallbackModel: formatted.usedFallback,
         responsePreview: formatted.text.slice(0, 2000),
         elapsedMs: Date.now() - startedAt,
