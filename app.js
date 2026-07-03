@@ -1,6 +1,6 @@
 const STORAGE_KEY = "store-cashbook-v1";
 const AI_CHAT_STORAGE_KEY = "store-cashbook-ai-chat-v1";
-const AI_CLIENT_STATE_MAX_CHARS = 180000;
+const AI_CLIENT_STATE_MAX_CHARS = 900000;
 const AI_FILE_MAX_BYTES = 8 * 1024 * 1024;
 const AI_FILE_TEXT_MAX_CHARS = 80000;
 const FIREBASE_CONFIG_PLACEHOLDER = "PASTE_YOUR_FIREBASE_CONFIG_HERE";
@@ -3332,7 +3332,14 @@ function saveAIChatMessages() {
 
 function getAIEndpoint(name) {
   const config = window.aiFunctionConfig || {};
-  return config[name] || "";
+  if (config[name]) return config[name];
+
+  const projectId = window.firebaseAppConfig?.projectId;
+  if (!projectId || projectId === FIREBASE_CONFIG_PLACEHOLDER) return "";
+
+  const region = window.appCloudOptions?.functionsRegion || "asia-southeast1";
+  const functionName = name === "confirmAIActionUrl" ? "confirmAIAction" : "chatWithAI";
+  return `https://${region}-${projectId}.cloudfunctions.net/${functionName}`;
 }
 
 function renderAIFileStatus() {
@@ -3586,6 +3593,9 @@ async function sendAIChatMessage(rawMessage) {
   }
 
   const attachments = (aiChatState.attachments || []).slice();
+  const clientState = createAIClientStateSnapshot();
+  aiChatState.dataSnapshot = clientState;
+  aiChatState.dataSnapshotAt = clientState.exportedAt || new Date().toISOString();
   const visibleMessage = attachments.length
     ? `${message}\n\nFile gửi kèm: ${attachments.map((file) => file.name).join(", ")}`
     : message;
@@ -3604,7 +3614,7 @@ async function sendAIChatMessage(rawMessage) {
         conversationId: aiChatState.conversationId,
         mode: els.aiChatMode?.value || "read_only",
         pin: adminPin,
-        clientState: aiChatState.dataSnapshot || createAIClientStateSnapshot(),
+        clientState,
         attachments
       })
     });
