@@ -91,6 +91,10 @@ const els = {
   expenseEntryTable: document.querySelector("#expenseEntryTable"),
   incomeEntryCount: document.querySelector("#incomeEntryCount"),
   expenseEntryCount: document.querySelector("#expenseEntryCount"),
+  incomeHistoryRangeLabel: document.querySelector("#incomeHistoryRangeLabel"),
+  expenseHistoryRangeLabel: document.querySelector("#expenseHistoryRangeLabel"),
+  incomeHistoryTotal: document.querySelector("#incomeHistoryTotal"),
+  expenseHistoryTotal: document.querySelector("#expenseHistoryTotal"),
   incomeHistorySearch: document.querySelector("#incomeHistorySearch"),
   expenseHistorySearch: document.querySelector("#expenseHistorySearch"),
   incomeHistorySearchSuggestions: document.querySelector("#incomeHistorySearchSuggestions"),
@@ -4217,11 +4221,21 @@ function renderReports(store) {
   els.selectedRangeLabel.textContent = range.label;
   els.incomeRangeLabel.textContent = range.label;
   els.expenseRangeLabel.textContent = range.label;
+  els.incomeHistoryRangeLabel.textContent = range.label;
+  els.expenseHistoryRangeLabel.textContent = range.label;
   if (els.salesGoodsRangeLabel) {
     els.salesGoodsRangeLabel.textContent = range.label;
   }
   els.incomeEntryCount.textContent = `${filteredIncomeEntries.length} dòng`;
   els.expenseEntryCount.textContent = `${filteredExpenseEntries.length} dòng`;
+  els.incomeHistoryTotal.innerHTML = `
+    <span class="report-name">Tổng cộng</span>
+    <span class="report-amount">${formatCurrency(sumEntries(filteredIncomeEntries.filter((entry) => !isCancelledEntry(entry))))}</span>
+  `;
+  els.expenseHistoryTotal.innerHTML = `
+    <span class="report-name">Tổng cộng</span>
+    <span class="report-amount">${formatCurrency(sumEntries(filteredExpenseEntries.filter((entry) => !isCancelledEntry(entry))))}</span>
+  `;
   const salesOrders = (store.orders || [])
     .filter((order) => order.date >= range.start && order.date <= range.end)
     .sort((a, b) => b.date.localeCompare(a.date) || String(b.createdAt || "").localeCompare(String(a.createdAt || "")));

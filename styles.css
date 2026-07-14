@@ -231,6 +231,18 @@ button {
   white-space: nowrap;
 }
 
+.history-heading-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+.history-total {
+  margin-bottom: 14px;
+}
+
 #salesRangeLabel {
   margin-bottom: 10px;
   min-height: 48px;
