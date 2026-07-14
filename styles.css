@@ -2597,6 +2597,19 @@ th:last-child {
   border-bottom: 0;
 }
 
+.inventory-log-table tbody tr[data-edit-inventory-log] {
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.inventory-log-table tbody tr[data-edit-inventory-log]:hover {
+  background: rgba(8, 120, 247, 0.06);
+}
+
+.inventory-log-table tbody tr[data-edit-inventory-log]:active {
+  transform: scale(0.998);
+}
+
 .inventory-log-toggle {
   display: inline-grid;
   grid-column: 1 / -1;
@@ -2825,6 +2838,29 @@ th:last-child {
   background: var(--accent);
   color: #fff;
   font-weight: 800;
+}
+
+.modal-actions-spread {
+  justify-content: space-between;
+}
+
+.modal-actions-spread .danger-button {
+  margin-right: auto;
+}
+
+.modal-actions .danger-button {
+  border: 0;
+  border-radius: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #c83f3a;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.modal-actions .danger-button:hover {
+  background: rgba(239, 68, 68, 0.18);
 }
 
 @media (max-width: 900px) {

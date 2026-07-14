@@ -45,6 +45,7 @@ const uiState = {
   inventoryLogsExpanded: false,
   inventoryLogFilter: "all",
   inventoryLogReasonFilter: "all",
+  editingInventoryLogId: null,
   salesGoodsFilter: "all",
   salesDraftId: null,
   salesOrderDiscountPercent: 0,
@@ -235,6 +236,14 @@ const els = {
   exportInventoryNewReason: document.querySelector("#exportInventoryNewReason"),
   addExportInventoryReason: document.querySelector("#addExportInventoryReason"),
   cancelExportInventory: document.querySelector("#cancelExportInventory"),
+  editInventoryLogModal: document.querySelector("#editInventoryLogModal"),
+  editInventoryLogForm: document.querySelector("#editInventoryLogForm"),
+  editInventoryLogName: document.querySelector("#editInventoryLogName"),
+  editInventoryLogQuantity: document.querySelector("#editInventoryLogQuantity"),
+  editInventoryLogPrice: document.querySelector("#editInventoryLogPrice"),
+  editInventoryLogSalePrice: document.querySelector("#editInventoryLogSalePrice"),
+  cancelEditInventoryLog: document.querySelector("#cancelEditInventoryLog"),
+  deleteInventoryLog: document.querySelector("#deleteInventoryLog"),
   quickEntrySubmit: document.querySelector("#quickEntrySubmit"),
   openOrderDiscount: document.querySelector("#openOrderDiscount"),
   orderDiscountModal: document.querySelector("#orderDiscountModal"),
@@ -922,6 +931,10 @@ els.exportInventoryModal.addEventListener("click", (event) => {
   if (event.target === els.exportInventoryModal) closeExportInventoryModal();
 });
 
+els.editInventoryLogModal.addEventListener("click", (event) => {
+  if (event.target === els.editInventoryLogModal) closeEditInventoryLogModal();
+});
+
 els.exportInventoryForm.addEventListener("click", (event) => {
   const stepButton = event.target.closest("[data-export-quantity-step]");
   if (!stepButton) return;
@@ -943,6 +956,14 @@ els.editInventorySalePrice.addEventListener("input", () => {
   els.editInventorySalePrice.value = formatAmountInput(els.editInventorySalePrice.value);
 });
 
+els.editInventoryLogPrice.addEventListener("input", () => {
+  els.editInventoryLogPrice.value = formatAmountInput(els.editInventoryLogPrice.value);
+});
+
+els.editInventoryLogSalePrice.addEventListener("input", () => {
+  els.editInventoryLogSalePrice.value = formatAmountInput(els.editInventoryLogSalePrice.value);
+});
+
 els.editInventoryForm.addEventListener("submit", (event) => {
   event.preventDefault();
   saveEditedInventory(new FormData(els.editInventoryForm));
@@ -951,6 +972,15 @@ els.editInventoryForm.addEventListener("submit", (event) => {
 els.exportInventoryForm.addEventListener("submit", (event) => {
   event.preventDefault();
   exportInventoryItem(new FormData(els.exportInventoryForm));
+});
+
+els.cancelEditInventoryLog.addEventListener("click", closeEditInventoryLogModal);
+
+els.deleteInventoryLog.addEventListener("click", deleteEditingInventoryLog);
+
+els.editInventoryLogForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  saveEditedInventoryLog(new FormData(els.editInventoryLogForm));
 });
 
 els.cancelEditEntry.addEventListener("click", closeEditEntryModal);
@@ -996,6 +1026,7 @@ document.addEventListener("click", (event) => {
   const orderButton = event.target.closest("[data-delete-order]");
   const editCategoryButton = event.target.closest("[data-edit-category]");
   const editEntryButton = event.target.closest("[data-edit-entry]");
+  const inventoryLogRow = event.target.closest("[data-edit-inventory-log]");
   const toggleCategoryButton = event.target.closest("[data-toggle-categories]");
   const toggleInventoryLogsButton = event.target.closest("[data-toggle-inventory-logs]");
   const draftButton = event.target.closest("[data-open-sales-draft]");
@@ -1019,6 +1050,11 @@ document.addEventListener("click", (event) => {
 
   if (editEntryButton) {
     editEntry(editEntryButton.dataset.editEntry);
+  }
+
+  if (inventoryLogRow && !event.target.closest("button, input, select, a")) {
+    openEditInventoryLogModal(inventoryLogRow.dataset.editInventoryLog);
+    return;
   }
 
   if (toggleCategoryButton) {
@@ -2818,6 +2854,29 @@ function closeExportInventoryModal() {
   setExportReasonCreator(false);
 }
 
+function openEditInventoryLogModal(logId) {
+  const store = getActiveStore();
+  if (!store) return;
+
+  ensureInventoryLogIds(store);
+  const log = findInventoryLogById(store, logId);
+  if (!log) return;
+
+  uiState.editingInventoryLogId = log.id;
+  els.editInventoryLogForm.elements.logId.value = log.id;
+  els.editInventoryLogName.textContent = log.itemName || "Lịch sử kho";
+  els.editInventoryLogQuantity.value = Number(log.newQuantity || 0);
+  els.editInventoryLogPrice.value = formatAmountInput(log.newPrice || 0);
+  els.editInventoryLogSalePrice.value = formatAmountInput(getInventoryLogNewSalePrice(log));
+  els.editInventoryLogModal.hidden = false;
+}
+
+function closeEditInventoryLogModal() {
+  uiState.editingInventoryLogId = null;
+  els.editInventoryLogModal.hidden = true;
+  els.editInventoryLogForm.reset();
+}
+
 function renderExportInventoryReasonOptions(selectedReason = "") {
   const store = getActiveStore();
   const reasons = getInventoryExportReasons(store);
@@ -2917,6 +2976,7 @@ function saveEditedInventory(formData) {
   addInventoryLog(store, {
     date: updatedAt.slice(0, 10),
     type: "edit",
+    inventoryId: item.id,
     itemName: item.name,
     groupName: item.groupName,
     oldQuantity,
@@ -2966,6 +3026,7 @@ function exportInventoryItem(formData) {
   addInventoryLog(store, {
     date,
     type: "export",
+    inventoryId: item.id,
     itemName: item.name,
     groupName: item.groupName,
     oldQuantity,
@@ -2981,6 +3042,63 @@ function exportInventoryItem(formData) {
   renderInventory(store);
   closeExportInventoryModal();
   return true;
+}
+
+function saveEditedInventoryLog(formData) {
+  const store = getActiveStore();
+  if (!store) return false;
+
+  ensureInventoryLogIds(store);
+  const log = findInventoryLogById(store, formData.get("logId"));
+  if (!log) return false;
+
+  const newQuantity = Number.parseInt(formData.get("newQuantity"), 10);
+  const newPrice = parseAmountInput(formData.get("newPrice"));
+  const newSalePrice = parseAmountInput(formData.get("newSalePrice"));
+
+  if (
+    !Number.isFinite(newQuantity) ||
+    newQuantity < 0 ||
+    !Number.isFinite(newPrice) ||
+    newPrice < 0 ||
+    !Number.isFinite(newSalePrice) ||
+    newSalePrice < 0
+  ) {
+    window.alert("Vui lòng nhập số lượng, giá vốn và giá bán hợp lệ.");
+    return false;
+  }
+
+  log.newQuantity = newQuantity;
+  log.newPrice = newPrice;
+  log.newSalePrice = newSalePrice;
+  log.editedAt = new Date().toISOString();
+
+  if (!log.inventoryId) {
+    const item = findInventoryItemForLog(store, log);
+    if (item?.id) log.inventoryId = item.id;
+  }
+
+  syncInventoryItemFromLatestLog(store, log);
+  saveAndRender();
+  closeEditInventoryLogModal();
+  return true;
+}
+
+function deleteEditingInventoryLog() {
+  const store = getActiveStore();
+  if (!store) return;
+
+  ensureInventoryLogIds(store);
+  const log = findInventoryLogById(store, uiState.editingInventoryLogId);
+  if (!log) return;
+
+  const confirmed = window.confirm("Xóa dòng lịch sử kho này? Số lượng và giá hiện tại sẽ được cập nhật theo lịch sử mới nhất còn lại.");
+  if (!confirmed) return;
+
+  store.inventoryLogs = (store.inventoryLogs || []).filter((current) => current.id !== log.id);
+  syncInventoryItemAfterLogDelete(store, log);
+  saveAndRender();
+  closeEditInventoryLogModal();
 }
 
 function addPurchaseItemRow(item = {}) {
@@ -3074,6 +3192,7 @@ function applyPurchaseItemsToInventory(store, date, items, createdAt) {
       addInventoryLog(store, {
         date,
         type: "purchase",
+        inventoryId: current.id,
         itemName: current.name,
         groupName: current.groupName,
         oldQuantity,
@@ -3100,6 +3219,7 @@ function applyPurchaseItemsToInventory(store, date, items, createdAt) {
       addInventoryLog(store, {
         date,
         type: "purchase",
+        inventoryId: stock.id,
         itemName: stock.name,
         groupName: stock.groupName,
         oldQuantity: 0,
@@ -4567,8 +4687,93 @@ function getInventorySnapshotKey(item) {
   return normalizeSearchText(`${item?.groupName || ""} ${item?.name || ""}`);
 }
 
+function ensureInventoryLogIds(store) {
+  if (!store || !Array.isArray(store.inventoryLogs)) return false;
+
+  let changed = false;
+  store.inventoryLogs.forEach((log) => {
+    if (!log.id) {
+      log.id = createId();
+      changed = true;
+    }
+  });
+  return changed;
+}
+
+function findInventoryLogById(store, logId) {
+  return (store?.inventoryLogs || []).find((log) => log.id === logId);
+}
+
+function getInventoryLogItemKey(log) {
+  return normalizeSearchText(`${log?.groupName || ""} ${log?.itemName || ""}`);
+}
+
+function getInventoryItemKey(item) {
+  return normalizeSearchText(`${item?.groupName || ""} ${item?.name || ""}`);
+}
+
+function findInventoryItemForLog(store, log) {
+  if (!store || !log) return null;
+
+  if (log.inventoryId) {
+    const byId = (store.inventory || []).find((item) => item.id === log.inventoryId);
+    if (byId) return byId;
+  }
+
+  const key = getInventoryLogItemKey(log);
+  return (store.inventory || []).find((item) => getInventoryItemKey(item) === key) || null;
+}
+
+function findLatestInventoryLogForItem(store, referenceLog, excludeId = "") {
+  const key = getInventoryLogItemKey(referenceLog);
+  return [...(store?.inventoryLogs || [])]
+    .filter((log) => {
+      if (!log || log.id === excludeId) return false;
+      if (referenceLog?.inventoryId && log.inventoryId === referenceLog.inventoryId) return true;
+      return key && getInventoryLogItemKey(log) === key;
+    })
+    .sort((a, b) => String(b.updatedAt || b.date || "").localeCompare(String(a.updatedAt || a.date || "")))[0] || null;
+}
+
+function applyInventoryLogValuesToItem(item, log) {
+  if (!item || !log) return;
+
+  item.quantity = Number(log.newQuantity ?? log.oldQuantity ?? item.quantity ?? 0);
+  item.lastPrice = Number(log.newPrice ?? log.oldPrice ?? item.lastPrice ?? 0);
+  item.salePrice = Number(getInventoryLogNewSalePrice(log));
+  item.totalCost = Math.max(0, Number(item.quantity || 0) * Number(item.lastPrice || 0));
+  item.updatedAt = log.updatedAt || log.date || new Date().toISOString();
+}
+
+function syncInventoryItemFromLatestLog(store, referenceLog) {
+  const item = findInventoryItemForLog(store, referenceLog);
+  if (!item) return;
+
+  const latestLog = findLatestInventoryLogForItem(store, referenceLog);
+  if (latestLog) applyInventoryLogValuesToItem(item, latestLog);
+}
+
+function syncInventoryItemAfterLogDelete(store, deletedLog) {
+  const item = findInventoryItemForLog(store, deletedLog);
+  if (!item) return;
+
+  const latestLog = findLatestInventoryLogForItem(store, deletedLog, deletedLog.id);
+  if (latestLog) {
+    applyInventoryLogValuesToItem(item, latestLog);
+    return;
+  }
+
+  item.quantity = Number(deletedLog.oldQuantity || 0);
+  item.lastPrice = Number(deletedLog.oldPrice || 0);
+  item.salePrice = Number(getInventoryLogOldSalePrice(deletedLog));
+  item.totalCost = Math.max(0, Number(item.quantity || 0) * Number(item.lastPrice || 0));
+  item.updatedAt = new Date().toISOString();
+}
+
 function renderInventoryLogs(store) {
   if (!els.inventoryLogPanel) return;
+
+  ensureInventoryLogIds(store);
 
   const range = getDateRange();
   const allowedFilters = new Set(["all", "purchase", "export"]);
@@ -4643,7 +4848,7 @@ function renderInventoryLogs(store) {
                 const total = getInventoryLogTotal(log);
                 const reason = getInventoryLogReason(log);
                 return `
-                  <tr class="${index > 0 ? "inventory-log-extra" : ""}">
+                  <tr class="${index > 0 ? "inventory-log-extra" : ""}" data-edit-inventory-log="${escapeHtml(log.id)}" title="Bấm để sửa lịch sử kho">
                     <td>${formatDate(getInventoryLogDate(log))}</td>
                     <td>${escapeHtml(log.itemName || "")}</td>
                     <td>${escapeHtml(log.groupName || "")}</td>

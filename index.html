@@ -788,6 +788,33 @@
       </form>
     </div>
 
+    <div class="modal-backdrop" id="editInventoryLogModal" hidden>
+      <form class="modal-card" id="editInventoryLogForm">
+        <div class="panel-heading">
+          <h2>Sửa lịch sử kho</h2>
+          <span id="editInventoryLogName">Kho hàng</span>
+        </div>
+        <input type="hidden" name="logId" />
+        <div class="field">
+          <label for="editInventoryLogQuantity">Số lượng sau cập nhật</label>
+          <input id="editInventoryLogQuantity" name="newQuantity" type="number" min="0" step="1" autocomplete="off" required />
+        </div>
+        <div class="field">
+          <label for="editInventoryLogPrice">Giá vốn sau cập nhật</label>
+          <input id="editInventoryLogPrice" name="newPrice" type="text" inputmode="numeric" autocomplete="off" required />
+        </div>
+        <div class="field">
+          <label for="editInventoryLogSalePrice">Giá bán sau cập nhật</label>
+          <input id="editInventoryLogSalePrice" name="newSalePrice" type="text" inputmode="numeric" autocomplete="off" required />
+        </div>
+        <div class="modal-actions modal-actions-spread">
+          <button class="danger-button" id="deleteInventoryLog" type="button">Xóa dòng</button>
+          <button class="ghost-button" id="cancelEditInventoryLog" type="button">Hủy</button>
+          <button type="submit">Lưu</button>
+        </div>
+      </form>
+    </div>
+
     <div class="modal-backdrop" id="editEntryModal" hidden>
       <form class="modal-card" id="editEntryForm">
         <div class="panel-heading">
