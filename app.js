@@ -5082,6 +5082,12 @@ function filterInventoryLogsBySearch(logs, rawQuery) {
   const query = normalizeSearchText(rawQuery).replace(/\s+/g, " ");
   if (!query) return logs;
 
+  const exactQuery = String(rawQuery || "").normalize("NFC").toLocaleLowerCase("vi").trim().replace(/\s+/g, " ");
+  const exactMatches = logs.filter(
+    (log) => String(log?.itemName || "").normalize("NFC").toLocaleLowerCase("vi").trim().replace(/\s+/g, " ") === exactQuery
+  );
+  if (exactMatches.length) return exactMatches;
+
   return logs
     .map((log, index) => ({
       log,
@@ -5108,13 +5114,18 @@ function getInventoryLogSearchScore(itemName, query) {
   const compactQuery = query.replace(/\s+/g, "");
   if (compactName.includes(compactQuery)) return 0.24;
 
+  const availableNameTerms = [...nameTerms];
   const termDistances = queryTerms.map((queryTerm) => {
-    if (queryTerm.length <= 2) return nameTerms.includes(queryTerm) ? 0 : 1;
-    return Math.min(
-      ...nameTerms.map((nameTerm) =>
-        getNormalizedEditDistance(queryTerm, nameTerm)
-      )
+    if (!availableNameTerms.length) return 1;
+
+    const distances = availableNameTerms.map((nameTerm) =>
+      queryTerm.length <= 2
+        ? (queryTerm === nameTerm ? 0 : 1)
+        : getNormalizedEditDistance(queryTerm, nameTerm)
     );
+    const bestDistance = Math.min(...distances);
+    availableNameTerms.splice(distances.indexOf(bestDistance), 1);
+    return bestDistance;
   });
   const maxTermDistance = Math.max(...termDistances);
   const averageTermDistance = termDistances.reduce((sum, distance) => sum + distance, 0) / termDistances.length;
