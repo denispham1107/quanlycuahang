@@ -239,6 +239,7 @@ const els = {
   editInventoryLogModal: document.querySelector("#editInventoryLogModal"),
   editInventoryLogForm: document.querySelector("#editInventoryLogForm"),
   editInventoryLogName: document.querySelector("#editInventoryLogName"),
+  editInventoryLogDate: document.querySelector("#editInventoryLogDate"),
   editInventoryLogQuantity: document.querySelector("#editInventoryLogQuantity"),
   editInventoryLogPrice: document.querySelector("#editInventoryLogPrice"),
   editInventoryLogSalePrice: document.querySelector("#editInventoryLogSalePrice"),
@@ -2865,6 +2866,7 @@ function openEditInventoryLogModal(logId) {
   uiState.editingInventoryLogId = log.id;
   els.editInventoryLogForm.elements.logId.value = log.id;
   els.editInventoryLogName.textContent = log.itemName || "Lịch sử kho";
+  els.editInventoryLogDate.value = getInventoryLogDate(log);
   els.editInventoryLogQuantity.value = Number(log.newQuantity || 0);
   els.editInventoryLogPrice.value = formatAmountInput(log.newPrice || 0);
   els.editInventoryLogSalePrice.value = formatAmountInput(getInventoryLogNewSalePrice(log));
@@ -3052,11 +3054,13 @@ function saveEditedInventoryLog(formData) {
   const log = findInventoryLogById(store, formData.get("logId"));
   if (!log) return false;
 
+  const date = String(formData.get("date") || "").trim();
   const newQuantity = Number.parseInt(formData.get("newQuantity"), 10);
   const newPrice = parseAmountInput(formData.get("newPrice"));
   const newSalePrice = parseAmountInput(formData.get("newSalePrice"));
 
   if (
+    !isValidDateInput(date) ||
     !Number.isFinite(newQuantity) ||
     newQuantity < 0 ||
     !Number.isFinite(newPrice) ||
@@ -3064,10 +3068,14 @@ function saveEditedInventoryLog(formData) {
     !Number.isFinite(newSalePrice) ||
     newSalePrice < 0
   ) {
-    window.alert("Vui lòng nhập số lượng, giá vốn và giá bán hợp lệ.");
+    window.alert("Vui lòng chọn ngày, nhập số lượng, giá vốn và giá bán hợp lệ.");
     return false;
   }
 
+  const previousUpdatedAt = String(log.updatedAt || log.date || "");
+  const timePart = previousUpdatedAt.includes("T") ? previousUpdatedAt.slice(10) : "T00:00:00.000";
+  log.date = date;
+  log.updatedAt = `${date}${timePart}`;
   log.newQuantity = newQuantity;
   log.newPrice = newPrice;
   log.newSalePrice = newSalePrice;
