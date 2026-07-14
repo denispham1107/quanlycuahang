@@ -4990,20 +4990,8 @@ function renderInventoryLogs(store) {
                         <span class="new-value">${Number(log.newQuantity || 0).toLocaleString("vi-VN")}</span>
                       </span>
                     </td>
-                    <td>
-                      <span class="inventory-log-change">
-                        <span class="old-value">${formatCurrency(log.oldPrice || 0)}</span>
-                        <span class="change-arrow">→</span>
-                        <span class="new-value">${formatCurrency(log.newPrice || 0)}</span>
-                      </span>
-                    </td>
-                    <td>
-                      <span class="inventory-log-change">
-                        <span class="old-value">${formatCurrency(getInventoryLogOldSalePrice(log))}</span>
-                        <span class="change-arrow">→</span>
-                        <span class="new-value">${formatCurrency(getInventoryLogNewSalePrice(log))}</span>
-                      </span>
-                    </td>
+                    <td>${renderInventoryLogPrice(log.oldPrice, log.newPrice)}</td>
+                    <td>${renderInventoryLogPrice(getInventoryLogOldSalePrice(log), getInventoryLogNewSalePrice(log))}</td>
                     <td><span class="inventory-log-total">${formatCurrency(total)}</span></td>
                   </tr>
                 `;
@@ -5205,6 +5193,23 @@ function getInventoryLogOldSalePrice(log) {
 
 function getInventoryLogNewSalePrice(log) {
   return Number(log?.newSalePrice ?? log?.newPrice ?? 0);
+}
+
+function renderInventoryLogPrice(oldPrice, newPrice) {
+  const oldValue = Number(oldPrice || 0);
+  const newValue = Number(newPrice || 0);
+
+  if (oldValue === newValue) {
+    return `<span class="inventory-log-change"><span class="new-value">${formatCurrency(newValue)}</span></span>`;
+  }
+
+  return `
+    <span class="inventory-log-change">
+      <span class="old-value">${formatCurrency(oldValue)}</span>
+      <span class="change-arrow">→</span>
+      <span class="new-value">${formatCurrency(newValue)}</span>
+    </span>
+  `;
 }
 
 function getInventoryLogDate(log) {
