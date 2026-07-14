@@ -2528,6 +2528,11 @@ th:last-child {
 
 .inventory-log-reason-filter {
   grid-column: 1;
+  grid-row: 4;
+}
+
+.inventory-log-search-filter {
+  grid-column: 1;
   grid-row: 3;
 }
 
@@ -2537,7 +2542,8 @@ th:last-child {
   font-weight: 900;
 }
 
-.inventory-log-filter select {
+.inventory-log-filter select,
+.inventory-log-filter input {
   min-height: 46px;
 }
 

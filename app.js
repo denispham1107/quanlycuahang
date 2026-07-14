@@ -45,6 +45,7 @@ const uiState = {
   inventoryLogsExpanded: false,
   inventoryLogFilter: "all",
   inventoryLogReasonFilter: "all",
+  inventoryLogSearch: "",
   editingInventoryLogId: null,
   salesGoodsFilter: "all",
   salesDraftId: null,
@@ -899,6 +900,23 @@ els.inventoryHistorySearch.addEventListener("input", () => {
 els.inventoryHistoryDate.addEventListener("change", () => {
   uiState.inventoryHistoryDate = els.inventoryHistoryDate.value || today;
   renderInventoryHistory(getActiveStore());
+});
+
+els.inventoryLogPanel.addEventListener("input", (event) => {
+  const searchInput = event.target.closest("[data-inventory-log-search]");
+  if (!searchInput) return;
+
+  const caretPosition = searchInput.selectionStart ?? searchInput.value.length;
+  uiState.inventoryLogSearch = searchInput.value;
+  if (uiState.inventoryLogSearch.trim()) uiState.inventoryLogsExpanded = true;
+  renderInventoryLogs(getActiveStore());
+
+  window.requestAnimationFrame(() => {
+    const nextInput = els.inventoryLogPanel.querySelector("[data-inventory-log-search]");
+    if (!nextInput) return;
+    nextInput.focus({ preventScroll: true });
+    nextInput.setSelectionRange(caretPosition, caretPosition);
+  });
 });
 
 els.inventoryList.addEventListener("click", (event) => {
@@ -4898,7 +4916,7 @@ function renderInventoryLogs(store) {
   ) {
     uiState.inventoryLogReasonFilter = "all";
   }
-  const logs = [...(store?.inventoryLogs || [])]
+  const scopedLogs = [...(store?.inventoryLogs || [])]
     .filter((log) => {
       const logDate = getInventoryLogDate(log);
       const purpose = getInventoryLogPurpose(log);
@@ -4913,12 +4931,13 @@ function renderInventoryLogs(store) {
     .sort((a, b) =>
       String(b.updatedAt || b.date || "").localeCompare(String(a.updatedAt || a.date || ""))
     );
+  const logs = filterInventoryLogsBySearch(scopedLogs, uiState.inventoryLogSearch);
 
   if (!logs.length) {
     els.inventoryLogPanel.innerHTML = `
       <div class="inventory-log-heading">Lịch sử cập nhật kho</div>
-      ${renderInventoryLogFilter(store)}
-      <div class="empty-list inventory-log-empty">Chưa có cập nhật kho.</div>
+      ${renderInventoryLogFilter(store, scopedLogs)}
+      <div class="empty-list inventory-log-empty">${uiState.inventoryLogSearch.trim() ? "Không có hàng hóa phù hợp." : "Chưa có cập nhật kho."}</div>
     `;
     return;
   }
@@ -4930,7 +4949,7 @@ function renderInventoryLogs(store) {
 
   els.inventoryLogPanel.innerHTML = `
     <div class="inventory-log-heading">Lịch sử cập nhật kho</div>
-    ${renderInventoryLogFilter(store)}
+    ${renderInventoryLogFilter(store, scopedLogs)}
     <div class="inventory-log-summary">
       <span>Tổng cộng</span>
       <strong>${formatCurrency(logsTotal)}</strong>
@@ -5008,13 +5027,19 @@ function renderInventoryLogs(store) {
   `;
 }
 
-function renderInventoryLogFilter(store) {
+function renderInventoryLogFilter(store, suggestionLogs = []) {
   const options = [
     ["all", "Tất cả"],
     ["purchase", "Nhập kho"],
     ["export", "Xuất kho"]
   ];
   const reasonOptions = getInventoryExportReasons(store);
+  const itemNames = new Map();
+  suggestionLogs.forEach((log) => {
+    const itemName = String(log?.itemName || "").trim();
+    const key = normalizeSearchText(itemName);
+    if (key && !itemNames.has(key)) itemNames.set(key, itemName);
+  });
 
   return `
     <div class="inventory-log-filter">
@@ -5024,6 +5049,16 @@ function renderInventoryLogFilter(store) {
           .map(([value, label]) => `<option value="${value}" ${uiState.inventoryLogFilter === value ? "selected" : ""}>${label}</option>`)
           .join("")}
       </select>
+    </div>
+    <div class="inventory-log-filter inventory-log-search-filter">
+      <label for="inventoryLogSearch">Tìm kiếm</label>
+      <input id="inventoryLogSearch" data-inventory-log-search type="text" value="${escapeHtml(uiState.inventoryLogSearch)}" placeholder="Nhập tên hàng hóa..." autocomplete="off" list="inventoryLogSearchSuggestions" />
+      <datalist id="inventoryLogSearchSuggestions">
+        ${[...itemNames.values()]
+          .sort((a, b) => a.localeCompare(b, "vi"))
+          .map((itemName) => `<option value="${escapeHtml(itemName)}"></option>`)
+          .join("")}
+      </datalist>
     </div>
     ${
       uiState.inventoryLogFilter === "export"
@@ -5041,6 +5076,76 @@ function renderInventoryLogFilter(store) {
         : ""
     }
   `;
+}
+
+function filterInventoryLogsBySearch(logs, rawQuery) {
+  const query = normalizeSearchText(rawQuery).replace(/\s+/g, " ");
+  if (!query) return logs;
+
+  return logs
+    .map((log, index) => ({
+      log,
+      index,
+      score: getInventoryLogSearchScore(log?.itemName, query)
+    }))
+    .filter((entry) => Number.isFinite(entry.score))
+    .sort((a, b) => a.score - b.score || a.index - b.index)
+    .map((entry) => entry.log);
+}
+
+function getInventoryLogSearchScore(itemName, query) {
+  const name = normalizeSearchText(itemName).replace(/\s+/g, " ");
+  if (!name) return Number.POSITIVE_INFINITY;
+  if (name === query) return 0;
+  if (name.startsWith(query)) return 0.05 + (name.length - query.length) / Math.max(name.length, 1) / 10;
+  if (name.includes(query)) return 0.1 + (name.length - query.length) / Math.max(name.length, 1) / 10;
+
+  const queryTerms = query.split(" ").filter(Boolean);
+  const nameTerms = name.split(" ").filter(Boolean);
+  if (queryTerms.every((term) => name.includes(term))) return 0.2;
+
+  const compactName = name.replace(/\s+/g, "");
+  const compactQuery = query.replace(/\s+/g, "");
+  if (compactName.includes(compactQuery)) return 0.24;
+
+  const termDistances = queryTerms.map((queryTerm) => {
+    if (queryTerm.length <= 2) return nameTerms.includes(queryTerm) ? 0 : 1;
+    return Math.min(
+      ...nameTerms.map((nameTerm) =>
+        getNormalizedEditDistance(queryTerm, nameTerm)
+      )
+    );
+  });
+  const maxTermDistance = Math.max(...termDistances);
+  const averageTermDistance = termDistances.reduce((sum, distance) => sum + distance, 0) / termDistances.length;
+  if (maxTermDistance <= 0.42) return 0.3 + averageTermDistance;
+
+  const fullDistance = getNormalizedEditDistance(compactQuery, compactName);
+  return fullDistance <= 0.42 ? 0.8 + fullDistance : Number.POSITIVE_INFINITY;
+}
+
+function getNormalizedEditDistance(left, right) {
+  const longestLength = Math.max(left.length, right.length, 1);
+  return getEditDistance(left, right) / longestLength;
+}
+
+function getEditDistance(left, right) {
+  const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+
+  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+    const current = [leftIndex];
+    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
+      const substitutionCost = left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1;
+      current[rightIndex] = Math.min(
+        current[rightIndex - 1] + 1,
+        previous[rightIndex] + 1,
+        previous[rightIndex - 1] + substitutionCost
+      );
+    }
+    previous.splice(0, previous.length, ...current);
+  }
+
+  return previous[right.length];
 }
 
 function getInventoryLogReason(log) {
