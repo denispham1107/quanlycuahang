@@ -4144,6 +4144,7 @@ function updateTimeFiltersVisibility(tabName = getActiveTabName()) {
   els.timeFilterToggle.hidden = !filtersAvailable;
   els.timeFilterToggle.classList.toggle("active", filtersExpanded);
   els.timeFilterToggle.setAttribute("aria-expanded", String(filtersExpanded));
+  els.timeFilterToggle.setAttribute("aria-label", filtersExpanded ? "Thu gọn bộ lọc thời gian" : "Mở bộ lọc thời gian");
   els.timeFilterToggle.title = filtersExpanded ? "Thu gọn bộ lọc thời gian" : "Mở bộ lọc thời gian";
   els.timeFilters.hidden = !filtersAvailable;
   els.timeFilters.classList.toggle("is-collapsed", !filtersExpanded);

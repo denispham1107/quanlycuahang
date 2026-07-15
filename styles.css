@@ -1274,6 +1274,10 @@ form button:disabled {
   -webkit-overflow-scrolling: touch;
 }
 
+.sticky-control-dock.filters-available .tab-bar {
+  padding-bottom: 14px;
+}
+
 .tab-spacer {
   height: 0;
 }
@@ -1310,43 +1314,54 @@ form button:disabled {
   box-shadow: 0 12px 26px rgba(83, 96, 222, 0.14);
 }
 
-.sticky-control-dock.filters-available .tab-button[data-tab="sales"],
-.sticky-control-dock.filters-available .tab-button[data-tab="purchase"] {
-  flex-basis: calc((100% - 126px) / 2);
-}
-
 .time-filter-toggle {
-  order: 2;
-  flex: 0 0 110px;
-  min-height: 42px;
-  margin-top: 4px;
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  z-index: 2;
+  width: 26px;
+  height: 14px;
+  min-height: 0;
   border: 1px solid rgba(12, 130, 244, 0.2);
-  border-radius: 18px;
-  padding: 0 12px;
-  background: rgba(255, 255, 255, 0.76);
+  border-radius: 999px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.94);
   color: #0b5fb8;
-  font-weight: 850;
-  white-space: nowrap;
-  box-shadow: 0 10px 22px rgba(83, 96, 222, 0.12);
+  box-shadow: 0 5px 12px rgba(83, 96, 222, 0.16);
+  transform: translateX(-50%);
 }
 
 .time-filter-toggle:hover,
 .time-filter-toggle.active {
   border-color: rgba(12, 130, 244, 0.34);
-  background: linear-gradient(135deg, rgba(12, 130, 244, 0.14), rgba(216, 92, 255, 0.12), rgba(255, 154, 74, 0.12)), #fff;
+  background: linear-gradient(135deg, rgba(12, 130, 244, 0.14), rgba(216, 92, 255, 0.12)), #fff;
   color: #084d99;
 }
 
 .time-filter-toggle-icon {
-  display: inline-block;
-  margin-right: 5px;
-  font-size: 18px;
-  line-height: 1;
+  display: block;
+  width: 7px;
+  height: 7px;
+  margin: -3px auto 0;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
   transition: transform 180ms ease;
 }
 
 .time-filter-toggle.active .time-filter-toggle-icon {
-  transform: rotate(180deg);
+  margin-top: 3px;
+  transform: rotate(225deg);
+}
+
+.time-filter-toggle-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .tab-button[data-tab="sales"].active,
@@ -3747,30 +3762,14 @@ body.modal-open {
 }
 
 @media (max-width: 700px) {
-  .sticky-control-dock.filters-available .tab-button[data-tab="sales"],
-  .sticky-control-dock.filters-available .tab-button[data-tab="purchase"] {
-    flex-basis: calc((100% - 64px) / 2);
-  }
-
   .time-filter-toggle {
-    flex-basis: 48px;
-    min-height: 44px;
-    padding-inline: 8px;
+    width: 24px;
+    height: 13px;
   }
 
   .time-filter-toggle-icon {
-    margin-right: 0;
-    font-size: 20px;
-  }
-
-  .time-filter-toggle-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    clip-path: inset(50%);
-    white-space: nowrap;
+    width: 6px;
+    height: 6px;
   }
 
   .time-filters {
