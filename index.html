@@ -819,6 +819,11 @@
           <label for="editInventoryLogSalePrice">Giá bán sau cập nhật</label>
           <input id="editInventoryLogSalePrice" name="newSalePrice" type="text" inputmode="numeric" autocomplete="off" required />
         </div>
+        <div class="field" id="editInventoryLogReasonField" hidden>
+          <label for="editInventoryLogReason">Lý do xuất</label>
+          <input id="editInventoryLogReason" name="exportReason" type="text" placeholder="Chọn hoặc nhập lý do xuất..." autocomplete="off" list="editInventoryLogReasonSuggestions" />
+          <datalist id="editInventoryLogReasonSuggestions"></datalist>
+        </div>
         <div class="modal-actions modal-actions-spread">
           <button class="danger-button" id="deleteInventoryLog" type="button">Xóa dòng</button>
           <button class="ghost-button" id="cancelEditInventoryLog" type="button">Hủy</button>

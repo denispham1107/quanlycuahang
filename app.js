@@ -248,6 +248,9 @@ const els = {
   editInventoryLogQuantity: document.querySelector("#editInventoryLogQuantity"),
   editInventoryLogPrice: document.querySelector("#editInventoryLogPrice"),
   editInventoryLogSalePrice: document.querySelector("#editInventoryLogSalePrice"),
+  editInventoryLogReasonField: document.querySelector("#editInventoryLogReasonField"),
+  editInventoryLogReason: document.querySelector("#editInventoryLogReason"),
+  editInventoryLogReasonSuggestions: document.querySelector("#editInventoryLogReasonSuggestions"),
   cancelEditInventoryLog: document.querySelector("#cancelEditInventoryLog"),
   deleteInventoryLog: document.querySelector("#deleteInventoryLog"),
   quickEntrySubmit: document.querySelector("#quickEntrySubmit"),
@@ -995,6 +998,8 @@ els.editInventoryLogPrice.addEventListener("input", () => {
 els.editInventoryLogSalePrice.addEventListener("input", () => {
   els.editInventoryLogSalePrice.value = formatAmountInput(els.editInventoryLogSalePrice.value);
 });
+
+els.editInventoryLogQuantity.addEventListener("input", updateEditInventoryLogReasonVisibility);
 
 els.editInventoryForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -2993,6 +2998,9 @@ function openEditInventoryLogModal(logId) {
   els.editInventoryLogQuantity.value = Number(log.newQuantity || 0);
   els.editInventoryLogPrice.value = formatAmountInput(log.newPrice || 0);
   els.editInventoryLogSalePrice.value = formatAmountInput(getInventoryLogNewSalePrice(log));
+  renderEditInventoryLogReasonSuggestions(getInventoryLogReason(log));
+  els.editInventoryLogReason.value = getInventoryLogReason(log);
+  updateEditInventoryLogReasonVisibility();
   els.editInventoryLogModal.hidden = false;
 }
 
@@ -3000,6 +3008,27 @@ function closeEditInventoryLogModal() {
   uiState.editingInventoryLogId = null;
   els.editInventoryLogModal.hidden = true;
   els.editInventoryLogForm.reset();
+}
+
+function renderEditInventoryLogReasonSuggestions(selectedReason = "") {
+  const options = new Set(getInventoryExportReasons(getActiveStore()));
+  const selected = String(selectedReason || "").trim();
+  if (selected) options.add(selected);
+
+  els.editInventoryLogReasonSuggestions.innerHTML = Array.from(options)
+    .sort((a, b) => a.localeCompare(b, "vi"))
+    .map((reason) => `<option value="${escapeHtml(reason)}"></option>`)
+    .join("");
+}
+
+function updateEditInventoryLogReasonVisibility() {
+  const store = getActiveStore();
+  const log = findInventoryLogById(store, uiState.editingInventoryLogId);
+  const newQuantity = Number.parseInt(els.editInventoryLogQuantity.value, 10);
+  const isExport = Boolean(log) && Number.isFinite(newQuantity) && newQuantity < Number(log.oldQuantity || 0);
+
+  els.editInventoryLogReasonField.hidden = !isExport;
+  els.editInventoryLogReason.disabled = !isExport;
 }
 
 function renderExportInventoryReasonOptions(selectedReason = "") {
@@ -3181,6 +3210,7 @@ function saveEditedInventoryLog(formData) {
   const newQuantity = Number.parseInt(formData.get("newQuantity"), 10);
   const newPrice = parseAmountInput(formData.get("newPrice"));
   const newSalePrice = parseAmountInput(formData.get("newSalePrice"));
+  const exportReason = String(formData.get("exportReason") || "").trim();
 
   if (
     !isValidDateInput(date) ||
@@ -3202,6 +3232,20 @@ function saveEditedInventoryLog(formData) {
   log.newQuantity = newQuantity;
   log.newPrice = newPrice;
   log.newSalePrice = newSalePrice;
+  if (newQuantity < Number(log.oldQuantity || 0)) {
+    log.exportReason = exportReason;
+    delete log.reason;
+    if (exportReason) {
+      store.exportReasons = getInventoryExportReasons(store);
+      if (!store.exportReasons.some((reason) => normalizeSearchText(reason) === normalizeSearchText(exportReason))) {
+        store.exportReasons.push(exportReason);
+        store.exportReasons.sort((a, b) => a.localeCompare(b, "vi"));
+      }
+    }
+  } else {
+    delete log.exportReason;
+    delete log.reason;
+  }
   log.editedAt = new Date().toISOString();
 
   if (!log.inventoryId) {
