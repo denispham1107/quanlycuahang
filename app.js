@@ -30,6 +30,7 @@ const uiState = {
     expense: false
   },
   rangeMode: "today",
+  timeFiltersExpanded: false,
   inventorySearch: "",
   inventoryFilter: "all",
   inventoryHistorySearch: "",
@@ -110,6 +111,7 @@ const els = {
   tabBar: document.querySelector("#tabBar"),
   tabSpacer: document.querySelector("#tabSpacer"),
   timeFilters: document.querySelector("#timeFilters"),
+  timeFilterToggle: document.querySelector("#timeFilterToggle"),
   quickEntryButton: document.querySelector("#quickEntryButton"),
   aiButton: document.querySelector("#aiButton"),
   aiChatModal: document.querySelector("#aiChatModal"),
@@ -482,6 +484,17 @@ els.tabButtons.forEach((button) => {
     activateTab(button.dataset.tab);
   });
 });
+
+els.timeFilterToggle?.addEventListener("click", () => {
+  uiState.timeFiltersExpanded = !uiState.timeFiltersExpanded;
+  updateTimeFiltersVisibility();
+  window.requestAnimationFrame(() => {
+    updatePinnedTabs();
+    window.requestAnimationFrame(updatePinnedTabs);
+  });
+});
+
+els.timeFilters?.addEventListener("transitionend", updatePinnedTabs);
 
 window.addEventListener("scroll", updatePinnedTabs, { passive: true });
 window.addEventListener("resize", updatePinnedTabs);
@@ -4121,10 +4134,19 @@ function getActiveTabName() {
 }
 
 function updateTimeFiltersVisibility(tabName = getActiveTabName()) {
-  if (!els.timeFilters) return;
+  if (!els.timeFilters || !els.timeFilterToggle || !els.stickyControlDock) return;
   const visibleTabs = new Set(["overview", "income", "expense", "purchase", "sales"]);
   const store = getActiveStore();
-  els.timeFilters.hidden = !store || !visibleTabs.has(tabName);
+  const filtersAvailable = Boolean(store) && visibleTabs.has(tabName);
+  const filtersExpanded = filtersAvailable && uiState.timeFiltersExpanded;
+
+  els.stickyControlDock.classList.toggle("filters-available", filtersAvailable);
+  els.timeFilterToggle.hidden = !filtersAvailable;
+  els.timeFilterToggle.classList.toggle("active", filtersExpanded);
+  els.timeFilterToggle.setAttribute("aria-expanded", String(filtersExpanded));
+  els.timeFilterToggle.title = filtersExpanded ? "Thu gọn bộ lọc thời gian" : "Mở bộ lọc thời gian";
+  els.timeFilters.hidden = !filtersAvailable;
+  els.timeFilters.classList.toggle("is-collapsed", !filtersExpanded);
 }
 
 function updateStickyControlMetrics() {
@@ -4153,6 +4175,11 @@ function updatePinnedTabs() {
 
   const left = Math.max(8, dashboardRect.left);
   const width = Math.min(dashboardRect.width, window.innerWidth - left * 2);
+  const wasFixed = els.stickyControlDock.classList.contains("is-fixed");
+  if (!wasFixed && uiState.timeFiltersExpanded) {
+    uiState.timeFiltersExpanded = false;
+    updateTimeFiltersVisibility();
+  }
   els.stickyControlDock.classList.add("is-fixed");
   els.stickyControlDock.style.left = `${left}px`;
   els.stickyControlDock.style.width = `${width}px`;

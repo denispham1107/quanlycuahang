@@ -70,9 +70,20 @@
                 <button class="tab-button" type="button" data-tab="purchase" aria-selected="false">Nhập hàng</button>
                 <button class="tab-button" type="button" data-tab="sales" aria-selected="false">Bán Hàng</button>
                 <button class="tab-button" type="button" data-tab="expense" aria-selected="false">Chi</button>
+                <button
+                  class="time-filter-toggle"
+                  id="timeFilterToggle"
+                  type="button"
+                  aria-controls="timeFilters"
+                  aria-expanded="false"
+                  title="Mở bộ lọc thời gian"
+                >
+                  <span class="time-filter-toggle-icon" aria-hidden="true">◷</span>
+                  <span class="time-filter-toggle-label">Bộ lọc</span>
+                </button>
               </nav>
 
-              <section class="panel filters time-filters" id="timeFilters">
+              <section class="panel filters time-filters is-collapsed" id="timeFilters">
                 <div class="field">
                   <label for="rangeMode">Khoảng thời gian</label>
                   <select id="rangeMode">
