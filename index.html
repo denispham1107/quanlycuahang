@@ -62,45 +62,47 @@
             </section>
 
             <div class="tab-spacer" id="tabSpacer" aria-hidden="true"></div>
-            <nav class="tab-bar" id="tabBar" aria-label="Nhóm chức năng">
-              <button class="tab-button active" type="button" data-tab="stores" aria-selected="true">Cửa Hàng</button>
-              <button class="tab-button" type="button" data-tab="overview" aria-selected="false">Tổng quan</button>
-              <button class="tab-button" type="button" data-tab="income" aria-selected="false">Thu</button>
-              <button class="tab-button" type="button" data-tab="purchase" aria-selected="false">Nhập hàng</button>
-              <button class="tab-button" type="button" data-tab="sales" aria-selected="false">Bán Hàng</button>
-              <button class="tab-button" type="button" data-tab="expense" aria-selected="false">Chi</button>
-            </nav>
+            <div class="sticky-control-dock" id="stickyControlDock">
+              <nav class="tab-bar" id="tabBar" aria-label="Nhóm chức năng">
+                <button class="tab-button active" type="button" data-tab="stores" aria-selected="true">Cửa Hàng</button>
+                <button class="tab-button" type="button" data-tab="overview" aria-selected="false">Tổng quan</button>
+                <button class="tab-button" type="button" data-tab="income" aria-selected="false">Thu</button>
+                <button class="tab-button" type="button" data-tab="purchase" aria-selected="false">Nhập hàng</button>
+                <button class="tab-button" type="button" data-tab="sales" aria-selected="false">Bán Hàng</button>
+                <button class="tab-button" type="button" data-tab="expense" aria-selected="false">Chi</button>
+              </nav>
 
-            <section class="panel filters time-filters" id="timeFilters">
-              <div class="field">
-                <label for="rangeMode">Khoảng thời gian</label>
-                <select id="rangeMode">
-                  <option value="all">Toàn thời gian</option>
-                  <option value="today">Hôm nay</option>
-                  <option value="yesterday">Hôm qua</option>
-                  <option value="this-month">Tháng này</option>
-                  <option value="last-month">Tháng trước</option>
-                  <option value="week">Theo tuần</option>
-                  <option value="custom">Tùy chọn</option>
-                </select>
-              </div>
-              <div class="field" id="singleDateField">
-                <label for="singleDate">Theo ngày</label>
-                <input id="singleDate" type="date" />
-              </div>
-              <div class="field" id="monthField">
-                <label for="monthDate">Theo tháng</label>
-                <input id="monthDate" type="month" />
-              </div>
-              <div class="field" id="fromField">
-                <label for="fromDate">Từ ngày</label>
-                <input id="fromDate" type="date" />
-              </div>
-              <div class="field" id="toField">
-                <label for="toDate">Đến ngày</label>
-                <input id="toDate" type="date" />
-              </div>
-            </section>
+              <section class="panel filters time-filters" id="timeFilters">
+                <div class="field">
+                  <label for="rangeMode">Khoảng thời gian</label>
+                  <select id="rangeMode">
+                    <option value="all">Toàn thời gian</option>
+                    <option value="today">Hôm nay</option>
+                    <option value="yesterday">Hôm qua</option>
+                    <option value="this-month">Tháng này</option>
+                    <option value="last-month">Tháng trước</option>
+                    <option value="week">Theo tuần</option>
+                    <option value="custom">Tùy chọn</option>
+                  </select>
+                </div>
+                <div class="field" id="singleDateField">
+                  <label for="singleDate">Theo ngày</label>
+                  <input id="singleDate" type="date" />
+                </div>
+                <div class="field" id="monthField">
+                  <label for="monthDate">Theo tháng</label>
+                  <input id="monthDate" type="month" />
+                </div>
+                <div class="field" id="fromField">
+                  <label for="fromDate">Từ ngày</label>
+                  <input id="fromDate" type="date" />
+                </div>
+                <div class="field" id="toField">
+                  <label for="toDate">Đến ngày</label>
+                  <input id="toDate" type="date" />
+                </div>
+              </section>
+            </div>
 
             <section class="tab-panel active" data-tab-panel="stores"></section>
 

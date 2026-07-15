@@ -106,6 +106,7 @@ const els = {
   exportData: document.querySelector("#exportData"),
   importData: document.querySelector("#importData"),
   syncStatus: document.querySelector("#syncStatus"),
+  stickyControlDock: document.querySelector("#stickyControlDock"),
   tabBar: document.querySelector("#tabBar"),
   tabSpacer: document.querySelector("#tabSpacer"),
   timeFilters: document.querySelector("#timeFilters"),
@@ -4127,12 +4128,13 @@ function updateTimeFiltersVisibility(tabName = getActiveTabName()) {
 }
 
 function updateStickyControlMetrics() {
-  const tabHeight = els.tabBar?.offsetHeight || 0;
-  document.documentElement.style.setProperty("--tab-bar-sticky-height", `${tabHeight}px`);
+  const dockHeight = els.stickyControlDock?.offsetHeight || els.tabBar?.offsetHeight || 0;
+  document.documentElement.style.setProperty("--sticky-control-dock-height", `${dockHeight}px`);
+  document.documentElement.style.setProperty("--tab-bar-sticky-height", `${dockHeight}px`);
 }
 
 function updatePinnedTabs() {
-  if (!els.tabBar || !els.tabSpacer || els.dashboard.hidden) {
+  if (!els.stickyControlDock || !els.tabBar || !els.tabSpacer || els.dashboard.hidden) {
     resetPinnedTabs();
     return;
   }
@@ -4141,7 +4143,8 @@ function updatePinnedTabs() {
 
   const spacerRect = els.tabSpacer.getBoundingClientRect();
   const dashboardRect = els.dashboard.getBoundingClientRect();
-  const shouldFix = spacerRect.top <= 0 && dashboardRect.bottom > els.tabBar.offsetHeight;
+  const dockHeight = els.stickyControlDock.offsetHeight;
+  const shouldFix = spacerRect.top <= 0 && dashboardRect.bottom > dockHeight;
 
   if (!shouldFix) {
     resetPinnedTabs();
@@ -4150,18 +4153,19 @@ function updatePinnedTabs() {
 
   const left = Math.max(8, dashboardRect.left);
   const width = Math.min(dashboardRect.width, window.innerWidth - left * 2);
-  els.tabSpacer.style.height = `${els.tabBar.offsetHeight}px`;
-  els.tabBar.classList.add("is-fixed");
-  els.tabBar.style.left = `${left}px`;
-  els.tabBar.style.width = `${width}px`;
+  els.stickyControlDock.classList.add("is-fixed");
+  els.stickyControlDock.style.left = `${left}px`;
+  els.stickyControlDock.style.width = `${width}px`;
+  els.tabSpacer.style.height = `${els.stickyControlDock.offsetHeight}px`;
   els.tabBar.dataset.pinTop = "true";
+  updateStickyControlMetrics();
 }
 
 function resetPinnedTabs() {
-  if (!els.tabBar || !els.tabSpacer) return;
-  els.tabBar.classList.remove("is-fixed");
-  els.tabBar.style.left = "";
-  els.tabBar.style.width = "";
+  if (!els.stickyControlDock || !els.tabBar || !els.tabSpacer) return;
+  els.stickyControlDock.classList.remove("is-fixed");
+  els.stickyControlDock.style.left = "";
+  els.stickyControlDock.style.width = "";
   els.tabBar.dataset.pinTop = "";
   els.tabSpacer.style.height = "0px";
   updateStickyControlMetrics();
