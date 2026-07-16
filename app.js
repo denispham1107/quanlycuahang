@@ -23,6 +23,7 @@ const defaultData = {
 };
 
 let state = loadCachedState();
+let timeFiltersAutoCollapseTimer = null;
 
 const uiState = {
   categoryExpanded: {
@@ -411,11 +412,14 @@ els.deleteStore.addEventListener("click", () => {
   saveAndRender();
 });
 
-function applyRangeModeFilter() {
+function applyRangeModeFilter(event) {
   uiState.rangeMode = els.rangeMode.value;
   syncQuickRangeInputs();
   updateFilterFields();
   render();
+  if (event?.type === "change" && els.rangeMode.value !== "custom") {
+    scheduleTimeFiltersAutoCollapse();
+  }
 }
 
 els.rangeMode.addEventListener("change", applyRangeModeFilter);
@@ -439,6 +443,9 @@ function applyMonthFilter() {
   els.monthDate.addEventListener(eventName, applyMonthFilter);
 });
 
+els.singleDate.addEventListener("change", scheduleTimeFiltersAutoCollapse);
+els.monthDate.addEventListener("change", scheduleTimeFiltersAutoCollapse);
+
 ["focus", "click"].forEach((eventName) => {
   els.singleDate.addEventListener(eventName, applySingleDateFilter);
   els.monthDate.addEventListener(eventName, applyMonthFilter);
@@ -450,6 +457,9 @@ function applyMonthFilter() {
     els.rangeMode.value = "custom";
     updateFilterFields();
     render();
+    if (els.fromDate.value && els.toDate.value) {
+      scheduleTimeFiltersAutoCollapse();
+    }
   });
 });
 
@@ -486,6 +496,7 @@ els.tabButtons.forEach((button) => {
 });
 
 els.timeFilterToggle?.addEventListener("click", () => {
+  clearTimeFiltersAutoCollapse();
   uiState.timeFiltersExpanded = !uiState.timeFiltersExpanded;
   updateTimeFiltersVisibility();
   window.requestAnimationFrame(() => {
@@ -495,6 +506,28 @@ els.timeFilterToggle?.addEventListener("click", () => {
 });
 
 els.timeFilters?.addEventListener("transitionend", updatePinnedTabs);
+
+function clearTimeFiltersAutoCollapse() {
+  if (!timeFiltersAutoCollapseTimer) return;
+  window.clearTimeout(timeFiltersAutoCollapseTimer);
+  timeFiltersAutoCollapseTimer = null;
+}
+
+function scheduleTimeFiltersAutoCollapse() {
+  clearTimeFiltersAutoCollapse();
+  if (!uiState.timeFiltersExpanded || els.timeFilters?.hidden) return;
+
+  timeFiltersAutoCollapseTimer = window.setTimeout(() => {
+    timeFiltersAutoCollapseTimer = null;
+    if (!uiState.timeFiltersExpanded) return;
+    uiState.timeFiltersExpanded = false;
+    updateTimeFiltersVisibility();
+    window.requestAnimationFrame(() => {
+      updatePinnedTabs();
+      window.requestAnimationFrame(updatePinnedTabs);
+    });
+  }, 2500);
+}
 
 window.addEventListener("scroll", updatePinnedTabs, { passive: true });
 window.addEventListener("resize", updatePinnedTabs);
@@ -4178,6 +4211,7 @@ function updatePinnedTabs() {
   const width = Math.min(dashboardRect.width, window.innerWidth - left * 2);
   const wasFixed = els.stickyControlDock.classList.contains("is-fixed");
   if (!wasFixed && uiState.timeFiltersExpanded) {
+    clearTimeFiltersAutoCollapse();
     uiState.timeFiltersExpanded = false;
     updateTimeFiltersVisibility();
   }

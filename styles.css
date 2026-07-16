@@ -1275,7 +1275,7 @@ form button:disabled {
 }
 
 .sticky-control-dock.filters-available .tab-bar {
-  padding-bottom: 14px;
+  padding-bottom: 18px;
 }
 
 .tab-spacer {
@@ -1319,8 +1319,8 @@ form button:disabled {
   left: 50%;
   bottom: 0;
   z-index: 2;
-  width: 26px;
-  height: 14px;
+  width: 34px;
+  height: 18px;
   min-height: 0;
   border: 1px solid rgba(12, 130, 244, 0.2);
   border-radius: 999px;
@@ -1340,8 +1340,8 @@ form button:disabled {
 
 .time-filter-toggle-icon {
   display: block;
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   margin: -3px auto 0;
   border-right: 2px solid currentColor;
   border-bottom: 2px solid currentColor;
@@ -3763,13 +3763,13 @@ body.modal-open {
 
 @media (max-width: 700px) {
   .time-filter-toggle {
-    width: 24px;
-    height: 13px;
+    width: 32px;
+    height: 17px;
   }
 
   .time-filter-toggle-icon {
-    width: 6px;
-    height: 6px;
+    width: 7px;
+    height: 7px;
   }
 
   .time-filters {
