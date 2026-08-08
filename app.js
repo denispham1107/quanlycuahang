@@ -25,6 +25,14 @@ const defaultData = {
 let state = loadCachedState();
 let timeFiltersAutoCollapseTimer = null;
 
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js").catch(() => {
+      // Website vẫn hoạt động bình thường nếu trình duyệt không cho phép đăng ký PWA.
+    });
+  });
+}
+
 const uiState = {
   categoryExpanded: {
     income: false,

@@ -56,6 +56,25 @@ git push origin main
 
 2. Mở lại GitHub Pages sau khi GitHub deploy xong.
 
+## Cài đặt website như một ứng dụng
+
+Website đã được cấu hình dưới dạng Progressive Web App (PWA). Tính năng cài đặt chỉ hoạt động khi website được mở qua HTTPS; GitHub Pages đã đáp ứng yêu cầu này.
+
+### iPhone và iPad
+
+1. Mở website bằng Safari.
+2. Nhấn nút **Chia sẻ**.
+3. Chọn **Thêm vào Màn hình chính**.
+4. Nhấn **Thêm**.
+
+### Điện thoại và máy tính bảng Android
+
+1. Mở website bằng Chrome.
+2. Chọn **Cài đặt ứng dụng** hoặc **Thêm vào Màn hình chính** trong menu trình duyệt.
+3. Xác nhận cài đặt.
+
+Sau khi cài, ứng dụng mở trong cửa sổ riêng và sử dụng biểu tượng Quản lý cửa hàng. Dữ liệu vẫn được đồng bộ qua Firestore như trước.
+
 ## Quy trình kiểm tra
 
 1. Mở website trên máy A.
