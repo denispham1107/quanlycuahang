@@ -6,6 +6,9 @@ const AI_FILE_TEXT_MAX_CHARS = 80000;
 const FIREBASE_CONFIG_PLACEHOLDER = "PASTE_YOUR_FIREBASE_CONFIG_HERE";
 const FIRESTORE_COLLECTION = "quanlycuahang";
 const FIRESTORE_DOCUMENT = "shared-state";
+const IS_IOS_DEVICE =
+  /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
 let cloudStore = {
   enabled: false,
@@ -27,6 +30,10 @@ let timeFiltersAutoCollapseTimer = null;
 const historySearchRenderTimers = {
   income: null,
   expense: null
+};
+const historySearchSuggestionCache = {
+  income: [],
+  expense: []
 };
 
 if ("serviceWorker" in navigator) {
@@ -113,6 +120,8 @@ const els = {
   expenseHistorySearch: document.querySelector("#expenseHistorySearch"),
   incomeHistorySearchSuggestions: document.querySelector("#incomeHistorySearchSuggestions"),
   expenseHistorySearchSuggestions: document.querySelector("#expenseHistorySearchSuggestions"),
+  incomeIosHistorySuggestions: document.querySelector("#incomeIosHistorySuggestions"),
+  expenseIosHistorySuggestions: document.querySelector("#expenseIosHistorySuggestions"),
   incomeHistoryFilter: document.querySelector("#incomeHistoryFilter"),
   expenseHistoryFilter: document.querySelector("#expenseHistoryFilter"),
   incomeNoteSuggestions: document.querySelector("#incomeNoteSuggestions"),
@@ -488,10 +497,35 @@ els.monthDate.addEventListener("change", scheduleTimeFiltersAutoCollapse);
 ].forEach(([input, type]) => {
   input.addEventListener("input", (event) => {
     if (event.isComposing) return;
+    renderIosHistorySuggestions(type);
     scheduleHistorySearchRender(type);
   });
-  input.addEventListener("change", () => scheduleHistorySearchRender(type, true));
-  input.addEventListener("compositionend", () => scheduleHistorySearchRender(type, true));
+  input.addEventListener("change", () => scheduleHistorySearchRender(type, !IS_IOS_DEVICE));
+  input.addEventListener("compositionend", () => {
+    renderIosHistorySuggestions(type);
+    scheduleHistorySearchRender(type, !IS_IOS_DEVICE);
+  });
+  input.addEventListener("focus", () => renderIosHistorySuggestions(type));
+});
+
+configureIosHistorySearch();
+
+document.addEventListener("click", (event) => {
+  const suggestion = event.target.closest("[data-ios-history-suggestion]");
+  if (suggestion) {
+    const type = suggestion.dataset.historyType === "expense" ? "expense" : "income";
+    const input = type === "income" ? els.incomeHistorySearch : els.expenseHistorySearch;
+    input.value = suggestion.textContent.trim();
+    input.focus({ preventScroll: true });
+    hideIosHistorySuggestions(type);
+    scheduleHistorySearchRender(type, true);
+    return;
+  }
+
+  if (IS_IOS_DEVICE && !event.target.closest(".history-search")) {
+    hideIosHistorySuggestions("income");
+    hideIosHistorySuggestions("expense");
+  }
 });
 
 document.addEventListener("click", (event) => {
@@ -5402,7 +5436,7 @@ function scheduleHistorySearchRender(type, immediate = false) {
   historySearchRenderTimers[normalizedType] = window.setTimeout(() => {
     historySearchRenderTimers[normalizedType] = null;
     renderHistorySearchResults(normalizedType);
-  }, 120);
+  }, IS_IOS_DEVICE ? 220 : 120);
 }
 
 function renderHistorySearchResults(type) {
@@ -5451,10 +5485,94 @@ function renderHistorySearchSuggestions(container, entries) {
     if (!notes.has(key)) notes.set(key, note);
   });
 
-  container.innerHTML = [...notes.values()]
-    .sort((a, b) => a.localeCompare(b, "vi"))
+  const suggestions = [...notes.values()].sort((a, b) => a.localeCompare(b, "vi"));
+  const type = container === els.expenseHistorySearchSuggestions ? "expense" : "income";
+  historySearchSuggestionCache[type] = suggestions.map((note) => ({
+    note,
+    normalized: normalizeSearchText(note)
+  }));
+
+  container.innerHTML = suggestions
     .map((note) => `<option value="${escapeHtml(note)}"></option>`)
     .join("");
+
+  const input = type === "income" ? els.incomeHistorySearch : els.expenseHistorySearch;
+  if (IS_IOS_DEVICE && document.activeElement === input) {
+    renderIosHistorySuggestions(type);
+  }
+}
+
+function configureIosHistorySearch() {
+  if (!IS_IOS_DEVICE) return;
+
+  document.body.classList.add("is-ios-device");
+  [
+    [els.incomeHistorySearch, els.incomeIosHistorySuggestions],
+    [els.expenseHistorySearch, els.expenseIosHistorySuggestions]
+  ].forEach(([input, suggestions]) => {
+    if (!input || !suggestions) return;
+    input.removeAttribute("list");
+    input.setAttribute("aria-autocomplete", "list");
+    input.setAttribute("aria-controls", suggestions.id);
+    input.setAttribute("aria-expanded", "false");
+  });
+}
+
+function renderIosHistorySuggestions(type) {
+  if (!IS_IOS_DEVICE) return;
+
+  const normalizedType = type === "expense" ? "expense" : "income";
+  const input = normalizedType === "income" ? els.incomeHistorySearch : els.expenseHistorySearch;
+  const container =
+    normalizedType === "income" ? els.incomeIosHistorySuggestions : els.expenseIosHistorySuggestions;
+  if (!input || !container) return;
+
+  const query = normalizeSearchText(input.value);
+  if (!query) {
+    hideIosHistorySuggestions(normalizedType);
+    return;
+  }
+
+  const terms = query.split(/\s+/).filter(Boolean);
+  const prefixMatches = [];
+  const otherMatches = [];
+  historySearchSuggestionCache[normalizedType].forEach((suggestion) => {
+    if (!terms.every((term) => suggestion.normalized.includes(term))) return;
+    if (suggestion.normalized.startsWith(query)) {
+      prefixMatches.push(suggestion);
+    } else {
+      otherMatches.push(suggestion);
+    }
+  });
+  const matches = [...prefixMatches, ...otherMatches].slice(0, 8);
+
+  if (!matches.length) {
+    hideIosHistorySuggestions(normalizedType);
+    return;
+  }
+
+  container.innerHTML = matches
+    .map(
+      ({ note }) =>
+        `<button class="ios-history-suggestion" type="button" role="option" data-ios-history-suggestion data-history-type="${normalizedType}">${escapeHtml(note)}</button>`
+    )
+    .join("");
+  container.hidden = false;
+  input.setAttribute("aria-expanded", "true");
+}
+
+function hideIosHistorySuggestions(type) {
+  if (!IS_IOS_DEVICE) return;
+
+  const normalizedType = type === "expense" ? "expense" : "income";
+  const input = normalizedType === "income" ? els.incomeHistorySearch : els.expenseHistorySearch;
+  const container =
+    normalizedType === "income" ? els.incomeIosHistorySuggestions : els.expenseIosHistorySuggestions;
+  if (!container) return;
+
+  container.hidden = true;
+  container.innerHTML = "";
+  input?.setAttribute("aria-expanded", "false");
 }
 
 function normalizeSearchText(value) {
