@@ -24,6 +24,10 @@ const defaultData = {
 
 let state = loadCachedState();
 let timeFiltersAutoCollapseTimer = null;
+const historySearchRenderTimers = {
+  income: null,
+  expense: null
+};
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -471,13 +475,23 @@ els.monthDate.addEventListener("change", scheduleTimeFiltersAutoCollapse);
   });
 });
 
-[els.incomeHistoryFilter, els.expenseHistoryFilter].forEach((select) => {
-  select.addEventListener("change", render);
+[
+  [els.incomeHistoryFilter, "income"],
+  [els.expenseHistoryFilter, "expense"]
+].forEach(([select, type]) => {
+  select.addEventListener("change", () => renderHistorySearchResults(type));
 });
 
-[els.incomeHistorySearch, els.expenseHistorySearch].forEach((input) => {
-  input.addEventListener("input", render);
-  input.addEventListener("change", render);
+[
+  [els.incomeHistorySearch, "income"],
+  [els.expenseHistorySearch, "expense"]
+].forEach(([input, type]) => {
+  input.addEventListener("input", (event) => {
+    if (event.isComposing) return;
+    scheduleHistorySearchRender(type);
+  });
+  input.addEventListener("change", () => scheduleHistorySearchRender(type, true));
+  input.addEventListener("compositionend", () => scheduleHistorySearchRender(type, true));
 });
 
 document.addEventListener("click", (event) => {
@@ -5371,6 +5385,58 @@ function filterEntriesBySearch(entries, rawQuery) {
     const note = normalizeSearchText(entry.note);
     return terms.every((term) => note.includes(term));
   });
+}
+
+function scheduleHistorySearchRender(type, immediate = false) {
+  const normalizedType = type === "expense" ? "expense" : "income";
+  if (historySearchRenderTimers[normalizedType]) {
+    window.clearTimeout(historySearchRenderTimers[normalizedType]);
+    historySearchRenderTimers[normalizedType] = null;
+  }
+
+  if (immediate) {
+    renderHistorySearchResults(normalizedType);
+    return;
+  }
+
+  historySearchRenderTimers[normalizedType] = window.setTimeout(() => {
+    historySearchRenderTimers[normalizedType] = null;
+    renderHistorySearchResults(normalizedType);
+  }, 120);
+}
+
+function renderHistorySearchResults(type) {
+  const store = getActiveStore();
+  if (!store) return;
+
+  const isIncome = type === "income";
+  const range = getDateRange();
+  const filter = isIncome ? els.incomeHistoryFilter : els.expenseHistoryFilter;
+  const search = isIncome ? els.incomeHistorySearch : els.expenseHistorySearch;
+  const count = isIncome ? els.incomeEntryCount : els.expenseEntryCount;
+  const total = isIncome ? els.incomeHistoryTotal : els.expenseHistoryTotal;
+  const table = isIncome ? els.incomeEntryTable : els.expenseEntryTable;
+
+  const entries = store.entries
+    .filter((entry) => {
+      if (entry.date < range.start || entry.date > range.end) return false;
+      if (isIncome) return entry.type === "income" && !entry.orderId;
+      return entry.type === "expense";
+    })
+    .sort(
+      (a, b) =>
+        b.date.localeCompare(a.date) || String(b.createdAt || "").localeCompare(String(a.createdAt || ""))
+    );
+  const filteredEntries = filterEntriesBySearch(filterEntriesByCategory(entries, filter?.value), search?.value);
+
+  count.textContent = `${filteredEntries.length} dòng`;
+  total.innerHTML = `
+    <span class="report-name">Tổng cộng</span>
+    <span class="report-amount">${formatCurrency(
+      sumEntries(filteredEntries.filter((entry) => !isCancelledEntry(entry)))
+    )}</span>
+  `;
+  renderEntryTable(table, store, filteredEntries);
 }
 
 function renderHistorySearchSuggestions(container, entries) {
