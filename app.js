@@ -5544,7 +5544,7 @@ function renderIosHistorySuggestions(type) {
       otherMatches.push(suggestion);
     }
   });
-  const matches = [...prefixMatches, ...otherMatches].slice(0, 8);
+  const matches = [...prefixMatches, ...otherMatches].slice(0, 20);
 
   if (!matches.length) {
     hideIosHistorySuggestions(normalizedType);
