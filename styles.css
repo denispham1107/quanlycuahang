@@ -2451,9 +2451,24 @@ th:last-child {
 
 @media (max-width: 700px) {
   .activity-history-card {
+    position: relative;
     max-height: calc(100dvh - 24px);
     border-radius: 22px;
     padding: 14px;
+  }
+
+  .activity-history-card .activity-history-heading {
+    flex-direction: row;
+    align-items: flex-start;
+    padding-right: 50px;
+  }
+
+  .activity-history-card .activity-history-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 2;
+    margin: 0;
   }
 
   .activity-history-item {
