@@ -34,6 +34,22 @@ body {
   overflow-x: hidden;
 }
 
+html {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+button,
+a,
+input,
+select,
+textarea,
+[role="button"],
+[tabindex] {
+  touch-action: manipulation;
+}
+
 body {
   margin: 0;
   background:
@@ -451,7 +467,8 @@ button {
 }
 
 input,
-select {
+select,
+textarea {
   min-width: 0;
   width: 100%;
   max-width: 100%;
@@ -461,6 +478,10 @@ select {
   background: #fff;
   color: var(--text);
   padding: 0 12px;
+  font-size: 16px;
+}
+
+textarea {
   font-size: 16px;
 }
 
