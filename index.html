@@ -23,13 +23,33 @@
           <p class="sync-status" id="syncStatus" data-status="loading">Đang kiểm tra đồng bộ...</p>
         </div>
         <div class="topbar-actions">
-          <button class="icon-button" id="exportData" type="button" title="Xuất dữ liệu" aria-label="Xuất dữ liệu">
-            <span aria-hidden="true">↓</span>
-          </button>
-          <label class="icon-button file-import" title="Nhập dữ liệu" aria-label="Nhập dữ liệu">
-            <span aria-hidden="true">↑</span>
-            <input id="importData" type="file" accept="application/json" />
-          </label>
+          <div class="settings-menu" id="settingsMenu">
+            <button
+              class="icon-button settings-toggle"
+              id="settingsToggle"
+              type="button"
+              title="Cài đặt"
+              aria-label="Cài đặt"
+              aria-controls="settingsActions"
+              aria-expanded="false"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" />
+                <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.07A1.7 1.7 0 0 0 8.97 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.53-1.03H3v-4h.07A1.7 1.7 0 0 0 4.6 8.94a1.7 1.7 0 0 0-.34-1.88L4.2 7l2.83-2.83.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 10 3.04V3h4v.04a1.7 1.7 0 0 0 1.03 1.53 1.7 1.7 0 0 0 1.88-.34l.06-.06L19.8 7l-.06.06a1.7 1.7 0 0 0-.34 1.88A1.7 1.7 0 0 0 20.93 10H21v4h-.07A1.7 1.7 0 0 0 19.4 15Z" />
+              </svg>
+            </button>
+            <div class="settings-actions" id="settingsActions" hidden>
+              <label class="settings-action file-import" title="Nhập dữ liệu">
+                <span class="settings-action-icon" aria-hidden="true">↑</span>
+                <span>Nhập dữ liệu</span>
+                <input id="importData" type="file" accept="application/json" />
+              </label>
+              <button class="settings-action" id="exportData" type="button" title="Xuất dữ liệu">
+                <span class="settings-action-icon" aria-hidden="true">↓</span>
+                <span>Xuất dữ liệu</span>
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 

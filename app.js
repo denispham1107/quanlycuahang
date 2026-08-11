@@ -128,6 +128,9 @@ const els = {
   expenseNoteSuggestions: document.querySelector("#expenseNoteSuggestions"),
   exportData: document.querySelector("#exportData"),
   importData: document.querySelector("#importData"),
+  settingsMenu: document.querySelector("#settingsMenu"),
+  settingsToggle: document.querySelector("#settingsToggle"),
+  settingsActions: document.querySelector("#settingsActions"),
   syncStatus: document.querySelector("#syncStatus"),
   stickyControlDock: document.querySelector("#stickyControlDock"),
   tabBar: document.querySelector("#tabBar"),
@@ -1134,6 +1137,29 @@ els.editEntryForm.addEventListener("submit", (event) => {
   saveEditedEntry(new FormData(els.editEntryForm));
 });
 
+function setSettingsMenuOpen(open) {
+  if (!els.settingsToggle || !els.settingsActions) return;
+  const shouldOpen = Boolean(open);
+  els.settingsActions.hidden = !shouldOpen;
+  els.settingsToggle.classList.toggle("active", shouldOpen);
+  els.settingsToggle.setAttribute("aria-expanded", String(shouldOpen));
+}
+
+els.settingsToggle?.addEventListener("click", () => {
+  setSettingsMenuOpen(els.settingsActions?.hidden);
+});
+
+document.addEventListener("click", (event) => {
+  if (!els.settingsMenu || els.settingsMenu.contains(event.target)) return;
+  setSettingsMenuOpen(false);
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" || els.settingsActions?.hidden) return;
+  setSettingsMenuOpen(false);
+  els.settingsToggle?.focus();
+});
+
 els.exportData.addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(createStateExportPayload(), null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -1142,6 +1168,7 @@ els.exportData.addEventListener("click", () => {
   link.download = `du-lieu-thu-chi-${today}.json`;
   link.click();
   URL.revokeObjectURL(url);
+  setSettingsMenuOpen(false);
 });
 
 els.importData.addEventListener("change", async (event) => {
@@ -1157,6 +1184,7 @@ els.importData.addEventListener("change", async (event) => {
     window.alert("Không thể nhập dữ liệu. Vui lòng chọn file JSON đã xuất từ ứng dụng.");
   } finally {
     event.target.value = "";
+    setSettingsMenuOpen(false);
   }
 });
 
