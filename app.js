@@ -131,6 +131,11 @@ const els = {
   settingsMenu: document.querySelector("#settingsMenu"),
   settingsToggle: document.querySelector("#settingsToggle"),
   settingsActions: document.querySelector("#settingsActions"),
+  openActivityHistory: document.querySelector("#openActivityHistory"),
+  activityHistoryModal: document.querySelector("#activityHistoryModal"),
+  activityHistoryStoreName: document.querySelector("#activityHistoryStoreName"),
+  activityHistoryList: document.querySelector("#activityHistoryList"),
+  closeActivityHistory: document.querySelector("#closeActivityHistory"),
   syncStatus: document.querySelector("#syncStatus"),
   stickyControlDock: document.querySelector("#stickyControlDock"),
   tabBar: document.querySelector("#tabBar"),
@@ -371,6 +376,7 @@ els.storeForm.addEventListener("submit", (event) => {
   const name = els.storeName.value.trim();
   if (!name) return;
 
+  const createdAt = new Date().toISOString();
   const store = {
     id: createId(),
     name,
@@ -386,7 +392,16 @@ els.storeForm.addEventListener("submit", (event) => {
     inventoryLogs: [],
     inventory: [],
     exportReasons: [],
-    createdAt: new Date().toISOString()
+    activityHistory: [
+      {
+        id: createId(),
+        action: "create",
+        area: "Cửa hàng",
+        message: `Tạo cửa hàng "${name}".`,
+        createdAt
+      }
+    ],
+    createdAt
   };
 
   state.stores.push(store);
@@ -421,8 +436,10 @@ els.renameStore.addEventListener("click", () => {
     return;
   }
 
+  const previousName = store.name;
   store.name = name;
   store.updatedAt = new Date().toISOString();
+  recordActivity(store, "update", "Cửa hàng", `Đổi tên cửa hàng từ "${previousName}" thành "${name}".`);
   saveAndRender();
 });
 
@@ -1155,9 +1172,21 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
-  if (event.key !== "Escape" || els.settingsActions?.hidden) return;
-  setSettingsMenuOpen(false);
-  els.settingsToggle?.focus();
+  if (event.key !== "Escape") return;
+  if (!els.activityHistoryModal?.hidden) {
+    closeActivityHistoryModal();
+    return;
+  }
+  if (!els.settingsActions?.hidden) {
+    setSettingsMenuOpen(false);
+    els.settingsToggle?.focus();
+  }
+});
+
+els.openActivityHistory?.addEventListener("click", openActivityHistoryModal);
+els.closeActivityHistory?.addEventListener("click", closeActivityHistoryModal);
+els.activityHistoryModal?.addEventListener("click", (event) => {
+  if (event.target === els.activityHistoryModal) closeActivityHistoryModal();
 });
 
 els.exportData.addEventListener("click", () => {
@@ -1304,6 +1333,7 @@ function normalizeState(data) {
     purchaseCategories: store.purchaseCategories || [],
     purchaseOrders: store.purchaseOrders || [],
     inventoryLogs: store.inventoryLogs || [],
+    activityHistory: Array.isArray(store.activityHistory) ? store.activityHistory : [],
     exportReasons: normalizeExportReasons(store),
     inventory: (store.inventory || []).map((item) => ({
       ...item,
@@ -1441,6 +1471,81 @@ function getActiveStore() {
   return state.stores.find((store) => store.id === state.activeStoreId) || null;
 }
 
+function recordActivity(store, action, area, message, createdAt = new Date().toISOString()) {
+  if (!store) return;
+  store.activityHistory = [
+    {
+      id: createId(),
+      action: ["create", "update", "delete"].includes(action) ? action : "update",
+      area: String(area || "Cửa hàng"),
+      message: String(message || "Cập nhật dữ liệu."),
+      createdAt
+    },
+    ...(Array.isArray(store.activityHistory) ? store.activityHistory : [])
+  ];
+}
+
+function formatActivityDateTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Không rõ thời gian";
+  const datePart = date.toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
+  const timePart = date.toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
+  return `${datePart} ${timePart}`;
+}
+
+function renderActivityHistory(store) {
+  if (!els.activityHistoryList || !els.activityHistoryStoreName) return;
+  els.activityHistoryStoreName.textContent = store?.name || "Chưa chọn cửa hàng";
+  const activities = [...(Array.isArray(store?.activityHistory) ? store.activityHistory : [])].sort((a, b) =>
+    String(b.createdAt || "").localeCompare(String(a.createdAt || ""))
+  );
+
+  if (!activities.length) {
+    els.activityHistoryList.innerHTML = '<div class="empty-list">Chưa có sự kiện nào được ghi lại.</div>';
+    return;
+  }
+
+  els.activityHistoryList.innerHTML = activities
+    .map(
+      (activity) => `
+        <article class="activity-history-item" data-action="${escapeHtml(activity.action || "update")}">
+          <time class="activity-history-time" datetime="${escapeHtml(activity.createdAt || "")}">${escapeHtml(
+            formatActivityDateTime(activity.createdAt)
+          )}</time>
+          <span class="activity-history-area">${escapeHtml(activity.area || "Cửa hàng")}</span>
+          <span class="activity-history-message">${escapeHtml(activity.message || "Cập nhật dữ liệu.")}</span>
+        </article>
+      `
+    )
+    .join("");
+}
+
+function openActivityHistoryModal() {
+  const store = getActiveStore();
+  setSettingsMenuOpen(false);
+  if (!store) {
+    window.alert("Vui lòng chọn cửa hàng để xem lịch sử.");
+    return;
+  }
+  renderActivityHistory(store);
+  els.activityHistoryModal.hidden = false;
+  els.closeActivityHistory?.focus({ preventScroll: true });
+}
+
+function closeActivityHistoryModal() {
+  if (!els.activityHistoryModal) return;
+  els.activityHistoryModal.hidden = true;
+  els.settingsToggle?.focus({ preventScroll: true });
+}
+
 function addCategory(type, rawName) {
   const store = getActiveStore();
   const name = String(rawName || "").trim();
@@ -1458,6 +1563,7 @@ function addCategory(type, rawName) {
   };
 
   store.categories[type].push(category);
+  recordActivity(store, "create", type === "income" ? "Thu" : "Chi", `Tạo mục "${name}".`);
   saveAndRender();
   return category;
 }
@@ -1479,6 +1585,7 @@ function ensureCategory(type, rawName) {
   };
 
   store.categories[type].push(category);
+  recordActivity(store, "create", type === "income" ? "Thu" : "Chi", `Tạo mục "${name}".`);
   saveAndRender();
   selectCategory(type, category.id);
   return category;
@@ -1507,6 +1614,7 @@ function addEntry(type, formData) {
     return;
   }
 
+  const createdAt = new Date().toISOString();
   store.entries.push({
     id: createId(),
     type,
@@ -1514,8 +1622,15 @@ function addEntry(type, formData) {
     date,
     amount,
     note,
-    createdAt: new Date().toISOString()
+    createdAt
   });
+  recordActivity(
+    store,
+    "create",
+    type === "income" ? "Thu" : "Chi",
+    `Tạo ${type === "income" ? "khoản thu" : "khoản chi"} "${note || "Không tên"}" - ${formatCurrency(amount)}.`,
+    createdAt
+  );
   saveAndRender();
   return true;
 }
@@ -1530,7 +1645,14 @@ function deleteCategory(type, categoryId) {
     return;
   }
 
-  store.categories[type] = store.categories[type].filter((category) => category.id !== categoryId);
+  const category = store.categories[type].find((item) => item.id === categoryId);
+  store.categories[type] = store.categories[type].filter((item) => item.id !== categoryId);
+  recordActivity(
+    store,
+    "delete",
+    type === "income" ? "Thu" : "Chi",
+    `Xóa mục "${category?.name || "Không rõ tên"}".`
+  );
   saveAndRender();
 }
 
@@ -1556,7 +1678,14 @@ function editCategory(type, categoryId) {
     return;
   }
 
+  const previousName = category.name;
   category.name = name;
+  recordActivity(
+    store,
+    "update",
+    type === "income" ? "Thu" : "Chi",
+    `Sửa tên mục từ "${previousName}" thành "${name}".`
+  );
   saveAndRender();
   selectCategory(type, category.id);
 }
@@ -1570,6 +1699,13 @@ function deleteEntry(entryId) {
 
   entry.status = "cancelled";
   entry.cancelledAt = new Date().toISOString();
+  recordActivity(
+    store,
+    "delete",
+    entry.type === "income" ? "Thu" : "Chi",
+    `Xóa ${entry.type === "income" ? "khoản thu" : "khoản chi"} "${entry.note || "Không tên"}" - ${formatCurrency(entry.amount)}.`,
+    entry.cancelledAt
+  );
   saveAndRender();
 }
 
@@ -1593,6 +1729,13 @@ function deleteSalesOrder(orderId) {
       entry.status = "cancelled";
       entry.cancelledAt = order.cancelledAt;
     });
+  recordActivity(
+    store,
+    "delete",
+    "Bán hàng",
+    `Hủy đơn bán hàng của "${order.customerName || "Không rõ khách"}" - ${formatCurrency(order.total)}.`,
+    order.cancelledAt
+  );
   saveAndRender();
 }
 
@@ -1654,11 +1797,22 @@ function saveEditedEntry(formData) {
     return;
   }
 
+  const previousName = entry.note || "Không tên";
+  const previousAmount = Number(entry.amount || 0);
   entry.categoryId = categoryId;
   entry.date = nextDate;
   entry.note = nextName;
   entry.amount = amount;
   entry.updatedAt = new Date().toISOString();
+  recordActivity(
+    store,
+    "update",
+    entry.type === "income" ? "Thu" : "Chi",
+    `Sửa ${entry.type === "income" ? "khoản thu" : "khoản chi"} "${previousName}" (${formatCurrency(
+      previousAmount
+    )}) thành "${nextName || "Không tên"}" (${formatCurrency(amount)}).`,
+    entry.updatedAt
+  );
   saveAndRender();
   selectCategory(entry.type, categoryId);
   closeEditEntryModal();
@@ -1703,6 +1857,9 @@ function render() {
   renderReports(store);
   renderInventory(store);
   renderInventoryLogs(store);
+  if (els.activityHistoryModal && !els.activityHistoryModal.hidden) {
+    renderActivityHistory(store);
+  }
   if (!els.customersModal.hidden && !uiState.customerFormOpen) {
     renderCustomers(store);
   }
@@ -2552,6 +2709,14 @@ function saveSalesOrder() {
     createdAt
   });
 
+  recordActivity(
+    store,
+    "create",
+    "Bán hàng",
+    `Tạo đơn bán hàng cho "${customerName}" - ${items.length} mặt hàng, tổng ${formatCurrency(total)}.`,
+    createdAt
+  );
+
   if (uiState.salesDraftId) {
     store.draftOrders = (store.draftOrders || []).filter((draft) => draft.id !== uiState.salesDraftId);
   }
@@ -3272,6 +3437,16 @@ function saveEditedInventory(formData) {
     newSalePrice: getInventorySalePrice(item)
   });
 
+  recordActivity(
+    store,
+    "update",
+    "Kho hàng",
+    `Sửa hàng hóa "${name}" - số lượng ${oldQuantity.toLocaleString("vi-VN")} thành ${quantity.toLocaleString(
+      "vi-VN"
+    )}.`,
+    updatedAt
+  );
+
   saveAndRender();
   renderInventory(store);
   closeEditInventoryModal();
@@ -3323,6 +3498,14 @@ function exportInventoryItem(formData) {
     exportReason: reason
   });
 
+  recordActivity(
+    store,
+    "create",
+    "Xuất kho",
+    `Xuất "${item.name}" - ${quantity.toLocaleString("vi-VN")} sản phẩm${reason ? `, lý do: ${reason}` : ""}.`,
+    updatedAt
+  );
+
   saveAndRender();
   renderInventory(store);
   closeExportInventoryModal();
@@ -3336,6 +3519,8 @@ function saveEditedInventoryLog(formData) {
   ensureInventoryLogIds(store);
   const log = findInventoryLogById(store, formData.get("logId"));
   if (!log) return false;
+  const previousPurpose = getInventoryLogPurpose(log);
+  const previousItemName = String(log.itemName || "Không rõ hàng hóa");
 
   const date = String(formData.get("date") || "").trim();
   const newQuantity = Number.parseInt(formData.get("newQuantity"), 10);
@@ -3385,6 +3570,14 @@ function saveEditedInventoryLog(formData) {
   }
 
   syncInventoryItemFromLatestLog(store, log);
+  const nextPurpose = getInventoryLogPurpose(log);
+  recordActivity(
+    store,
+    "update",
+    nextPurpose.value === "export" ? "Xuất kho" : "Nhập hàng",
+    `Sửa lịch sử ${previousPurpose.label.toLowerCase()} của "${previousItemName}".`,
+    log.editedAt
+  );
   saveAndRender();
   closeEditInventoryLogModal();
   return true;
@@ -3401,8 +3594,15 @@ function deleteEditingInventoryLog() {
   const confirmed = window.confirm("Xóa dòng lịch sử kho này? Số lượng và giá hiện tại sẽ được cập nhật theo lịch sử mới nhất còn lại.");
   if (!confirmed) return;
 
+  const purpose = getInventoryLogPurpose(log);
   store.inventoryLogs = (store.inventoryLogs || []).filter((current) => current.id !== log.id);
   syncInventoryItemAfterLogDelete(store, log);
+  recordActivity(
+    store,
+    "delete",
+    purpose.value === "export" ? "Xuất kho" : "Nhập hàng",
+    `Xóa lịch sử ${purpose.label.toLowerCase()} của "${log.itemName || "Không rõ hàng hóa"}".`
+  );
   saveAndRender();
   closeEditInventoryLogModal();
 }
@@ -3576,6 +3776,14 @@ function savePurchaseOrder() {
 
   applyPurchaseItemsToInventory(store, date, normalizedItems, createdAt);
 
+  recordActivity(
+    store,
+    "create",
+    "Nhập hàng",
+    `Nhập ${normalizedItems.length} mặt hàng vào kho - tổng ${formatCurrency(total)}.`,
+    createdAt
+  );
+
   saveAndRender();
   return true;
 }
@@ -3661,6 +3869,13 @@ function saveBulkPurchaseOrder() {
     { id: orderId, date, items: normalizedItems, total, createdAt, source: "bulk" }
   ];
   applyPurchaseItemsToInventory(store, date, normalizedItems, createdAt);
+  recordActivity(
+    store,
+    "create",
+    "Nhập hàng",
+    `Nhập nhanh ${normalizedItems.length} mặt hàng vào kho - tổng ${formatCurrency(total)}.`,
+    createdAt
+  );
   saveAndRender();
   return true;
 }
