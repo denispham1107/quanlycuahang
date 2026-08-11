@@ -377,8 +377,9 @@ els.storeForm.addEventListener("submit", (event) => {
   if (!name) return;
 
   const createdAt = new Date().toISOString();
+  const storeId = createId();
   const store = {
-    id: createId(),
+    id: storeId,
     name,
     categories: {
       income: [],
@@ -398,7 +399,10 @@ els.storeForm.addEventListener("submit", (event) => {
         action: "create",
         area: "Cửa hàng",
         message: `Tạo cửa hàng "${name}".`,
-        createdAt
+        createdAt,
+        tab: "stores",
+        targetType: "store",
+        targetId: storeId
       }
     ],
     createdAt
@@ -439,7 +443,11 @@ els.renameStore.addEventListener("click", () => {
   const previousName = store.name;
   store.name = name;
   store.updatedAt = new Date().toISOString();
-  recordActivity(store, "update", "Cửa hàng", `Đổi tên cửa hàng từ "${previousName}" thành "${name}".`);
+  recordActivity(store, "update", "Cửa hàng", `Đổi tên cửa hàng từ "${previousName}" thành "${name}".`, {
+    tab: "stores",
+    targetType: "store",
+    targetId: store.id
+  });
   saveAndRender();
 });
 
@@ -1188,6 +1196,17 @@ els.closeActivityHistory?.addEventListener("click", closeActivityHistoryModal);
 els.activityHistoryModal?.addEventListener("click", (event) => {
   if (event.target === els.activityHistoryModal) closeActivityHistoryModal();
 });
+els.activityHistoryList?.addEventListener("click", (event) => {
+  const row = event.target.closest("[data-activity-id]");
+  if (row) navigateToActivity(row.dataset.activityId);
+});
+els.activityHistoryList?.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  const row = event.target.closest("[data-activity-id]");
+  if (!row) return;
+  event.preventDefault();
+  navigateToActivity(row.dataset.activityId);
+});
 
 els.exportData.addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(createStateExportPayload(), null, 2)], { type: "application/json" });
@@ -1471,18 +1490,24 @@ function getActiveStore() {
   return state.stores.find((store) => store.id === state.activeStoreId) || null;
 }
 
-function recordActivity(store, action, area, message, createdAt = new Date().toISOString()) {
+function recordActivity(store, action, area, message, details = {}) {
   if (!store) return;
+  const options = typeof details === "string" ? { createdAt: details } : details || {};
+  const activity = {
+    id: createId(),
+    action: ["create", "update", "delete"].includes(action) ? action : "update",
+    area: String(area || "Cửa hàng"),
+    message: String(message || "Cập nhật dữ liệu."),
+    createdAt: options.createdAt || new Date().toISOString()
+  };
+  ["tab", "targetType", "targetId", "targetDate"].forEach((key) => {
+    if (options[key]) activity[key] = String(options[key]);
+  });
   store.activityHistory = [
-    {
-      id: createId(),
-      action: ["create", "update", "delete"].includes(action) ? action : "update",
-      area: String(area || "Cửa hàng"),
-      message: String(message || "Cập nhật dữ liệu."),
-      createdAt
-    },
+    activity,
     ...(Array.isArray(store.activityHistory) ? store.activityHistory : [])
   ];
+  return activity;
 }
 
 function formatActivityDateTime(value) {
@@ -1515,17 +1540,91 @@ function renderActivityHistory(store) {
 
   els.activityHistoryList.innerHTML = activities
     .map(
-      (activity) => `
-        <article class="activity-history-item" data-action="${escapeHtml(activity.action || "update")}">
+      (activity) => {
+        const target = resolveActivityTarget(store, activity);
+        const targetDate = /^\d{4}-\d{2}-\d{2}$/.test(target.targetDate || "") ? formatDate(target.targetDate) : "";
+        return `
+        <article class="activity-history-item" data-action="${escapeHtml(activity.action || "update")}" data-activity-id="${escapeHtml(
+          activity.id || ""
+        )}" tabindex="0" role="button">
           <time class="activity-history-time" datetime="${escapeHtml(activity.createdAt || "")}">${escapeHtml(
             formatActivityDateTime(activity.createdAt)
           )}</time>
           <span class="activity-history-area">${escapeHtml(activity.area || "Cửa hàng")}</span>
-          <span class="activity-history-message">${escapeHtml(activity.message || "Cập nhật dữ liệu.")}</span>
+          <span class="activity-history-content">
+            <span class="activity-history-message">${escapeHtml(activity.message || "Cập nhật dữ liệu.")}</span>
+            ${targetDate ? `<span class="activity-history-record-date">Ngày dữ liệu: ${escapeHtml(targetDate)}</span>` : ""}
+          </span>
         </article>
-      `
+      `;
+      }
     )
     .join("");
+}
+
+function resolveActivityTarget(store, activity) {
+  const resolved = {
+    tab: activity.tab || "",
+    targetType: activity.targetType || "",
+    targetId: activity.targetId || "",
+    targetDate: activity.targetDate || ""
+  };
+  if (resolved.targetId || resolved.targetDate) return resolved;
+
+  const timestamp = String(activity.createdAt || "");
+  const area = String(activity.area || "");
+  if (area === "Thu" || area === "Chi") {
+    const type = area === "Thu" ? "income" : "expense";
+    const entry = (store.entries || []).find(
+      (item) =>
+        item.type === type && [item.createdAt, item.updatedAt, item.cancelledAt].some((value) => String(value || "") === timestamp)
+    );
+    return {
+      tab: type,
+      targetType: "entry",
+      targetId: entry?.id || "",
+      targetDate: entry?.date || ""
+    };
+  }
+
+  if (area === "Bán hàng") {
+    const order = (store.orders || []).find((item) =>
+      [item.createdAt, item.updatedAt, item.cancelledAt].some((value) => String(value || "") === timestamp)
+    );
+    return { tab: "sales", targetType: "sales-order", targetId: order?.id || "", targetDate: order?.date || "" };
+  }
+
+  if (["Nhập hàng", "Xuất kho", "Kho hàng"].includes(area)) {
+    const activityTime = new Date(timestamp).getTime();
+    const log = (store.inventoryLogs || [])
+      .map((item) => ({
+        item,
+        distance: Math.min(
+          ...[item.updatedAt, item.editedAt]
+            .map((value) => Math.abs(new Date(value || 0).getTime() - activityTime))
+            .filter(Number.isFinite)
+        )
+      }))
+      .filter(({ distance }) => Number.isFinite(distance))
+      .sort((a, b) => a.distance - b.distance)[0];
+    if (log && log.distance <= 5000) {
+      return {
+        tab: "purchase",
+        targetType: "inventory-log",
+        targetId: log.item.id || "",
+        targetDate: getInventoryLogDate(log.item)
+      };
+    }
+    const order = (store.purchaseOrders || []).find((item) => String(item.createdAt || "") === timestamp);
+    return {
+      tab: "purchase",
+      targetType: "purchase-order",
+      targetId: order?.id || "",
+      targetDate: order?.date || ""
+    };
+  }
+
+  return { ...resolved, tab: resolved.tab || (area === "Cửa hàng" ? "stores" : "") };
 }
 
 function openActivityHistoryModal() {
@@ -1546,6 +1645,84 @@ function closeActivityHistoryModal() {
   els.settingsToggle?.focus({ preventScroll: true });
 }
 
+function findActivityTargetRow(target) {
+  const targetAttributes = {
+    entry: "data-entry-id",
+    "sales-order": "data-open-sales-order",
+    "inventory-log": "data-edit-inventory-log",
+    store: "data-store-id"
+  };
+  const attribute = targetAttributes[target.targetType];
+  if (!attribute || !target.targetId) return null;
+  return [...document.querySelectorAll(`[${attribute}]`)].find(
+    (element) => element.getAttribute(attribute) === target.targetId
+  ) || null;
+}
+
+function showActivityNavigationNotice(message) {
+  document.querySelector(".activity-navigation-notice")?.remove();
+  const notice = document.createElement("div");
+  notice.className = "activity-navigation-notice";
+  notice.setAttribute("role", "status");
+  notice.textContent = message;
+  document.body.append(notice);
+  window.setTimeout(() => notice.remove(), 3200);
+}
+
+function navigateToActivity(activityId) {
+  const store = getActiveStore();
+  const activity = (store?.activityHistory || []).find((item) => item.id === activityId);
+  if (!store || !activity) return;
+
+  const target = resolveActivityTarget(store, activity);
+  const targetDate = /^\d{4}-\d{2}-\d{2}$/.test(target.targetDate || "") ? target.targetDate : "";
+
+  if (targetDate) {
+    uiState.rangeMode = "day";
+    els.rangeMode.value = "day";
+    els.singleDate.value = targetDate;
+  }
+
+  if (target.tab === "income" || target.tab === "expense") {
+    const search = target.tab === "income" ? els.incomeHistorySearch : els.expenseHistorySearch;
+    const filter = target.tab === "income" ? els.incomeHistoryFilter : els.expenseHistoryFilter;
+    if (search) search.value = "";
+    if (filter) filter.value = "all";
+  }
+
+  if (target.tab === "purchase") {
+    uiState.inventoryLogsExpanded = true;
+    uiState.inventoryLogFilter = "all";
+    uiState.inventoryLogReasonFilter = "all";
+    uiState.inventoryLogSearch = "";
+  }
+
+  closeActivityHistoryModal();
+  activateTab(target.tab || "stores");
+  render();
+
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      const row = findActivityTargetRow(target);
+      if (row) {
+        row.classList.add("activity-target-highlight");
+        row.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+        window.setTimeout(() => row.classList.remove("activity-target-highlight"), 3600);
+        showActivityNavigationNotice("Đã chuyển đến đúng dòng dữ liệu.");
+        return;
+      }
+
+      const panel = document.querySelector(`[data-tab-panel="${target.tab || "stores"}"]`);
+      panel?.scrollIntoView({ behavior: "smooth", block: "start" });
+      showActivityNavigationNotice(
+        target.targetId
+          ? "Đã chuyển đến đúng khu vực và ngày dữ liệu. Dòng gốc có thể đã bị xóa."
+          : "Đã chuyển đến khu vực liên quan. Nhật ký cũ chưa có đủ thông tin để xác định chính xác dòng."
+      );
+    });
+  });
+}
+
 function addCategory(type, rawName) {
   const store = getActiveStore();
   const name = String(rawName || "").trim();
@@ -1563,7 +1740,11 @@ function addCategory(type, rawName) {
   };
 
   store.categories[type].push(category);
-  recordActivity(store, "create", type === "income" ? "Thu" : "Chi", `Tạo mục "${name}".`);
+  recordActivity(store, "create", type === "income" ? "Thu" : "Chi", `Tạo mục "${name}".`, {
+    tab: type,
+    targetType: "category",
+    targetId: category.id
+  });
   saveAndRender();
   return category;
 }
@@ -1585,7 +1766,11 @@ function ensureCategory(type, rawName) {
   };
 
   store.categories[type].push(category);
-  recordActivity(store, "create", type === "income" ? "Thu" : "Chi", `Tạo mục "${name}".`);
+  recordActivity(store, "create", type === "income" ? "Thu" : "Chi", `Tạo mục "${name}".`, {
+    tab: type,
+    targetType: "category",
+    targetId: category.id
+  });
   saveAndRender();
   selectCategory(type, category.id);
   return category;
@@ -1615,7 +1800,7 @@ function addEntry(type, formData) {
   }
 
   const createdAt = new Date().toISOString();
-  store.entries.push({
+  const entry = {
     id: createId(),
     type,
     categoryId,
@@ -1623,13 +1808,14 @@ function addEntry(type, formData) {
     amount,
     note,
     createdAt
-  });
+  };
+  store.entries.push(entry);
   recordActivity(
     store,
     "create",
     type === "income" ? "Thu" : "Chi",
     `Tạo ${type === "income" ? "khoản thu" : "khoản chi"} "${note || "Không tên"}" - ${formatCurrency(amount)}.`,
-    createdAt
+    { createdAt, tab: type, targetType: "entry", targetId: entry.id, targetDate: date }
   );
   saveAndRender();
   return true;
@@ -1651,7 +1837,8 @@ function deleteCategory(type, categoryId) {
     store,
     "delete",
     type === "income" ? "Thu" : "Chi",
-    `Xóa mục "${category?.name || "Không rõ tên"}".`
+    `Xóa mục "${category?.name || "Không rõ tên"}".`,
+    { tab: type, targetType: "category", targetId: categoryId }
   );
   saveAndRender();
 }
@@ -1684,7 +1871,8 @@ function editCategory(type, categoryId) {
     store,
     "update",
     type === "income" ? "Thu" : "Chi",
-    `Sửa tên mục từ "${previousName}" thành "${name}".`
+    `Sửa tên mục từ "${previousName}" thành "${name}".`,
+    { tab: type, targetType: "category", targetId: category.id }
   );
   saveAndRender();
   selectCategory(type, category.id);
@@ -1704,7 +1892,7 @@ function deleteEntry(entryId) {
     "delete",
     entry.type === "income" ? "Thu" : "Chi",
     `Xóa ${entry.type === "income" ? "khoản thu" : "khoản chi"} "${entry.note || "Không tên"}" - ${formatCurrency(entry.amount)}.`,
-    entry.cancelledAt
+    { createdAt: entry.cancelledAt, tab: entry.type, targetType: "entry", targetId: entry.id, targetDate: entry.date }
   );
   saveAndRender();
 }
@@ -1734,7 +1922,7 @@ function deleteSalesOrder(orderId) {
     "delete",
     "Bán hàng",
     `Hủy đơn bán hàng của "${order.customerName || "Không rõ khách"}" - ${formatCurrency(order.total)}.`,
-    order.cancelledAt
+    { createdAt: order.cancelledAt, tab: "sales", targetType: "sales-order", targetId: order.id, targetDate: order.date }
   );
   saveAndRender();
 }
@@ -1811,7 +1999,7 @@ function saveEditedEntry(formData) {
     `Sửa ${entry.type === "income" ? "khoản thu" : "khoản chi"} "${previousName}" (${formatCurrency(
       previousAmount
     )}) thành "${nextName || "Không tên"}" (${formatCurrency(amount)}).`,
-    entry.updatedAt
+    { createdAt: entry.updatedAt, tab: entry.type, targetType: "entry", targetId: entry.id, targetDate: entry.date }
   );
   saveAndRender();
   selectCategory(entry.type, categoryId);
@@ -2714,7 +2902,7 @@ function saveSalesOrder() {
     "create",
     "Bán hàng",
     `Tạo đơn bán hàng cho "${customerName}" - ${items.length} mặt hàng, tổng ${formatCurrency(total)}.`,
-    createdAt
+    { createdAt, tab: "sales", targetType: "sales-order", targetId: orderId, targetDate: date }
   );
 
   if (uiState.salesDraftId) {
@@ -3423,7 +3611,7 @@ function saveEditedInventory(formData) {
   item.salePrice = salePrice;
   item.totalCost = Math.max(0, quantity * lastPrice);
   item.updatedAt = updatedAt;
-  addInventoryLog(store, {
+  const inventoryLog = addInventoryLog(store, {
     date: updatedAt.slice(0, 10),
     type: "edit",
     inventoryId: item.id,
@@ -3444,7 +3632,13 @@ function saveEditedInventory(formData) {
     `Sửa hàng hóa "${name}" - số lượng ${oldQuantity.toLocaleString("vi-VN")} thành ${quantity.toLocaleString(
       "vi-VN"
     )}.`,
-    updatedAt
+    {
+      createdAt: updatedAt,
+      tab: "purchase",
+      targetType: "inventory-log",
+      targetId: inventoryLog.id,
+      targetDate: inventoryLog.date
+    }
   );
 
   saveAndRender();
@@ -3483,7 +3677,7 @@ function exportInventoryItem(formData) {
   item.quantity = oldQuantity - quantity;
   item.totalCost = Math.max(0, oldTotalCost - averageCost * quantity);
   item.updatedAt = updatedAt;
-  addInventoryLog(store, {
+  const inventoryLog = addInventoryLog(store, {
     date,
     type: "export",
     inventoryId: item.id,
@@ -3503,7 +3697,13 @@ function exportInventoryItem(formData) {
     "create",
     "Xuất kho",
     `Xuất "${item.name}" - ${quantity.toLocaleString("vi-VN")} sản phẩm${reason ? `, lý do: ${reason}` : ""}.`,
-    updatedAt
+    {
+      createdAt: updatedAt,
+      tab: "purchase",
+      targetType: "inventory-log",
+      targetId: inventoryLog.id,
+      targetDate: date
+    }
   );
 
   saveAndRender();
@@ -3576,7 +3776,7 @@ function saveEditedInventoryLog(formData) {
     "update",
     nextPurpose.value === "export" ? "Xuất kho" : "Nhập hàng",
     `Sửa lịch sử ${previousPurpose.label.toLowerCase()} của "${previousItemName}".`,
-    log.editedAt
+    { createdAt: log.editedAt, tab: "purchase", targetType: "inventory-log", targetId: log.id, targetDate: date }
   );
   saveAndRender();
   closeEditInventoryLogModal();
@@ -3601,7 +3801,8 @@ function deleteEditingInventoryLog() {
     store,
     "delete",
     purpose.value === "export" ? "Xuất kho" : "Nhập hàng",
-    `Xóa lịch sử ${purpose.label.toLowerCase()} của "${log.itemName || "Không rõ hàng hóa"}".`
+    `Xóa lịch sử ${purpose.label.toLowerCase()} của "${log.itemName || "Không rõ hàng hóa"}".`,
+    { tab: "purchase", targetType: "inventory-log", targetId: log.id, targetDate: getInventoryLogDate(log) }
   );
   saveAndRender();
   closeEditInventoryLogModal();
@@ -3671,18 +3872,21 @@ function ensurePurchaseCategory(store, rawName) {
 }
 
 function addInventoryLog(store, log) {
+  const inventoryLog = {
+    id: createId(),
+    updatedAt: new Date().toISOString(),
+    ...log
+  };
   store.inventoryLogs = [
-    {
-      id: createId(),
-      updatedAt: new Date().toISOString(),
-      ...log
-    },
+    inventoryLog,
     ...(store.inventoryLogs || [])
   ];
+  return inventoryLog;
 }
 
 function applyPurchaseItemsToInventory(store, date, items, createdAt) {
   store.inventory = [...(store.inventory || [])];
+  const inventoryLogs = [];
 
   items.forEach((item) => {
     const key = normalizeSearchText(`${item.groupName} ${item.name}`);
@@ -3696,7 +3900,7 @@ function applyPurchaseItemsToInventory(store, date, items, createdAt) {
       current.lastPrice = item.price;
       current.salePrice = item.salePrice;
       current.updatedAt = createdAt;
-      addInventoryLog(store, {
+      inventoryLogs.push(addInventoryLog(store, {
         date,
         type: "purchase",
         inventoryId: current.id,
@@ -3708,7 +3912,7 @@ function applyPurchaseItemsToInventory(store, date, items, createdAt) {
         newPrice: Number(current.lastPrice || 0),
         oldSalePrice,
         newSalePrice: getInventorySalePrice(current)
-      });
+      }));
     } else {
       const stock = {
         id: createId(),
@@ -3723,7 +3927,7 @@ function applyPurchaseItemsToInventory(store, date, items, createdAt) {
         updatedAt: createdAt
       };
       store.inventory.push(stock);
-      addInventoryLog(store, {
+      inventoryLogs.push(addInventoryLog(store, {
         date,
         type: "purchase",
         inventoryId: stock.id,
@@ -3735,9 +3939,10 @@ function applyPurchaseItemsToInventory(store, date, items, createdAt) {
         newPrice: Number(stock.lastPrice || 0),
         oldSalePrice: 0,
         newSalePrice: getInventorySalePrice(stock)
-      });
+      }));
     }
   });
+  return inventoryLogs;
 }
 
 function savePurchaseOrder() {
@@ -3774,14 +3979,20 @@ function savePurchaseOrder() {
     { id: orderId, date, items: normalizedItems, total, createdAt }
   ];
 
-  applyPurchaseItemsToInventory(store, date, normalizedItems, createdAt);
+  const inventoryLogs = applyPurchaseItemsToInventory(store, date, normalizedItems, createdAt);
 
   recordActivity(
     store,
     "create",
     "Nhập hàng",
     `Nhập ${normalizedItems.length} mặt hàng vào kho - tổng ${formatCurrency(total)}.`,
-    createdAt
+    {
+      createdAt,
+      tab: "purchase",
+      targetType: "inventory-log",
+      targetId: inventoryLogs[0]?.id || orderId,
+      targetDate: date
+    }
   );
 
   saveAndRender();
@@ -3868,13 +4079,19 @@ function saveBulkPurchaseOrder() {
     ...(store.purchaseOrders || []),
     { id: orderId, date, items: normalizedItems, total, createdAt, source: "bulk" }
   ];
-  applyPurchaseItemsToInventory(store, date, normalizedItems, createdAt);
+  const inventoryLogs = applyPurchaseItemsToInventory(store, date, normalizedItems, createdAt);
   recordActivity(
     store,
     "create",
     "Nhập hàng",
     `Nhập nhanh ${normalizedItems.length} mặt hàng vào kho - tổng ${formatCurrency(total)}.`,
-    createdAt
+    {
+      createdAt,
+      tab: "purchase",
+      targetType: "inventory-log",
+      targetId: inventoryLogs[0]?.id || orderId,
+      targetDate: date
+    }
   );
   saveAndRender();
   return true;
@@ -5897,7 +6114,7 @@ function renderEntryTable(container, store, entries) {
           `;
 
       return `
-        <tr class="${cancelled ? "entry-cancelled" : ""}">
+        <tr class="${cancelled ? "entry-cancelled" : ""}" data-entry-id="${escapeHtml(entry.id)}">
           <td>${formatDate(entry.date)}</td>
           <td>${escapeHtml(category?.name || "Mục đã xóa")}</td>
           <td class="note-cell">${note}</td>

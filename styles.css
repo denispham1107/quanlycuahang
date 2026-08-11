@@ -2353,6 +2353,16 @@ th:last-child {
   border-radius: 15px;
   padding: 11px 12px;
   background: rgba(255, 255, 255, 0.86);
+  cursor: pointer;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.activity-history-item:hover,
+.activity-history-item:focus-visible {
+  border-color: rgba(8, 120, 247, 0.38);
+  box-shadow: 0 8px 20px rgba(30, 73, 132, 0.1);
+  outline: none;
+  transform: translateY(-1px);
 }
 
 .activity-history-time {
@@ -2379,6 +2389,52 @@ th:last-child {
   font-size: 13px;
   font-weight: 700;
   overflow-wrap: anywhere;
+}
+
+.activity-history-content {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.activity-history-record-date {
+  color: #0878f7;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.activity-target-highlight {
+  position: relative;
+  z-index: 1;
+  animation: activity-target-pulse 900ms ease-in-out 3;
+  outline: 3px solid rgba(8, 120, 247, 0.4);
+  outline-offset: -3px;
+  background: rgba(224, 240, 255, 0.9) !important;
+}
+
+@keyframes activity-target-pulse {
+  50% {
+    box-shadow: 0 0 0 7px rgba(8, 120, 247, 0.12);
+  }
+}
+
+.activity-navigation-notice {
+  position: fixed;
+  left: 50%;
+  bottom: max(22px, env(safe-area-inset-bottom));
+  z-index: 130;
+  width: max-content;
+  max-width: calc(100vw - 28px);
+  transform: translateX(-50%);
+  border: 1px solid rgba(8, 120, 247, 0.25);
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 32px rgba(27, 58, 109, 0.18);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
 }
 
 .activity-history-item[data-action="create"] {
@@ -2411,7 +2467,7 @@ th:last-child {
     grid-column: 2;
   }
 
-  .activity-history-message {
+  .activity-history-content {
     grid-column: 2;
   }
 }
