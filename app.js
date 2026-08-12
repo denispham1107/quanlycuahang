@@ -71,7 +71,8 @@ const uiState = {
   salesGoodsFilter: "all",
   salesDraftId: null,
   salesOrderDiscountPercent: 0,
-  salesOrderDiscountAmount: 0
+  salesOrderDiscountAmount: 0,
+  activityHistoryRangeMode: "all"
 };
 
 const els = {
@@ -135,6 +136,11 @@ const els = {
   activityHistoryModal: document.querySelector("#activityHistoryModal"),
   activityHistoryStoreName: document.querySelector("#activityHistoryStoreName"),
   activityHistoryList: document.querySelector("#activityHistoryList"),
+  activityHistoryRangeMode: document.querySelector("#activityHistoryRangeMode"),
+  activityHistoryCustomRange: document.querySelector("#activityHistoryCustomRange"),
+  activityHistoryFromDate: document.querySelector("#activityHistoryFromDate"),
+  activityHistoryToDate: document.querySelector("#activityHistoryToDate"),
+  activityHistoryResultCount: document.querySelector("#activityHistoryResultCount"),
   closeActivityHistory: document.querySelector("#closeActivityHistory"),
   syncStatus: document.querySelector("#syncStatus"),
   stickyControlDock: document.querySelector("#stickyControlDock"),
@@ -1207,6 +1213,14 @@ els.activityHistoryList?.addEventListener("keydown", (event) => {
   event.preventDefault();
   navigateToActivity(row.dataset.activityId);
 });
+els.activityHistoryRangeMode?.addEventListener("change", () => {
+  uiState.activityHistoryRangeMode = els.activityHistoryRangeMode.value;
+  updateActivityHistoryFilterVisibility();
+  renderActivityHistory(getActiveStore());
+});
+[els.activityHistoryFromDate, els.activityHistoryToDate].forEach((input) => {
+  input?.addEventListener("change", () => renderActivityHistory(getActiveStore()));
+});
 
 els.exportData.addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(createStateExportPayload(), null, 2)], { type: "application/json" });
@@ -1526,15 +1540,63 @@ function formatActivityDateTime(value) {
   return `${datePart} ${timePart}`;
 }
 
+function getActivityHistoryDateRange() {
+  const mode = uiState.activityHistoryRangeMode || "all";
+  if (mode === "all") return null;
+
+  const now = new Date();
+  if (mode === "today") return { start: today, end: today };
+  if (mode === "yesterday") {
+    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    const value = toDateInputValue(date);
+    return { start: value, end: value };
+  }
+  if (mode === "this-month") {
+    return { start: `${today.slice(0, 7)}-01`, end: today };
+  }
+  if (mode === "last-month") {
+    const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
+    return { start: toDateInputValue(firstDay), end: toDateInputValue(lastDay) };
+  }
+
+  let start = els.activityHistoryFromDate?.value || today;
+  let end = els.activityHistoryToDate?.value || start;
+  if (start > end) [start, end] = [end, start];
+  return { start, end };
+}
+
+function getActivityHistoryDateKey(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : toDateInputValue(date);
+}
+
+function updateActivityHistoryFilterVisibility() {
+  if (!els.activityHistoryCustomRange) return;
+  const custom = uiState.activityHistoryRangeMode === "custom";
+  els.activityHistoryCustomRange.hidden = !custom;
+}
+
 function renderActivityHistory(store) {
   if (!els.activityHistoryList || !els.activityHistoryStoreName) return;
   els.activityHistoryStoreName.textContent = store?.name || "Chưa chọn cửa hàng";
-  const activities = [...(Array.isArray(store?.activityHistory) ? store.activityHistory : [])].sort((a, b) =>
-    String(b.createdAt || "").localeCompare(String(a.createdAt || ""))
-  );
+  const range = getActivityHistoryDateRange();
+  const activities = [...(Array.isArray(store?.activityHistory) ? store.activityHistory : [])]
+    .filter((activity) => {
+      if (!range) return true;
+      const date = getActivityHistoryDateKey(activity.createdAt);
+      return date && date >= range.start && date <= range.end;
+    })
+    .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+
+  if (els.activityHistoryResultCount) {
+    els.activityHistoryResultCount.textContent = `${activities.length.toLocaleString("vi-VN")} sự kiện`;
+  }
 
   if (!activities.length) {
-    els.activityHistoryList.innerHTML = '<div class="empty-list">Chưa có sự kiện nào được ghi lại.</div>';
+    els.activityHistoryList.innerHTML = `<div class="empty-list">${
+      range ? "Không có sự kiện trong khoảng thời gian này." : "Chưa có sự kiện nào được ghi lại."
+    }</div>`;
     return;
   }
 
@@ -1634,6 +1696,10 @@ function openActivityHistoryModal() {
     window.alert("Vui lòng chọn cửa hàng để xem lịch sử.");
     return;
   }
+  els.activityHistoryRangeMode.value = uiState.activityHistoryRangeMode;
+  if (!els.activityHistoryFromDate.value) els.activityHistoryFromDate.value = today;
+  if (!els.activityHistoryToDate.value) els.activityHistoryToDate.value = today;
+  updateActivityHistoryFilterVisibility();
   renderActivityHistory(store);
   els.activityHistoryModal.hidden = false;
   els.closeActivityHistory?.focus({ preventScroll: true });

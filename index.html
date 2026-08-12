@@ -950,6 +950,30 @@
           <button class="icon-button activity-history-close" id="closeActivityHistory" type="button" aria-label="Đóng lịch sử">×</button>
         </div>
         <p class="activity-history-note">Nhật ký bắt đầu ghi từ phiên bản hỗ trợ Lịch sử.</p>
+        <div class="activity-history-filters" aria-label="Bộ lọc thời gian lịch sử hoạt động">
+          <div class="field activity-history-range-field">
+            <label for="activityHistoryRangeMode">Thời gian</label>
+            <select id="activityHistoryRangeMode">
+              <option value="all">Tất cả thời gian</option>
+              <option value="today">Hôm nay</option>
+              <option value="yesterday">Hôm qua</option>
+              <option value="this-month">Tháng này</option>
+              <option value="last-month">Tháng trước</option>
+              <option value="custom">Khoảng thời gian tùy chọn</option>
+            </select>
+          </div>
+          <div class="activity-history-custom-range" id="activityHistoryCustomRange" hidden>
+            <div class="field">
+              <label for="activityHistoryFromDate">Ngày đầu</label>
+              <input id="activityHistoryFromDate" type="date" />
+            </div>
+            <div class="field">
+              <label for="activityHistoryToDate">Ngày cuối</label>
+              <input id="activityHistoryToDate" type="date" />
+            </div>
+          </div>
+          <span class="activity-history-result-count" id="activityHistoryResultCount"></span>
+        </div>
         <div class="activity-history-list" id="activityHistoryList"></div>
       </section>
     </div>
