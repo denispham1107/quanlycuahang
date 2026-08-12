@@ -4779,18 +4779,16 @@ function updatePinnedTabs() {
 
   updateStickyControlMetrics();
 
-  const spacerRect = els.tabSpacer.getBoundingClientRect();
+  const dockRect = els.stickyControlDock.getBoundingClientRect();
   const dashboardRect = els.dashboard.getBoundingClientRect();
   const dockHeight = els.stickyControlDock.offsetHeight;
-  const shouldFix = spacerRect.top <= 0 && dashboardRect.bottom > dockHeight;
+  const shouldFix = dockRect.top <= 1 && dashboardRect.bottom > dockHeight;
 
   if (!shouldFix) {
     resetPinnedTabs();
     return;
   }
 
-  const left = Math.max(8, dashboardRect.left);
-  const width = Math.min(dashboardRect.width, window.innerWidth - left * 2);
   const wasFixed = els.stickyControlDock.classList.contains("is-fixed");
   if (!wasFixed && uiState.timeFiltersExpanded) {
     clearTimeFiltersAutoCollapse();
@@ -4798,9 +4796,9 @@ function updatePinnedTabs() {
     updateTimeFiltersVisibility();
   }
   els.stickyControlDock.classList.add("is-fixed");
-  els.stickyControlDock.style.left = `${left}px`;
-  els.stickyControlDock.style.width = `${width}px`;
-  els.tabSpacer.style.height = `${els.stickyControlDock.offsetHeight}px`;
+  els.stickyControlDock.style.left = "";
+  els.stickyControlDock.style.width = "";
+  els.tabSpacer.style.height = "0px";
   els.tabBar.dataset.pinTop = "true";
   updateStickyControlMetrics();
 }
