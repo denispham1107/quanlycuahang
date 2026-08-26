@@ -14,8 +14,31 @@
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
-    <div class="app-shell">
+  <body class="auth-pending">
+    <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
+      <section class="auth-card">
+        <div class="auth-brand" aria-hidden="true">
+          <span>QL</span>
+        </div>
+        <p class="eyebrow">Quản lý cửa hàng</p>
+        <h1 id="authTitle">Đăng nhập</h1>
+        <p class="auth-description">Dùng tài khoản được quản trị viên cấp để tiếp tục.</p>
+        <form class="auth-form" id="loginForm" novalidate>
+          <div class="field">
+            <label for="loginEmail">Email</label>
+            <input id="loginEmail" name="email" type="email" inputmode="email" autocomplete="username" required />
+          </div>
+          <div class="field">
+            <label for="loginPassword">Mật khẩu</label>
+            <input id="loginPassword" name="password" type="password" autocomplete="current-password" required />
+          </div>
+          <p class="auth-error" id="loginError" role="alert" hidden></p>
+          <button id="loginSubmit" type="submit">Đăng nhập</button>
+        </form>
+      </section>
+    </main>
+
+    <div class="app-shell" id="appShell" hidden>
       <header class="topbar">
         <div>
           <p class="eyebrow">Sổ thu chi</p>
@@ -23,6 +46,11 @@
           <p class="sync-status" id="syncStatus" data-status="loading">Đang kiểm tra đồng bộ...</p>
         </div>
         <div class="topbar-actions">
+          <div class="signed-in-user" id="signedInUser" hidden>
+            <span class="signed-in-user-name" id="signedInUserName"></span>
+            <small id="signedInUserRole"></small>
+            <button class="ghost-button sign-out-button" id="signOutButton" type="button">Đăng xuất</button>
+          </div>
           <div class="settings-menu" id="settingsMenu">
             <button
               class="icon-button settings-toggle"
@@ -39,7 +67,7 @@
               </svg>
             </button>
             <div class="settings-actions" id="settingsActions" hidden>
-              <label class="settings-action file-import" title="Nhập dữ liệu">
+              <label class="settings-action file-import" title="Nhập dữ liệu" data-admin-only>
                 <span class="settings-action-icon import-data-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24">
                     <defs>
@@ -56,7 +84,7 @@
                 <span>Nhập dữ liệu</span>
                 <input id="importData" type="file" accept="application/json" />
               </label>
-              <button class="settings-action" id="exportData" type="button" title="Xuất dữ liệu">
+              <button class="settings-action" id="exportData" type="button" title="Xuất dữ liệu" data-admin-only>
                 <span class="settings-action-icon export-data-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24">
                     <defs>
@@ -979,6 +1007,7 @@
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>

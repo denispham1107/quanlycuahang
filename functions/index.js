@@ -5,6 +5,7 @@ const { defineSecret } = require("firebase-functions/params");
 const { logger } = require("firebase-functions");
 const admin = require("firebase-admin");
 const OpenAI = require("openai");
+const crypto = require("crypto");
 
 admin.initializeApp();
 
@@ -184,7 +185,9 @@ async function requireAdmin(req) {
   const authHeader = String(req.headers.authorization || "");
   if (authHeader.startsWith("Bearer ")) {
     const decoded = await admin.auth().verifyIdToken(authHeader.slice("Bearer ".length));
-    if (decoded.admin === true || decoded.email_verified === true) {
+    const profileSnap = await db.collection("users").doc(decoded.uid).get();
+    const profile = profileSnap.exists ? profileSnap.data() : null;
+    if (decoded.admin === true || (profile?.role === "admin" && profile?.active !== false)) {
       return { userId: decoded.uid, authMode: "firebase_auth" };
     }
   }
@@ -198,6 +201,299 @@ async function requireAdmin(req) {
   const error = new Error("UNAUTHORIZED");
   error.status = 401;
   throw error;
+}
+
+async function requireUserProfile(req, requiredRole = "") {
+  const authHeader = String(req.headers.authorization || "");
+  if (!authHeader.startsWith("Bearer ")) {
+    throw Object.assign(new Error("UNAUTHORIZED"), { status: 401 });
+  }
+  const decoded = await admin.auth().verifyIdToken(authHeader.slice("Bearer ".length));
+  const profileSnap = await db.collection("users").doc(decoded.uid).get();
+  if (!profileSnap.exists) throw Object.assign(new Error("PROFILE_NOT_FOUND"), { status: 403 });
+  const profile = profileSnap.data() || {};
+  if (profile.active === false || !["admin", "employee"].includes(profile.role)) {
+    throw Object.assign(new Error("PROFILE_DISABLED"), { status: 403 });
+  }
+  if (requiredRole && profile.role !== requiredRole) {
+    throw Object.assign(new Error("FORBIDDEN"), { status: 403 });
+  }
+  return {
+    uid: decoded.uid,
+    email: decoded.email || "",
+    profile
+  };
+}
+
+function employeeId() {
+  return crypto.randomUUID();
+}
+
+function employeeText(value, maxLength = 200) {
+  return String(value || "").trim().slice(0, maxLength);
+}
+
+function employeeNumber(value, minimum = 0) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < minimum) throw Object.assign(new Error("INVALID_DATA"), { status: 400 });
+  return number;
+}
+
+function employeeDate(value) {
+  const date = employeeText(value, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw Object.assign(new Error("INVALID_DATE"), { status: 400 });
+  return date;
+}
+
+function employeeKey(value) {
+  return employeeText(value, 300)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function getEmployeeStoreIds(state, profile) {
+  const stores = Array.isArray(state?.stores) ? state.stores : [];
+  const configured = [profile.storeId, ...(Array.isArray(profile.storeIds) ? profile.storeIds : [])].filter(Boolean);
+  const allowed = configured.filter((id) => stores.some((store) => store.id === id));
+  if (allowed.length) return [...new Set(allowed)];
+  return stores[0]?.id ? [stores[0].id] : [];
+}
+
+function sanitizeEmployeeState(state, user) {
+  const allowedStoreIds = new Set(getEmployeeStoreIds(state, user.profile));
+  const stores = (Array.isArray(state?.stores) ? state.stores : [])
+    .filter((store) => allowedStoreIds.has(store.id))
+    .map((store) => ({
+      id: store.id,
+      name: store.name,
+      categories: { income: [], expense: [] },
+      entries: [],
+      orders: Array.isArray(store.orders) ? store.orders : [],
+      draftOrders: [],
+      customers: Array.isArray(store.customers) ? store.customers : [],
+      purchaseCategories: Array.isArray(store.purchaseCategories) ? store.purchaseCategories : [],
+      purchaseOrders: Array.isArray(store.purchaseOrders) ? store.purchaseOrders : [],
+      inventoryLogs: Array.isArray(store.inventoryLogs) ? store.inventoryLogs : [],
+      inventory: Array.isArray(store.inventory) ? store.inventory : [],
+      exportReasons: [],
+      activityHistory: (Array.isArray(store.activityHistory) ? store.activityHistory : []).filter(
+        (activity) => activity.actorUid === user.uid && ["Nhập hàng", "Bán hàng"].includes(activity.area)
+      ),
+      createdAt: store.createdAt || ""
+    }));
+  return {
+    activeStoreId: stores.some((store) => store.id === user.profile.storeId) ? user.profile.storeId : stores[0]?.id || null,
+    stores
+  };
+}
+
+function createEmployeeActivity(user, area, message, target) {
+  return {
+    id: employeeId(),
+    action: "create",
+    area,
+    message,
+    createdAt: target.createdAt,
+    actorUid: user.uid,
+    actorName: employeeText(user.profile.displayName || user.email, 120),
+    actorRole: "employee",
+    tab: target.tab,
+    targetType: target.targetType,
+    targetId: target.targetId,
+    targetDate: target.targetDate
+  };
+}
+
+function applyEmployeeSalesMutation(store, rawOrder, user) {
+  if (!rawOrder || typeof rawOrder !== "object") throw Object.assign(new Error("INVALID_ORDER"), { status: 400 });
+  const items = (Array.isArray(rawOrder.items) ? rawOrder.items : []).slice(0, 50).map((item) => {
+    const name = employeeText(item.name, 160);
+    const quantity = Math.floor(employeeNumber(item.quantity, 1));
+    const price = employeeNumber(item.price, 0);
+    if (!name) throw Object.assign(new Error("INVALID_ITEM"), { status: 400 });
+    return {
+      name,
+      groupName: employeeText(item.groupName || "Chưa phân nhóm", 120),
+      quantity,
+      price,
+      originalPrice: employeeNumber(item.originalPrice ?? price, 0),
+      discountPercent: Math.min(100, employeeNumber(item.discountPercent || 0, 0)),
+      discountAmount: employeeNumber(item.discountAmount || 0, 0),
+      total: quantity * price
+    };
+  });
+  if (!items.length) throw Object.assign(new Error("EMPTY_ORDER"), { status: 400 });
+
+  store.inventory = Array.isArray(store.inventory) ? store.inventory : [];
+  for (const item of items) {
+    let remaining = item.quantity;
+    const stocks = store.inventory.filter(
+      (stock) => employeeKey(stock.name) === employeeKey(item.name) && Number(stock.quantity || 0) > 0
+    );
+    const available = stocks.reduce((sum, stock) => sum + Number(stock.quantity || 0), 0);
+    if (available < remaining) throw Object.assign(new Error(`OUT_OF_STOCK:${item.name}`), { status: 409 });
+    for (const stock of stocks) {
+      if (remaining <= 0) break;
+      const quantity = Number(stock.quantity || 0);
+      const used = Math.min(quantity, remaining);
+      const averageCost = quantity > 0 ? Number(stock.totalCost || 0) / quantity : 0;
+      stock.quantity = quantity - used;
+      stock.totalCost = Math.max(0, Number(stock.totalCost || 0) - averageCost * used);
+      stock.updatedAt = new Date().toISOString();
+      remaining -= used;
+    }
+  }
+
+  const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+  const directDiscount = Math.min(subtotal, employeeNumber(rawOrder.orderDiscountAmount || 0, 0));
+  const percent = Math.min(100, employeeNumber(rawOrder.orderDiscountPercent || 0, 0));
+  const discountTotal = directDiscount > 0 ? directDiscount : Math.round(subtotal * percent / 100);
+  const order = {
+    id: employeeText(rawOrder.id, 80) || employeeId(),
+    customerName: employeeText(rawOrder.customerName, 160),
+    customerPhone: employeeText(rawOrder.customerPhone, 40),
+    date: employeeDate(rawOrder.date),
+    items,
+    subtotal,
+    orderDiscountPercent: percent,
+    orderDiscountAmount: directDiscount,
+    discountTotal,
+    total: Math.max(0, subtotal - discountTotal),
+    inventoryDeducted: true,
+    createdAt: new Date().toISOString(),
+    createdByUid: user.uid,
+    createdByName: employeeText(user.profile.displayName || user.email, 120)
+  };
+  if (!order.customerName) throw Object.assign(new Error("CUSTOMER_REQUIRED"), { status: 400 });
+  store.orders = Array.isArray(store.orders) ? store.orders : [];
+  if (store.orders.some((current) => current.id === order.id)) throw Object.assign(new Error("DUPLICATE_ORDER"), { status: 409 });
+  store.orders.push(order);
+
+  store.customers = Array.isArray(store.customers) ? store.customers : [];
+  if (order.customerPhone && !store.customers.some((customer) => employeeKey(`${customer.name}|${customer.phone}`) === employeeKey(`${order.customerName}|${order.customerPhone}`))) {
+    store.customers.push({
+      id: employeeId(),
+      name: order.customerName,
+      phone: order.customerPhone,
+      memberTier: "Thường",
+      memberTierStartedAt: "",
+      createdAt: order.createdAt,
+      updatedAt: order.createdAt,
+      source: "order"
+    });
+  }
+
+  store.activityHistory = [
+    createEmployeeActivity(user, "Bán hàng", `Tạo đơn bán hàng cho "${order.customerName}" - ${items.length} mặt hàng, tổng ${order.total.toLocaleString("vi-VN")} đ.`, {
+      createdAt: order.createdAt,
+      tab: "sales",
+      targetType: "sales-order",
+      targetId: order.id,
+      targetDate: order.date
+    }),
+    ...(Array.isArray(store.activityHistory) ? store.activityHistory : [])
+  ];
+}
+
+function applyEmployeePurchaseMutation(store, rawOrder, user) {
+  if (!rawOrder || typeof rawOrder !== "object") throw Object.assign(new Error("INVALID_ORDER"), { status: 400 });
+  const date = employeeDate(rawOrder.date);
+  const createdAt = new Date().toISOString();
+  const items = (Array.isArray(rawOrder.items) ? rawOrder.items : []).slice(0, 50).map((item) => {
+    const name = employeeText(item.name, 160);
+    const groupName = employeeText(item.groupName, 120);
+    const quantity = Math.floor(employeeNumber(item.quantity, 1));
+    const price = employeeNumber(item.price, 0);
+    const salePrice = employeeNumber(item.salePrice, 0);
+    if (!name || !groupName) throw Object.assign(new Error("INVALID_ITEM"), { status: 400 });
+    return { name, groupName, quantity, price, salePrice, total: quantity * price };
+  });
+  if (!items.length) throw Object.assign(new Error("EMPTY_ORDER"), { status: 400 });
+
+  store.purchaseCategories = Array.isArray(store.purchaseCategories) ? store.purchaseCategories : [];
+  store.inventory = Array.isArray(store.inventory) ? store.inventory : [];
+  store.inventoryLogs = Array.isArray(store.inventoryLogs) ? store.inventoryLogs : [];
+  const logs = [];
+  const normalizedItems = items.map((item) => {
+    let category = store.purchaseCategories.find((current) => employeeKey(current.name) === employeeKey(item.groupName));
+    if (!category) {
+      category = { id: employeeId(), name: item.groupName };
+      store.purchaseCategories.push(category);
+    }
+    const key = employeeKey(`${item.groupName}|${item.name}`);
+    let stock = store.inventory.find((current) => employeeKey(`${current.groupName}|${current.name}`) === key);
+    const oldQuantity = Number(stock?.quantity || 0);
+    const oldPrice = Number(stock?.lastPrice || 0);
+    const oldSalePrice = Number(stock?.salePrice ?? stock?.lastPrice ?? 0);
+    if (!stock) {
+      stock = {
+        id: employeeId(),
+        name: item.name,
+        groupId: category.id,
+        groupName: category.name,
+        quantity: 0,
+        totalCost: 0,
+        lastPrice: item.price,
+        salePrice: item.salePrice,
+        createdAt,
+        updatedAt: createdAt
+      };
+      store.inventory.push(stock);
+    }
+    stock.quantity = oldQuantity + item.quantity;
+    stock.totalCost = Number(stock.totalCost || 0) + item.total;
+    stock.lastPrice = item.price;
+    stock.salePrice = item.salePrice;
+    stock.updatedAt = createdAt;
+    const log = {
+      id: employeeId(),
+      date,
+      type: "purchase",
+      inventoryId: stock.id,
+      itemName: stock.name,
+      groupName: stock.groupName,
+      oldQuantity,
+      newQuantity: stock.quantity,
+      oldPrice,
+      newPrice: item.price,
+      oldSalePrice,
+      newSalePrice: item.salePrice,
+      updatedAt: createdAt,
+      createdByUid: user.uid,
+      createdByName: employeeText(user.profile.displayName || user.email, 120)
+    };
+    logs.push(log);
+    return { ...item, groupId: category.id, groupName: category.name };
+  });
+  store.inventoryLogs = [...logs.reverse(), ...store.inventoryLogs];
+
+  const order = {
+    id: employeeText(rawOrder.id, 80) || employeeId(),
+    date,
+    items: normalizedItems,
+    total: normalizedItems.reduce((sum, item) => sum + item.total, 0),
+    createdAt,
+    source: rawOrder.source === "bulk" ? "bulk" : "manual",
+    createdByUid: user.uid,
+    createdByName: employeeText(user.profile.displayName || user.email, 120)
+  };
+  store.purchaseOrders = Array.isArray(store.purchaseOrders) ? store.purchaseOrders : [];
+  if (store.purchaseOrders.some((current) => current.id === order.id)) throw Object.assign(new Error("DUPLICATE_ORDER"), { status: 409 });
+  store.purchaseOrders.push(order);
+  store.activityHistory = [
+    createEmployeeActivity(user, "Nhập hàng", `Nhập ${normalizedItems.length} mặt hàng vào kho - tổng ${order.total.toLocaleString("vi-VN")} đ.`, {
+      createdAt,
+      tab: "purchase",
+      targetType: "inventory-log",
+      targetId: logs[0]?.id || order.id,
+      targetDate: date
+    }),
+    ...(Array.isArray(store.activityHistory) ? store.activityHistory : [])
+  ];
 }
 
 function normalizeText(value) {
@@ -1737,6 +2033,70 @@ async function handleGeneralChatRequest(req, res) {
     }
   });
 }
+
+exports.getEmployeeState = onRequest(
+  { region: REGION, timeoutSeconds: 30, memory: "256MiB" },
+  async (req, res) => {
+    applyCors(req, res);
+    if (req.method === "OPTIONS") return res.status(204).send("");
+    if (req.method !== "POST") return sendError(res, 405, "Chỉ hỗ trợ POST.");
+    try {
+      const user = await requireUserProfile(req, "employee");
+      const stateSnap = await db.collection(APP_STATE_COLLECTION).doc(APP_STATE_DOCUMENT).get();
+      const state = stateSnap.exists ? (stateSnap.data()?.state || stateSnap.data()) : { activeStoreId: null, stores: [] };
+      res.json({ ok: true, state: sanitizeEmployeeState(state, user) });
+    } catch (error) {
+      logger.warn("getEmployeeState denied", { message: error?.message || "", status: error?.status || 500 });
+      sendError(res, error?.status || 500, error?.status ? "Không có quyền truy cập." : "Không tải được dữ liệu.");
+    }
+  }
+);
+
+exports.saveEmployeeMutation = onRequest(
+  { region: REGION, timeoutSeconds: 60, memory: "512MiB" },
+  async (req, res) => {
+    applyCors(req, res);
+    if (req.method === "OPTIONS") return res.status(204).send("");
+    if (req.method !== "POST") return sendError(res, 405, "Chỉ hỗ trợ POST.");
+    try {
+      const user = await requireUserProfile(req, "employee");
+      const mutation = req.body?.mutation || {};
+      const type = employeeText(mutation.type, 40);
+      if (!["sales-create", "purchase-create"].includes(type)) {
+        return sendError(res, 403, "Nhân viên chỉ được tạo mới trong Nhập hàng và Bán hàng.");
+      }
+
+      const stateRef = db.collection(APP_STATE_COLLECTION).doc(APP_STATE_DOCUMENT);
+      let resultState = null;
+      await db.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(stateRef);
+        if (!snapshot.exists) throw Object.assign(new Error("STATE_NOT_FOUND"), { status: 404 });
+        const documentData = snapshot.data() || {};
+        const state = JSON.parse(JSON.stringify(documentData.state || documentData));
+        const allowedStoreIds = getEmployeeStoreIds(state, user.profile);
+        const storeId = employeeText(mutation.storeId, 100);
+        if (!allowedStoreIds.includes(storeId)) throw Object.assign(new Error("STORE_FORBIDDEN"), { status: 403 });
+        const store = (state.stores || []).find((current) => current.id === storeId);
+        if (!store) throw Object.assign(new Error("STORE_NOT_FOUND"), { status: 404 });
+
+        if (type === "sales-create") applyEmployeeSalesMutation(store, mutation.order, user);
+        if (type === "purchase-create") applyEmployeePurchaseMutation(store, mutation.order, user);
+        transaction.set(stateRef, { state, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        resultState = sanitizeEmployeeState(state, user);
+      });
+      res.json({ ok: true, state: resultState });
+    } catch (error) {
+      logger.warn("saveEmployeeMutation denied", { message: error?.message || "", status: error?.status || 500 });
+      const knownStatus = error?.status || 500;
+      const message = String(error?.message || "").startsWith("OUT_OF_STOCK:")
+        ? `Không đủ tồn kho cho ${String(error.message).split(":").slice(1).join(":")}.`
+        : knownStatus < 500
+          ? "Dữ liệu không hợp lệ hoặc bạn không có quyền thực hiện thao tác này."
+          : "Không thể lưu dữ liệu nhân viên.";
+      sendError(res, knownStatus, message);
+    }
+  }
+);
 
 exports.chatGeneralAI = onRequest(
   {

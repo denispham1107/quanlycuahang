@@ -27,30 +27,45 @@ window.firebaseAppConfig = {
 
 ## Firestore rules dùng nội bộ
 
-Nếu website chỉ dùng nội bộ nhưng chưa có đăng nhập, không nên để database mở vĩnh viễn. Cách tốt hơn là thêm Firebase Authentication ở bước tiếp theo.
+Dự án sử dụng Firebase Authentication và file `firestore.rules` để phân quyền. Không thay thế rules hiện tại bằng rules mở theo ngày, vì cách đó sẽ bỏ qua toàn bộ bảo vệ tài khoản admin/nhân viên.
 
-Tạm thời để kiểm thử, có thể dùng rules có hạn ngày:
+## Thiết lập đăng nhập và phân quyền
 
-```txt
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /quanlycuahang/{document} {
-      allow read, write: if request.time < timestamp.date(2026, 12, 31);
-    }
-  }
+1. Trong Firebase Console, mở **Authentication > Sign-in method** và bật **Email/Password**.
+2. Trong **Authentication > Settings > Authorized domains**, thêm `denispham1107.github.io`.
+3. Tạo từng tài khoản trong **Authentication > Users**.
+4. Lấy `UID` của tài khoản rồi tạo document `users/{UID}` trong Firestore.
+
+Tài khoản quản trị:
+
+```json
+{
+  "displayName": "Quản trị viên",
+  "role": "admin",
+  "active": true
 }
 ```
 
-Sau khi kiểm thử xong, nên chuyển sang đăng nhập email/password và rules theo user được phép.
+Tài khoản nhân viên (nên gán đúng cửa hàng):
+
+```json
+{
+  "displayName": "Tên nhân viên",
+  "role": "employee",
+  "active": true,
+  "storeId": "ID_CUA_HANG"
+}
+```
+
+Nếu chưa có `storeId`, hệ thống chỉ cấp cửa hàng đầu tiên. Sau khi cập nhật tài khoản cần deploy `firestore.rules` và hai Cloud Functions `getEmployeeState`, `saveEmployeeMutation`.
 
 ## Deploy lên GitHub Pages
 
 1. Commit các file đã sửa:
 
 ```bash
-git add index.html styles.css app.js firebase-config.js firebase-config.example.js README.md
-git commit -m "Use Firebase Firestore for shared cloud storage"
+git add index.html styles.css app.js service-worker.js firebase-config.js firebase-config.example.js firestore.rules functions/index.js README.md
+git commit -m "Add Firebase login and role permissions"
 git push origin main
 ```
 

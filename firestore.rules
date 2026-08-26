@@ -2,7 +2,30 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isAdmin() {
-      return request.auth != null && request.auth.token.admin == true;
+      return request.auth != null && (
+        request.auth.token.admin == true ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get("role", "") == "admin" &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get("active", true) != false
+        )
+      );
+    }
+
+    function isEmployee() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get("role", "") == "employee" &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get("active", true) != false;
+    }
+
+    match /users/{userId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /quanlycuahang/shared-state {
+      allow read, write: if isAdmin();
     }
 
     match /ai_logs/{docId} {

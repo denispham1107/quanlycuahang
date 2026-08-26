@@ -20,6 +20,13 @@ let cloudStore = {
   status: "starting"
 };
 
+let authState = {
+  ready: false,
+  user: null,
+  profile: null,
+  role: ""
+};
+
 const defaultData = {
   activeStoreId: null,
   stores: []
@@ -76,6 +83,17 @@ const uiState = {
 };
 
 const els = {
+  authScreen: document.querySelector("#authScreen"),
+  appShell: document.querySelector("#appShell"),
+  loginForm: document.querySelector("#loginForm"),
+  loginEmail: document.querySelector("#loginEmail"),
+  loginPassword: document.querySelector("#loginPassword"),
+  loginError: document.querySelector("#loginError"),
+  loginSubmit: document.querySelector("#loginSubmit"),
+  signedInUser: document.querySelector("#signedInUser"),
+  signedInUserName: document.querySelector("#signedInUserName"),
+  signedInUserRole: document.querySelector("#signedInUserRole"),
+  signOutButton: document.querySelector("#signOutButton"),
   storeForm: document.querySelector("#storeForm"),
   storeName: document.querySelector("#storeName"),
   storeList: document.querySelector("#storeList"),
@@ -325,6 +343,48 @@ els.monthDate.value = today.slice(0, 7);
 els.fromDate.value = today;
 els.toDate.value = today;
 
+function isAdminUser() {
+  return authState.role === "admin";
+}
+
+function isEmployeeUser() {
+  return authState.role === "employee";
+}
+
+function getCurrentActor() {
+  return {
+    actorUid: authState.user?.uid || "",
+    actorName: authState.profile?.displayName || authState.user?.email || "",
+    actorRole: authState.role || ""
+  };
+}
+
+els.loginForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const email = String(els.loginEmail.value || "").trim();
+  const password = String(els.loginPassword.value || "");
+  if (!email || !password) {
+    showLoginError("Vui lòng nhập email và mật khẩu.");
+    return;
+  }
+
+  els.loginSubmit.disabled = true;
+  els.loginSubmit.textContent = "Đang đăng nhập...";
+  showLoginError("");
+  try {
+    await window.firebase.auth().signInWithEmailAndPassword(email, password);
+  } catch (error) {
+    showLoginError("Email hoặc mật khẩu không đúng, hoặc tài khoản chưa được cấp quyền.");
+  } finally {
+    els.loginSubmit.disabled = false;
+    els.loginSubmit.textContent = "Đăng nhập";
+  }
+});
+
+els.signOutButton?.addEventListener("click", async () => {
+  await window.firebase.auth().signOut();
+});
+
 function createStateExportPayload() {
   return JSON.parse(JSON.stringify(state || defaultData));
 }
@@ -406,6 +466,7 @@ els.storeForm.addEventListener("submit", (event) => {
         area: "Cửa hàng",
         message: `Tạo cửa hàng "${name}".`,
         createdAt,
+        ...getCurrentActor(),
         tab: "stores",
         targetType: "store",
         targetId: storeId
@@ -1064,6 +1125,7 @@ els.inventoryLogPanel.addEventListener("input", (event) => {
 });
 
 els.inventoryList.addEventListener("click", (event) => {
+  if (isEmployeeUser()) return;
   const exportButton = event.target.closest("[data-export-inventory]");
   if (exportButton) {
     event.stopPropagation();
@@ -1262,6 +1324,13 @@ document.addEventListener("click", (event) => {
   const draftButton = event.target.closest("[data-open-sales-draft]");
   const draftDeleteButton = event.target.closest("[data-delete-sales-draft]");
 
+  if (
+    isEmployeeUser() &&
+    (categoryButton || entryButton || orderButton || editCategoryButton || editEntryButton || inventoryLogRow || draftButton || draftDeleteButton)
+  ) {
+    return;
+  }
+
   if (categoryButton) {
     deleteCategory(categoryButton.dataset.type, categoryButton.dataset.deleteCategory);
   }
@@ -1382,10 +1451,10 @@ function normalizeState(data) {
   return { ...source, activeStoreId, stores };
 }
 
-function saveAndRender() {
+function saveAndRender(employeeMutation = null) {
   saveStateToCache();
   render();
-  saveStateToCloud();
+  saveStateToCloud(employeeMutation);
 }
 
 function saveStateToCache() {
@@ -1402,6 +1471,104 @@ function getFirebaseConfig() {
   if (!config.apiKey || config.apiKey === FIREBASE_CONFIG_PLACEHOLDER) return null;
   if (!config.projectId || config.projectId === FIREBASE_CONFIG_PLACEHOLDER) return null;
   return config;
+}
+
+function showLoginError(message) {
+  if (!els.loginError) return;
+  els.loginError.textContent = message;
+  els.loginError.hidden = !message;
+}
+
+function showAuthenticatedApp(profile) {
+  document.body.classList.remove("auth-pending");
+  els.authScreen.hidden = true;
+  els.appShell.hidden = false;
+  els.signedInUser.hidden = false;
+  els.signedInUserName.textContent = profile.displayName || authState.user?.email || "Tài khoản";
+  els.signedInUserRole.textContent = profile.role === "admin" ? "Admin" : "Nhân viên";
+}
+
+function showLoginScreen(message = "") {
+  document.body.classList.add("auth-pending");
+  els.appShell.hidden = true;
+  els.authScreen.hidden = false;
+  els.signedInUser.hidden = true;
+  showLoginError(message);
+  window.setTimeout(() => els.loginEmail?.focus({ preventScroll: true }), 50);
+}
+
+function stopCloudStorage() {
+  cloudStore.unsubscribe?.();
+  cloudStore = {
+    enabled: false,
+    ready: false,
+    db: null,
+    docRef: null,
+    unsubscribe: null,
+    lastError: null,
+    status: "starting"
+  };
+}
+
+function applyRoleAccess() {
+  const employee = isEmployeeUser();
+  document.querySelectorAll("[data-admin-only]").forEach((element) => {
+    element.dataset.roleHidden = employee ? "true" : "false";
+  });
+  document.querySelectorAll("[data-tab]").forEach((button) => {
+    const allowed = !employee || ["purchase", "sales"].includes(button.dataset.tab);
+    button.dataset.roleHidden = allowed ? "false" : "true";
+    button.disabled = !allowed;
+  });
+  els.activeStorePanel.dataset.roleHidden = employee ? "true" : "false";
+  document.querySelector(".sidebar")?.setAttribute("data-role-hidden", employee ? "true" : "false");
+  els.openCustomers.dataset.roleHidden = employee ? "true" : "false";
+  els.openBulkPurchase.dataset.roleHidden = "false";
+  els.toggleInventory.dataset.roleHidden = employee ? "true" : "false";
+  els.saveSalesDraft.dataset.roleHidden = employee ? "true" : "false";
+  els.deleteSalesDraft.dataset.roleHidden = employee ? "true" : "false";
+}
+
+async function loadUserProfile(db, user) {
+  const snapshot = await db.collection("users").doc(user.uid).get();
+  if (!snapshot.exists) throw new Error("PROFILE_NOT_FOUND");
+  const profile = snapshot.data() || {};
+  if (!["admin", "employee"].includes(profile.role) || profile.active === false) {
+    throw new Error("PROFILE_DISABLED");
+  }
+  return profile;
+}
+
+async function initAuthentication() {
+  const config = getFirebaseConfig();
+  if (!config || !window.firebase?.auth || !window.firebase?.firestore) {
+    showLoginScreen("Không thể khởi tạo Firebase Authentication.");
+    return;
+  }
+
+  const app = window.firebase.apps?.length ? window.firebase.app() : window.firebase.initializeApp(config);
+  const db = window.firebase.firestore(app);
+  window.firebase.auth(app).onAuthStateChanged(async (user) => {
+    stopCloudStorage();
+    if (!user) {
+      authState = { ready: true, user: null, profile: null, role: "" };
+      state = cloneDefaultData();
+      localStorage.removeItem(STORAGE_KEY);
+      showLoginScreen();
+      return;
+    }
+
+    try {
+      const profile = await loadUserProfile(db, user);
+      authState = { ready: true, user, profile, role: profile.role };
+      showAuthenticatedApp(profile);
+      applyRoleAccess();
+      initCloudStorage();
+    } catch (error) {
+      await window.firebase.auth().signOut();
+      showLoginScreen("Tài khoản chưa được cấp quyền hoặc đã bị khóa.");
+    }
+  });
 }
 
 function getFirestorePath() {
@@ -1436,6 +1603,11 @@ function initCloudStorage() {
     cloudStore.status = "ready";
     updateSyncStatus("Đang tải dữ liệu cloud...", "loading");
 
+    if (isEmployeeUser()) {
+      loadEmployeeState();
+      return;
+    }
+
     cloudStore.unsubscribe = cloudStore.docRef.onSnapshot(
       (snapshot) => {
         if (!snapshot.exists) {
@@ -1465,7 +1637,47 @@ function initCloudStorage() {
   }
 }
 
-async function saveStateToCloud() {
+function getEmployeeFunctionUrl(name) {
+  const config = window.employeeFunctionConfig || {};
+  return String(config[name] || "").trim();
+}
+
+async function callEmployeeFunction(name, body = {}) {
+  const url = getEmployeeFunctionUrl(name);
+  if (!url) throw new Error("EMPLOYEE_FUNCTION_MISSING");
+  const token = await authState.user.getIdToken();
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(body)
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || "EMPLOYEE_REQUEST_FAILED");
+  return result;
+}
+
+async function loadEmployeeState() {
+  try {
+    const result = await callEmployeeFunction("getStateUrl");
+    state = normalizeState(result.state || cloneDefaultData());
+    if (authState.profile?.storeId && state.stores.some((store) => store.id === authState.profile.storeId)) {
+      state.activeStoreId = authState.profile.storeId;
+    }
+    saveStateToCache();
+    activateTab("purchase");
+    render();
+    updateSyncStatus("Đã đồng bộ cloud", "ok");
+  } catch (error) {
+    cloudStore.lastError = error;
+    updateSyncStatus("Không tải được dữ liệu nhân viên", "error");
+    console.error("Cannot load employee state", error);
+  }
+}
+
+async function saveStateToCloud(employeeMutation = null) {
   if (!cloudStore.enabled || !cloudStore.docRef) {
     if (cloudStore.status === "missing-config") {
       updateSyncStatus("Chưa cấu hình cloud", "warning");
@@ -1479,6 +1691,19 @@ async function saveStateToCloud() {
 
   try {
     updateSyncStatus("Đang lưu cloud...", "loading");
+    if (isEmployeeUser()) {
+      if (!employeeMutation) {
+        updateSyncStatus("Chỉ được phép tạo mới", "warning");
+        await loadEmployeeState();
+        return;
+      }
+      const result = await callEmployeeFunction("saveMutationUrl", { mutation: employeeMutation });
+      state = normalizeState(result.state || state);
+      saveStateToCache();
+      render();
+      updateSyncStatus("Đã lưu cloud", "ok");
+      return;
+    }
     await cloudStore.docRef.set(
       {
         state,
@@ -1507,12 +1732,16 @@ function getActiveStore() {
 function recordActivity(store, action, area, message, details = {}) {
   if (!store) return;
   const options = typeof details === "string" ? { createdAt: details } : details || {};
+  const actor = getCurrentActor();
   const activity = {
     id: createId(),
     action: ["create", "update", "delete"].includes(action) ? action : "update",
     area: String(area || "Cửa hàng"),
     message: String(message || "Cập nhật dữ liệu."),
-    createdAt: options.createdAt || new Date().toISOString()
+    createdAt: options.createdAt || new Date().toISOString(),
+    actorUid: options.actorUid || actor.actorUid,
+    actorName: options.actorName || actor.actorName,
+    actorRole: options.actorRole || actor.actorRole
   };
   ["tab", "targetType", "targetId", "targetDate"].forEach((key) => {
     if (options[key]) activity[key] = String(options[key]);
@@ -1583,6 +1812,10 @@ function renderActivityHistory(store) {
   const range = getActivityHistoryDateRange();
   const activities = [...(Array.isArray(store?.activityHistory) ? store.activityHistory : [])]
     .filter((activity) => {
+      if (!isEmployeeUser()) return true;
+      return activity.actorUid === authState.user?.uid && ["Nhập hàng", "Bán hàng"].includes(activity.area);
+    })
+    .filter((activity) => {
       if (!range) return true;
       const date = getActivityHistoryDateKey(activity.createdAt);
       return date && date >= range.start && date <= range.end;
@@ -1616,6 +1849,7 @@ function renderActivityHistory(store) {
           <span class="activity-history-content">
             <span class="activity-history-message">${escapeHtml(activity.message || "Cập nhật dữ liệu.")}</span>
             ${targetDate ? `<span class="activity-history-record-date">Ngày dữ liệu: ${escapeHtml(targetDate)}</span>` : ""}
+            ${activity.actorName ? `<span class="activity-history-actor">Thực hiện bởi: ${escapeHtml(activity.actorName)}</span>` : ""}
           </span>
         </article>
       `;
@@ -2088,6 +2322,7 @@ function render() {
   els.activeStorePanel.hidden = !store;
   els.renameStore.disabled = !store;
   els.deleteStore.disabled = !store;
+  applyRoleAccess();
   if (!store) {
     els.activeStoreName.textContent = "Chưa chọn cửa hàng";
     els.heroStoreName.textContent = "Chưa chọn cửa hàng";
@@ -2402,8 +2637,8 @@ function openSalesOrderModal(store, draft = null) {
   updateSalesOrderTotal();
   els.quickEntrySubmit.disabled = false;
   els.openOrderDiscount.hidden = false;
-  els.saveSalesDraft.hidden = false;
-  els.deleteSalesDraft.hidden = !uiState.salesDraftId;
+  els.saveSalesDraft.hidden = isEmployeeUser();
+  els.deleteSalesDraft.hidden = isEmployeeUser() || !uiState.salesDraftId;
   els.quickEntrySubmit.textContent = "Hoàn Thành";
   els.quickEntryModal.hidden = false;
 }
@@ -2948,7 +3183,7 @@ function saveSalesOrder() {
   }));
   deductInventoryForSales(store, items);
   ensureCustomerFromSalesOrder(store, { customerName, customerPhone, createdAt });
-  store.orders.push({
+  const order = {
     id: orderId,
     customerName,
     customerPhone,
@@ -2961,7 +3196,8 @@ function saveSalesOrder() {
     total,
     inventoryDeducted: true,
     createdAt
-  });
+  };
+  store.orders.push(order);
 
   recordActivity(
     store,
@@ -2975,7 +3211,7 @@ function saveSalesOrder() {
     store.draftOrders = (store.draftOrders || []).filter((draft) => draft.id !== uiState.salesDraftId);
   }
 
-  saveAndRender();
+  saveAndRender({ type: "sales-create", storeId: store.id, order });
   return true;
 }
 
@@ -4040,9 +4276,10 @@ function savePurchaseOrder() {
     };
   });
 
+  const purchaseOrder = { id: orderId, date, items: normalizedItems, total, createdAt };
   store.purchaseOrders = [
     ...(store.purchaseOrders || []),
-    { id: orderId, date, items: normalizedItems, total, createdAt }
+    purchaseOrder
   ];
 
   const inventoryLogs = applyPurchaseItemsToInventory(store, date, normalizedItems, createdAt);
@@ -4061,7 +4298,7 @@ function savePurchaseOrder() {
     }
   );
 
-  saveAndRender();
+  saveAndRender({ type: "purchase-create", storeId: store.id, order: purchaseOrder });
   return true;
 }
 
@@ -4141,9 +4378,10 @@ function saveBulkPurchaseOrder() {
   });
   const total = normalizedItems.reduce((sum, item) => sum + item.total, 0);
 
+  const purchaseOrder = { id: orderId, date, items: normalizedItems, total, createdAt, source: "bulk" };
   store.purchaseOrders = [
     ...(store.purchaseOrders || []),
-    { id: orderId, date, items: normalizedItems, total, createdAt, source: "bulk" }
+    purchaseOrder
   ];
   const inventoryLogs = applyPurchaseItemsToInventory(store, date, normalizedItems, createdAt);
   recordActivity(
@@ -4159,7 +4397,7 @@ function saveBulkPurchaseOrder() {
       targetDate: date
     }
   );
-  saveAndRender();
+  saveAndRender({ type: "purchase-create", storeId: store.id, order: purchaseOrder });
   return true;
 }
 
@@ -4728,6 +4966,9 @@ function renderHistoryFilter(select, categories, includeCancelled = false) {
   select.value = stillExists ? currentValue : "all";
 }
 function activateTab(tabName) {
+  if (isEmployeeUser() && !["purchase", "sales"].includes(tabName)) {
+    tabName = "purchase";
+  }
   els.tabButtons.forEach((button) => {
     const isActive = button.dataset.tab === tabName;
     button.classList.toggle("active", isActive);
@@ -5088,7 +5329,9 @@ function renderSalesOrderTable(container, orders) {
       ].join("");
       const actions = cancelled
         ? '<span class="muted-action">Đã hủy</span>'
-        : `<button class="delete-small" type="button" data-delete-order="${order.id}" title="Xóa đơn" aria-label="Xóa đơn">×</button>`;
+        : isAdminUser()
+          ? `<button class="delete-small" type="button" data-delete-order="${order.id}" title="Xóa đơn" aria-label="Xóa đơn">×</button>`
+          : "";
 
       return `
         <tr class="sales-order-row ${cancelled ? "entry-cancelled" : ""}" data-open-sales-order="${order.id}">
@@ -5219,6 +5462,11 @@ function renderSalesOrderItemLine(item) {
 
 function renderSalesDraftList(drafts) {
   if (!els.salesDraftList) return;
+
+  if (isEmployeeUser()) {
+    els.salesDraftList.innerHTML = "";
+    return;
+  }
 
   if (!drafts.length) {
     els.salesDraftList.innerHTML = "";
@@ -5681,7 +5929,11 @@ function renderInventoryLogs(store) {
                 const total = getInventoryLogTotal(log);
                 const reason = getInventoryLogReason(log);
                 return `
-                  <tr class="${index > 0 ? "inventory-log-extra" : ""}" data-edit-inventory-log="${escapeHtml(log.id)}" title="Bấm để sửa lịch sử kho">
+                  <tr class="${index > 0 ? "inventory-log-extra" : ""}" ${
+                    isAdminUser()
+                      ? `data-edit-inventory-log="${escapeHtml(log.id)}" title="Bấm để sửa lịch sử kho"`
+                      : ""
+                  }>
                     <td>${formatDate(getInventoryLogDate(log))}</td>
                     <td>${escapeHtml(log.itemName || "")}</td>
                     <td>${escapeHtml(log.groupName || "")}</td>
@@ -6412,6 +6664,5 @@ function cloneDefaultData() {
   return JSON.parse(JSON.stringify(defaultData));
 }
 
-render();
-initCloudStorage();
+initAuthentication();
 

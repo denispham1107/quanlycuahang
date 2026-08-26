@@ -18,3 +18,8 @@ window.aiFunctionConfig = {
   chatGeneralAIUrl: "https://asia-southeast1-quanlycuahang-d3ab7.cloudfunctions.net/chatGeneralAI",
   confirmAIActionUrl: "https://asia-southeast1-quanlycuahang-d3ab7.cloudfunctions.net/confirmAIAction"
 };
+
+window.employeeFunctionConfig = {
+  getStateUrl: "https://asia-southeast1-quanlycuahang-d3ab7.cloudfunctions.net/getEmployeeState",
+  saveMutationUrl: "https://asia-southeast1-quanlycuahang-d3ab7.cloudfunctions.net/saveEmployeeMutation"
+};

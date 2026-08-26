@@ -17,3 +17,8 @@ window.aiFunctionConfig = {
   chatWithAIUrl: "https://asia-southeast1-YOUR_PROJECT_ID.cloudfunctions.net/chatWithAI",
   confirmAIActionUrl: "https://asia-southeast1-YOUR_PROJECT_ID.cloudfunctions.net/confirmAIAction"
 };
+
+window.employeeFunctionConfig = {
+  getStateUrl: "https://asia-southeast1-YOUR_PROJECT_ID.cloudfunctions.net/getEmployeeState",
+  saveMutationUrl: "https://asia-southeast1-YOUR_PROJECT_ID.cloudfunctions.net/saveEmployeeMutation"
+};
