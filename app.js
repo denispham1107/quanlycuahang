@@ -1230,17 +1230,35 @@ els.editEntryForm.addEventListener("submit", (event) => {
   saveEditedEntry(new FormData(els.editEntryForm));
 });
 
+function updateSettingsMenuViewport() {
+  if (!els.settingsToggle || !els.settingsActions || els.settingsActions.hidden) return;
+  const toggleRect = els.settingsToggle.getBoundingClientRect();
+  const viewportHeight = window.visualViewport?.height || window.innerHeight;
+  const menuGap = 10;
+  const viewportGap = 12;
+  const availableHeight = Math.max(
+    160,
+    Math.floor(viewportHeight - toggleRect.bottom - menuGap - viewportGap)
+  );
+  els.settingsActions.style.setProperty("--settings-menu-available-height", `${availableHeight}px`);
+}
+
 function setSettingsMenuOpen(open) {
   if (!els.settingsToggle || !els.settingsActions) return;
   const shouldOpen = Boolean(open);
   els.settingsActions.hidden = !shouldOpen;
   els.settingsToggle.classList.toggle("active", shouldOpen);
   els.settingsToggle.setAttribute("aria-expanded", String(shouldOpen));
+  els.settingsMenu?.closest(".topbar")?.classList.toggle("settings-menu-open", shouldOpen);
+  if (shouldOpen) window.requestAnimationFrame(updateSettingsMenuViewport);
 }
 
 els.settingsToggle?.addEventListener("click", () => {
   setSettingsMenuOpen(els.settingsActions?.hidden);
 });
+
+window.addEventListener("resize", updateSettingsMenuViewport);
+window.visualViewport?.addEventListener("resize", updateSettingsMenuViewport);
 
 document.addEventListener("click", (event) => {
   if (!els.settingsMenu || els.settingsMenu.contains(event.target)) return;
