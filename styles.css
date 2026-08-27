@@ -158,6 +158,7 @@ body.auth-pending {
 }
 
 .signed-in-user-name {
+  display: none;
   max-width: 180px;
   overflow: hidden;
   font-size: 13px;
