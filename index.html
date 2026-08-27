@@ -987,42 +987,44 @@
           </div>
           <button class="icon-button employee-manager-close" id="closeEmployeeManager" type="button" aria-label="Đóng quản lý nhân viên">×</button>
         </div>
-        <p class="employee-manager-note">Mật khẩu chỉ dùng để tạo tài khoản và không được lưu trong dữ liệu cửa hàng.</p>
-        <form class="employee-create-form" id="employeeCreateForm" novalidate>
-          <div class="employee-form-grid">
-            <div class="field">
-              <label for="employeeDisplayName">Tên nhân viên</label>
-              <input id="employeeDisplayName" name="displayName" type="text" maxlength="120" autocomplete="off" required />
+        <div class="employee-manager-content">
+          <p class="employee-manager-note">Mật khẩu chỉ dùng để tạo tài khoản và không được lưu trong dữ liệu cửa hàng.</p>
+          <form class="employee-create-form" id="employeeCreateForm" novalidate>
+            <div class="employee-form-grid">
+              <div class="field">
+                <label for="employeeDisplayName">Tên nhân viên</label>
+                <input id="employeeDisplayName" name="displayName" type="text" maxlength="120" autocomplete="off" required />
+              </div>
+              <div class="field">
+                <label for="employeeEmail">Email đăng nhập</label>
+                <input id="employeeEmail" name="email" type="email" maxlength="254" inputmode="email" autocomplete="off" required />
+              </div>
+              <div class="field">
+                <label for="employeePassword">Mật khẩu tạm thời</label>
+                <input id="employeePassword" name="password" type="password" minlength="8" maxlength="128" autocomplete="new-password" required />
+              </div>
+              <div class="field">
+                <label for="employeeStore">Cửa hàng</label>
+                <select id="employeeStore" name="storeId" required></select>
+              </div>
             </div>
-            <div class="field">
-              <label for="employeeEmail">Email đăng nhập</label>
-              <input id="employeeEmail" name="email" type="email" maxlength="254" inputmode="email" autocomplete="off" required />
-            </div>
-            <div class="field">
-              <label for="employeePassword">Mật khẩu tạm thời</label>
-              <input id="employeePassword" name="password" type="password" minlength="8" maxlength="128" autocomplete="new-password" required />
-            </div>
-            <div class="field">
-              <label for="employeeStore">Cửa hàng</label>
-              <select id="employeeStore" name="storeId" required></select>
-            </div>
+            <fieldset class="employee-permissions">
+              <legend>Quyền nhân viên</legend>
+              <label><input name="purchaseView" type="checkbox" checked /> Xem tab Nhập hàng</label>
+              <label><input name="purchaseCreate" type="checkbox" checked /> Tạo mới trong Nhập hàng</label>
+              <label><input name="salesView" type="checkbox" checked /> Xem tab Bán hàng</label>
+              <label><input name="salesCreate" type="checkbox" checked /> Tạo mới trong Bán hàng</label>
+              <label><input name="historyViewOwn" type="checkbox" checked /> Xem lịch sử của chính mình</label>
+            </fieldset>
+            <p class="employee-manager-status" id="employeeManagerStatus" role="status" hidden></p>
+            <button class="employee-create-submit" type="submit">Tạo tài khoản nhân viên</button>
+          </form>
+          <div class="employee-list-heading">
+            <h3>Tài khoản đã tạo</h3>
+            <span id="employeeCount">0 nhân viên</span>
           </div>
-          <fieldset class="employee-permissions">
-            <legend>Quyền nhân viên</legend>
-            <label><input name="purchaseView" type="checkbox" checked /> Xem tab Nhập hàng</label>
-            <label><input name="purchaseCreate" type="checkbox" checked /> Tạo mới trong Nhập hàng</label>
-            <label><input name="salesView" type="checkbox" checked /> Xem tab Bán hàng</label>
-            <label><input name="salesCreate" type="checkbox" checked /> Tạo mới trong Bán hàng</label>
-            <label><input name="historyViewOwn" type="checkbox" checked /> Xem lịch sử của chính mình</label>
-          </fieldset>
-          <p class="employee-manager-status" id="employeeManagerStatus" role="status" hidden></p>
-          <button class="employee-create-submit" type="submit">Tạo tài khoản nhân viên</button>
-        </form>
-        <div class="employee-list-heading">
-          <h3>Tài khoản đã tạo</h3>
-          <span id="employeeCount">0 nhân viên</span>
+          <div class="employee-account-list" id="employeeAccountList"></div>
         </div>
-        <div class="employee-account-list" id="employeeAccountList"></div>
       </section>
     </div>
 
