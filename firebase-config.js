@@ -21,5 +21,6 @@ window.aiFunctionConfig = {
 
 window.employeeFunctionConfig = {
   getStateUrl: "https://asia-southeast1-quanlycuahang-d3ab7.cloudfunctions.net/getEmployeeState",
-  saveMutationUrl: "https://asia-southeast1-quanlycuahang-d3ab7.cloudfunctions.net/saveEmployeeMutation"
+  saveMutationUrl: "https://asia-southeast1-quanlycuahang-d3ab7.cloudfunctions.net/saveEmployeeMutation",
+  manageAccountsUrl: "https://asia-southeast1-quanlycuahang-d3ab7.cloudfunctions.net/manageEmployeeAccounts"
 };

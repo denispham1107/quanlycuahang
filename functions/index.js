@@ -203,6 +203,20 @@ async function requireAdmin(req) {
   throw error;
 }
 
+async function requireFirebaseAdmin(req) {
+  const authHeader = String(req.headers.authorization || "");
+  if (!authHeader.startsWith("Bearer ")) {
+    throw Object.assign(new Error("UNAUTHORIZED"), { status: 401 });
+  }
+  const decoded = await admin.auth().verifyIdToken(authHeader.slice("Bearer ".length));
+  const profileSnap = await db.collection("users").doc(decoded.uid).get();
+  const profile = profileSnap.exists ? profileSnap.data() : null;
+  if (decoded.admin !== true && !(profile?.role === "admin" && profile?.active !== false)) {
+    throw Object.assign(new Error("FORBIDDEN"), { status: 403 });
+  }
+  return { userId: decoded.uid, authMode: "firebase_auth", profile };
+}
+
 async function requireUserProfile(req, requiredRole = "") {
   const authHeader = String(req.headers.authorization || "");
   if (!authHeader.startsWith("Bearer ")) {
@@ -245,6 +259,39 @@ function employeeDate(value) {
   return date;
 }
 
+const DEFAULT_EMPLOYEE_PERMISSIONS = Object.freeze({
+  purchase: Object.freeze({ view: true, create: true }),
+  sales: Object.freeze({ view: true, create: true }),
+  history: Object.freeze({ viewOwn: true })
+});
+
+function normalizeEmployeePermissions(profile = {}) {
+  const source = profile.permissions;
+  if (!source || typeof source !== "object") {
+    return JSON.parse(JSON.stringify(DEFAULT_EMPLOYEE_PERMISSIONS));
+  }
+  const permissions = {
+    purchase: {
+      view: source.purchase?.view === true,
+      create: source.purchase?.create === true
+    },
+    sales: {
+      view: source.sales?.view === true,
+      create: source.sales?.create === true
+    },
+    history: {
+      viewOwn: source.history?.viewOwn === true
+    }
+  };
+  if (permissions.purchase.create) permissions.purchase.view = true;
+  if (permissions.sales.create) permissions.sales.view = true;
+  return permissions;
+}
+
+function hasEmployeePermission(user, area, action) {
+  return normalizeEmployeePermissions(user.profile)?.[area]?.[action] === true;
+}
+
 function employeeKey(value) {
   return employeeText(value, 300)
     .normalize("NFD")
@@ -264,6 +311,7 @@ function getEmployeeStoreIds(state, profile) {
 }
 
 function sanitizeEmployeeState(state, user) {
+  const permissions = normalizeEmployeePermissions(user.profile);
   const allowedStoreIds = new Set(getEmployeeStoreIds(state, user.profile));
   const stores = (Array.isArray(state?.stores) ? state.stores : [])
     .filter((store) => allowedStoreIds.has(store.id))
@@ -272,17 +320,23 @@ function sanitizeEmployeeState(state, user) {
       name: store.name,
       categories: { income: [], expense: [] },
       entries: [],
-      orders: Array.isArray(store.orders) ? store.orders : [],
+      orders: permissions.sales.view && Array.isArray(store.orders) ? store.orders : [],
       draftOrders: [],
-      customers: Array.isArray(store.customers) ? store.customers : [],
-      purchaseCategories: Array.isArray(store.purchaseCategories) ? store.purchaseCategories : [],
-      purchaseOrders: Array.isArray(store.purchaseOrders) ? store.purchaseOrders : [],
-      inventoryLogs: Array.isArray(store.inventoryLogs) ? store.inventoryLogs : [],
-      inventory: Array.isArray(store.inventory) ? store.inventory : [],
+      customers: permissions.sales.view && Array.isArray(store.customers) ? store.customers : [],
+      purchaseCategories:
+        permissions.purchase.view && Array.isArray(store.purchaseCategories) ? store.purchaseCategories : [],
+      purchaseOrders:
+        permissions.purchase.view && Array.isArray(store.purchaseOrders) ? store.purchaseOrders : [],
+      inventoryLogs:
+        permissions.purchase.view && Array.isArray(store.inventoryLogs) ? store.inventoryLogs : [],
+      inventory:
+        (permissions.purchase.view || permissions.sales.view) && Array.isArray(store.inventory) ? store.inventory : [],
       exportReasons: [],
-      activityHistory: (Array.isArray(store.activityHistory) ? store.activityHistory : []).filter(
-        (activity) => activity.actorUid === user.uid && ["Nhập hàng", "Bán hàng"].includes(activity.area)
-      ),
+      activityHistory: permissions.history.viewOwn
+        ? (Array.isArray(store.activityHistory) ? store.activityHistory : []).filter(
+            (activity) => activity.actorUid === user.uid && ["Nhập hàng", "Bán hàng"].includes(activity.area)
+          )
+        : [],
       createdAt: store.createdAt || ""
     }));
   return {
@@ -2034,6 +2088,163 @@ async function handleGeneralChatRequest(req, res) {
   });
 }
 
+async function getEmployeeManagementStores() {
+  const snapshot = await db.collection(APP_STATE_COLLECTION).doc(APP_STATE_DOCUMENT).get();
+  const state = snapshot.exists ? (snapshot.data()?.state || snapshot.data()) : { stores: [] };
+  return (Array.isArray(state?.stores) ? state.stores : [])
+    .filter((store) => store?.id)
+    .map((store) => ({ id: employeeText(store.id, 100), name: employeeText(store.name, 160) }));
+}
+
+function validateManagedEmployeePermissions(rawPermissions) {
+  const permissions = normalizeEmployeePermissions({ permissions: rawPermissions || {} });
+  if (!permissions.purchase.view && !permissions.sales.view) {
+    throw Object.assign(new Error("EMPLOYEE_TAB_REQUIRED"), { status: 400 });
+  }
+  return permissions;
+}
+
+async function validateManagedEmployeeStore(storeId) {
+  const stores = await getEmployeeManagementStores();
+  const normalizedStoreId = employeeText(storeId, 100);
+  if (!normalizedStoreId || !stores.some((store) => store.id === normalizedStoreId)) {
+    throw Object.assign(new Error("STORE_NOT_FOUND"), { status: 400 });
+  }
+  return { storeId: normalizedStoreId, stores };
+}
+
+async function listManagedEmployees() {
+  const [profileSnapshot, stores] = await Promise.all([
+    db.collection("users").where("role", "==", "employee").get(),
+    getEmployeeManagementStores()
+  ]);
+  const employees = await Promise.all(
+    profileSnapshot.docs.map(async (document) => {
+      const profile = document.data() || {};
+      let authUser = null;
+      try {
+        authUser = await admin.auth().getUser(document.id);
+      } catch (error) {
+        if (error?.code !== "auth/user-not-found") throw error;
+      }
+      return {
+        uid: document.id,
+        email: authUser?.email || "",
+        displayName: employeeText(profile.displayName || authUser?.displayName || authUser?.email, 120),
+        active: profile.active !== false && authUser?.disabled !== true,
+        storeId: employeeText(profile.storeId, 100),
+        permissions: normalizeEmployeePermissions(profile)
+      };
+    })
+  );
+  employees.sort((a, b) => a.displayName.localeCompare(b.displayName, "vi"));
+  return { employees, stores };
+}
+
+async function createManagedEmployee(body) {
+  const email = employeeText(body.email, 254).toLowerCase();
+  const password = String(body.password || "");
+  const displayName = employeeText(body.displayName, 120);
+  const permissions = validateManagedEmployeePermissions(body.permissions);
+  const { storeId } = await validateManagedEmployeeStore(body.storeId);
+  if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+    throw Object.assign(new Error("INVALID_EMAIL"), { status: 400 });
+  }
+  if (password.length < 8 || password.length > 128) {
+    throw Object.assign(new Error("INVALID_PASSWORD"), { status: 400 });
+  }
+  if (!displayName) throw Object.assign(new Error("DISPLAY_NAME_REQUIRED"), { status: 400 });
+
+  const authUser = await admin.auth().createUser({ email, password, displayName, disabled: false });
+  try {
+    await db.collection("users").doc(authUser.uid).set({
+      displayName,
+      role: "employee",
+      active: true,
+      storeId,
+      permissions,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (error) {
+    await admin.auth().deleteUser(authUser.uid).catch(() => {});
+    throw error;
+  }
+  return authUser.uid;
+}
+
+async function updateManagedEmployee(body) {
+  const uid = employeeText(body.uid, 160);
+  const displayName = employeeText(body.displayName, 120);
+  const active = body.active !== false;
+  const permissions = validateManagedEmployeePermissions(body.permissions);
+  const { storeId } = await validateManagedEmployeeStore(body.storeId);
+  if (!uid || !displayName) throw Object.assign(new Error("INVALID_EMPLOYEE"), { status: 400 });
+
+  const profileRef = db.collection("users").doc(uid);
+  const profileSnapshot = await profileRef.get();
+  if (!profileSnapshot.exists || profileSnapshot.data()?.role !== "employee") {
+    throw Object.assign(new Error("EMPLOYEE_NOT_FOUND"), { status: 404 });
+  }
+  await admin.auth().updateUser(uid, { displayName, disabled: !active });
+  await profileRef.set(
+    {
+      displayName,
+      role: "employee",
+      active,
+      storeId,
+      permissions,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    },
+    { merge: true }
+  );
+}
+
+exports.manageEmployeeAccounts = onRequest(
+  { region: REGION, timeoutSeconds: 60, memory: "256MiB" },
+  async (req, res) => {
+    applyCors(req, res);
+    if (req.method === "OPTIONS") return res.status(204).send("");
+    if (req.method !== "POST") return sendError(res, 405, "Chỉ hỗ trợ POST.");
+    try {
+      await requireFirebaseAdmin(req);
+      const action = employeeText(req.body?.action, 30);
+      if (action === "list") {
+        return res.json({ ok: true, ...(await listManagedEmployees()) });
+      }
+      if (action === "create") {
+        const uid = await createManagedEmployee(req.body || {});
+        return res.status(201).json({ ok: true, uid, ...(await listManagedEmployees()) });
+      }
+      if (action === "update") {
+        await updateManagedEmployee(req.body || {});
+        return res.json({ ok: true, ...(await listManagedEmployees()) });
+      }
+      return sendError(res, 400, "Thao tác quản lý nhân viên không hợp lệ.");
+    } catch (error) {
+      logger.warn("manageEmployeeAccounts failed", {
+        message: error?.message || "",
+        code: error?.code || "",
+        status: error?.status || 500
+      });
+      const duplicateEmail = error?.code === "auth/email-already-exists";
+      const invalidEmail = error?.code === "auth/invalid-email" || error?.message === "INVALID_EMAIL";
+      const invalidPassword = error?.code === "auth/invalid-password" || error?.message === "INVALID_PASSWORD";
+      const status = duplicateEmail ? 409 : invalidEmail || invalidPassword ? 400 : error?.status || 500;
+      const message = duplicateEmail
+        ? "Email này đã được sử dụng."
+        : invalidEmail
+          ? "Email không hợp lệ."
+          : invalidPassword
+            ? "Mật khẩu phải có từ 8 đến 128 ký tự."
+            : status < 500
+              ? "Thông tin nhân viên không hợp lệ hoặc tài khoản không tồn tại."
+              : "Không thể quản lý tài khoản nhân viên.";
+      return sendError(res, status, message);
+    }
+  }
+);
+
 exports.getEmployeeState = onRequest(
   { region: REGION, timeoutSeconds: 30, memory: "256MiB" },
   async (req, res) => {
@@ -2064,6 +2275,12 @@ exports.saveEmployeeMutation = onRequest(
       const type = employeeText(mutation.type, 40);
       if (!["sales-create", "purchase-create"].includes(type)) {
         return sendError(res, 403, "Nhân viên chỉ được tạo mới trong Nhập hàng và Bán hàng.");
+      }
+      if (type === "sales-create" && !hasEmployeePermission(user, "sales", "create")) {
+        return sendError(res, 403, "Bạn chưa được cấp quyền tạo đơn bán hàng.");
+      }
+      if (type === "purchase-create" && !hasEmployeePermission(user, "purchase", "create")) {
+        return sendError(res, 403, "Bạn chưa được cấp quyền nhập hàng.");
       }
 
       const stateRef = db.collection(APP_STATE_COLLECTION).doc(APP_STATE_DOCUMENT);

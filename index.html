@@ -101,6 +101,16 @@
                 </span>
                 <span>Xuất dữ liệu</span>
               </button>
+              <button class="settings-action" id="openEmployeeManager" type="button" title="Quản lý nhân viên" data-admin-only>
+                <span class="settings-action-icon employee-manager-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M9.2 11.3a3.7 3.7 0 1 0 0-7.4 3.7 3.7 0 0 0 0 7.4Z" />
+                    <path d="M2.8 20c.7-4 3-6 6.4-6 2 0 3.6.7 4.7 2" />
+                    <path d="M17.5 11.8v7.4M13.8 15.5h7.4" />
+                  </svg>
+                </span>
+                <span>Nhân viên</span>
+              </button>
               <button class="settings-action" id="openActivityHistory" type="button" title="Lịch sử hoạt động">
                 <span class="settings-action-icon activity-history-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24">
@@ -966,6 +976,54 @@
           <button type="submit">Lưu thay đổi</button>
         </div>
       </form>
+    </div>
+
+    <div class="modal-backdrop employee-manager-backdrop" id="employeeManagerModal" hidden>
+      <section class="modal-card employee-manager-card" role="dialog" aria-modal="true" aria-labelledby="employeeManagerTitle">
+        <div class="panel-heading employee-manager-heading">
+          <div>
+            <h2 id="employeeManagerTitle">Quản lý nhân viên</h2>
+            <span>Tạo tài khoản và phân quyền</span>
+          </div>
+          <button class="icon-button employee-manager-close" id="closeEmployeeManager" type="button" aria-label="Đóng quản lý nhân viên">×</button>
+        </div>
+        <p class="employee-manager-note">Mật khẩu chỉ dùng để tạo tài khoản và không được lưu trong dữ liệu cửa hàng.</p>
+        <form class="employee-create-form" id="employeeCreateForm" novalidate>
+          <div class="employee-form-grid">
+            <div class="field">
+              <label for="employeeDisplayName">Tên nhân viên</label>
+              <input id="employeeDisplayName" name="displayName" type="text" maxlength="120" autocomplete="off" required />
+            </div>
+            <div class="field">
+              <label for="employeeEmail">Email đăng nhập</label>
+              <input id="employeeEmail" name="email" type="email" maxlength="254" inputmode="email" autocomplete="off" required />
+            </div>
+            <div class="field">
+              <label for="employeePassword">Mật khẩu tạm thời</label>
+              <input id="employeePassword" name="password" type="password" minlength="8" maxlength="128" autocomplete="new-password" required />
+            </div>
+            <div class="field">
+              <label for="employeeStore">Cửa hàng</label>
+              <select id="employeeStore" name="storeId" required></select>
+            </div>
+          </div>
+          <fieldset class="employee-permissions">
+            <legend>Quyền nhân viên</legend>
+            <label><input name="purchaseView" type="checkbox" checked /> Xem tab Nhập hàng</label>
+            <label><input name="purchaseCreate" type="checkbox" checked /> Tạo mới trong Nhập hàng</label>
+            <label><input name="salesView" type="checkbox" checked /> Xem tab Bán hàng</label>
+            <label><input name="salesCreate" type="checkbox" checked /> Tạo mới trong Bán hàng</label>
+            <label><input name="historyViewOwn" type="checkbox" checked /> Xem lịch sử của chính mình</label>
+          </fieldset>
+          <p class="employee-manager-status" id="employeeManagerStatus" role="status" hidden></p>
+          <button class="employee-create-submit" type="submit">Tạo tài khoản nhân viên</button>
+        </form>
+        <div class="employee-list-heading">
+          <h3>Tài khoản đã tạo</h3>
+          <span id="employeeCount">0 nhân viên</span>
+        </div>
+        <div class="employee-account-list" id="employeeAccountList"></div>
+      </section>
     </div>
 
     <div class="modal-backdrop" id="activityHistoryModal" hidden>

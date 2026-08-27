@@ -150,6 +150,14 @@ const els = {
   settingsMenu: document.querySelector("#settingsMenu"),
   settingsToggle: document.querySelector("#settingsToggle"),
   settingsActions: document.querySelector("#settingsActions"),
+  openEmployeeManager: document.querySelector("#openEmployeeManager"),
+  employeeManagerModal: document.querySelector("#employeeManagerModal"),
+  closeEmployeeManager: document.querySelector("#closeEmployeeManager"),
+  employeeCreateForm: document.querySelector("#employeeCreateForm"),
+  employeeStore: document.querySelector("#employeeStore"),
+  employeeManagerStatus: document.querySelector("#employeeManagerStatus"),
+  employeeAccountList: document.querySelector("#employeeAccountList"),
+  employeeCount: document.querySelector("#employeeCount"),
   openActivityHistory: document.querySelector("#openActivityHistory"),
   activityHistoryModal: document.querySelector("#activityHistoryModal"),
   activityHistoryStoreName: document.querySelector("#activityHistoryStoreName"),
@@ -349,6 +357,46 @@ function isAdminUser() {
 
 function isEmployeeUser() {
   return authState.role === "employee";
+}
+
+const DEFAULT_EMPLOYEE_PERMISSIONS = Object.freeze({
+  purchase: Object.freeze({ view: true, create: true }),
+  sales: Object.freeze({ view: true, create: true }),
+  history: Object.freeze({ viewOwn: true })
+});
+
+function normalizeEmployeePermissions(profile = {}) {
+  const source = profile.permissions;
+  if (!source || typeof source !== "object") {
+    return JSON.parse(JSON.stringify(DEFAULT_EMPLOYEE_PERMISSIONS));
+  }
+  const permissions = {
+    purchase: {
+      view: source.purchase?.view === true,
+      create: source.purchase?.create === true
+    },
+    sales: {
+      view: source.sales?.view === true,
+      create: source.sales?.create === true
+    },
+    history: {
+      viewOwn: source.history?.viewOwn === true
+    }
+  };
+  if (permissions.purchase.create) permissions.purchase.view = true;
+  if (permissions.sales.create) permissions.sales.view = true;
+  return permissions;
+}
+
+function employeeCan(area, action) {
+  if (!isEmployeeUser()) return true;
+  return normalizeEmployeePermissions(authState.profile)?.[area]?.[action] === true;
+}
+
+function getFirstEmployeeTab() {
+  if (employeeCan("purchase", "view")) return "purchase";
+  if (employeeCan("sales", "view")) return "sales";
+  return "purchase";
 }
 
 function getCurrentActor() {
@@ -1267,6 +1315,10 @@ document.addEventListener("click", (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") return;
+  if (!els.employeeManagerModal?.hidden) {
+    closeEmployeeManagerModal();
+    return;
+  }
   if (!els.activityHistoryModal?.hidden) {
     closeActivityHistoryModal();
     return;
@@ -1277,6 +1329,23 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+els.openEmployeeManager?.addEventListener("click", openEmployeeManagerModal);
+els.closeEmployeeManager?.addEventListener("click", closeEmployeeManagerModal);
+els.employeeManagerModal?.addEventListener("click", (event) => {
+  if (event.target === els.employeeManagerModal) closeEmployeeManagerModal();
+});
+els.employeeCreateForm?.addEventListener("change", (event) => {
+  enforceEmployeePermissionDependencies(els.employeeCreateForm, event.target);
+});
+els.employeeCreateForm?.addEventListener("submit", createEmployeeAccount);
+els.employeeAccountList?.addEventListener("change", (event) => {
+  const card = event.target.closest("[data-employee-uid]");
+  if (card) enforceEmployeePermissionDependencies(card, event.target);
+});
+els.employeeAccountList?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-save-employee]");
+  if (button) updateEmployeeAccount(button.closest("[data-employee-uid]"));
+});
 els.openActivityHistory?.addEventListener("click", openActivityHistoryModal);
 els.closeActivityHistory?.addEventListener("click", closeActivityHistoryModal);
 els.activityHistoryModal?.addEventListener("click", (event) => {
@@ -1508,6 +1577,8 @@ function showAuthenticatedApp(profile) {
 
 function showLoginScreen(message = "") {
   document.body.classList.add("auth-pending");
+  document.body.classList.remove("modal-open");
+  if (els.employeeManagerModal) els.employeeManagerModal.hidden = true;
   els.appShell.hidden = true;
   els.authScreen.hidden = false;
   els.signedInUser.hidden = true;
@@ -1530,21 +1601,30 @@ function stopCloudStorage() {
 
 function applyRoleAccess() {
   const employee = isEmployeeUser();
+  const purchaseView = employeeCan("purchase", "view");
+  const purchaseCreate = employeeCan("purchase", "create");
+  const salesView = employeeCan("sales", "view");
+  const historyViewOwn = employeeCan("history", "viewOwn");
   document.querySelectorAll("[data-admin-only]").forEach((element) => {
     element.dataset.roleHidden = employee ? "true" : "false";
   });
   document.querySelectorAll("[data-tab]").forEach((button) => {
-    const allowed = !employee || ["purchase", "sales"].includes(button.dataset.tab);
+    const allowed =
+      !employee ||
+      (button.dataset.tab === "purchase" && purchaseView) ||
+      (button.dataset.tab === "sales" && salesView);
     button.dataset.roleHidden = allowed ? "false" : "true";
     button.disabled = !allowed;
   });
   els.activeStorePanel.dataset.roleHidden = employee ? "true" : "false";
   document.querySelector(".sidebar")?.setAttribute("data-role-hidden", employee ? "true" : "false");
   els.openCustomers.dataset.roleHidden = employee ? "true" : "false";
-  els.openBulkPurchase.dataset.roleHidden = "false";
+  els.openBulkPurchase.dataset.roleHidden = employee && !purchaseCreate ? "true" : "false";
   els.toggleInventory.dataset.roleHidden = employee ? "true" : "false";
   els.saveSalesDraft.dataset.roleHidden = employee ? "true" : "false";
   els.deleteSalesDraft.dataset.roleHidden = employee ? "true" : "false";
+  els.openActivityHistory.dataset.roleHidden = employee && !historyViewOwn ? "true" : "false";
+  els.openActivityHistory.disabled = employee && !historyViewOwn;
 }
 
 async function loadUserProfile(db, user) {
@@ -1677,6 +1757,225 @@ async function callEmployeeFunction(name, body = {}) {
   return result;
 }
 
+const employeeManagerState = {
+  employees: [],
+  stores: []
+};
+
+function setEmployeeManagerStatus(message = "", type = "") {
+  if (!els.employeeManagerStatus) return;
+  els.employeeManagerStatus.textContent = message;
+  els.employeeManagerStatus.dataset.type = type;
+  els.employeeManagerStatus.hidden = !message;
+}
+
+function getPermissionsFromContainer(container) {
+  const checked = (name) => Boolean(container?.querySelector(`[name="${name}"]`)?.checked);
+  const permissions = {
+    purchase: {
+      view: checked("purchaseView"),
+      create: checked("purchaseCreate")
+    },
+    sales: {
+      view: checked("salesView"),
+      create: checked("salesCreate")
+    },
+    history: {
+      viewOwn: checked("historyViewOwn")
+    }
+  };
+  if (permissions.purchase.create) permissions.purchase.view = true;
+  if (permissions.sales.create) permissions.sales.view = true;
+  return permissions;
+}
+
+function enforceEmployeePermissionDependencies(container, changedInput) {
+  if (!container || !changedInput?.name) return;
+  const purchaseView = container.querySelector('[name="purchaseView"]');
+  const purchaseCreate = container.querySelector('[name="purchaseCreate"]');
+  const salesView = container.querySelector('[name="salesView"]');
+  const salesCreate = container.querySelector('[name="salesCreate"]');
+  if (changedInput.name === "purchaseCreate" && changedInput.checked && purchaseView) purchaseView.checked = true;
+  if (changedInput.name === "purchaseView" && !changedInput.checked && purchaseCreate) purchaseCreate.checked = false;
+  if (changedInput.name === "salesCreate" && changedInput.checked && salesView) salesView.checked = true;
+  if (changedInput.name === "salesView" && !changedInput.checked && salesCreate) salesCreate.checked = false;
+}
+
+function employeeStoreOptions(selectedStoreId = "") {
+  return employeeManagerState.stores
+    .map(
+      (store) =>
+        `<option value="${escapeHtml(store.id)}" ${store.id === selectedStoreId ? "selected" : ""}>${escapeHtml(
+          store.name || "Cửa hàng"
+        )}</option>`
+    )
+    .join("");
+}
+
+function employeePermissionFields(permissions) {
+  const normalized = normalizeEmployeePermissions({ permissions });
+  const field = (name, checked, label) =>
+    `<label><input name="${name}" type="checkbox" ${checked ? "checked" : ""} /> ${label}</label>`;
+  return [
+    field("purchaseView", normalized.purchase.view, "Xem tab Nhập hàng"),
+    field("purchaseCreate", normalized.purchase.create, "Tạo mới trong Nhập hàng"),
+    field("salesView", normalized.sales.view, "Xem tab Bán hàng"),
+    field("salesCreate", normalized.sales.create, "Tạo mới trong Bán hàng"),
+    field("historyViewOwn", normalized.history.viewOwn, "Xem lịch sử của chính mình")
+  ].join("");
+}
+
+function renderEmployeeAccounts(payload = {}) {
+  employeeManagerState.employees = Array.isArray(payload.employees) ? payload.employees : [];
+  employeeManagerState.stores = Array.isArray(payload.stores) ? payload.stores : [];
+  if (els.employeeStore) {
+    els.employeeStore.innerHTML = employeeStoreOptions(employeeManagerState.stores[0]?.id || "");
+    els.employeeStore.disabled = !employeeManagerState.stores.length;
+  }
+  const createButton = els.employeeCreateForm?.querySelector('[type="submit"]');
+  if (createButton) createButton.disabled = !employeeManagerState.stores.length;
+  if (els.employeeCount) {
+    els.employeeCount.textContent = `${employeeManagerState.employees.length.toLocaleString("vi-VN")} nhân viên`;
+  }
+  if (!els.employeeAccountList) return;
+  if (!employeeManagerState.employees.length) {
+    els.employeeAccountList.innerHTML = '<div class="empty-list">Chưa có tài khoản nhân viên.</div>';
+    return;
+  }
+  els.employeeAccountList.innerHTML = employeeManagerState.employees
+    .map(
+      (employee) => `
+        <article class="employee-account-card" data-employee-uid="${escapeHtml(employee.uid)}">
+          <div class="employee-account-heading">
+            <div>
+              <strong>${escapeHtml(employee.displayName || "Nhân viên")}</strong>
+              <small>${escapeHtml(employee.email || "Không tìm thấy email Authentication")}</small>
+            </div>
+            <label class="employee-active-toggle">
+              <input name="active" type="checkbox" ${employee.active !== false ? "checked" : ""} />
+              Đang hoạt động
+            </label>
+          </div>
+          <div class="employee-form-grid employee-edit-grid">
+            <div class="field">
+              <label>Tên nhân viên</label>
+              <input name="displayName" type="text" maxlength="120" value="${escapeHtml(employee.displayName || "")}" />
+            </div>
+            <div class="field">
+              <label>Cửa hàng</label>
+              <select name="storeId">${employeeStoreOptions(employee.storeId)}</select>
+            </div>
+          </div>
+          <fieldset class="employee-permissions employee-card-permissions">
+            <legend>Quyền được cấp</legend>
+            ${employeePermissionFields(employee.permissions)}
+          </fieldset>
+          <div class="employee-card-actions">
+            <span class="employee-card-status" role="status"></span>
+            <button type="button" data-save-employee>Lưu phân quyền</button>
+          </div>
+        </article>
+      `
+    )
+    .join("");
+}
+
+async function loadEmployeeAccounts() {
+  setEmployeeManagerStatus("Đang tải tài khoản nhân viên...", "loading");
+  try {
+    const result = await callEmployeeFunction("manageAccountsUrl", { action: "list" });
+    renderEmployeeAccounts(result);
+    setEmployeeManagerStatus(
+      employeeManagerState.stores.length ? "" : "Hãy tạo ít nhất một cửa hàng trước khi tạo nhân viên.",
+      employeeManagerState.stores.length ? "" : "warning"
+    );
+  } catch (error) {
+    setEmployeeManagerStatus(error.message || "Không tải được tài khoản nhân viên.", "error");
+  }
+}
+
+function openEmployeeManagerModal() {
+  if (!isAdminUser() || !els.employeeManagerModal) return;
+  setSettingsMenuOpen(false);
+  els.employeeManagerModal.hidden = false;
+  document.body.classList.add("modal-open");
+  loadEmployeeAccounts();
+  window.setTimeout(() => els.employeeCreateForm?.elements.displayName?.focus({ preventScroll: true }), 80);
+}
+
+function closeEmployeeManagerModal() {
+  if (!els.employeeManagerModal) return;
+  els.employeeManagerModal.hidden = true;
+  document.body.classList.remove("modal-open");
+  setEmployeeManagerStatus();
+  els.openEmployeeManager?.focus({ preventScroll: true });
+}
+
+async function createEmployeeAccount(event) {
+  event.preventDefault();
+  if (!isAdminUser() || !els.employeeCreateForm) return;
+  const form = els.employeeCreateForm;
+  if (!form.reportValidity()) return;
+  const permissions = getPermissionsFromContainer(form);
+  if (!permissions.purchase.view && !permissions.sales.view) {
+    setEmployeeManagerStatus("Nhân viên phải được xem ít nhất một tab nghiệp vụ.", "error");
+    return;
+  }
+  const submitButton = form.querySelector('[type="submit"]');
+  const formData = new FormData(form);
+  submitButton.disabled = true;
+  setEmployeeManagerStatus("Đang tạo tài khoản nhân viên...", "loading");
+  try {
+    const result = await callEmployeeFunction("manageAccountsUrl", {
+      action: "create",
+      displayName: String(formData.get("displayName") || "").trim(),
+      email: String(formData.get("email") || "").trim(),
+      password: String(formData.get("password") || ""),
+      storeId: String(formData.get("storeId") || ""),
+      permissions
+    });
+    renderEmployeeAccounts(result);
+    form.reset();
+    if (els.employeeStore && employeeManagerState.stores[0]) els.employeeStore.value = employeeManagerState.stores[0].id;
+    setEmployeeManagerStatus("Đã tạo tài khoản nhân viên thành công.", "success");
+  } catch (error) {
+    setEmployeeManagerStatus(error.message || "Không thể tạo tài khoản nhân viên.", "error");
+  } finally {
+    submitButton.disabled = !employeeManagerState.stores.length;
+  }
+}
+
+async function updateEmployeeAccount(card) {
+  if (!isAdminUser() || !card) return;
+  const permissions = getPermissionsFromContainer(card);
+  const status = card.querySelector(".employee-card-status");
+  const button = card.querySelector("[data-save-employee]");
+  if (!permissions.purchase.view && !permissions.sales.view) {
+    status.textContent = "Phải được xem ít nhất một tab.";
+    status.dataset.type = "error";
+    return;
+  }
+  button.disabled = true;
+  status.textContent = "Đang lưu...";
+  status.dataset.type = "loading";
+  try {
+    const result = await callEmployeeFunction("manageAccountsUrl", {
+      action: "update",
+      uid: card.dataset.employeeUid,
+      displayName: String(card.querySelector('[name="displayName"]')?.value || "").trim(),
+      storeId: String(card.querySelector('[name="storeId"]')?.value || ""),
+      active: Boolean(card.querySelector('[name="active"]')?.checked),
+      permissions
+    });
+    renderEmployeeAccounts(result);
+    setEmployeeManagerStatus("Đã cập nhật phân quyền nhân viên.", "success");
+  } catch (error) {
+    status.textContent = error.message || "Lưu thất bại.";
+    status.dataset.type = "error";
+    button.disabled = false;
+  }
+}
+
 async function loadEmployeeState() {
   try {
     const result = await callEmployeeFunction("getStateUrl");
@@ -1685,7 +1984,7 @@ async function loadEmployeeState() {
       state.activeStoreId = authState.profile.storeId;
     }
     saveStateToCache();
-    activateTab("purchase");
+    activateTab(getFirstEmployeeTab());
     render();
     updateSyncStatus("Đã đồng bộ cloud", "ok");
   } catch (error) {
@@ -4946,7 +5245,11 @@ function updateQuickEntryButton() {
           : tabName === "purchase"
             ? "purchase"
             : "";
-  const showButton = Boolean(store && type);
+  const employeeCreateAllowed =
+    !isEmployeeUser() ||
+    (type === "purchase" && employeeCan("purchase", "create")) ||
+    (type === "sales" && employeeCan("sales", "create"));
+  const showButton = Boolean(store && type && employeeCreateAllowed);
 
   els.quickEntryButton.hidden = !showButton;
   if (!showButton) {
@@ -4984,8 +5287,14 @@ function renderHistoryFilter(select, categories, includeCancelled = false) {
   select.value = stillExists ? currentValue : "all";
 }
 function activateTab(tabName) {
-  if (isEmployeeUser() && !["purchase", "sales"].includes(tabName)) {
-    tabName = "purchase";
+  if (
+    isEmployeeUser() &&
+    !(
+      (tabName === "purchase" && employeeCan("purchase", "view")) ||
+      (tabName === "sales" && employeeCan("sales", "view"))
+    )
+  ) {
+    tabName = getFirstEmployeeTab();
   }
   els.tabButtons.forEach((button) => {
     const isActive = button.dataset.tab === tabName;

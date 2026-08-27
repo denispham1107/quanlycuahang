@@ -20,5 +20,6 @@ window.aiFunctionConfig = {
 
 window.employeeFunctionConfig = {
   getStateUrl: "https://asia-southeast1-YOUR_PROJECT_ID.cloudfunctions.net/getEmployeeState",
-  saveMutationUrl: "https://asia-southeast1-YOUR_PROJECT_ID.cloudfunctions.net/saveEmployeeMutation"
+  saveMutationUrl: "https://asia-southeast1-YOUR_PROJECT_ID.cloudfunctions.net/saveEmployeeMutation",
+  manageAccountsUrl: "https://asia-southeast1-YOUR_PROJECT_ID.cloudfunctions.net/manageEmployeeAccounts"
 };

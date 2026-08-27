@@ -33,8 +33,8 @@ Dự án sử dụng Firebase Authentication và file `firestore.rules` để ph
 
 1. Trong Firebase Console, mở **Authentication > Sign-in method** và bật **Email/Password**.
 2. Trong **Authentication > Settings > Authorized domains**, thêm `denispham1107.github.io`.
-3. Tạo từng tài khoản trong **Authentication > Users**.
-4. Lấy `UID` của tài khoản rồi tạo document `users/{UID}` trong Firestore.
+3. Tạo tài khoản admin đầu tiên trong **Authentication > Users**.
+4. Lấy `UID` của tài khoản admin rồi tạo document `users/{UID}` trong Firestore.
 
 Tài khoản quản trị:
 
@@ -46,18 +46,33 @@ Tài khoản quản trị:
 }
 ```
 
-Tài khoản nhân viên (nên gán đúng cửa hàng):
+Sau khi đăng nhập bằng admin, mở **Cài đặt > Nhân viên** để tạo và quản lý tài khoản nhân viên ngay trên website. Admin có thể chọn cửa hàng, bật/tắt tài khoản và tick từng quyền:
+
+- Xem tab Nhập hàng.
+- Tạo mới trong Nhập hàng.
+- Xem tab Bán hàng.
+- Tạo mới trong Bán hàng.
+- Xem lịch sử hoạt động của chính nhân viên đó.
+
+Quyền tạo mới tự động yêu cầu quyền xem tương ứng. Nhân viên luôn bị khóa quyền sửa và xóa ở phía giao diện lẫn Cloud Functions. Mật khẩu tạm thời chỉ được gửi qua HTTPS đến Firebase Authentication khi tạo tài khoản, không được lưu trong Firestore.
+
+Hồ sơ nhân viên được hệ thống tự tạo theo cấu trúc:
 
 ```json
 {
   "displayName": "Tên nhân viên",
   "role": "employee",
   "active": true,
-  "storeId": "ID_CUA_HANG"
+  "storeId": "ID_CUA_HANG",
+  "permissions": {
+    "purchase": { "view": true, "create": true },
+    "sales": { "view": true, "create": true },
+    "history": { "viewOwn": true }
+  }
 }
 ```
 
-Nếu chưa có `storeId`, hệ thống chỉ cấp cửa hàng đầu tiên. Sau khi cập nhật tài khoản cần deploy `firestore.rules` và hai Cloud Functions `getEmployeeState`, `saveEmployeeMutation`.
+Tài khoản nhân viên cũ chưa có field `permissions` tiếp tục nhận bộ quyền mặc định cũ để không làm gián đoạn sử dụng. Chức năng này dùng ba Cloud Functions: `manageEmployeeAccounts`, `getEmployeeState` và `saveEmployeeMutation`.
 
 ## Deploy lên GitHub Pages
 
