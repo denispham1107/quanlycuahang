@@ -78,6 +78,8 @@ Tài khoản nhân viên cũ chưa có field `permissions` tiếp tục nhận b
 
 Trong **Lịch sử hoạt động**, bộ lọc thời gian có thể kết hợp đồng thời với bộ lọc **Nghiệp vụ** và **Người thực hiện**. Danh sách nghiệp vụ và người thực hiện được tạo từ dữ liệu lịch sử của cửa hàng đang chọn.
 
+Mỗi đơn bán hàng hoàn thành có mã bill dạng `HD01-DDMMYYYY`. Bộ đếm bắt đầu lại từ `01` cho từng ngày và được lưu riêng trong `salesBillSequences`, vì vậy việc hủy bill không làm giảm hoặc tái sử dụng số đã cấp. Các đơn cũ chưa có mã được gán mã theo thứ tự thời gian tạo trong ngày.
+
 ## Deploy lên GitHub Pages
 
 1. Commit các file đã sửa:

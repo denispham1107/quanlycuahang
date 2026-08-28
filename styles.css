@@ -1173,6 +1173,13 @@ form button:disabled {
   flex-wrap: wrap;
 }
 
+.sales-bill-code {
+  color: var(--accent-dark);
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .sales-history-member-tier {
   padding: 4px 8px;
   font-size: 12px;
@@ -4273,33 +4280,71 @@ th:last-child {
     content: "";
   }
 
-  .sales-table td:nth-child(2)::before {
+  .draft-order-table td:nth-child(2)::before {
     content: "Khách hàng";
   }
 
-  .sales-table td:nth-child(3)::before {
+  .draft-order-table td:nth-child(3)::before {
     content: "Số điện thoại";
   }
 
-  .sales-table td:nth-child(4)::before {
+  .draft-order-table td:nth-child(4)::before {
     content: "Tổng bill";
   }
 
-  .sales-table td:nth-child(4) {
+  .draft-order-table td:nth-child(4) {
     display: grid;
     grid-template-columns: 92px minmax(0, 1fr);
     padding: 6px 0;
     text-align: left;
   }
 
-  .sales-table td:nth-child(5) {
+  .draft-order-table td:nth-child(5) {
     display: flex;
     gap: 8px;
     justify-content: flex-end;
     padding-top: 8px;
   }
 
-  .sales-table td:nth-child(5)::before {
+  .draft-order-table td:nth-child(5)::before {
+    content: "";
+  }
+
+  .sales-table:not(.draft-order-table) td:nth-child(1)::before {
+    content: "Mã bill";
+  }
+
+  .sales-table:not(.draft-order-table) td:nth-child(2)::before {
+    content: "Ngày";
+  }
+
+  .sales-table:not(.draft-order-table) td:nth-child(3)::before {
+    content: "Khách hàng";
+  }
+
+  .sales-table:not(.draft-order-table) td:nth-child(4)::before {
+    content: "Số điện thoại";
+  }
+
+  .sales-table:not(.draft-order-table) td:nth-child(5)::before {
+    content: "Tổng bill";
+  }
+
+  .sales-table:not(.draft-order-table) td:nth-child(5) {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr);
+    padding: 6px 0;
+    text-align: left;
+  }
+
+  .sales-table:not(.draft-order-table) td:nth-child(6) {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding-top: 8px;
+  }
+
+  .sales-table:not(.draft-order-table) td:nth-child(6)::before {
     content: "";
   }
 

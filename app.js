@@ -512,6 +512,7 @@ els.storeForm.addEventListener("submit", (event) => {
     },
     entries: [],
     orders: [],
+    salesBillSequences: {},
     draftOrders: [],
     purchaseCategories: [],
     purchaseOrders: [],
@@ -1532,30 +1533,116 @@ function normalizeExportReasons(store) {
   return Array.from(reasons).sort((a, b) => a.localeCompare(b, "vi"));
 }
 
+function getSalesBillDateSuffix(date) {
+  const value = String(date || "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return "";
+  const [year, month, day] = value.split("-");
+  return `${day}${month}${year}`;
+}
+
+function formatSalesBillCode(number, date) {
+  const billNumber = Math.max(1, Math.floor(Number(number) || 1));
+  const suffix = getSalesBillDateSuffix(date);
+  return suffix ? `HD${String(billNumber).padStart(2, "0")}-${suffix}` : "";
+}
+
+function getSalesBillNumber(order, date) {
+  const storedNumber = Math.floor(Number(order?.billNumber || 0));
+  if (storedNumber > 0) return storedNumber;
+  const match = String(order?.billCode || "").match(/^HD(\d+)-(\d{8})$/);
+  if (!match || match[2] !== getSalesBillDateSuffix(date)) return 0;
+  const parsed = Number.parseInt(match[1], 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function normalizeStoreSalesBills(store) {
+  const orders = (Array.isArray(store?.orders) ? store.orders : []).map((order) => ({ ...order }));
+  const sequences = {};
+  Object.entries(store?.salesBillSequences || {}).forEach(([date, number]) => {
+    const normalized = Math.floor(Number(number || 0));
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date) && normalized > 0) sequences[date] = normalized;
+  });
+
+  const ordersByDate = new Map();
+  orders.forEach((order) => {
+    const date = String(order.date || "");
+    if (!getSalesBillDateSuffix(date)) return;
+    if (!ordersByDate.has(date)) ordersByDate.set(date, []);
+    ordersByDate.get(date).push(order);
+  });
+
+  ordersByDate.forEach((dateOrders, date) => {
+    dateOrders.sort(
+      (a, b) =>
+        String(a.createdAt || a.updatedAt || "").localeCompare(String(b.createdAt || b.updatedAt || "")) ||
+        String(a.id || "").localeCompare(String(b.id || ""))
+    );
+    const usedNumbers = new Set();
+    const pendingOrders = [];
+    let sequence = Math.max(0, Number(sequences[date] || 0));
+
+    dateOrders.forEach((order) => {
+      const billNumber = getSalesBillNumber(order, date);
+      if (!billNumber || usedNumbers.has(billNumber)) {
+        pendingOrders.push(order);
+        return;
+      }
+      usedNumbers.add(billNumber);
+      sequence = Math.max(sequence, billNumber);
+      order.billNumber = billNumber;
+      order.billCode = formatSalesBillCode(billNumber, date);
+    });
+
+    pendingOrders.forEach((order) => {
+      do sequence += 1;
+      while (usedNumbers.has(sequence));
+      usedNumbers.add(sequence);
+      order.billNumber = sequence;
+      order.billCode = formatSalesBillCode(sequence, date);
+    });
+    if (sequence > 0) sequences[date] = sequence;
+  });
+
+  return { orders, salesBillSequences: sequences };
+}
+
+function allocateSalesBillCode(store, date) {
+  const normalized = normalizeStoreSalesBills(store);
+  store.orders = normalized.orders;
+  store.salesBillSequences = normalized.salesBillSequences;
+  const billNumber = Math.max(0, Number(store.salesBillSequences[date] || 0)) + 1;
+  store.salesBillSequences[date] = billNumber;
+  return { billNumber, billCode: formatSalesBillCode(billNumber, date) };
+}
+
 function normalizeState(data) {
   const source = data && typeof data === "object" ? data : cloneDefaultData();
-  const stores = (source.stores || []).map((store) => ({
-    id: store.id || createId(),
-    name: store.name || "Cửa hàng chưa đặt tên",
-    categories: {
-      income: store.categories?.income || [],
-      expense: store.categories?.expense || []
-    },
-    entries: store.entries || [],
-    orders: store.orders || [],
-    draftOrders: store.draftOrders || [],
-    customers: store.customers || [],
-    purchaseCategories: store.purchaseCategories || [],
-    purchaseOrders: store.purchaseOrders || [],
-    inventoryLogs: store.inventoryLogs || [],
-    activityHistory: Array.isArray(store.activityHistory) ? store.activityHistory : [],
-    exportReasons: normalizeExportReasons(store),
-    inventory: (store.inventory || []).map((item) => ({
-      ...item,
-      salePrice: Number(item.salePrice ?? item.lastPrice ?? 0)
-    })),
-    createdAt: store.createdAt || getEarliestEntryDate(store.entries || []) || today
-  }));
+  const stores = (source.stores || []).map((store) => {
+    const salesBills = normalizeStoreSalesBills(store);
+    return {
+      id: store.id || createId(),
+      name: store.name || "Cửa hàng chưa đặt tên",
+      categories: {
+        income: store.categories?.income || [],
+        expense: store.categories?.expense || []
+      },
+      entries: store.entries || [],
+      orders: salesBills.orders,
+      salesBillSequences: salesBills.salesBillSequences,
+      draftOrders: store.draftOrders || [],
+      customers: store.customers || [],
+      purchaseCategories: store.purchaseCategories || [],
+      purchaseOrders: store.purchaseOrders || [],
+      inventoryLogs: store.inventoryLogs || [],
+      activityHistory: Array.isArray(store.activityHistory) ? store.activityHistory : [],
+      exportReasons: normalizeExportReasons(store),
+      inventory: (store.inventory || []).map((item) => ({
+        ...item,
+        salePrice: Number(item.salePrice ?? item.lastPrice ?? 0)
+      })),
+      createdAt: store.createdAt || getEarliestEntryDate(store.entries || []) || today
+    };
+  });
 
   const activeStoreId = stores.some((store) => store.id === source.activeStoreId)
     ? source.activeStoreId
@@ -3596,6 +3683,7 @@ function saveSalesOrder() {
 
   const orderId = createId();
   const createdAt = new Date().toISOString();
+  const bill = allocateSalesBillCode(store, date);
   const groupLookup = getGoodsGroupLookup(store);
   const orderItems = items.map((item) => ({
     ...item,
@@ -3605,6 +3693,7 @@ function saveSalesOrder() {
   ensureCustomerFromSalesOrder(store, { customerName, customerPhone, createdAt });
   const order = {
     id: orderId,
+    ...bill,
     customerName,
     customerPhone,
     date,
@@ -3623,7 +3712,7 @@ function saveSalesOrder() {
     store,
     "create",
     "Bán hàng",
-    `Tạo đơn bán hàng cho "${customerName}" - ${items.length} mặt hàng, tổng ${formatCurrency(total)}.`,
+    `Tạo đơn bán hàng ${bill.billCode} cho "${customerName}" - ${items.length} mặt hàng, tổng ${formatCurrency(total)}.`,
     { createdAt, tab: "sales", targetType: "sales-order", targetId: orderId, targetDate: date }
   );
 
@@ -5740,7 +5829,7 @@ function renderSalesOrderTable(container, orders) {
   if (!container) return;
 
   if (!orders.length) {
-    container.innerHTML = '<tr><td colspan="5" class="empty-list">Chưa có đơn hàng trong khoảng thời gian này</td></tr>';
+    container.innerHTML = '<tr><td colspan="6" class="empty-list">Chưa có đơn hàng trong khoảng thời gian này</td></tr>';
     return;
   }
 
@@ -5774,6 +5863,7 @@ function renderSalesOrderTable(container, orders) {
 
       return `
         <tr class="sales-order-row ${cancelled ? "entry-cancelled" : ""}" data-open-sales-order="${order.id}">
+          <td class="sales-bill-code">${escapeHtml(order.billCode || "—")}</td>
           <td>
             <span class="date-stack">
               <span>${formatDate(order.date)}</span>
@@ -5807,6 +5897,10 @@ function openSalesOrderDetail(orderId) {
   els.salesOrderDetailStatus.innerHTML = cancelled ? '<span class="cancelled-pill">Hủy</span>' : "Đơn bán hàng";
   els.salesOrderDetailContent.innerHTML = `
     <div class="order-detail-grid">
+      <div class="order-detail-field">
+        <span>Mã bill</span>
+        <strong>${escapeHtml(order.billCode || "—")}</strong>
+      </div>
       <div class="order-detail-field">
         <span>Ngày</span>
         <strong>${escapeHtml(dateText)}</strong>

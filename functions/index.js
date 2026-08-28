@@ -259,6 +259,84 @@ function employeeDate(value) {
   return date;
 }
 
+function employeeBillDateSuffix(date) {
+  const value = employeeText(date, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return "";
+  const [year, month, day] = value.split("-");
+  return `${day}${month}${year}`;
+}
+
+function formatEmployeeBillCode(number, date) {
+  const billNumber = Math.max(1, Math.floor(Number(number) || 1));
+  const suffix = employeeBillDateSuffix(date);
+  return suffix ? `HD${String(billNumber).padStart(2, "0")}-${suffix}` : "";
+}
+
+function getEmployeeBillNumber(order, date) {
+  const storedNumber = Math.floor(Number(order?.billNumber || 0));
+  if (storedNumber > 0) return storedNumber;
+  const match = employeeText(order?.billCode, 80).match(/^HD(\d+)-(\d{8})$/);
+  if (!match || match[2] !== employeeBillDateSuffix(date)) return 0;
+  const parsed = Number.parseInt(match[1], 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function normalizeEmployeeStoreSalesBills(store) {
+  store.orders = (Array.isArray(store.orders) ? store.orders : []).map((order) => ({ ...order }));
+  const sequences = {};
+  Object.entries(store.salesBillSequences || {}).forEach(([date, number]) => {
+    const normalized = Math.floor(Number(number || 0));
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date) && normalized > 0) sequences[date] = normalized;
+  });
+
+  const ordersByDate = new Map();
+  store.orders.forEach((order) => {
+    const date = employeeText(order.date, 10);
+    if (!employeeBillDateSuffix(date)) return;
+    if (!ordersByDate.has(date)) ordersByDate.set(date, []);
+    ordersByDate.get(date).push(order);
+  });
+
+  ordersByDate.forEach((dateOrders, date) => {
+    dateOrders.sort(
+      (a, b) =>
+        String(a.createdAt || a.updatedAt || "").localeCompare(String(b.createdAt || b.updatedAt || "")) ||
+        String(a.id || "").localeCompare(String(b.id || ""))
+    );
+    const usedNumbers = new Set();
+    const pendingOrders = [];
+    let sequence = Math.max(0, Number(sequences[date] || 0));
+    dateOrders.forEach((order) => {
+      const billNumber = getEmployeeBillNumber(order, date);
+      if (!billNumber || usedNumbers.has(billNumber)) {
+        pendingOrders.push(order);
+        return;
+      }
+      usedNumbers.add(billNumber);
+      sequence = Math.max(sequence, billNumber);
+      order.billNumber = billNumber;
+      order.billCode = formatEmployeeBillCode(billNumber, date);
+    });
+    pendingOrders.forEach((order) => {
+      do sequence += 1;
+      while (usedNumbers.has(sequence));
+      usedNumbers.add(sequence);
+      order.billNumber = sequence;
+      order.billCode = formatEmployeeBillCode(sequence, date);
+    });
+    if (sequence > 0) sequences[date] = sequence;
+  });
+  store.salesBillSequences = sequences;
+  return store;
+}
+
+function allocateEmployeeSalesBillCode(store, date) {
+  normalizeEmployeeStoreSalesBills(store);
+  const billNumber = Math.max(0, Number(store.salesBillSequences[date] || 0)) + 1;
+  store.salesBillSequences[date] = billNumber;
+  return { billNumber, billCode: formatEmployeeBillCode(billNumber, date) };
+}
+
 const DEFAULT_EMPLOYEE_PERMISSIONS = Object.freeze({
   purchase: Object.freeze({ view: true, create: true, inventoryView: false }),
   sales: Object.freeze({ view: true, create: true, draft: false }),
@@ -322,33 +400,37 @@ function sanitizeEmployeeState(state, user) {
   const allowedStoreIds = new Set(getEmployeeStoreIds(state, user.profile));
   const stores = (Array.isArray(state?.stores) ? state.stores : [])
     .filter((store) => allowedStoreIds.has(store.id))
-    .map((store) => ({
-      id: store.id,
-      name: store.name,
-      categories: { income: [], expense: [] },
-      entries: [],
-      orders: permissions.sales.view && Array.isArray(store.orders) ? store.orders : [],
-      draftOrders:
-        permissions.sales.draft && Array.isArray(store.draftOrders)
-          ? store.draftOrders.filter((draft) => draft.actorUid === user.uid)
+    .map((store) => {
+      normalizeEmployeeStoreSalesBills(store);
+      return {
+        id: store.id,
+        name: store.name,
+        categories: { income: [], expense: [] },
+        entries: [],
+        orders: permissions.sales.view ? store.orders : [],
+        salesBillSequences: permissions.sales.view ? store.salesBillSequences : {},
+        draftOrders:
+          permissions.sales.draft && Array.isArray(store.draftOrders)
+            ? store.draftOrders.filter((draft) => draft.actorUid === user.uid)
+            : [],
+        customers: permissions.sales.view && Array.isArray(store.customers) ? store.customers : [],
+        purchaseCategories:
+          permissions.purchase.view && Array.isArray(store.purchaseCategories) ? store.purchaseCategories : [],
+        purchaseOrders:
+          permissions.purchase.view && Array.isArray(store.purchaseOrders) ? store.purchaseOrders : [],
+        inventoryLogs:
+          permissions.purchase.view && Array.isArray(store.inventoryLogs) ? store.inventoryLogs : [],
+        inventory:
+          (permissions.purchase.view || permissions.sales.view) && Array.isArray(store.inventory) ? store.inventory : [],
+        exportReasons: [],
+        activityHistory: permissions.history.viewOwn
+          ? (Array.isArray(store.activityHistory) ? store.activityHistory : []).filter(
+              (activity) => activity.actorUid === user.uid && ["Nhập hàng", "Bán hàng"].includes(activity.area)
+            )
           : [],
-      customers: permissions.sales.view && Array.isArray(store.customers) ? store.customers : [],
-      purchaseCategories:
-        permissions.purchase.view && Array.isArray(store.purchaseCategories) ? store.purchaseCategories : [],
-      purchaseOrders:
-        permissions.purchase.view && Array.isArray(store.purchaseOrders) ? store.purchaseOrders : [],
-      inventoryLogs:
-        permissions.purchase.view && Array.isArray(store.inventoryLogs) ? store.inventoryLogs : [],
-      inventory:
-        (permissions.purchase.view || permissions.sales.view) && Array.isArray(store.inventory) ? store.inventory : [],
-      exportReasons: [],
-      activityHistory: permissions.history.viewOwn
-        ? (Array.isArray(store.activityHistory) ? store.activityHistory : []).filter(
-            (activity) => activity.actorUid === user.uid && ["Nhập hàng", "Bán hàng"].includes(activity.area)
-          )
-        : [],
-      createdAt: store.createdAt || ""
-    }));
+        createdAt: store.createdAt || ""
+      };
+    });
   return {
     activeStoreId: stores.some((store) => store.id === user.profile.storeId) ? user.profile.storeId : stores[0]?.id || null,
     stores
@@ -374,6 +456,7 @@ function createEmployeeActivity(user, area, message, target) {
 
 function applyEmployeeSalesMutation(store, rawOrder, user) {
   if (!rawOrder || typeof rawOrder !== "object") throw Object.assign(new Error("INVALID_ORDER"), { status: 400 });
+  const orderDate = employeeDate(rawOrder.date);
   const items = (Array.isArray(rawOrder.items) ? rawOrder.items : []).slice(0, 50).map((item) => {
     const name = employeeText(item.name, 160);
     const quantity = Math.floor(employeeNumber(item.quantity, 1));
@@ -416,11 +499,13 @@ function applyEmployeeSalesMutation(store, rawOrder, user) {
   const directDiscount = Math.min(subtotal, employeeNumber(rawOrder.orderDiscountAmount || 0, 0));
   const percent = Math.min(100, employeeNumber(rawOrder.orderDiscountPercent || 0, 0));
   const discountTotal = directDiscount > 0 ? directDiscount : Math.round(subtotal * percent / 100);
+  const bill = allocateEmployeeSalesBillCode(store, orderDate);
   const order = {
     id: employeeText(rawOrder.id, 80) || employeeId(),
+    ...bill,
     customerName: employeeText(rawOrder.customerName, 160),
     customerPhone: employeeText(rawOrder.customerPhone, 40),
-    date: employeeDate(rawOrder.date),
+    date: orderDate,
     items,
     subtotal,
     orderDiscountPercent: percent,
@@ -452,7 +537,7 @@ function applyEmployeeSalesMutation(store, rawOrder, user) {
   }
 
   store.activityHistory = [
-    createEmployeeActivity(user, "Bán hàng", `Tạo đơn bán hàng cho "${order.customerName}" - ${items.length} mặt hàng, tổng ${order.total.toLocaleString("vi-VN")} đ.`, {
+    createEmployeeActivity(user, "Bán hàng", `Tạo đơn bán hàng ${order.billCode} cho "${order.customerName}" - ${items.length} mặt hàng, tổng ${order.total.toLocaleString("vi-VN")} đ.`, {
       createdAt: order.createdAt,
       tab: "sales",
       targetType: "sales-order",
