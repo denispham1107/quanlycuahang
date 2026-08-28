@@ -82,6 +82,8 @@ Mỗi đơn bán hàng hoàn thành có mã bill dạng `HD01-DDMMYYYY`. Bộ đ
 
 Khi chọn một dòng trong **Lịch sử bán hàng**, chi tiết đơn được mở thành trang toàn màn hình với thông tin bill dạng cô đọng, danh sách hàng hóa ưu tiên diện tích hiển thị và bố cục responsive riêng cho desktop, tablet và mobile.
 
+Trên web app mobile, biểu mẫu **Tạo đơn bán hàng** dùng bố cục cô đọng riêng: thông tin khách hàng được ghép theo hàng, mỗi hàng hóa dùng lưới ba dòng và các nút thao tác được gom lại; giao diện desktop vẫn giữ nguyên.
+
 ## Deploy lên GitHub Pages
 
 1. Commit các file đã sửa:
