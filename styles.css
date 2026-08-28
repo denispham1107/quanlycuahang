@@ -84,37 +84,32 @@ body.auth-pending {
 }
 
 .auth-card {
-  width: min(440px, 100%);
+  width: min(456px, 100%);
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 30px;
-  padding: clamp(24px, 5vw, 38px);
+  padding: clamp(28px, 5vw, 40px);
   background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 30px 90px rgba(47, 61, 115, 0.24);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
 }
 
-.auth-card h1 {
-  margin: 8px 0 6px;
-  color: #07376f;
-  font-size: clamp(30px, 8vw, 42px);
+.auth-card > .eyebrow {
+  margin-bottom: 7px;
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: 0.035em;
 }
 
-.auth-brand {
-  display: grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 22px;
-  background: linear-gradient(135deg, #0878f7, #8b48ff 55%, #f06ca8);
-  color: #fff;
-  font-size: 22px;
-  font-weight: 900;
-  box-shadow: 0 14px 30px rgba(65, 83, 205, 0.28);
+.auth-card h1 {
+  margin: 0 0 8px;
+  color: #07376f;
+  font-size: clamp(30px, 8vw, 42px);
+  line-height: 1.08;
 }
 
 .auth-description {
-  margin: 0 0 22px;
+  margin: 0 0 25px;
   color: var(--muted);
   line-height: 1.5;
 }
@@ -3221,7 +3216,7 @@ th:last-child {
 @media (max-width: 700px) {
   .auth-card {
     border-radius: 26px;
-    padding: 24px 20px;
+    padding: 28px 22px;
   }
 
   .employee-manager-backdrop {
