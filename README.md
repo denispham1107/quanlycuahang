@@ -52,9 +52,10 @@ Sau khi đăng nhập bằng admin, mở **Cài đặt > Nhân viên** để t�
 - Tạo mới trong Nhập hàng.
 - Xem tab Bán hàng.
 - Tạo mới trong Bán hàng.
+- Lưu và mở lại đơn đang lưu trong Bán hàng.
 - Xem lịch sử hoạt động của chính nhân viên đó.
 
-Quyền tạo mới tự động yêu cầu quyền xem tương ứng. Nhân viên luôn bị khóa quyền sửa và xóa ở phía giao diện lẫn Cloud Functions. Mật khẩu tạm thời chỉ được gửi qua HTTPS đến Firebase Authentication khi tạo tài khoản, không được lưu trong Firestore.
+Quyền tạo mới tự động yêu cầu quyền xem tương ứng. Quyền `Lưu và mở đơn đang lưu` tự động yêu cầu quyền xem và tạo mới trong Bán hàng; nhân viên chỉ nhìn thấy và tiếp tục các đơn do chính tài khoản đó lưu. Nhân viên luôn bị khóa quyền sửa, xóa và xóa đơn đang lưu ở phía giao diện lẫn Cloud Functions. Mật khẩu tạm thời chỉ được gửi qua HTTPS đến Firebase Authentication khi tạo tài khoản, không được lưu trong Firestore.
 
 Hồ sơ nhân viên được hệ thống tự tạo theo cấu trúc:
 
@@ -66,7 +67,7 @@ Hồ sơ nhân viên được hệ thống tự tạo theo cấu trúc:
   "storeId": "ID_CUA_HANG",
   "permissions": {
     "purchase": { "view": true, "create": true },
-    "sales": { "view": true, "create": true },
+    "sales": { "view": true, "create": true, "draft": false },
     "history": { "viewOwn": true }
   }
 }

@@ -361,7 +361,7 @@ function isEmployeeUser() {
 
 const DEFAULT_EMPLOYEE_PERMISSIONS = Object.freeze({
   purchase: Object.freeze({ view: true, create: true }),
-  sales: Object.freeze({ view: true, create: true }),
+  sales: Object.freeze({ view: true, create: true, draft: false }),
   history: Object.freeze({ viewOwn: true })
 });
 
@@ -377,7 +377,8 @@ function normalizeEmployeePermissions(profile = {}) {
     },
     sales: {
       view: source.sales?.view === true,
-      create: source.sales?.create === true
+      create: source.sales?.create === true,
+      draft: source.sales?.draft === true
     },
     history: {
       viewOwn: source.history?.viewOwn === true
@@ -385,6 +386,10 @@ function normalizeEmployeePermissions(profile = {}) {
   };
   if (permissions.purchase.create) permissions.purchase.view = true;
   if (permissions.sales.create) permissions.sales.view = true;
+  if (permissions.sales.draft) {
+    permissions.sales.create = true;
+    permissions.sales.view = true;
+  }
   return permissions;
 }
 
@@ -1413,7 +1418,14 @@ document.addEventListener("click", (event) => {
 
   if (
     isEmployeeUser() &&
-    (categoryButton || entryButton || orderButton || editCategoryButton || editEntryButton || inventoryLogRow || draftButton || draftDeleteButton)
+    (categoryButton ||
+      entryButton ||
+      orderButton ||
+      editCategoryButton ||
+      editEntryButton ||
+      inventoryLogRow ||
+      draftDeleteButton ||
+      (draftButton && !employeeCan("sales", "draft")))
   ) {
     return;
   }
@@ -1604,6 +1616,7 @@ function applyRoleAccess() {
   const purchaseView = employeeCan("purchase", "view");
   const purchaseCreate = employeeCan("purchase", "create");
   const salesView = employeeCan("sales", "view");
+  const salesDraft = employeeCan("sales", "draft");
   const historyViewOwn = employeeCan("history", "viewOwn");
   document.querySelectorAll("[data-admin-only]").forEach((element) => {
     element.dataset.roleHidden = employee ? "true" : "false";
@@ -1621,7 +1634,7 @@ function applyRoleAccess() {
   els.openCustomers.dataset.roleHidden = employee ? "true" : "false";
   els.openBulkPurchase.dataset.roleHidden = employee && !purchaseCreate ? "true" : "false";
   els.toggleInventory.dataset.roleHidden = employee ? "true" : "false";
-  els.saveSalesDraft.dataset.roleHidden = employee ? "true" : "false";
+  els.saveSalesDraft.dataset.roleHidden = employee && !salesDraft ? "true" : "false";
   els.deleteSalesDraft.dataset.roleHidden = employee ? "true" : "false";
   els.openActivityHistory.dataset.roleHidden = employee && !historyViewOwn ? "true" : "false";
   els.openActivityHistory.disabled = employee && !historyViewOwn;
@@ -1778,7 +1791,8 @@ function getPermissionsFromContainer(container) {
     },
     sales: {
       view: checked("salesView"),
-      create: checked("salesCreate")
+      create: checked("salesCreate"),
+      draft: checked("salesDraft")
     },
     history: {
       viewOwn: checked("historyViewOwn")
@@ -1786,6 +1800,10 @@ function getPermissionsFromContainer(container) {
   };
   if (permissions.purchase.create) permissions.purchase.view = true;
   if (permissions.sales.create) permissions.sales.view = true;
+  if (permissions.sales.draft) {
+    permissions.sales.create = true;
+    permissions.sales.view = true;
+  }
   return permissions;
 }
 
@@ -1795,10 +1813,19 @@ function enforceEmployeePermissionDependencies(container, changedInput) {
   const purchaseCreate = container.querySelector('[name="purchaseCreate"]');
   const salesView = container.querySelector('[name="salesView"]');
   const salesCreate = container.querySelector('[name="salesCreate"]');
+  const salesDraft = container.querySelector('[name="salesDraft"]');
   if (changedInput.name === "purchaseCreate" && changedInput.checked && purchaseView) purchaseView.checked = true;
   if (changedInput.name === "purchaseView" && !changedInput.checked && purchaseCreate) purchaseCreate.checked = false;
   if (changedInput.name === "salesCreate" && changedInput.checked && salesView) salesView.checked = true;
-  if (changedInput.name === "salesView" && !changedInput.checked && salesCreate) salesCreate.checked = false;
+  if (changedInput.name === "salesDraft" && changedInput.checked) {
+    if (salesCreate) salesCreate.checked = true;
+    if (salesView) salesView.checked = true;
+  }
+  if (changedInput.name === "salesCreate" && !changedInput.checked && salesDraft) salesDraft.checked = false;
+  if (changedInput.name === "salesView" && !changedInput.checked) {
+    if (salesCreate) salesCreate.checked = false;
+    if (salesDraft) salesDraft.checked = false;
+  }
 }
 
 function employeeStoreOptions(selectedStoreId = "") {
@@ -1821,6 +1848,7 @@ function employeePermissionFields(permissions) {
     field("purchaseCreate", normalized.purchase.create, "Tạo mới trong Nhập hàng"),
     field("salesView", normalized.sales.view, "Xem tab Bán hàng"),
     field("salesCreate", normalized.sales.create, "Tạo mới trong Bán hàng"),
+    field("salesDraft", normalized.sales.draft, "Lưu và mở đơn đang lưu"),
     field("historyViewOwn", normalized.history.viewOwn, "Xem lịch sử của chính mình")
   ].join("");
 }
@@ -2954,7 +2982,7 @@ function openSalesOrderModal(store, draft = null) {
   updateSalesOrderTotal();
   els.quickEntrySubmit.disabled = false;
   els.openOrderDiscount.hidden = false;
-  els.saveSalesDraft.hidden = isEmployeeUser();
+  els.saveSalesDraft.hidden = isEmployeeUser() && !employeeCan("sales", "draft");
   els.deleteSalesDraft.hidden = isEmployeeUser() || !uiState.salesDraftId;
   els.quickEntrySubmit.textContent = "Hoàn Thành";
   els.quickEntryModal.hidden = false;
@@ -3524,11 +3552,12 @@ function saveSalesOrder() {
     { createdAt, tab: "sales", targetType: "sales-order", targetId: orderId, targetDate: date }
   );
 
-  if (uiState.salesDraftId) {
-    store.draftOrders = (store.draftOrders || []).filter((draft) => draft.id !== uiState.salesDraftId);
+  const completedDraftId = uiState.salesDraftId || "";
+  if (completedDraftId) {
+    store.draftOrders = (store.draftOrders || []).filter((draft) => draft.id !== completedDraftId);
   }
 
-  saveAndRender({ type: "sales-create", storeId: store.id, order });
+  saveAndRender({ type: "sales-create", storeId: store.id, order, draftId: completedDraftId });
   return true;
 }
 
@@ -4741,11 +4770,13 @@ function saveSalesDraft() {
 
   const now = new Date().toISOString();
   const draftId = uiState.salesDraftId || createId();
+  const existingDraft = (store.draftOrders || []).find((item) => item.id === draftId);
   const nextDraft = {
+    ...(existingDraft || {}),
     id: draftId,
     ...draft,
     status: "draft",
-    createdAt: (store.draftOrders || []).find((item) => item.id === draftId)?.createdAt || now,
+    createdAt: existingDraft?.createdAt || now,
     updatedAt: now
   };
 
@@ -4754,7 +4785,7 @@ function saveSalesDraft() {
     nextDraft
   ];
   uiState.salesDraftId = draftId;
-  saveAndRender();
+  saveAndRender({ type: "sales-draft-save", storeId: store.id, draft: nextDraft });
   return true;
 }
 
@@ -5790,7 +5821,7 @@ function renderSalesOrderItemLine(item) {
 function renderSalesDraftList(drafts) {
   if (!els.salesDraftList) return;
 
-  if (isEmployeeUser()) {
+  if (isEmployeeUser() && !employeeCan("sales", "draft")) {
     els.salesDraftList.innerHTML = "";
     return;
   }
@@ -5808,6 +5839,7 @@ function renderSalesDraftList(drafts) {
     ])
   );
 
+  const canDeleteDraft = !isEmployeeUser();
   const rows = [...drafts]
     .sort((a, b) => String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || "")))
     .map((draft) => {
@@ -5836,9 +5868,11 @@ function renderSalesDraftList(drafts) {
           <td>${customer}</td>
           <td>${escapeHtml(draft.customerPhone || "")}</td>
           <td class="amount-cell">${formatCurrency(draft.total || 0)}</td>
-          <td>
-            <button class="delete-small" type="button" data-delete-sales-draft="${draft.id}" title="Xóa đơn đang lưu" aria-label="Xóa đơn đang lưu">×</button>
-          </td>
+          ${
+            canDeleteDraft
+              ? `<td><button class="delete-small" type="button" data-delete-sales-draft="${draft.id}" title="Xóa đơn đang lưu" aria-label="Xóa đơn đang lưu">×</button></td>`
+              : ""
+          }
         </tr>
       `;
     })
@@ -5854,7 +5888,7 @@ function renderSalesDraftList(drafts) {
             <th>Khách hàng</th>
             <th>Số điện thoại</th>
             <th>Tổng bill</th>
-            <th></th>
+            ${canDeleteDraft ? "<th></th>" : ""}
           </tr>
         </thead>
         <tbody>${rows}</tbody>

@@ -261,7 +261,7 @@ function employeeDate(value) {
 
 const DEFAULT_EMPLOYEE_PERMISSIONS = Object.freeze({
   purchase: Object.freeze({ view: true, create: true }),
-  sales: Object.freeze({ view: true, create: true }),
+  sales: Object.freeze({ view: true, create: true, draft: false }),
   history: Object.freeze({ viewOwn: true })
 });
 
@@ -277,7 +277,8 @@ function normalizeEmployeePermissions(profile = {}) {
     },
     sales: {
       view: source.sales?.view === true,
-      create: source.sales?.create === true
+      create: source.sales?.create === true,
+      draft: source.sales?.draft === true
     },
     history: {
       viewOwn: source.history?.viewOwn === true
@@ -285,6 +286,10 @@ function normalizeEmployeePermissions(profile = {}) {
   };
   if (permissions.purchase.create) permissions.purchase.view = true;
   if (permissions.sales.create) permissions.sales.view = true;
+  if (permissions.sales.draft) {
+    permissions.sales.create = true;
+    permissions.sales.view = true;
+  }
   return permissions;
 }
 
@@ -321,7 +326,10 @@ function sanitizeEmployeeState(state, user) {
       categories: { income: [], expense: [] },
       entries: [],
       orders: permissions.sales.view && Array.isArray(store.orders) ? store.orders : [],
-      draftOrders: [],
+      draftOrders:
+        permissions.sales.draft && Array.isArray(store.draftOrders)
+          ? store.draftOrders.filter((draft) => draft.actorUid === user.uid)
+          : [],
       customers: permissions.sales.view && Array.isArray(store.customers) ? store.customers : [],
       purchaseCategories:
         permissions.purchase.view && Array.isArray(store.purchaseCategories) ? store.purchaseCategories : [],
@@ -451,6 +459,76 @@ function applyEmployeeSalesMutation(store, rawOrder, user) {
     }),
     ...(Array.isArray(store.activityHistory) ? store.activityHistory : [])
   ];
+}
+
+function applyEmployeeSalesDraftMutation(store, rawDraft, user) {
+  if (!rawDraft || typeof rawDraft !== "object") {
+    throw Object.assign(new Error("INVALID_DRAFT"), { status: 400 });
+  }
+  const draftId = employeeText(rawDraft.id, 80) || employeeId();
+  store.draftOrders = Array.isArray(store.draftOrders) ? store.draftOrders : [];
+  const existingDraft = store.draftOrders.find((draft) => draft.id === draftId);
+  if (existingDraft && existingDraft.actorUid !== user.uid) {
+    throw Object.assign(new Error("DRAFT_FORBIDDEN"), { status: 403 });
+  }
+
+  const items = (Array.isArray(rawDraft.items) ? rawDraft.items : [])
+    .slice(0, 50)
+    .map((item) => {
+      const name = employeeText(item.name, 160);
+      const originalPrice = employeeNumber(item.originalPrice ?? item.price ?? 0, 0);
+      const price = employeeNumber(item.price ?? originalPrice, 0);
+      const quantity = Math.max(1, Math.floor(employeeNumber(item.quantity || 1, 1)));
+      const discountPercent = Math.min(100, employeeNumber(item.discountPercent || 0, 0));
+      const discountAmount = employeeNumber(item.discountAmount || 0, 0);
+      return {
+        name,
+        price,
+        originalPrice,
+        discountPercent,
+        discountAmount,
+        quantity,
+        total: price * quantity
+      };
+    })
+    .filter((item) => item.name || item.originalPrice > 0);
+
+  const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+  const directDiscount = Math.min(subtotal, employeeNumber(rawDraft.orderDiscountAmount || 0, 0));
+  const percent = Math.min(100, employeeNumber(rawDraft.orderDiscountPercent || 0, 0));
+  const discountTotal = directDiscount > 0 ? directDiscount : Math.round(subtotal * percent / 100);
+  const now = new Date().toISOString();
+  const draft = {
+    id: draftId,
+    customerName: employeeText(rawDraft.customerName, 160),
+    customerPhone: employeeText(rawDraft.customerPhone, 40),
+    date: employeeDate(rawDraft.date),
+    items,
+    subtotal,
+    orderDiscountPercent: percent,
+    orderDiscountAmount: directDiscount,
+    discountTotal,
+    total: Math.max(0, subtotal - discountTotal),
+    status: "draft",
+    createdAt: existingDraft?.createdAt || now,
+    updatedAt: now,
+    actorUid: user.uid,
+    actorName: employeeText(user.profile.displayName || user.email, 120),
+    actorRole: "employee"
+  };
+  store.draftOrders = [...store.draftOrders.filter((current) => current.id !== draftId), draft];
+}
+
+function removeEmployeeSalesDraftOnCompletion(store, rawDraftId, user) {
+  const draftId = employeeText(rawDraftId, 80);
+  if (!draftId) return;
+  store.draftOrders = Array.isArray(store.draftOrders) ? store.draftOrders : [];
+  const draft = store.draftOrders.find((current) => current.id === draftId);
+  if (!draft) return;
+  if (draft.actorUid !== user.uid) {
+    throw Object.assign(new Error("DRAFT_FORBIDDEN"), { status: 403 });
+  }
+  store.draftOrders = store.draftOrders.filter((current) => current.id !== draftId);
 }
 
 function applyEmployeePurchaseMutation(store, rawOrder, user) {
@@ -2273,7 +2351,7 @@ exports.saveEmployeeMutation = onRequest(
       const user = await requireUserProfile(req, "employee");
       const mutation = req.body?.mutation || {};
       const type = employeeText(mutation.type, 40);
-      if (!["sales-create", "purchase-create"].includes(type)) {
+      if (!["sales-create", "sales-draft-save", "purchase-create"].includes(type)) {
         return sendError(res, 403, "Nhân viên chỉ được tạo mới trong Nhập hàng và Bán hàng.");
       }
       if (type === "sales-create" && !hasEmployeePermission(user, "sales", "create")) {
@@ -2281,6 +2359,9 @@ exports.saveEmployeeMutation = onRequest(
       }
       if (type === "purchase-create" && !hasEmployeePermission(user, "purchase", "create")) {
         return sendError(res, 403, "Bạn chưa được cấp quyền nhập hàng.");
+      }
+      if (type === "sales-draft-save" && !hasEmployeePermission(user, "sales", "draft")) {
+        return sendError(res, 403, "Bạn chưa được cấp quyền lưu và mở đơn đang lưu.");
       }
 
       const stateRef = db.collection(APP_STATE_COLLECTION).doc(APP_STATE_DOCUMENT);
@@ -2296,7 +2377,11 @@ exports.saveEmployeeMutation = onRequest(
         const store = (state.stores || []).find((current) => current.id === storeId);
         if (!store) throw Object.assign(new Error("STORE_NOT_FOUND"), { status: 404 });
 
-        if (type === "sales-create") applyEmployeeSalesMutation(store, mutation.order, user);
+        if (type === "sales-create") {
+          applyEmployeeSalesMutation(store, mutation.order, user);
+          removeEmployeeSalesDraftOnCompletion(store, mutation.draftId, user);
+        }
+        if (type === "sales-draft-save") applyEmployeeSalesDraftMutation(store, mutation.draft, user);
         if (type === "purchase-create") applyEmployeePurchaseMutation(store, mutation.order, user);
         transaction.set(stateRef, { state, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
         resultState = sanitizeEmployeeState(state, user);
