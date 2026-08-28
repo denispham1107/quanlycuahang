@@ -1040,7 +1040,7 @@
           <button class="icon-button activity-history-close" id="closeActivityHistory" type="button" aria-label="Đóng lịch sử">×</button>
         </div>
         <p class="activity-history-note">Nhật ký bắt đầu ghi từ phiên bản hỗ trợ Lịch sử.</p>
-        <div class="activity-history-filters" aria-label="Bộ lọc thời gian lịch sử hoạt động">
+        <div class="activity-history-filters" aria-label="Bộ lọc lịch sử hoạt động">
           <div class="field activity-history-range-field">
             <label for="activityHistoryRangeMode">Thời gian</label>
             <select id="activityHistoryRangeMode">
@@ -1050,6 +1050,18 @@
               <option value="this-month">Tháng này</option>
               <option value="last-month">Tháng trước</option>
               <option value="custom">Khoảng thời gian tùy chọn</option>
+            </select>
+          </div>
+          <div class="field activity-history-area-field">
+            <label for="activityHistoryAreaFilter">Nghiệp vụ</label>
+            <select id="activityHistoryAreaFilter">
+              <option value="all">Tất cả nghiệp vụ</option>
+            </select>
+          </div>
+          <div class="field activity-history-actor-field">
+            <label for="activityHistoryActorFilter">Người thực hiện</label>
+            <select id="activityHistoryActorFilter">
+              <option value="all">Tất cả người thực hiện</option>
             </select>
           </div>
           <div class="activity-history-custom-range" id="activityHistoryCustomRange" hidden>

@@ -76,6 +76,8 @@ Hồ sơ nhân viên được hệ thống tự tạo theo cấu trúc:
 
 Tài khoản nhân viên cũ chưa có field `permissions` tiếp tục nhận bộ quyền mặc định cũ để không làm gián đoạn sử dụng. Chức năng này dùng ba Cloud Functions: `manageEmployeeAccounts`, `getEmployeeState` và `saveEmployeeMutation`.
 
+Trong **Lịch sử hoạt động**, bộ lọc thời gian có thể kết hợp đồng thời với bộ lọc **Nghiệp vụ** và **Người thực hiện**. Danh sách nghiệp vụ và người thực hiện được tạo từ dữ liệu lịch sử của cửa hàng đang chọn.
+
 ## Deploy lên GitHub Pages
 
 1. Commit các file đã sửa:

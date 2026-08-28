@@ -79,7 +79,9 @@ const uiState = {
   salesDraftId: null,
   salesOrderDiscountPercent: 0,
   salesOrderDiscountAmount: 0,
-  activityHistoryRangeMode: "all"
+  activityHistoryRangeMode: "all",
+  activityHistoryAreaFilter: "all",
+  activityHistoryActorFilter: "all"
 };
 
 const els = {
@@ -163,6 +165,8 @@ const els = {
   activityHistoryStoreName: document.querySelector("#activityHistoryStoreName"),
   activityHistoryList: document.querySelector("#activityHistoryList"),
   activityHistoryRangeMode: document.querySelector("#activityHistoryRangeMode"),
+  activityHistoryAreaFilter: document.querySelector("#activityHistoryAreaFilter"),
+  activityHistoryActorFilter: document.querySelector("#activityHistoryActorFilter"),
   activityHistoryCustomRange: document.querySelector("#activityHistoryCustomRange"),
   activityHistoryFromDate: document.querySelector("#activityHistoryFromDate"),
   activityHistoryToDate: document.querySelector("#activityHistoryToDate"),
@@ -1374,6 +1378,14 @@ els.activityHistoryRangeMode?.addEventListener("change", () => {
   updateActivityHistoryFilterVisibility();
   renderActivityHistory(getActiveStore());
 });
+els.activityHistoryAreaFilter?.addEventListener("change", () => {
+  uiState.activityHistoryAreaFilter = els.activityHistoryAreaFilter.value;
+  renderActivityHistory(getActiveStore());
+});
+els.activityHistoryActorFilter?.addEventListener("change", () => {
+  uiState.activityHistoryActorFilter = els.activityHistoryActorFilter.value;
+  renderActivityHistory(getActiveStore());
+});
 [els.activityHistoryFromDate, els.activityHistoryToDate].forEach((input) => {
   input?.addEventListener("change", () => renderActivityHistory(getActiveStore()));
 });
@@ -2163,20 +2175,70 @@ function updateActivityHistoryFilterVisibility() {
   els.activityHistoryCustomRange.hidden = !custom;
 }
 
+function getActivityActorLabel(activity) {
+  const name = String(activity?.actorName || "").trim();
+  if (name) return name;
+  if (activity?.actorRole === "admin") return "Quản trị viên";
+  if (activity?.actorRole === "employee") return "Nhân viên";
+  return "Không rõ người thực hiện";
+}
+
+function getActivityActorFilterKey(activity) {
+  return `actor:${normalizeSearchText(getActivityActorLabel(activity)) || "unknown"}`;
+}
+
+function renderActivityHistoryFilterOptions(activities) {
+  const areas = [...new Set(activities.map((activity) => String(activity.area || "Cửa hàng").trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "vi"));
+  if (els.activityHistoryAreaFilter) {
+    const requestedArea = uiState.activityHistoryAreaFilter || "all";
+    els.activityHistoryAreaFilter.innerHTML = [
+      '<option value="all">Tất cả nghiệp vụ</option>',
+      ...areas.map((area) => `<option value="${escapeHtml(area)}">${escapeHtml(area)}</option>`)
+    ].join("");
+    uiState.activityHistoryAreaFilter = areas.includes(requestedArea) ? requestedArea : "all";
+    els.activityHistoryAreaFilter.value = uiState.activityHistoryAreaFilter;
+  }
+
+  if (els.activityHistoryActorFilter) {
+    const actors = new Map();
+    activities.forEach((activity) => {
+      const key = getActivityActorFilterKey(activity);
+      if (!actors.has(key)) actors.set(key, getActivityActorLabel(activity));
+    });
+    const actorOptions = [...actors.entries()].sort((a, b) => a[1].localeCompare(b[1], "vi"));
+    const requestedActor = uiState.activityHistoryActorFilter || "all";
+    els.activityHistoryActorFilter.innerHTML = [
+      '<option value="all">Tất cả người thực hiện</option>',
+      ...actorOptions.map(
+        ([key, label]) => `<option value="${escapeHtml(key)}">${escapeHtml(label)}</option>`
+      )
+    ].join("");
+    uiState.activityHistoryActorFilter = actors.has(requestedActor) ? requestedActor : "all";
+    els.activityHistoryActorFilter.value = uiState.activityHistoryActorFilter;
+  }
+}
+
 function renderActivityHistory(store) {
   if (!els.activityHistoryList || !els.activityHistoryStoreName) return;
   els.activityHistoryStoreName.textContent = store?.name || "Chưa chọn cửa hàng";
   const range = getActivityHistoryDateRange();
-  const activities = [...(Array.isArray(store?.activityHistory) ? store.activityHistory : [])]
+  const availableActivities = [...(Array.isArray(store?.activityHistory) ? store.activityHistory : [])]
     .filter((activity) => {
       if (!isEmployeeUser()) return true;
       return activity.actorUid === authState.user?.uid && ["Nhập hàng", "Bán hàng"].includes(activity.area);
-    })
+    });
+  renderActivityHistoryFilterOptions(availableActivities);
+  const areaFilter = uiState.activityHistoryAreaFilter || "all";
+  const actorFilter = uiState.activityHistoryActorFilter || "all";
+  const activities = availableActivities
     .filter((activity) => {
       if (!range) return true;
       const date = getActivityHistoryDateKey(activity.createdAt);
       return date && date >= range.start && date <= range.end;
     })
+    .filter((activity) => areaFilter === "all" || String(activity.area || "Cửa hàng") === areaFilter)
+    .filter((activity) => actorFilter === "all" || getActivityActorFilterKey(activity) === actorFilter)
     .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
 
   if (els.activityHistoryResultCount) {
@@ -2184,8 +2246,9 @@ function renderActivityHistory(store) {
   }
 
   if (!activities.length) {
+    const hasFilter = Boolean(range || areaFilter !== "all" || actorFilter !== "all");
     els.activityHistoryList.innerHTML = `<div class="empty-list">${
-      range ? "Không có sự kiện trong khoảng thời gian này." : "Chưa có sự kiện nào được ghi lại."
+      hasFilter ? "Không có sự kiện phù hợp với các bộ lọc." : "Chưa có sự kiện nào được ghi lại."
     }</div>`;
     return;
   }
@@ -2206,7 +2269,7 @@ function renderActivityHistory(store) {
           <span class="activity-history-content">
             <span class="activity-history-message">${escapeHtml(activity.message || "Cập nhật dữ liệu.")}</span>
             ${targetDate ? `<span class="activity-history-record-date">Ngày dữ liệu: ${escapeHtml(targetDate)}</span>` : ""}
-            ${activity.actorName ? `<span class="activity-history-actor">Thực hiện bởi: ${escapeHtml(activity.actorName)}</span>` : ""}
+            <span class="activity-history-actor">Thực hiện bởi: ${escapeHtml(getActivityActorLabel(activity))}</span>
           </span>
         </article>
       `;
