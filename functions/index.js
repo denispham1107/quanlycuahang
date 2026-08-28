@@ -260,7 +260,7 @@ function employeeDate(value) {
 }
 
 const DEFAULT_EMPLOYEE_PERMISSIONS = Object.freeze({
-  purchase: Object.freeze({ view: true, create: true }),
+  purchase: Object.freeze({ view: true, create: true, inventoryView: false }),
   sales: Object.freeze({ view: true, create: true, draft: false }),
   history: Object.freeze({ viewOwn: true })
 });
@@ -273,7 +273,8 @@ function normalizeEmployeePermissions(profile = {}) {
   const permissions = {
     purchase: {
       view: source.purchase?.view === true,
-      create: source.purchase?.create === true
+      create: source.purchase?.create === true,
+      inventoryView: source.purchase?.inventoryView === true
     },
     sales: {
       view: source.sales?.view === true,
@@ -285,6 +286,7 @@ function normalizeEmployeePermissions(profile = {}) {
     }
   };
   if (permissions.purchase.create) permissions.purchase.view = true;
+  if (permissions.purchase.inventoryView) permissions.purchase.view = true;
   if (permissions.sales.create) permissions.sales.view = true;
   if (permissions.sales.draft) {
     permissions.sales.create = true;

@@ -360,7 +360,7 @@ function isEmployeeUser() {
 }
 
 const DEFAULT_EMPLOYEE_PERMISSIONS = Object.freeze({
-  purchase: Object.freeze({ view: true, create: true }),
+  purchase: Object.freeze({ view: true, create: true, inventoryView: false }),
   sales: Object.freeze({ view: true, create: true, draft: false }),
   history: Object.freeze({ viewOwn: true })
 });
@@ -373,7 +373,8 @@ function normalizeEmployeePermissions(profile = {}) {
   const permissions = {
     purchase: {
       view: source.purchase?.view === true,
-      create: source.purchase?.create === true
+      create: source.purchase?.create === true,
+      inventoryView: source.purchase?.inventoryView === true
     },
     sales: {
       view: source.sales?.view === true,
@@ -385,6 +386,7 @@ function normalizeEmployeePermissions(profile = {}) {
     }
   };
   if (permissions.purchase.create) permissions.purchase.view = true;
+  if (permissions.purchase.inventoryView) permissions.purchase.view = true;
   if (permissions.sales.create) permissions.sales.view = true;
   if (permissions.sales.draft) {
     permissions.sales.create = true;
@@ -1615,6 +1617,7 @@ function applyRoleAccess() {
   const employee = isEmployeeUser();
   const purchaseView = employeeCan("purchase", "view");
   const purchaseCreate = employeeCan("purchase", "create");
+  const inventoryView = employeeCan("purchase", "inventoryView");
   const salesView = employeeCan("sales", "view");
   const salesDraft = employeeCan("sales", "draft");
   const historyViewOwn = employeeCan("history", "viewOwn");
@@ -1633,7 +1636,8 @@ function applyRoleAccess() {
   document.querySelector(".sidebar")?.setAttribute("data-role-hidden", employee ? "true" : "false");
   els.openCustomers.dataset.roleHidden = employee ? "true" : "false";
   els.openBulkPurchase.dataset.roleHidden = employee && !purchaseCreate ? "true" : "false";
-  els.toggleInventory.dataset.roleHidden = employee ? "true" : "false";
+  els.toggleInventory.dataset.roleHidden = employee && !inventoryView ? "true" : "false";
+  els.toggleInventory.disabled = employee && !inventoryView;
   els.saveSalesDraft.dataset.roleHidden = employee && !salesDraft ? "true" : "false";
   els.deleteSalesDraft.dataset.roleHidden = employee ? "true" : "false";
   els.openActivityHistory.dataset.roleHidden = employee && !historyViewOwn ? "true" : "false";
@@ -1787,7 +1791,8 @@ function getPermissionsFromContainer(container) {
   const permissions = {
     purchase: {
       view: checked("purchaseView"),
-      create: checked("purchaseCreate")
+      create: checked("purchaseCreate"),
+      inventoryView: checked("purchaseInventoryView")
     },
     sales: {
       view: checked("salesView"),
@@ -1799,6 +1804,7 @@ function getPermissionsFromContainer(container) {
     }
   };
   if (permissions.purchase.create) permissions.purchase.view = true;
+  if (permissions.purchase.inventoryView) permissions.purchase.view = true;
   if (permissions.sales.create) permissions.sales.view = true;
   if (permissions.sales.draft) {
     permissions.sales.create = true;
@@ -1811,11 +1817,16 @@ function enforceEmployeePermissionDependencies(container, changedInput) {
   if (!container || !changedInput?.name) return;
   const purchaseView = container.querySelector('[name="purchaseView"]');
   const purchaseCreate = container.querySelector('[name="purchaseCreate"]');
+  const purchaseInventoryView = container.querySelector('[name="purchaseInventoryView"]');
   const salesView = container.querySelector('[name="salesView"]');
   const salesCreate = container.querySelector('[name="salesCreate"]');
   const salesDraft = container.querySelector('[name="salesDraft"]');
   if (changedInput.name === "purchaseCreate" && changedInput.checked && purchaseView) purchaseView.checked = true;
-  if (changedInput.name === "purchaseView" && !changedInput.checked && purchaseCreate) purchaseCreate.checked = false;
+  if (changedInput.name === "purchaseInventoryView" && changedInput.checked && purchaseView) purchaseView.checked = true;
+  if (changedInput.name === "purchaseView" && !changedInput.checked) {
+    if (purchaseCreate) purchaseCreate.checked = false;
+    if (purchaseInventoryView) purchaseInventoryView.checked = false;
+  }
   if (changedInput.name === "salesCreate" && changedInput.checked && salesView) salesView.checked = true;
   if (changedInput.name === "salesDraft" && changedInput.checked) {
     if (salesCreate) salesCreate.checked = true;
@@ -1846,6 +1857,7 @@ function employeePermissionFields(permissions) {
   return [
     field("purchaseView", normalized.purchase.view, "Xem tab Nhập hàng"),
     field("purchaseCreate", normalized.purchase.create, "Tạo mới trong Nhập hàng"),
+    field("purchaseInventoryView", normalized.purchase.inventoryView, "Xem Kho hàng (không được Xuất)"),
     field("salesView", normalized.sales.view, "Xem tab Bán hàng"),
     field("salesCreate", normalized.sales.create, "Tạo mới trong Bán hàng"),
     field("salesDraft", normalized.sales.draft, "Lưu và mở đơn đang lưu"),
@@ -4048,6 +4060,7 @@ function openBulkPurchaseModal(store) {
 }
 
 function openInventoryModal() {
+  if (isEmployeeUser() && !employeeCan("purchase", "inventoryView")) return;
   const store = getActiveStore();
   if (!store) return;
 
@@ -4060,6 +4073,7 @@ function closeInventoryModal() {
 }
 
 function openInventoryHistoryModal() {
+  if (isEmployeeUser() && !employeeCan("purchase", "inventoryView")) return;
   const store = getActiveStore();
   if (!store) return;
 
@@ -4075,6 +4089,7 @@ function closeInventoryHistoryModal() {
 }
 
 function openEditInventoryModal(inventoryId) {
+  if (isEmployeeUser()) return;
   const store = getActiveStore();
   const item = (store?.inventory || []).find((stock) => stock.id === inventoryId);
   if (!item) return;
@@ -4094,6 +4109,7 @@ function closeEditInventoryModal() {
 }
 
 function openExportInventoryModal(inventoryId) {
+  if (isEmployeeUser()) return;
   const store = getActiveStore();
   const item = (store?.inventory || []).find((stock) => stock.id === inventoryId);
   if (!item) return;
@@ -4229,6 +4245,7 @@ function deleteSelectedExportInventoryReason() {
 }
 
 function saveEditedInventory(formData) {
+  if (isEmployeeUser()) return false;
   const store = getActiveStore();
   if (!store) return false;
 
@@ -4296,6 +4313,7 @@ function saveEditedInventory(formData) {
 }
 
 function exportInventoryItem(formData) {
+  if (isEmployeeUser()) return false;
   const store = getActiveStore();
   if (!store) return false;
 
@@ -5900,6 +5918,14 @@ function renderSalesDraftList(drafts) {
 function renderInventory(store) {
   if (!els.inventoryList || !store) return;
 
+  if (isEmployeeUser() && !employeeCan("purchase", "inventoryView")) {
+    els.inventoryList.innerHTML = "";
+    if (els.inventorySummary) els.inventorySummary.innerHTML = "";
+    return;
+  }
+
+  const canManageInventory = !isEmployeeUser();
+
   const allInventory = [...(store.inventory || [])].sort((a, b) =>
     String(a.groupName || "").localeCompare(String(b.groupName || ""), "vi") ||
     String(a.name || "").localeCompare(String(b.name || ""), "vi")
@@ -5969,11 +5995,19 @@ function renderInventory(store) {
         (item) => {
           const quantity = Number(item.quantity || 0);
           return `
-          <div class="inventory-item" data-edit-inventory="${escapeHtml(item.id || "")}" role="button" tabindex="0">
+          <div class="inventory-item" ${
+            canManageInventory
+              ? `data-edit-inventory="${escapeHtml(item.id || "")}" role="button" tabindex="0"`
+              : ""
+          }>
             <div class="inventory-main">
               <span class="inventory-group-row">
                 <span class="inventory-group">${escapeHtml(item.groupName || "Chưa phân nhóm")}</span>
-                <button class="inventory-export-button" type="button" data-export-inventory="${escapeHtml(item.id || "")}" ${quantity <= 0 ? "disabled" : ""}>Xuất</button>
+                ${
+                  canManageInventory
+                    ? `<button class="inventory-export-button" type="button" data-export-inventory="${escapeHtml(item.id || "")}" ${quantity <= 0 ? "disabled" : ""}>Xuất</button>`
+                    : ""
+                }
               </span>
               <strong>${escapeHtml(item.name || "")}</strong>
               <span class="inventory-date">Cập nhật: ${formatDate(String(item.updatedAt || item.createdAt || today).slice(0, 10))}</span>

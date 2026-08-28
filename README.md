@@ -50,12 +50,13 @@ Sau khi đăng nhập bằng admin, mở **Cài đặt > Nhân viên** để t�
 
 - Xem tab Nhập hàng.
 - Tạo mới trong Nhập hàng.
+- Xem Kho hàng trong tab Nhập hàng nhưng không được sửa hoặc xuất kho.
 - Xem tab Bán hàng.
 - Tạo mới trong Bán hàng.
 - Lưu và mở lại đơn đang lưu trong Bán hàng.
 - Xem lịch sử hoạt động của chính nhân viên đó.
 
-Quyền tạo mới tự động yêu cầu quyền xem tương ứng. Quyền `Lưu và mở đơn đang lưu` tự động yêu cầu quyền xem và tạo mới trong Bán hàng; nhân viên chỉ nhìn thấy và tiếp tục các đơn do chính tài khoản đó lưu. Nhân viên luôn bị khóa quyền sửa, xóa và xóa đơn đang lưu ở phía giao diện lẫn Cloud Functions. Mật khẩu tạm thời chỉ được gửi qua HTTPS đến Firebase Authentication khi tạo tài khoản, không được lưu trong Firestore.
+Quyền tạo mới và quyền xem Kho hàng tự động yêu cầu quyền xem tab Nhập hàng. Nhân viên được xem Kho hàng chỉ có quyền đọc; nút Xuất và thao tác sửa/xuất kho đều bị khóa. Quyền `Lưu và mở đơn đang lưu` tự động yêu cầu quyền xem và tạo mới trong Bán hàng; nhân viên chỉ nhìn thấy và tiếp tục các đơn do chính tài khoản đó lưu. Nhân viên luôn bị khóa quyền sửa, xóa và xóa đơn đang lưu ở phía giao diện lẫn Cloud Functions. Mật khẩu tạm thời chỉ được gửi qua HTTPS đến Firebase Authentication khi tạo tài khoản, không được lưu trong Firestore.
 
 Hồ sơ nhân viên được hệ thống tự tạo theo cấu trúc:
 
@@ -66,7 +67,7 @@ Hồ sơ nhân viên được hệ thống tự tạo theo cấu trúc:
   "active": true,
   "storeId": "ID_CUA_HANG",
   "permissions": {
-    "purchase": { "view": true, "create": true },
+    "purchase": { "view": true, "create": true, "inventoryView": false },
     "sales": { "view": true, "create": true, "draft": false },
     "history": { "viewOwn": true }
   }
