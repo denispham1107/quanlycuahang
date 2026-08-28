@@ -80,6 +80,8 @@ Trong **Lịch sử hoạt động**, bộ lọc thời gian có thể kết h�
 
 Mỗi đơn bán hàng hoàn thành có mã bill dạng `HD01-DDMMYYYY`. Bộ đếm bắt đầu lại từ `01` cho từng ngày và được lưu riêng trong `salesBillSequences`, vì vậy việc hủy bill không làm giảm hoặc tái sử dụng số đã cấp. Các đơn cũ chưa có mã được gán mã theo thứ tự thời gian tạo trong ngày.
 
+Khi chọn một dòng trong **Lịch sử bán hàng**, chi tiết đơn được mở thành trang toàn màn hình với thông tin bill dạng cô đọng, danh sách hàng hóa ưu tiên diện tích hiển thị và bố cục responsive riêng cho desktop, tablet và mobile.
+
 ## Deploy lên GitHub Pages
 
 1. Commit các file đã sửa:

@@ -1024,10 +1024,6 @@ els.inventoryHistoryModal.addEventListener("click", (event) => {
 
 els.closeSalesOrderDetail.addEventListener("click", closeSalesOrderDetailModal);
 
-els.salesOrderDetailModal.addEventListener("click", (event) => {
-  if (event.target === els.salesOrderDetailModal) closeSalesOrderDetailModal();
-});
-
 els.closeSalesCatalog.addEventListener("click", closeSalesCatalogModal);
 
 els.salesCatalogModal.addEventListener("click", (event) => {
@@ -1327,6 +1323,10 @@ document.addEventListener("click", (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") return;
+  if (!els.salesOrderDetailModal?.hidden) {
+    closeSalesOrderDetailModal();
+    return;
+  }
   if (!els.employeeManagerModal?.hidden) {
     closeEmployeeManagerModal();
     return;
@@ -1691,6 +1691,8 @@ function showAuthenticatedApp(profile) {
 function showLoginScreen(message = "") {
   document.body.classList.add("auth-pending");
   document.body.classList.remove("modal-open");
+  document.body.classList.remove("sales-order-detail-open");
+  if (els.salesOrderDetailModal) els.salesOrderDetailModal.hidden = true;
   if (els.employeeManagerModal) els.employeeManagerModal.hidden = true;
   els.appShell.hidden = true;
   els.authScreen.hidden = false;
@@ -5894,101 +5896,94 @@ function openSalesOrderDetail(orderId) {
   const discountTotal = Number(order.discountTotal || 0);
   const total = Number(order.total || 0);
 
-  els.salesOrderDetailStatus.innerHTML = cancelled ? '<span class="cancelled-pill">Hủy</span>' : "Đơn bán hàng";
+  els.salesOrderDetailStatus.innerHTML = cancelled ? '<span class="cancelled-pill">Đã hủy</span>' : '<span class="completed-pill">Hoàn thành</span>';
   els.salesOrderDetailContent.innerHTML = `
-    <div class="order-detail-grid">
-      <div class="order-detail-field">
-        <span>Mã bill</span>
-        <strong>${escapeHtml(order.billCode || "—")}</strong>
-      </div>
-      <div class="order-detail-field">
-        <span>Ngày</span>
-        <strong>${escapeHtml(dateText)}</strong>
-      </div>
-      <div class="order-detail-field">
-        <span>Khách hàng</span>
-        <strong>${escapeHtml(order.customerName || "")}</strong>
-      </div>
-      <div class="order-detail-field">
-        <span>Số điện thoại</span>
-        <strong>${escapeHtml(order.customerPhone || "")}</strong>
-      </div>
-      <div class="order-detail-field">
-        <span>Trạng thái</span>
-        <strong>${cancelled ? "Đã hủy" : "Hoàn thành"}</strong>
-      </div>
-    </div>
-    <div class="order-detail-section">
-      <h3>Chi tiết</h3>
-      ${renderSalesOrderItemLines(order.items || []) || '<div class="empty-list">Không có hàng hóa</div>'}
-    </div>
-    <div class="order-detail-summary">
+    <dl class="order-detail-meta" aria-label="Thông tin đơn hàng">
       <div>
-        <span>Tổng bill</span>
-        <strong>${formatCurrency(subtotal)}</strong>
+        <dt>Mã bill</dt>
+        <dd>${escapeHtml(order.billCode || "—")}</dd>
       </div>
-      ${
-        discountTotal > 0
-          ? `
-            <div>
-              <span>Chiết khấu</span>
-              <strong>${formatCurrency(discountTotal)}</strong>
-            </div>
-            <div>
-              <span>Còn lại</span>
-              <strong>${formatCurrency(total)}</strong>
-            </div>
-          `
-          : ""
-      }
-      ${
-        cancelled
-          ? `
-            <div>
-              <span>Trạng thái</span>
-              <strong>Đã hủy</strong>
-            </div>
-          `
-          : ""
-      }
+      <div>
+        <dt>Ngày bán</dt>
+        <dd>${escapeHtml(dateText)}</dd>
+      </div>
+      <div>
+        <dt>Khách hàng</dt>
+        <dd>${escapeHtml(order.customerName || "—")}</dd>
+      </div>
+      <div>
+        <dt>Số điện thoại</dt>
+        <dd>${escapeHtml(order.customerPhone || "—")}</dd>
+      </div>
+    </dl>
+    <div class="order-detail-main">
+      <section class="order-detail-items-section">
+        <div class="order-detail-section-heading">
+          <h3>Hàng hóa đã mua</h3>
+          <span>${(order.items || []).length} mặt hàng</span>
+        </div>
+        ${renderSalesOrderItemLines(order.items || []) || '<div class="empty-list">Không có hàng hóa</div>'}
+      </section>
+      <aside class="order-detail-summary" aria-label="Tổng tiền đơn hàng">
+        <div>
+          <span>${discountTotal > 0 ? "Tạm tính" : "Tổng bill"}</span>
+          <strong>${formatCurrency(subtotal)}</strong>
+        </div>
+        ${discountTotal > 0 ? `<div><span>Chiết khấu đơn</span><strong class="order-detail-discount">-${formatCurrency(discountTotal)}</strong></div>` : ""}
+        ${discountTotal > 0 ? `<div class="order-detail-grand-total"><span>Thanh toán</span><strong>${formatCurrency(total)}</strong></div>` : ""}
+      </aside>
     </div>
   `;
   els.salesOrderDetailModal.hidden = false;
+  document.body.classList.add("sales-order-detail-open");
+  window.setTimeout(() => els.closeSalesOrderDetail?.focus({ preventScroll: true }), 0);
 }
 
 function closeSalesOrderDetailModal() {
   els.salesOrderDetailModal.hidden = true;
   els.salesOrderDetailContent.innerHTML = "";
+  document.body.classList.remove("sales-order-detail-open");
 }
 
 function renderSalesOrderItemLines(items) {
   if (!items.length) return "";
-  return `<div class="sales-item-lines">${items.map(renderSalesOrderItemLine).join("")}</div>`;
+  return `
+    <div class="order-detail-products" role="table" aria-label="Danh sách hàng hóa trong đơn">
+      <div class="order-detail-products-header" role="row">
+        <span role="columnheader">#</span>
+        <span role="columnheader">Hàng hóa</span>
+        <span role="columnheader">SL</span>
+        <span role="columnheader">Đơn giá</span>
+        <span role="columnheader">Giảm</span>
+        <span role="columnheader">Thành tiền</span>
+      </div>
+      <div class="order-detail-product-list" role="rowgroup">
+        ${items.map((item, index) => renderSalesOrderItemLine(item, index)).join("")}
+      </div>
+    </div>
+  `;
 }
 
-function renderSalesOrderItemLine(item) {
+function renderSalesOrderItemLine(item, index = 0) {
   const quantity = Number(item.quantity || 0);
   const originalPrice = Number(item.originalPrice || item.price || 0);
   const originalTotal = originalPrice * quantity;
   const finalTotal = Number(item.total || 0);
-  const hasDiscount = (Number(item.discountPercent || 0) > 0 || Number(item.discountAmount || 0) > 0) && originalTotal > finalTotal;
-
-  if (!hasDiscount) {
-    return `
-      <div class="sales-detail-line">
-        <span class="sales-detail-name">${escapeHtml(item.name || "")} x${quantity}</span>
-        <span class="sales-detail-total">${formatCurrency(finalTotal)}</span>
-      </div>
-    `;
-  }
+  const finalPrice = Number(item.price || (quantity > 0 ? finalTotal / quantity : 0));
+  const discountTotal = Math.max(0, originalTotal - finalTotal);
+  const hasDiscount = discountTotal > 0;
 
   return `
-    <div class="sales-detail-line">
-      <span class="sales-detail-name">${escapeHtml(item.name || "")} x${quantity}</span>
-      <span class="sales-discount-price">
-        <span class="old-value">${formatCurrency(originalTotal)}</span>
-        <span class="new-value">${formatCurrency(finalTotal)}</span>
+    <div class="order-detail-product-row" role="row">
+      <span class="order-detail-product-index" role="cell">${index + 1}</span>
+      <strong class="order-detail-product-name" role="cell">${escapeHtml(item.name || "")}</strong>
+      <span class="order-detail-product-quantity" role="cell" data-label="SL">${quantity}</span>
+      <span class="order-detail-product-price" role="cell" data-label="Đơn giá">
+        ${hasDiscount ? `<span class="old-value">${formatCurrency(originalPrice)}</span>` : ""}
+        <span>${formatCurrency(finalPrice)}</span>
       </span>
+      <span class="order-detail-product-discount" role="cell" data-label="Giảm">${hasDiscount ? `-${formatCurrency(discountTotal)}` : "—"}</span>
+      <strong class="order-detail-product-total" role="cell" data-label="Thành tiền">${formatCurrency(finalTotal)}</strong>
     </div>
   `;
 }
