@@ -5542,6 +5542,12 @@ function updateStickyControlMetrics() {
   document.documentElement.style.setProperty("--tab-bar-sticky-height", `${dockHeight}px`);
 }
 
+function getStickyControlTop() {
+  if (!els.stickyControlDock) return 0;
+  const computedTop = Number.parseFloat(window.getComputedStyle(els.stickyControlDock).top);
+  return Number.isFinite(computedTop) ? Math.max(0, computedTop) : 0;
+}
+
 function updatePinnedTabs() {
   if (!els.stickyControlDock || !els.tabBar || !els.tabSpacer || els.dashboard.hidden) {
     resetPinnedTabs();
@@ -5550,10 +5556,14 @@ function updatePinnedTabs() {
 
   updateStickyControlMetrics();
 
-  const dockRect = els.stickyControlDock.getBoundingClientRect();
+  // tabSpacer stays in the document flow and is the stable pin threshold.
+  // Do not derive this from the dock itself: once fixed, its viewport position
+  // no longer represents the original location of the six primary tabs.
+  const anchorRect = els.tabSpacer.getBoundingClientRect();
   const dashboardRect = els.dashboard.getBoundingClientRect();
+  const stickyTop = getStickyControlTop();
   const dockHeight = els.stickyControlDock.offsetHeight;
-  const shouldFix = dockRect.top <= 1 && dashboardRect.bottom > dockHeight;
+  const shouldFix = anchorRect.top <= stickyTop && dashboardRect.bottom > stickyTop + dockHeight;
 
   if (!shouldFix) {
     resetPinnedTabs();
@@ -5566,10 +5576,14 @@ function updatePinnedTabs() {
     uiState.timeFiltersExpanded = false;
     updateTimeFiltersVisibility();
   }
+
+  const viewportLeft = Math.max(0, dashboardRect.left);
+  const viewportRight = Math.min(window.innerWidth, dashboardRect.right);
+  const pinnedWidth = Math.max(0, viewportRight - viewportLeft);
   els.stickyControlDock.classList.add("is-fixed");
-  els.stickyControlDock.style.left = "";
-  els.stickyControlDock.style.width = "";
-  els.tabSpacer.style.height = "0px";
+  els.stickyControlDock.style.left = `${viewportLeft}px`;
+  els.stickyControlDock.style.width = `${pinnedWidth}px`;
+  els.tabSpacer.style.height = `${els.stickyControlDock.offsetHeight}px`;
   els.tabBar.dataset.pinTop = "true";
   updateStickyControlMetrics();
 }

@@ -84,6 +84,8 @@ Khi chọn một dòng trong **Lịch sử bán hàng**, chi tiết đơn đư�
 
 Trên web app mobile, biểu mẫu **Tạo đơn bán hàng** dùng bố cục cô đọng riêng: thông tin khách hàng được ghép theo hàng, mỗi hàng hóa dùng lưới ba dòng và các nút thao tác được gom lại; giao diện desktop vẫn giữ nguyên.
 
+Sáu tab nghiệp vụ **Cửa hàng, Tổng quan, Thu, Chi, Nhập hàng, Bán hàng** là thành phần điều hướng cố định. Khi chỉnh sửa giao diện phải giữ `stickyControlDock`, `tabSpacer` và cơ chế `updatePinnedTabs()`; Tab Bar phải luôn bám mép trên khi cuộn trên desktop, iOS và Android, không được bị nội dung bên dưới đẩy ra khỏi màn hình.
+
 ## Deploy lên GitHub Pages
 
 1. Commit các file đã sửa:

@@ -1839,9 +1839,10 @@ body.sales-order-detail-open {
 }
 
 .sticky-control-dock.is-fixed {
-  position: sticky;
+  position: fixed;
   top: max(0px, env(safe-area-inset-top));
-  z-index: 60;
+  right: auto;
+  z-index: 72;
   max-width: 100%;
   border-radius: 0 0 24px 24px;
   padding: 6px 8px 8px;
