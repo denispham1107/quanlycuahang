@@ -1,4 +1,4 @@
-const CACHE_VERSION = "quanlycuahang-pwa-v28";
+const CACHE_VERSION = "quanlycuahang-pwa-v29";
 const APP_SHELL = [
   "./",
   "./index.html",

@@ -1889,9 +1889,9 @@ body.sales-order-detail-open {
 
 .tab-button.active {
   border-color: transparent;
-  background: #ff8738;
+  background: var(--accent);
   color: #fff;
-  box-shadow: 0 10px 22px rgba(230, 104, 27, 0.28);
+  box-shadow: 0 10px 22px rgba(8, 120, 247, 0.26);
 }
 
 .tab-button[data-tab="sales"],
