@@ -1,4 +1,4 @@
-const CACHE_VERSION = "quanlycuahang-pwa-v35";
+const CACHE_VERSION = "quanlycuahang-pwa-v36";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -44,6 +44,24 @@ self.addEventListener("fetch", (event) => {
           return response;
         })
         .catch(() => caches.match(request).then((cached) => cached || caches.match("./index.html")))
+    );
+    return;
+  }
+
+  // Prefer the latest stylesheet on every launch so an installed PWA does not
+  // keep rendering a previously cached visual bug while still working offline.
+  if (request.destination === "style") {
+    event.respondWith(
+      fetch(request, { cache: "no-cache" })
+        .then((response) => {
+          if (response.ok) {
+            const responseCopy = response.clone();
+            event.waitUntil(caches.open(CACHE_VERSION).then((cache) => cache.put(request, responseCopy)));
+            return response;
+          }
+          return caches.match(request).then((cached) => cached || response);
+        })
+        .catch(() => caches.match(request))
     );
     return;
   }

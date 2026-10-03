@@ -17,6 +17,7 @@
         const isAppleMobile =
           /iPad|iPhone|iPod/.test(navigator.userAgent) ||
           (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+        document.documentElement.classList.toggle("ios-device", isAppleMobile);
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>

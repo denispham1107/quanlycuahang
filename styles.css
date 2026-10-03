@@ -133,7 +133,7 @@ html.mobile-app-theme body.mobile-secondary-tab .active-store-hero {
 }
 
 html.mobile-app-theme body.mobile-secondary-tab .layout {
-  padding-top: calc(max(8px, env(safe-area-inset-top)) + 36px);
+  padding-top: calc(max(8px, env(safe-area-inset-top)) + var(--mobile-filter-top-clearance, 0px) + 54px);
 }
 
 html.mobile-app-theme .dashboard,
@@ -436,18 +436,23 @@ html.mobile-app-theme .tab-button[data-tab="sales"].active {
 
 html.mobile-app-theme .mobile-time-filter-shell {
   position: fixed;
-  z-index: 74;
-  top: max(8px, env(safe-area-inset-top));
+  z-index: 120;
+  top: calc(max(8px, env(safe-area-inset-top)) + var(--mobile-filter-top-clearance, 0px));
   right: max(10px, env(safe-area-inset-right));
   left: max(10px, env(safe-area-inset-left));
   min-width: 0;
   border: 1px solid var(--mobile-glass-border);
   border-radius: 19px;
-  background: #f8f9ff;
+  background: #fff;
   box-shadow: 0 9px 24px rgba(68, 75, 162, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.96);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   transition: border-radius 220ms ease;
+}
+
+/* iOS can paint its translucent system chrome below the reported safe-area inset. */
+html.mobile-app-theme.ios-device {
+  --mobile-filter-top-clearance: 30px;
 }
 
 html.mobile-app-theme .mobile-time-filter-shell[hidden] {
@@ -472,8 +477,8 @@ html.mobile-app-theme .mobile-time-filter-shell .time-filter-toggle {
   padding: 5px 8px 5px 14px;
   border: 0;
   border-radius: 18px;
-  background: linear-gradient(100deg, #f2ebff, #eaf7ff);
-  color: #263e75;
+  background: #fff;
+  color: #102f69;
   box-shadow: none;
   transform: none;
   text-align: left;
@@ -499,17 +504,17 @@ html.mobile-app-theme .mobile-time-filter-shell .time-filter-current {
 
 html.mobile-app-theme .time-filter-current > span {
   flex: 0 0 auto;
-  color: #66758e;
-  font-size: 11px;
-  font-weight: 750;
+  color: #394a69;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 html.mobile-app-theme .time-filter-current strong {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 13px;
-  font-weight: 850;
+  font-size: 15px;
+  font-weight: 900;
 }
 
 html.mobile-app-theme .mobile-time-filter-shell .time-filter-toggle-icon {
@@ -521,8 +526,8 @@ html.mobile-app-theme .mobile-time-filter-shell .time-filter-toggle-icon {
   margin: 0;
   border: 1px solid rgba(94, 114, 225, 0.16);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.8);
-  color: #5364cc;
+  background: #eaf2ff;
+  color: #1859bf;
   transform: none;
 }
 
@@ -557,7 +562,7 @@ html.mobile-app-theme .mobile-time-filter-shell .time-filters {
   z-index: auto;
   width: 100%;
   max-width: none;
-  max-height: clamp(130px, calc(100dvh - var(--mobile-dock-height) - max(12px, env(safe-area-inset-top)) - max(20px, env(safe-area-inset-bottom)) - 56px), 680px);
+  max-height: clamp(130px, calc(100dvh - var(--mobile-dock-height) - max(12px, env(safe-area-inset-top)) - var(--mobile-filter-top-clearance, 0px) - max(20px, env(safe-area-inset-bottom)) - 56px), 680px);
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
@@ -572,7 +577,7 @@ html.mobile-app-theme .mobile-time-filter-shell .time-filters {
   -webkit-overflow-scrolling: touch;
   border: 0;
   border-radius: 0 0 20px 20px;
-  background: transparent;
+  background: #fff;
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
