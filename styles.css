@@ -106,7 +106,7 @@ html.mobile-app-theme body::after {
 
 html.mobile-app-theme .app-shell {
   min-height: 100%;
-  overflow: clip;
+  overflow: visible;
 }
 
 html.mobile-app-theme .topbar {
@@ -473,8 +473,9 @@ html.mobile-app-theme .sticky-control-dock.is-fixed .time-filters {
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
-  scroll-snap-type: x proximity;
+  touch-action: manipulation;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
   border: 1.5px solid var(--mobile-glass-border);
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.78);
@@ -483,15 +484,12 @@ html.mobile-app-theme .sticky-control-dock.is-fixed .time-filters {
   -webkit-backdrop-filter: blur(24px) saturate(1.25);
   opacity: 1;
   visibility: visible;
-  transform: translateY(0);
+  pointer-events: auto;
+  transform: none;
   transition: opacity 180ms ease, transform 180ms ease, visibility 180ms ease;
 }
 
 html.mobile-app-theme .time-filters::-webkit-scrollbar {
-  display: none;
-}
-
-html.mobile-app-theme .time-filters[hidden] {
   display: none;
 }
 
@@ -503,6 +501,10 @@ html.mobile-app-theme .time-filters.is-collapsed {
   visibility: hidden;
   pointer-events: none;
   transform: translateY(calc(-100% - 18px));
+}
+
+html.mobile-app-theme .time-filters[hidden] {
+  display: none;
 }
 
 html.mobile-app-theme .time-filters .field,

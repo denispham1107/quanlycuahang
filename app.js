@@ -346,6 +346,41 @@ const els = {
 
 moveStoreSectionsIntoTab();
 
+if (USE_MOBILE_APP_THEME && els.timeFilters) {
+  // Keep the fixed filter rail outside the dock's clipping and pinning context.
+  els.timeFilters.hidden = true;
+  document.body.appendChild(els.timeFilters);
+
+  let filterSwipe = null;
+  els.timeFilters.addEventListener("touchstart", (event) => {
+    if (event.touches.length !== 1) return;
+    const touch = event.touches[0];
+    filterSwipe = {
+      x: touch.clientX,
+      y: touch.clientY,
+      scrollLeft: els.timeFilters.scrollLeft,
+      horizontal: false
+    };
+  }, { passive: true });
+
+  els.timeFilters.addEventListener("touchmove", (event) => {
+    if (!filterSwipe || event.touches.length !== 1) return;
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - filterSwipe.x;
+    const deltaY = touch.clientY - filterSwipe.y;
+    if (!filterSwipe.horizontal && Math.abs(deltaX) > 8 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      filterSwipe.horizontal = true;
+    }
+    if (!filterSwipe.horizontal) return;
+    if (event.cancelable) event.preventDefault();
+    els.timeFilters.scrollLeft = filterSwipe.scrollLeft - deltaX;
+  }, { passive: false });
+
+  ["touchend", "touchcancel"].forEach((eventName) => {
+    els.timeFilters.addEventListener(eventName, () => { filterSwipe = null; }, { passive: true });
+  });
+}
+
 if (els.aiChatMode) {
   els.aiChatMode.value = "general";
 }
@@ -601,8 +636,10 @@ function applyRangeModeFilter(event) {
 }
 
 els.rangeMode.addEventListener("change", applyRangeModeFilter);
-els.rangeMode.addEventListener("click", applyRangeModeFilter);
-els.rangeMode.addEventListener("blur", applyRangeModeFilter);
+if (!USE_MOBILE_APP_THEME) {
+  els.rangeMode.addEventListener("click", applyRangeModeFilter);
+  els.rangeMode.addEventListener("blur", applyRangeModeFilter);
+}
 
 function applySingleDateFilter() {
   uiState.rangeMode = "day";
@@ -616,7 +653,7 @@ function applyMonthFilter() {
   render();
 }
 
-["input", "change"].forEach((eventName) => {
+(USE_MOBILE_APP_THEME ? ["change"] : ["input", "change"]).forEach((eventName) => {
   els.singleDate.addEventListener(eventName, applySingleDateFilter);
   els.monthDate.addEventListener(eventName, applyMonthFilter);
 });
@@ -624,10 +661,12 @@ function applyMonthFilter() {
 els.singleDate.addEventListener("change", scheduleTimeFiltersAutoCollapse);
 els.monthDate.addEventListener("change", scheduleTimeFiltersAutoCollapse);
 
-["focus", "click"].forEach((eventName) => {
-  els.singleDate.addEventListener(eventName, applySingleDateFilter);
-  els.monthDate.addEventListener(eventName, applyMonthFilter);
-});
+if (!USE_MOBILE_APP_THEME) {
+  ["focus", "click"].forEach((eventName) => {
+    els.singleDate.addEventListener(eventName, applySingleDateFilter);
+    els.monthDate.addEventListener(eventName, applyMonthFilter);
+  });
+}
 
 [els.fromDate, els.toDate].forEach((input) => {
   input.addEventListener("change", () => {
@@ -728,6 +767,7 @@ function clearTimeFiltersAutoCollapse() {
 
 function scheduleTimeFiltersAutoCollapse() {
   clearTimeFiltersAutoCollapse();
+  if (USE_MOBILE_APP_THEME) return;
   if (!uiState.timeFiltersExpanded || els.timeFilters?.hidden) return;
 
   timeFiltersAutoCollapseTimer = window.setTimeout(() => {
@@ -1697,6 +1737,7 @@ function showLoginScreen(message = "") {
   if (els.salesOrderDetailModal) els.salesOrderDetailModal.hidden = true;
   if (els.employeeManagerModal) els.employeeManagerModal.hidden = true;
   els.appShell.hidden = true;
+  if (USE_MOBILE_APP_THEME && els.timeFilters) els.timeFilters.hidden = true;
   els.authScreen.hidden = false;
   els.signedInUser.hidden = true;
   showLoginError(message);
@@ -5526,15 +5567,15 @@ function updateTimeFiltersVisibility(tabName = getActiveTabName()) {
   const visibleTabs = new Set(["overview", "income", "expense", "purchase", "sales"]);
   const store = getActiveStore();
   const filtersAvailable = Boolean(store) && visibleTabs.has(tabName);
-  const filtersExpanded = filtersAvailable && uiState.timeFiltersExpanded;
+  const filtersExpanded = filtersAvailable && (USE_MOBILE_APP_THEME || uiState.timeFiltersExpanded);
 
   els.stickyControlDock.classList.toggle("filters-available", filtersAvailable);
-  els.timeFilterToggle.hidden = !filtersAvailable;
+  els.timeFilterToggle.hidden = !filtersAvailable || USE_MOBILE_APP_THEME;
   els.timeFilterToggle.classList.toggle("active", filtersExpanded);
   els.timeFilterToggle.setAttribute("aria-expanded", String(filtersExpanded));
   els.timeFilterToggle.setAttribute("aria-label", filtersExpanded ? "Thu gọn bộ lọc thời gian" : "Mở bộ lọc thời gian");
   els.timeFilterToggle.title = filtersExpanded ? "Thu gọn bộ lọc thời gian" : "Mở bộ lọc thời gian";
-  els.timeFilters.hidden = !filtersAvailable;
+  els.timeFilters.hidden = !filtersAvailable || (USE_MOBILE_APP_THEME && els.appShell.hidden);
   els.timeFilters.classList.toggle("is-collapsed", !filtersExpanded);
 }
 
@@ -5552,6 +5593,11 @@ function getStickyControlTop() {
 
 function updatePinnedTabs() {
   if (!els.stickyControlDock || !els.tabBar || !els.tabSpacer || els.dashboard.hidden) {
+    resetPinnedTabs();
+    return;
+  }
+
+  if (USE_MOBILE_APP_THEME) {
     resetPinnedTabs();
     return;
   }
