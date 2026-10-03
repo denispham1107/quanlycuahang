@@ -62,12 +62,14 @@ html.mobile-app-theme {
   --mobile-glass-border: rgba(255, 255, 255, 0.82);
   --mobile-glass-background: rgba(255, 255, 255, 0.75);
   --mobile-card-shadow: 0 15px 36px rgba(80, 79, 170, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.94);
-  min-height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   background: #e9e6ff;
 }
 
 html.mobile-app-theme body {
-  min-height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   background:
     radial-gradient(circle at 8% 7%, rgba(255, 187, 244, 0.86), transparent 30%),
     radial-gradient(circle at 90% 9%, rgba(147, 213, 255, 0.92), transparent 33%),
@@ -105,7 +107,8 @@ html.mobile-app-theme body::after {
 }
 
 html.mobile-app-theme .app-shell {
-  min-height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   overflow: visible;
 }
 
@@ -320,21 +323,7 @@ html.mobile-app-theme .quick-entry-fab {
 
 html.mobile-app-theme .sticky-control-dock,
 html.mobile-app-theme .sticky-control-dock.is-fixed {
-  position: static !important;
-  inset: auto !important;
-  width: 100% !important;
-  max-width: none !important;
-  min-height: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  transform: none !important;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  overflow: visible;
+  display: none;
 }
 
 html.mobile-app-theme .tab-spacer {
@@ -365,6 +354,10 @@ html.mobile-app-theme .sticky-control-dock.filters-available .tab-bar {
   backdrop-filter: blur(24px) saturate(1.25);
   -webkit-backdrop-filter: blur(24px) saturate(1.25);
   overflow: visible;
+}
+
+html.mobile-app-theme .tab-bar[hidden] {
+  display: none;
 }
 
 html.mobile-app-theme .tab-button {

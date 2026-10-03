@@ -346,6 +346,11 @@ const els = {
 
 moveStoreSectionsIntoTab();
 
+if (USE_MOBILE_APP_THEME && els.tabBar) {
+  // The bottom navigation must not be clipped by a short tab panel or the dock.
+  document.body.appendChild(els.tabBar);
+}
+
 const mobileTimeFilterShell = USE_MOBILE_APP_THEME ? document.createElement("div") : null;
 if (mobileTimeFilterShell && els.timeFilters && els.timeFilterToggle) {
   // Keep the fixed filter rail outside the dock's clipping and pinning context.
@@ -1730,6 +1735,7 @@ function showAuthenticatedApp(profile) {
   document.body.classList.remove("auth-pending");
   els.authScreen.hidden = true;
   els.appShell.hidden = false;
+  if (USE_MOBILE_APP_THEME && els.tabBar) els.tabBar.hidden = false;
   els.signedInUser.hidden = false;
   els.signedInUserName.textContent = profile.displayName || authState.user?.email || "Tài khoản";
   els.signedInUserRole.textContent = profile.role === "admin" ? "Admin" : "Nhân viên";
@@ -1742,6 +1748,7 @@ function showLoginScreen(message = "") {
   if (els.salesOrderDetailModal) els.salesOrderDetailModal.hidden = true;
   if (els.employeeManagerModal) els.employeeManagerModal.hidden = true;
   els.appShell.hidden = true;
+  if (USE_MOBILE_APP_THEME && els.tabBar) els.tabBar.hidden = true;
   if (mobileTimeFilterShell) mobileTimeFilterShell.hidden = true;
   if (USE_MOBILE_APP_THEME && els.timeFilters) els.timeFilters.hidden = true;
   els.authScreen.hidden = false;
