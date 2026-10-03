@@ -17,7 +17,6 @@
         const isAppleMobile =
           /iPad|iPhone|iPod/.test(navigator.userAgent) ||
           (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-        document.documentElement.classList.toggle("ios-device", isAppleMobile);
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
@@ -265,6 +264,11 @@
               <section class="selected-range-card">
                 <span>Đang xem</span>
                 <strong id="selectedRangeLabel">Hôm nay</strong>
+              </section>
+
+              <section class="overview-store-nameplate" aria-label="Cửa hàng đang xem">
+                <span>Cửa hàng hiện tại</span>
+                <h2 id="overviewStoreName">Cửa hàng</h2>
               </section>
 
               <section class="summary-grid">

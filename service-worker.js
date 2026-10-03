@@ -1,4 +1,4 @@
-const CACHE_VERSION = "quanlycuahang-pwa-v36";
+const CACHE_VERSION = "quanlycuahang-pwa-v37";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -48,9 +48,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Prefer the latest stylesheet on every launch so an installed PWA does not
-  // keep rendering a previously cached visual bug while still working offline.
-  if (request.destination === "style") {
+  // Prefer current UI assets on every launch, while retaining offline copies.
+  if (request.destination === "style" || request.destination === "script") {
     event.respondWith(
       fetch(request, { cache: "no-cache" })
         .then((response) => {

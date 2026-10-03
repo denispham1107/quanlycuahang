@@ -10,7 +10,6 @@ const IS_IOS_DEVICE =
   /iPad|iPhone|iPod/.test(navigator.userAgent) ||
   (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const USE_MOBILE_APP_THEME = IS_IOS_DEVICE || /Android/i.test(navigator.userAgent);
-document.documentElement.classList.toggle("ios-device", IS_IOS_DEVICE);
 document.documentElement.classList.toggle("mobile-app-theme", USE_MOBILE_APP_THEME);
 
 let cloudStore = {
@@ -108,6 +107,7 @@ const els = {
   heroStoreMeta: document.querySelector("#heroStoreMeta"),
   activeStorePanel: document.querySelector(".toolbar"),
   activeStoreName: document.querySelector("#activeStoreName"),
+  overviewStoreName: document.querySelector("#overviewStoreName"),
   renameStore: document.querySelector("#renameStore"),
   deleteStore: document.querySelector("#deleteStore"),
   rangeMode: document.querySelector("#rangeMode"),
@@ -2887,6 +2887,7 @@ function render() {
   applyRoleAccess();
   if (!store) {
     els.activeStoreName.textContent = "Chưa chọn cửa hàng";
+    els.overviewStoreName.textContent = "Chưa chọn cửa hàng";
     els.heroStoreName.textContent = "Chưa chọn cửa hàng";
     els.heroStoreMeta.textContent = "Tạo hoặc chọn một cửa hàng";
     activateTab("stores");
@@ -2897,6 +2898,7 @@ function render() {
   }
 
   els.activeStoreName.textContent = store.name;
+  els.overviewStoreName.textContent = store.name;
   els.heroStoreName.textContent = store.name;
   els.heroStoreMeta.textContent = `${store.entries.length} dòng`;
   setDefaultEntryDates();
