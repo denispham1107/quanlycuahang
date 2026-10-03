@@ -13,8 +13,588 @@
   --balance: #1477e8;
   --shadow: 0 18px 42px rgba(57, 76, 120, 0.14);
   --soft-gradient: linear-gradient(145deg, #ffe5d8 0%, #eadcff 46%, #a8dfff 100%);
-  --accent-gradient: linear-gradient(135deg, #8b48ff 0%, #0c82f4 100%);
+  --accent-gradient: linear-gradient(110deg, #c346ff 0%, #635cff 48%, #08a7f3 100%);
   --money-gradient: linear-gradient(90deg, #c157ff 0%, #ff70c8 100%);
+}
+
+/* 2026 mobile app glass theme.
+   The class is attached from app.js only for iOS/iPadOS and Android so desktop
+   keeps its established layout while sharing the refreshed background/colors. */
+.tab-icon {
+  display: none;
+}
+
+.tab-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+form button,
+.inline-form button,
+.modal-actions button:not(.danger-button):not(.ghost-button),
+.customer-manager-button,
+.inventory-toggle,
+.add-sales-item {
+  background: var(--accent-gradient);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(82, 91, 240, 0.2);
+}
+
+.edit-small {
+  border-color: rgba(7, 128, 247, 0.12);
+  background: rgba(224, 240, 255, 0.88);
+  color: #0878f7;
+}
+
+.delete-small {
+  border-color: rgba(255, 65, 116, 0.12);
+  background: rgba(255, 231, 239, 0.92);
+  color: #ff4174;
+}
+
+html.mobile-app-theme {
+  --mobile-dock-height: 154px;
+  --mobile-glass-border: rgba(255, 255, 255, 0.82);
+  --mobile-glass-background: rgba(255, 255, 255, 0.75);
+  --mobile-card-shadow: 0 15px 36px rgba(80, 79, 170, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.94);
+  min-height: 100%;
+  background: #e9e6ff;
+}
+
+html.mobile-app-theme body {
+  min-height: 100%;
+  background:
+    radial-gradient(circle at 8% 7%, rgba(255, 187, 244, 0.86), transparent 30%),
+    radial-gradient(circle at 90% 9%, rgba(147, 213, 255, 0.92), transparent 33%),
+    radial-gradient(circle at 18% 78%, rgba(207, 176, 255, 0.72), transparent 34%),
+    radial-gradient(circle at 90% 88%, rgba(171, 231, 255, 0.8), transparent 35%),
+    linear-gradient(148deg, #fff0fa 0%, #eae5ff 49%, #b9e8ff 100%);
+  background-attachment: fixed;
+}
+
+html.mobile-app-theme body::before,
+html.mobile-app-theme body::after {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 50%;
+  filter: blur(1px);
+  opacity: 0.72;
+}
+
+html.mobile-app-theme body::before {
+  top: 6%;
+  left: -16vw;
+  width: 56vw;
+  height: 56vw;
+  background: radial-gradient(circle at 60% 50%, rgba(231, 116, 255, 0.35), rgba(255, 255, 255, 0));
+}
+
+html.mobile-app-theme body::after {
+  right: -18vw;
+  bottom: 16%;
+  width: 62vw;
+  height: 62vw;
+  background: radial-gradient(circle at 45% 45%, rgba(40, 177, 255, 0.34), rgba(255, 255, 255, 0));
+}
+
+html.mobile-app-theme .app-shell {
+  min-height: 100%;
+  overflow: clip;
+}
+
+html.mobile-app-theme .topbar {
+  border-bottom-color: rgba(255, 255, 255, 0.52);
+  background: rgba(255, 247, 252, 0.28);
+  backdrop-filter: blur(18px) saturate(1.25);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+}
+
+html.mobile-app-theme .layout {
+  width: 100%;
+  max-width: none;
+  grid-template-columns: minmax(0, 1fr);
+  padding: 14px 12px calc(var(--mobile-dock-height) + max(24px, env(safe-area-inset-bottom)));
+  gap: 14px;
+}
+
+html.mobile-app-theme .dashboard,
+html.mobile-app-theme .workspace,
+html.mobile-app-theme .sidebar {
+  min-width: 0;
+  gap: 14px;
+}
+
+html.mobile-app-theme .panel,
+html.mobile-app-theme .toolbar,
+html.mobile-app-theme .active-store-hero,
+html.mobile-app-theme .selected-range-card,
+html.mobile-app-theme .metric,
+html.mobile-app-theme .quick-entry-card,
+html.mobile-app-theme .entry-section,
+html.mobile-app-theme .category-section,
+html.mobile-app-theme .inventory-log-panel,
+html.mobile-app-theme .sales-total,
+html.mobile-app-theme .modal-card {
+  border: 1.5px solid var(--mobile-glass-border);
+  border-radius: 24px;
+  background: var(--mobile-glass-background);
+  box-shadow: var(--mobile-card-shadow);
+  backdrop-filter: blur(22px) saturate(1.18);
+  -webkit-backdrop-filter: blur(22px) saturate(1.18);
+}
+
+html.mobile-app-theme .panel,
+html.mobile-app-theme .toolbar,
+html.mobile-app-theme .quick-entry-card,
+html.mobile-app-theme .entry-section,
+html.mobile-app-theme .category-section,
+html.mobile-app-theme .inventory-log-panel {
+  padding: 14px;
+}
+
+html.mobile-app-theme .active-store-hero {
+  min-height: 126px;
+  padding: 18px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 91% 32%, rgba(26, 166, 255, 0.25), transparent 29%),
+    linear-gradient(118deg, rgba(255, 238, 245, 0.86), rgba(232, 226, 255, 0.78) 54%, rgba(201, 239, 255, 0.8));
+}
+
+html.mobile-app-theme .panel-heading {
+  align-items: center;
+  gap: 8px;
+}
+
+html.mobile-app-theme .panel-heading h2,
+html.mobile-app-theme .toolbar h2 {
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+html.mobile-app-theme input,
+html.mobile-app-theme select,
+html.mobile-app-theme textarea {
+  min-height: 46px;
+  border-color: rgba(118, 129, 175, 0.23);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 6px 16px rgba(79, 92, 171, 0.05);
+  font-size: 16px;
+}
+
+html.mobile-app-theme input:focus,
+html.mobile-app-theme select:focus,
+html.mobile-app-theme textarea:focus {
+  border-color: rgba(80, 91, 246, 0.62);
+  outline: 3px solid rgba(92, 97, 247, 0.13);
+}
+
+html.mobile-app-theme form button,
+html.mobile-app-theme .customer-manager-button,
+html.mobile-app-theme .inventory-toggle,
+html.mobile-app-theme .add-sales-item,
+html.mobile-app-theme .modal-actions button:not(.danger-button):not(.ghost-button) {
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 16px;
+  background: var(--accent-gradient);
+  box-shadow: 0 11px 24px rgba(79, 91, 237, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.56);
+}
+
+html.mobile-app-theme .entry-form > button[type="submit"],
+html.mobile-app-theme .category-form > button[type="submit"] {
+  min-height: 52px;
+  gap: 10px;
+  font-weight: 900;
+}
+
+html.mobile-app-theme .entry-form > button[type="submit"]::before,
+html.mobile-app-theme .category-form > button[type="submit"]::before {
+  content: "";
+  width: 21px;
+  height: 21px;
+  flex: 0 0 21px;
+  background: currentColor;
+  -webkit-mask: center / contain no-repeat;
+  mask: center / contain no-repeat;
+}
+
+html.mobile-app-theme .entry-form > button[type="submit"]::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='2' stroke-linejoin='round' d='M5 3h12l2 2v16H5V3Zm3 0v6h8V3M8 21v-7h8v7'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='2' stroke-linejoin='round' d='M5 3h12l2 2v16H5V3Zm3 0v6h8V3M8 21v-7h8v7'/%3E%3C/svg%3E");
+}
+
+html.mobile-app-theme .category-form > button[type="submit"]::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M11 7h2v10h-2zM7 11h10v2H7z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M11 7h2v10h-2zM7 11h10v2H7z'/%3E%3C/svg%3E");
+}
+
+html.mobile-app-theme .category-item,
+html.mobile-app-theme .report-item,
+html.mobile-app-theme .store-item,
+html.mobile-app-theme .inventory-item,
+html.mobile-app-theme .sales-history-row,
+html.mobile-app-theme .empty-list {
+  border: 1px solid rgba(116, 131, 180, 0.2);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.73);
+  box-shadow: 0 7px 17px rgba(72, 86, 160, 0.055), inset 0 1px 0 rgba(255, 255, 255, 0.88);
+}
+
+/* Do not add decorative leading icons to category/report rows: the reference
+   explicitly marks those icons as excluded. */
+html.mobile-app-theme .category-item::before,
+html.mobile-app-theme .report-item::before {
+  content: none !important;
+  display: none !important;
+}
+
+html.mobile-app-theme .edit-small,
+html.mobile-app-theme .delete-small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 14px;
+  box-shadow: 0 7px 17px rgba(72, 86, 160, 0.08);
+}
+
+html.mobile-app-theme .edit-small {
+  min-width: 66px;
+  background: rgba(224, 240, 255, 0.9);
+  color: #0878f7;
+}
+
+html.mobile-app-theme .edit-small::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m4 16.5-.5 4 4-.5L19 8.5 15.5 5 4 16.5Zm10-10L17.5 10' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m4 16.5-.5 4 4-.5L19 8.5 15.5 5 4 16.5Zm10-10L17.5 10' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+html.mobile-app-theme .delete-small {
+  min-width: 40px;
+  background: rgba(255, 231, 239, 0.94);
+  color: #ff4174;
+  font-size: 0;
+}
+
+html.mobile-app-theme .delete-small::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 7h14M9 7V4h6v3m2 0-1 13H8L7 7m4 4v5m3-5v5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 7h14M9 7V4h6v3m2 0-1 13H8L7 7m4 4v5m3-5v5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+html.mobile-app-theme .quick-entry-fab {
+  right: max(16px, env(safe-area-inset-right));
+  bottom: calc(var(--mobile-dock-height) + max(20px, env(safe-area-inset-bottom)));
+  width: 62px;
+  height: 62px;
+  border: 2px solid rgba(255, 255, 255, 0.78);
+  background: linear-gradient(135deg, #c947ff, #724dff 52%, #ff6cae 83%, #ff9a4a);
+  box-shadow: 0 14px 30px rgba(117, 70, 236, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.74);
+}
+
+html.mobile-app-theme .sticky-control-dock,
+html.mobile-app-theme .sticky-control-dock.is-fixed {
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow: visible;
+}
+
+html.mobile-app-theme .tab-spacer {
+  display: none !important;
+  height: 0 !important;
+}
+
+html.mobile-app-theme .tab-bar,
+html.mobile-app-theme .sticky-control-dock.is-fixed .tab-bar,
+html.mobile-app-theme .sticky-control-dock.filters-available .tab-bar {
+  position: fixed;
+  top: auto !important;
+  z-index: 72;
+  left: max(10px, env(safe-area-inset-left));
+  right: max(10px, env(safe-area-inset-right));
+  bottom: max(10px, env(safe-area-inset-bottom)) !important;
+  width: auto;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: 60px 58px;
+  gap: 8px;
+  padding: 10px;
+  border: 1.5px solid var(--mobile-glass-border);
+  border-radius: 27px;
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 18px 42px rgba(68, 75, 162, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(24px) saturate(1.25);
+  -webkit-backdrop-filter: blur(24px) saturate(1.25);
+  overflow: visible;
+}
+
+html.mobile-app-theme .tab-button {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  padding: 6px 4px;
+  border: 1px solid transparent;
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: transparent;
+  color: #606981;
+  box-shadow: none;
+  font-size: 12px;
+  line-height: 1.05;
+  white-space: normal;
+}
+
+html.mobile-app-theme .tab-button[data-tab="stores"] { grid-column: 1; grid-row: 1; }
+html.mobile-app-theme .tab-button[data-tab="overview"] { grid-column: 2; grid-row: 1; }
+html.mobile-app-theme .tab-button[data-tab="income"] { grid-column: 3; grid-row: 1; }
+html.mobile-app-theme .tab-button[data-tab="expense"] { grid-column: 4; grid-row: 1; }
+html.mobile-app-theme .tab-button[data-tab="purchase"] { grid-column: 1 / 3; grid-row: 2; }
+html.mobile-app-theme .tab-button[data-tab="sales"] { grid-column: 3 / 5; grid-row: 2; }
+
+html.mobile-app-theme .tab-icon {
+  display: block;
+  width: 23px;
+  height: 23px;
+  flex: 0 0 23px;
+}
+
+html.mobile-app-theme .tab-label {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html.mobile-app-theme .tab-button.active {
+  border-color: rgba(255, 255, 255, 0.64);
+  background: linear-gradient(125deg, #9563ff 0%, #456cff 51%, #13a7f2 100%);
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(74, 96, 237, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+html.mobile-app-theme .tab-button[data-tab="purchase"],
+html.mobile-app-theme .tab-button[data-tab="sales"] {
+  flex-direction: row;
+  gap: 10px;
+  padding-inline: 13px;
+  border-color: rgba(255, 255, 255, 0.78);
+  background: linear-gradient(115deg, rgba(239, 232, 255, 0.95), rgba(255, 229, 244, 0.88));
+  color: #16428f;
+  font-size: 15px;
+  font-weight: 900;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 7px 18px rgba(90, 81, 160, 0.08);
+}
+
+html.mobile-app-theme .tab-button[data-tab="sales"] {
+  background: linear-gradient(115deg, rgba(226, 238, 255, 0.96), rgba(255, 238, 232, 0.9));
+}
+
+html.mobile-app-theme .tab-button[data-tab="purchase"].active,
+html.mobile-app-theme .tab-button[data-tab="sales"].active {
+  background: linear-gradient(115deg, #a24cff, #5364ff 52%, #0aa7f2);
+  color: #fff;
+}
+
+html.mobile-app-theme .time-filter-toggle {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  z-index: 2;
+  width: 40px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: 1px solid rgba(91, 116, 194, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #5064de;
+  box-shadow: 0 6px 16px rgba(67, 78, 166, 0.15);
+  transform: translateX(-50%);
+}
+
+html.mobile-app-theme .time-filter-toggle:hover,
+html.mobile-app-theme .time-filter-toggle:active {
+  transform: translateX(-50%);
+}
+
+html.mobile-app-theme .time-filter-toggle-label {
+  display: none;
+}
+
+html.mobile-app-theme .time-filters,
+html.mobile-app-theme .sticky-control-dock.is-fixed .time-filters {
+  position: fixed;
+  z-index: 74;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+  left: max(10px, env(safe-area-inset-left));
+  width: auto;
+  max-width: none;
+  max-height: 118px;
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  border: 1.5px solid var(--mobile-glass-border);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 15px 38px rgba(68, 75, 162, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(24px) saturate(1.25);
+  -webkit-backdrop-filter: blur(24px) saturate(1.25);
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition: opacity 180ms ease, transform 180ms ease, visibility 180ms ease;
+}
+
+html.mobile-app-theme .time-filters::-webkit-scrollbar {
+  display: none;
+}
+
+html.mobile-app-theme .time-filters[hidden] {
+  display: none;
+}
+
+html.mobile-app-theme .time-filters.is-collapsed {
+  display: flex;
+  max-height: 118px;
+  padding: 12px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(calc(-100% - 18px));
+}
+
+html.mobile-app-theme .time-filters .field,
+html.mobile-app-theme .time-filters .field:first-child {
+  flex: 0 0 clamp(188px, 58vw, 290px);
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+html.mobile-app-theme .time-filters label {
+  padding-left: 7px;
+  color: #5e6680;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+html.mobile-app-theme .time-filters input,
+html.mobile-app-theme .time-filters select {
+  min-height: 48px;
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.9);
+  font-size: 16px;
+}
+
+html.mobile-app-theme .settings-actions,
+html.mobile-app-theme .activity-history-card,
+html.mobile-app-theme .employee-manager-card {
+  max-width: calc(100vw - max(20px, env(safe-area-inset-left)) - max(20px, env(safe-area-inset-right)));
+  border: 1.5px solid var(--mobile-glass-border);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 17px 40px rgba(68, 75, 162, 0.2);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+}
+
+html.mobile-app-theme .quick-entry-card,
+html.mobile-app-theme .sales-page-mode .quick-entry-card {
+  padding: 14px;
+}
+
+html.mobile-app-theme .sales-page-mode .sales-item-row {
+  border-color: rgba(116, 131, 180, 0.2);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+@media (orientation: landscape) {
+  html.mobile-app-theme {
+    --mobile-dock-height: 112px;
+  }
+
+  html.mobile-app-theme .layout {
+    padding-inline: max(14px, env(safe-area-inset-left));
+    padding-bottom: calc(var(--mobile-dock-height) + max(20px, env(safe-area-inset-bottom)));
+  }
+
+  html.mobile-app-theme .tab-bar,
+  html.mobile-app-theme .sticky-control-dock.is-fixed .tab-bar,
+  html.mobile-app-theme .sticky-control-dock.filters-available .tab-bar {
+    left: max(18px, env(safe-area-inset-left));
+    right: max(18px, env(safe-area-inset-right));
+    grid-template-rows: 44px 44px;
+    gap: 6px;
+    padding: 7px;
+    border-radius: 22px;
+  }
+
+  html.mobile-app-theme .tab-button {
+    gap: 2px;
+    padding-block: 3px;
+    font-size: 11px;
+  }
+
+  html.mobile-app-theme .tab-icon {
+    width: 20px;
+    height: 20px;
+    flex-basis: 20px;
+  }
+
+  html.mobile-app-theme .tab-button[data-tab="purchase"],
+  html.mobile-app-theme .tab-button[data-tab="sales"] {
+    font-size: 13px;
+  }
+
+  html.mobile-app-theme .time-filters .field,
+  html.mobile-app-theme .time-filters .field:first-child {
+    flex-basis: min(34vw, 280px);
+  }
+
+  html.mobile-app-theme .quick-entry-fab {
+    width: 56px;
+    height: 56px;
+  }
 }
 
 * {
@@ -53,9 +633,10 @@ textarea,
 body {
   margin: 0;
   background:
-    radial-gradient(circle at 8% 10%, rgba(255, 215, 207, 0.86), transparent 32%),
-    radial-gradient(circle at 88% 4%, rgba(208, 188, 255, 0.84), transparent 34%),
-    linear-gradient(145deg, #fff0e7 0%, #efe8ff 48%, #bde8ff 100%);
+    radial-gradient(circle at 9% 8%, rgba(255, 193, 242, 0.76), transparent 30%),
+    radial-gradient(circle at 88% 5%, rgba(161, 211, 255, 0.86), transparent 34%),
+    radial-gradient(circle at 20% 82%, rgba(199, 174, 255, 0.58), transparent 32%),
+    linear-gradient(145deg, #fff0fb 0%, #e9e5ff 48%, #b8e7ff 100%);
   background-attachment: fixed;
   color: var(--text);
   font-family: Arial, Helvetica, sans-serif;
@@ -1889,9 +2470,9 @@ body.sales-order-detail-open {
 
 .tab-button.active {
   border-color: transparent;
-  background: var(--accent);
+  background: var(--accent-gradient);
   color: #fff;
-  box-shadow: 0 10px 22px rgba(8, 120, 247, 0.26);
+  box-shadow: 0 10px 24px rgba(82, 91, 240, 0.26);
 }
 
 .tab-button[data-tab="sales"],
@@ -4200,7 +4781,7 @@ th:last-child {
   min-height: 44px;
   border-radius: 8px;
   padding: 0 16px;
-  background: var(--accent);
+  background: var(--accent-gradient);
   color: #fff;
   font-weight: 800;
 }

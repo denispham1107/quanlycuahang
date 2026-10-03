@@ -9,6 +9,8 @@ const FIRESTORE_DOCUMENT = "shared-state";
 const IS_IOS_DEVICE =
   /iPad|iPhone|iPod/.test(navigator.userAgent) ||
   (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const USE_MOBILE_APP_THEME = IS_IOS_DEVICE || /Android/i.test(navigator.userAgent);
+document.documentElement.classList.toggle("mobile-app-theme", USE_MOBILE_APP_THEME);
 
 let cloudStore = {
   enabled: false,

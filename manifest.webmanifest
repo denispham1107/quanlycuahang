@@ -9,8 +9,8 @@
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "any",
-  "background_color": "#f6f3ff",
-  "theme_color": "#0878f7",
+  "background_color": "#e9e5ff",
+  "theme_color": "#6c5cff",
   "icons": [
     {
       "src": "icons/icon-192.png",
