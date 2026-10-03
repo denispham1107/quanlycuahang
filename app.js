@@ -28,6 +28,10 @@ let authState = {
   profile: null,
   role: ""
 };
+let authRestoreAttempt = 0;
+let authSlowTimer = null;
+let authDb = null;
+let firebaseAuthInstance = null;
 
 const defaultData = {
   activeStoreId: null,
@@ -88,6 +92,11 @@ const uiState = {
 
 const els = {
   authScreen: document.querySelector("#authScreen"),
+  authTitle: document.querySelector("#authTitle"),
+  authDescription: document.querySelector("#authDescription"),
+  authStartup: document.querySelector("#authStartup"),
+  authStartupMessage: document.querySelector("#authStartupMessage"),
+  authStartupRetry: document.querySelector("#authStartupRetry"),
   appShell: document.querySelector("#appShell"),
   loginForm: document.querySelector("#loginForm"),
   loginEmail: document.querySelector("#loginEmail"),
@@ -452,7 +461,13 @@ els.loginForm?.addEventListener("submit", async (event) => {
   els.loginSubmit.textContent = "Đang đăng nhập...";
   showLoginError("");
   try {
-    await window.firebase.auth().signInWithEmailAndPassword(email, password);
+    const auth = window.firebase.auth();
+    try {
+      await auth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL);
+    } catch (error) {
+      console.warn("Cannot persist authentication locally", error);
+    }
+    await auth.signInWithEmailAndPassword(email, password);
   } catch (error) {
     showLoginError("Email hoặc mật khẩu không đúng, hoặc tài khoản chưa được cấp quyền.");
   } finally {
@@ -1729,6 +1744,7 @@ function showLoginError(message) {
 }
 
 function showAuthenticatedApp(profile) {
+  clearAuthStartupTimers();
   document.body.classList.remove("auth-pending");
   els.authScreen.hidden = true;
   els.appShell.hidden = false;
@@ -1738,7 +1754,38 @@ function showAuthenticatedApp(profile) {
   els.signedInUserRole.textContent = profile.role === "admin" ? "Admin" : "Nhân viên";
 }
 
+function clearAuthStartupTimers() {
+  window.clearTimeout(window.authStartupWatchdog);
+  window.clearTimeout(authSlowTimer);
+  authSlowTimer = null;
+}
+
+function showAuthLoading(message = "Đang kiểm tra tài khoản và quyền truy cập...") {
+  document.body.classList.add("auth-pending");
+  els.appShell.hidden = true;
+  els.authScreen.hidden = false;
+  els.authTitle.textContent = "Đang mở ứng dụng";
+  els.authDescription.textContent = "Đang khôi phục phiên đăng nhập của bạn.";
+  els.authStartupMessage.textContent = message;
+  els.authStartupRetry.hidden = true;
+  els.authStartup.hidden = false;
+  els.loginForm.hidden = true;
+}
+
+function showAuthProblem(message) {
+  document.body.classList.add("auth-pending");
+  els.appShell.hidden = true;
+  els.authTitle.textContent = "Chưa thể mở ứng dụng";
+  els.authDescription.textContent = "Ứng dụng chưa xác định được trạng thái đăng nhập.";
+  els.authStartupMessage.textContent = message;
+  els.authStartupRetry.hidden = false;
+  els.authStartup.hidden = false;
+  els.loginForm.hidden = true;
+  els.authScreen.hidden = false;
+}
+
 function showLoginScreen(message = "") {
+  clearAuthStartupTimers();
   document.body.classList.add("auth-pending");
   document.body.classList.remove("modal-open");
   document.body.classList.remove("sales-order-detail-open");
@@ -1749,6 +1796,10 @@ function showLoginScreen(message = "") {
   if (mobileTimeFilterShell) mobileTimeFilterShell.hidden = true;
   if (USE_MOBILE_APP_THEME && els.timeFilters) els.timeFilters.hidden = true;
   els.authScreen.hidden = false;
+  els.authTitle.textContent = "Đăng nhập";
+  els.authDescription.textContent = "Dùng tài khoản được quản trị viên cấp để tiếp tục.";
+  els.authStartup.hidden = true;
+  els.loginForm.hidden = false;
   els.signedInUser.hidden = true;
   showLoginError(message);
   window.setTimeout(() => els.loginEmail?.focus({ preventScroll: true }), 50);
@@ -1808,37 +1859,105 @@ async function loadUserProfile(db, user) {
   return profile;
 }
 
+function isProfileAccessDenied(error) {
+  return ["PROFILE_NOT_FOUND", "PROFILE_DISABLED"].includes(error?.message) ||
+    ["permission-denied", "auth/user-disabled"].includes(error?.code);
+}
+
+async function restoreAuthenticatedUser(db, user) {
+  const attempt = ++authRestoreAttempt;
+  try {
+    stopCloudStorage();
+    showAuthLoading();
+    window.clearTimeout(authSlowTimer);
+    authSlowTimer = window.setTimeout(() => {
+      if (attempt === authRestoreAttempt) {
+        showAuthProblem("Kiểm tra quyền đang chậm. Bạn có thể thử lại; phiên đăng nhập vẫn được giữ.");
+      }
+    }, 8000);
+
+    const profile = await loadUserProfile(db, user);
+    if (attempt !== authRestoreAttempt) return;
+    window.clearTimeout(authSlowTimer);
+    authSlowTimer = null;
+    authState = { ready: true, user, profile, role: profile.role };
+    if (profile.role === "employee") state = cloneDefaultData();
+    applyRoleAccess();
+    showAuthenticatedApp(profile);
+    initCloudStorage();
+  } catch (error) {
+    if (attempt !== authRestoreAttempt) return;
+    window.clearTimeout(authSlowTimer);
+    authSlowTimer = null;
+    if (isProfileAccessDenied(error)) {
+      const message = "Tài khoản chưa được cấp quyền hoặc đã bị khóa.";
+      try {
+        await firebaseAuthInstance.signOut();
+        showLoginScreen(message);
+      } catch (signOutError) {
+        showAuthProblem("Không thể kết thúc phiên bị từ chối quyền. Vui lòng thử lại.");
+      }
+      return;
+    }
+    console.error("Cannot restore authenticated profile", error);
+    showAuthProblem("Không thể kiểm tra quyền do kết nối gián đoạn. Hãy thử lại khi có mạng.");
+  }
+}
+
 async function initAuthentication() {
   const config = getFirebaseConfig();
   if (!config || !window.firebase?.auth || !window.firebase?.firestore) {
-    showLoginScreen("Không thể khởi tạo Firebase Authentication.");
+    showAuthProblem("Không tải được Firebase Authentication. Hãy kiểm tra kết nối và thử lại.");
     return;
   }
 
-  const app = window.firebase.apps?.length ? window.firebase.app() : window.firebase.initializeApp(config);
-  const db = window.firebase.firestore(app);
-  window.firebase.auth(app).onAuthStateChanged(async (user) => {
-    stopCloudStorage();
-    if (!user) {
-      authState = { ready: true, user: null, profile: null, role: "" };
-      state = cloneDefaultData();
-      localStorage.removeItem(STORAGE_KEY);
-      showLoginScreen();
-      return;
-    }
+  try {
+    const app = window.firebase.apps?.length ? window.firebase.app() : window.firebase.initializeApp(config);
+    authDb = window.firebase.firestore(app);
+    firebaseAuthInstance = window.firebase.auth(app);
+  } catch (error) {
+    console.error("Cannot initialize Firebase Authentication", error);
+    showAuthProblem("Không thể khởi tạo Firebase. Hãy thử lại.");
+    return;
+  }
 
-    try {
-      const profile = await loadUserProfile(db, user);
-      authState = { ready: true, user, profile, role: profile.role };
-      showAuthenticatedApp(profile);
-      applyRoleAccess();
-      initCloudStorage();
-    } catch (error) {
-      await window.firebase.auth().signOut();
-      showLoginScreen("Tài khoản chưa được cấp quyền hoặc đã bị khóa.");
-    }
-  });
+  try {
+    firebaseAuthInstance.onAuthStateChanged((user) => {
+      if (!user) {
+        ++authRestoreAttempt;
+        stopCloudStorage();
+        authState = { ready: true, user: null, profile: null, role: "" };
+        state = cloneDefaultData();
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+        } catch (error) {
+          console.warn("Cannot clear local cache", error);
+        }
+        showLoginScreen();
+        return;
+      }
+      restoreAuthenticatedUser(authDb, user);
+    }, (error) => {
+      console.error("Cannot read authentication state", error);
+      showAuthProblem("Không thể đọc phiên đăng nhập. Hãy thử lại.");
+    });
+  } catch (error) {
+    console.error("Cannot observe authentication state", error);
+    showAuthProblem("Không thể theo dõi phiên đăng nhập. Hãy thử lại.");
+  }
 }
+
+window.retryAuthStartup = () => {
+  const user = firebaseAuthInstance?.currentUser;
+  if (authDb && user) restoreAuthenticatedUser(authDb, user);
+  else window.location.reload();
+};
+
+window.addEventListener("online", () => {
+  if (!els.authScreen.hidden && !els.authStartup.hidden && !els.authStartupRetry.hidden) {
+    window.retryAuthStartup();
+  }
+});
 
 function getFirestorePath() {
   const options = window.appCloudOptions || {};
@@ -1878,8 +1997,13 @@ function initCloudStorage() {
     }
 
     cloudStore.unsubscribe = cloudStore.docRef.onSnapshot(
+      { includeMetadataChanges: true },
       (snapshot) => {
         if (!snapshot.exists) {
+          if (snapshot.metadata?.fromCache) {
+            updateSyncStatus("Đang kiểm tra dữ liệu cloud...", "loading");
+            return;
+          }
           saveStateToCloud();
           updateSyncStatus("Đã tạo dữ liệu cloud", "ok");
           return;
@@ -1889,7 +2013,7 @@ function initCloudStorage() {
         state = normalizeState(remote);
         saveStateToCache();
         render();
-        updateSyncStatus("Đã đồng bộ cloud", "ok");
+        updateSyncStatus(snapshot.metadata?.fromCache ? "Đang cập nhật từ cloud..." : "Đã đồng bộ cloud", snapshot.metadata?.fromCache ? "loading" : "ok");
       },
       (error) => {
         cloudStore.lastError = error;
@@ -5184,7 +5308,41 @@ async function readAITextFile(file) {
   return clampAIFileText(await file.text());
 }
 
+const optionalAIFileReaders = new Map();
+
+function loadOptionalAIFileReader(name, url) {
+  if (window[name]) return Promise.resolve(true);
+  if (optionalAIFileReaders.has(name)) return optionalAIFileReaders.get(name);
+
+  const loading = new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = url;
+    script.async = true;
+    let finished = false;
+    let timer;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      window.clearTimeout(timer);
+      script.onload = null;
+      script.onerror = null;
+      if (!window[name]) script.remove();
+      resolve(Boolean(window[name]));
+    };
+    script.onload = finish;
+    script.onerror = finish;
+    timer = window.setTimeout(finish, 12000);
+    document.head.appendChild(script);
+  }).finally(() => optionalAIFileReaders.delete(name));
+
+  optionalAIFileReaders.set(name, loading);
+  return loading;
+}
+
 async function readAIExcelFile(file) {
+  if (!window.XLSX) {
+    await loadOptionalAIFileReader("XLSX", "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js");
+  }
   if (!window.XLSX) {
     return {
       text: "Không thể đọc nội dung Excel vì thư viện XLSX chưa tải được. Hãy thử lại khi có mạng hoặc đổi sang CSV/TXT.",
@@ -5207,6 +5365,9 @@ async function readAIExcelFile(file) {
 }
 
 async function readAIWordFile(file) {
+  if (!window.mammoth && /\.docx$/i.test(file.name || "")) {
+    await loadOptionalAIFileReader("mammoth", "https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js");
+  }
   if (!window.mammoth || !/\.docx$/i.test(file.name || "")) {
     return {
       text:

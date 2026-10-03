@@ -876,6 +876,52 @@ body.auth-pending {
   line-height: 1.5;
 }
 
+.auth-startup {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 4px 0 2px;
+  color: #375075;
+  text-align: center;
+}
+
+.auth-startup[hidden],
+.auth-form[hidden],
+.auth-startup button[hidden] {
+  display: none;
+}
+
+.auth-startup p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.auth-spinner {
+  width: 29px;
+  height: 29px;
+  border: 3px solid #d9e8ff;
+  border-top-color: #7550ee;
+  border-radius: 50%;
+  animation: auth-spin 850ms linear infinite;
+}
+
+@keyframes auth-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-spinner { animation: none; }
+}
+
+.auth-startup button {
+  min-height: 42px;
+  padding: 0 22px;
+  border-radius: 14px;
+  background: var(--accent-gradient);
+  color: #fff;
+  font-weight: 900;
+}
+
 .auth-form {
   display: grid;
   gap: 15px;

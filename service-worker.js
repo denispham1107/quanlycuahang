@@ -1,9 +1,10 @@
-const CACHE_VERSION = "quanlycuahang-pwa-v38";
+const CACHE_VERSION = "quanlycuahang-pwa-v39";
+const FIREBASE_SDK_PREFIX = "https://www.gstatic.com/firebasejs/10.12.5/";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css",
-  "./app.js",
+  "./styles.css?v=39",
+  "./app.js?v=39",
   "./firebase-config.js",
   "./manifest.webmanifest",
   "./icons/icon.svg",
@@ -28,39 +29,59 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+function refreshAppAsset(request) {
+  return fetch(request, { cache: "no-cache" })
+    .then((response) => {
+      if (!response.ok) return response;
+      const responseCopy = response.clone();
+      return caches.open(CACHE_VERSION)
+        .then((cache) => cache.put(request, responseCopy))
+        .catch(() => {})
+        .then(() => response);
+    })
+    .catch(() => null);
+}
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
 
   const requestUrl = new URL(request.url);
+  if (request.destination === "script" && requestUrl.href.startsWith(FIREBASE_SDK_PREFIX)) {
+    event.respondWith(
+      caches.match(request).then((cached) => cached || fetch(request).then((response) => {
+        if (response.ok || response.type === "opaque") {
+          const responseCopy = response.clone();
+          return caches.open(CACHE_VERSION)
+            .then((cache) => cache.put(request, responseCopy))
+            .catch(() => {})
+            .then(() => response);
+        }
+        return response;
+      }))
+    );
+    return;
+  }
   if (requestUrl.origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
+    const networkResponse = refreshAppAsset(request);
+    event.waitUntil(networkResponse);
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const responseCopy = response.clone();
-          caches.open(CACHE_VERSION).then((cache) => cache.put(request, responseCopy));
-          return response;
-        })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match("./index.html")))
+      caches.match(request)
+        .then((cached) => cached || caches.match("./index.html"))
+        .then((cached) => cached || networkResponse.then((response) => response || Response.error()))
     );
     return;
   }
 
-  // Prefer current UI assets on every launch, while retaining offline copies.
+  // Never hold the launch behind a slow connection when a cached UI asset exists.
   if (request.destination === "style" || request.destination === "script") {
+    const networkResponse = refreshAppAsset(request);
+    event.waitUntil(networkResponse);
     event.respondWith(
-      fetch(request, { cache: "no-cache" })
-        .then((response) => {
-          if (response.ok) {
-            const responseCopy = response.clone();
-            event.waitUntil(caches.open(CACHE_VERSION).then((cache) => cache.put(request, responseCopy)));
-            return response;
-          }
-          return caches.match(request).then((cached) => cached || response);
-        })
-        .catch(() => caches.match(request))
+      caches.match(request)
+        .then((cached) => cached || networkResponse.then((response) => response || Response.error()))
     );
     return;
   }

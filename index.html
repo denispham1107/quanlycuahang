@@ -10,6 +10,7 @@
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
     <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
     <script>
@@ -20,15 +21,20 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=39" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
       <section class="auth-card">
         <p class="eyebrow">Quản lý cửa hàng</p>
-        <h1 id="authTitle">Đăng nhập</h1>
-        <p class="auth-description">Dùng tài khoản được quản trị viên cấp để tiếp tục.</p>
-        <form class="auth-form" id="loginForm" novalidate>
+        <h1 id="authTitle">Đang mở ứng dụng</h1>
+        <p class="auth-description" id="authDescription">Đang khôi phục phiên đăng nhập của bạn.</p>
+        <div class="auth-startup" id="authStartup" role="status" aria-live="polite">
+          <span class="auth-spinner" aria-hidden="true"></span>
+          <p id="authStartupMessage">Đang kiểm tra tài khoản và quyền truy cập...</p>
+          <button id="authStartupRetry" type="button" hidden>Thử lại</button>
+        </div>
+        <form class="auth-form" id="loginForm" novalidate hidden>
           <div class="field">
             <label for="loginEmail">Email</label>
             <input id="loginEmail" name="email" type="email" inputmode="email" autocomplete="username" required />
@@ -42,6 +48,24 @@
         </form>
       </section>
     </main>
+
+    <script>
+      (() => {
+        const retry = document.querySelector("#authStartupRetry");
+        retry.addEventListener("click", () => {
+          if (typeof window.retryAuthStartup === "function") window.retryAuthStartup();
+          else window.location.reload();
+        });
+        window.authStartupWatchdog = window.setTimeout(() => {
+          if (!document.body.classList.contains("auth-pending") || retry.hidden === false) return;
+          const startup = document.querySelector("#authStartup");
+          if (startup.hidden) return;
+          document.querySelector("#authTitle").textContent = "Kết nối đang chậm";
+          document.querySelector("#authStartupMessage").textContent = "Chưa thể xác nhận phiên đăng nhập. Bạn có thể thử tải lại.";
+          retry.hidden = false;
+        }, 12000);
+      })();
+    </script>
 
     <div class="app-shell" id="appShell" hidden>
       <header class="topbar">
@@ -1136,12 +1160,10 @@
       </section>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-    <script src="firebase-config.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
-    <script src="app.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+    <script defer src="firebase-config.js"></script>
+    <script defer src="app.js?v=39"></script>
   </body>
 </html>
