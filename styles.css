@@ -1460,6 +1460,16 @@ form button:disabled {
   color: var(--expense);
 }
 
+/* These actions use the gradient button style, not the neutral ghost style. */
+.customer-manager-button,
+.inventory-toggle,
+.add-sales-item {
+  background: var(--accent-gradient);
+  color: #fff;
+  font-family: inherit;
+  font-weight: 900;
+}
+
 .store-list,
 .category-list,
 .report-list,
