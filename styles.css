@@ -124,6 +124,15 @@ html.mobile-app-theme .layout {
   gap: 14px;
 }
 
+html.mobile-app-theme body.mobile-secondary-tab .topbar,
+html.mobile-app-theme body.mobile-secondary-tab .active-store-hero {
+  display: none;
+}
+
+html.mobile-app-theme body.mobile-secondary-tab .layout {
+  padding-top: calc(max(8px, env(safe-area-inset-top)) + 36px);
+}
+
 html.mobile-app-theme .dashboard,
 html.mobile-app-theme .workspace,
 html.mobile-app-theme .sidebar {
@@ -302,8 +311,8 @@ html.mobile-app-theme .delete-small::before {
 html.mobile-app-theme .quick-entry-fab {
   right: max(16px, env(safe-area-inset-right));
   bottom: calc(var(--mobile-dock-height) + max(20px, env(safe-area-inset-bottom)));
-  width: 62px;
-  height: 62px;
+  width: 50px;
+  height: 50px;
   border: 2px solid rgba(255, 255, 255, 0.78);
   background: linear-gradient(135deg, #c947ff, #724dff 52%, #ff6cae 83%, #ff9a4a);
   box-shadow: 0 14px 30px rgba(117, 70, 236, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.74);
@@ -429,42 +438,75 @@ html.mobile-app-theme .tab-button[data-tab="sales"].active {
   color: #fff;
 }
 
-html.mobile-app-theme .time-filter-toggle {
-  position: absolute;
-  top: -16px;
-  left: 50%;
-  z-index: 2;
-  width: 40px;
-  height: 28px;
-  min-height: 28px;
-  padding: 0;
-  border: 1px solid rgba(91, 116, 194, 0.18);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.94);
-  color: #5064de;
-  box-shadow: 0 6px 16px rgba(67, 78, 166, 0.15);
-  transform: translateX(-50%);
+html.mobile-app-theme .mobile-time-filter-shell {
+  position: fixed;
+  z-index: 74;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+  left: max(10px, env(safe-area-inset-left));
+  min-width: 0;
+  border: 1px solid var(--mobile-glass-border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 9px 24px rgba(68, 75, 162, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(20px) saturate(1.25);
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  transition: border-radius 220ms ease;
 }
 
-html.mobile-app-theme .time-filter-toggle:hover,
-html.mobile-app-theme .time-filter-toggle:active {
-  transform: translateX(-50%);
+html.mobile-app-theme .mobile-time-filter-shell[hidden] {
+  display: none;
+}
+
+html.mobile-app-theme .mobile-time-filter-shell.is-expanded {
+  border-radius: 20px;
+}
+
+html.mobile-app-theme .mobile-time-filter-shell .time-filter-toggle {
+  position: relative;
+  inset: auto;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: #5064de;
+  box-shadow: none;
+  transform: none;
+}
+
+html.mobile-app-theme .mobile-time-filter-shell .time-filter-toggle[hidden] {
+  display: none;
+}
+
+html.mobile-app-theme .mobile-time-filter-shell .time-filter-toggle:hover,
+html.mobile-app-theme .mobile-time-filter-shell .time-filter-toggle:active {
+  transform: none;
+}
+
+html.mobile-app-theme .mobile-time-filter-shell .time-filter-toggle-icon {
+  width: 6px;
+  height: 6px;
+  border-width: 1.5px;
 }
 
 html.mobile-app-theme .time-filter-toggle-label {
   display: none;
 }
 
-html.mobile-app-theme .time-filters,
-html.mobile-app-theme .sticky-control-dock.is-fixed .time-filters {
-  position: fixed;
-  z-index: 74;
-  top: max(8px, env(safe-area-inset-top));
-  right: max(10px, env(safe-area-inset-right));
-  left: max(10px, env(safe-area-inset-left));
-  width: auto;
+html.mobile-app-theme .mobile-time-filter-shell .time-filters {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  width: 100%;
   max-width: none;
-  max-height: 118px;
+  max-height: 110px;
   display: flex;
   align-items: stretch;
   gap: 10px;
@@ -476,34 +518,35 @@ html.mobile-app-theme .sticky-control-dock.is-fixed .time-filters {
   touch-action: manipulation;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  border: 1.5px solid var(--mobile-glass-border);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.78);
-  box-shadow: 0 15px 38px rgba(68, 75, 162, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(24px) saturate(1.25);
-  -webkit-backdrop-filter: blur(24px) saturate(1.25);
+  border: 0;
+  border-radius: 0 0 20px 20px;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
   transform: none;
-  transition: opacity 180ms ease, transform 180ms ease, visibility 180ms ease;
+  transition: max-height 220ms ease, padding 220ms ease, opacity 180ms ease, transform 220ms ease, visibility 180ms ease;
 }
 
 html.mobile-app-theme .time-filters::-webkit-scrollbar {
   display: none;
 }
 
-html.mobile-app-theme .time-filters.is-collapsed {
+html.mobile-app-theme .mobile-time-filter-shell .time-filters.is-collapsed {
   display: flex;
-  max-height: 118px;
-  padding: 12px;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translateY(calc(-100% - 18px));
+  transform: translateY(-8px);
 }
 
-html.mobile-app-theme .time-filters[hidden] {
+html.mobile-app-theme .mobile-time-filter-shell .time-filters[hidden] {
   display: none;
 }
 
@@ -594,8 +637,8 @@ html.mobile-app-theme .sales-page-mode .sales-item-row {
   }
 
   html.mobile-app-theme .quick-entry-fab {
-    width: 56px;
-    height: 56px;
+    width: 45px;
+    height: 45px;
   }
 }
 
@@ -2999,8 +3042,8 @@ th:last-child {
   right: clamp(18px, 5vw, 42px);
   bottom: clamp(22px, 6vw, 50px);
   z-index: 70;
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   display: inline-grid;
   place-items: center;
   border: 0;
@@ -3017,7 +3060,7 @@ th:last-child {
 .quick-entry-fab::before {
   content: "";
   position: absolute;
-  inset: 12px;
+  inset: 9px;
   border-radius: inherit;
   background: rgba(255, 255, 255, 0.94);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.74);
@@ -3026,8 +3069,8 @@ th:last-child {
 .quick-entry-fab svg {
   position: relative;
   z-index: 1;
-  width: 22px;
-  height: 22px;
+  width: 19px;
+  height: 19px;
   fill: none;
   stroke: #7654ff;
   stroke-width: 2.5;

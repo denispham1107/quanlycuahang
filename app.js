@@ -346,13 +346,18 @@ const els = {
 
 moveStoreSectionsIntoTab();
 
-if (USE_MOBILE_APP_THEME && els.timeFilters) {
+const mobileTimeFilterShell = USE_MOBILE_APP_THEME ? document.createElement("div") : null;
+if (mobileTimeFilterShell && els.timeFilters && els.timeFilterToggle) {
   // Keep the fixed filter rail outside the dock's clipping and pinning context.
+  mobileTimeFilterShell.className = "mobile-time-filter-shell";
+  mobileTimeFilterShell.hidden = true;
+  mobileTimeFilterShell.append(els.timeFilterToggle, els.timeFilters);
+  document.body.appendChild(mobileTimeFilterShell);
   els.timeFilters.hidden = true;
-  document.body.appendChild(els.timeFilters);
 
   let filterSwipe = null;
   els.timeFilters.addEventListener("touchstart", (event) => {
+    clearTimeFiltersAutoCollapse();
     if (event.touches.length !== 1) return;
     const touch = event.touches[0];
     filterSwipe = {
@@ -379,6 +384,7 @@ if (USE_MOBILE_APP_THEME && els.timeFilters) {
   ["touchend", "touchcancel"].forEach((eventName) => {
     els.timeFilters.addEventListener(eventName, () => { filterSwipe = null; }, { passive: true });
   });
+  els.timeFilters.addEventListener("focusin", clearTimeFiltersAutoCollapse);
 }
 
 if (els.aiChatMode) {
@@ -767,7 +773,6 @@ function clearTimeFiltersAutoCollapse() {
 
 function scheduleTimeFiltersAutoCollapse() {
   clearTimeFiltersAutoCollapse();
-  if (USE_MOBILE_APP_THEME) return;
   if (!uiState.timeFiltersExpanded || els.timeFilters?.hidden) return;
 
   timeFiltersAutoCollapseTimer = window.setTimeout(() => {
@@ -779,7 +784,7 @@ function scheduleTimeFiltersAutoCollapse() {
       updatePinnedTabs();
       window.requestAnimationFrame(updatePinnedTabs);
     });
-  }, 2500);
+  }, USE_MOBILE_APP_THEME ? 1000 : 2500);
 }
 
 window.addEventListener("scroll", updatePinnedTabs, { passive: true });
@@ -1737,6 +1742,7 @@ function showLoginScreen(message = "") {
   if (els.salesOrderDetailModal) els.salesOrderDetailModal.hidden = true;
   if (els.employeeManagerModal) els.employeeManagerModal.hidden = true;
   els.appShell.hidden = true;
+  if (mobileTimeFilterShell) mobileTimeFilterShell.hidden = true;
   if (USE_MOBILE_APP_THEME && els.timeFilters) els.timeFilters.hidden = true;
   els.authScreen.hidden = false;
   els.signedInUser.hidden = true;
@@ -5542,6 +5548,11 @@ function activateTab(tabName) {
   ) {
     tabName = getFirstEmployeeTab();
   }
+  if (USE_MOBILE_APP_THEME) {
+    clearTimeFiltersAutoCollapse();
+    uiState.timeFiltersExpanded = false;
+    document.body.classList.toggle("mobile-secondary-tab", tabName !== "stores");
+  }
   els.tabButtons.forEach((button) => {
     const isActive = button.dataset.tab === tabName;
     button.classList.toggle("active", isActive);
@@ -5567,16 +5578,20 @@ function updateTimeFiltersVisibility(tabName = getActiveTabName()) {
   const visibleTabs = new Set(["overview", "income", "expense", "purchase", "sales"]);
   const store = getActiveStore();
   const filtersAvailable = Boolean(store) && visibleTabs.has(tabName);
-  const filtersExpanded = filtersAvailable && (USE_MOBILE_APP_THEME || uiState.timeFiltersExpanded);
+  const filtersExpanded = filtersAvailable && uiState.timeFiltersExpanded;
 
   els.stickyControlDock.classList.toggle("filters-available", filtersAvailable);
-  els.timeFilterToggle.hidden = !filtersAvailable || USE_MOBILE_APP_THEME;
+  els.timeFilterToggle.hidden = !filtersAvailable;
   els.timeFilterToggle.classList.toggle("active", filtersExpanded);
   els.timeFilterToggle.setAttribute("aria-expanded", String(filtersExpanded));
   els.timeFilterToggle.setAttribute("aria-label", filtersExpanded ? "Thu gọn bộ lọc thời gian" : "Mở bộ lọc thời gian");
   els.timeFilterToggle.title = filtersExpanded ? "Thu gọn bộ lọc thời gian" : "Mở bộ lọc thời gian";
   els.timeFilters.hidden = !filtersAvailable || (USE_MOBILE_APP_THEME && els.appShell.hidden);
   els.timeFilters.classList.toggle("is-collapsed", !filtersExpanded);
+  if (mobileTimeFilterShell) {
+    mobileTimeFilterShell.hidden = !filtersAvailable || els.appShell.hidden;
+    mobileTimeFilterShell.classList.toggle("is-expanded", filtersExpanded);
+  }
 }
 
 function updateStickyControlMetrics() {
