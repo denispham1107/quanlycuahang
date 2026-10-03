@@ -439,8 +439,8 @@ html.mobile-app-theme .mobile-time-filter-shell {
   left: max(10px, env(safe-area-inset-left));
   min-width: 0;
   border: 1px solid var(--mobile-glass-border);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.82);
+  border-radius: 19px;
+  background: rgba(255, 255, 255, 0.89);
   box-shadow: 0 9px 24px rgba(68, 75, 162, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(20px) saturate(1.25);
   -webkit-backdrop-filter: blur(20px) saturate(1.25);
@@ -452,7 +452,7 @@ html.mobile-app-theme .mobile-time-filter-shell[hidden] {
 }
 
 html.mobile-app-theme .mobile-time-filter-shell.is-expanded {
-  border-radius: 20px;
+  border-radius: 22px;
 }
 
 html.mobile-app-theme .mobile-time-filter-shell .time-filter-toggle {
@@ -461,17 +461,19 @@ html.mobile-app-theme .mobile-time-filter-shell .time-filter-toggle {
   z-index: 1;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  gap: 8px;
   width: 100%;
-  height: 24px;
-  min-height: 24px;
-  padding: 0;
+  height: 44px;
+  min-height: 44px;
+  padding: 5px 8px 5px 14px;
   border: 0;
-  border-radius: 14px;
-  background: transparent;
-  color: #5064de;
+  border-radius: 18px;
+  background: linear-gradient(100deg, rgba(242, 235, 255, 0.9), rgba(232, 246, 255, 0.94));
+  color: #263e75;
   box-shadow: none;
   transform: none;
+  text-align: left;
 }
 
 html.mobile-app-theme .mobile-time-filter-shell .time-filter-toggle[hidden] {
@@ -483,10 +485,63 @@ html.mobile-app-theme .mobile-time-filter-shell .time-filter-toggle:active {
   transform: none;
 }
 
+html.mobile-app-theme .mobile-time-filter-shell .time-filter-current {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+html.mobile-app-theme .time-filter-current > span {
+  flex: 0 0 auto;
+  color: #66758e;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+html.mobile-app-theme .time-filter-current strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 850;
+}
+
 html.mobile-app-theme .mobile-time-filter-shell .time-filter-toggle-icon {
-  width: 6px;
-  height: 6px;
-  border-width: 1.5px;
+  display: grid;
+  flex: 0 0 29px;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  margin: 0;
+  border: 1px solid rgba(94, 114, 225, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #5364cc;
+  transform: none;
+}
+
+html.mobile-app-theme .mobile-time-filter-shell .time-filter-toggle.active .time-filter-toggle-icon {
+  margin: 0;
+  transform: none;
+}
+
+html.mobile-app-theme .time-filter-toggle-icon svg {
+  display: block;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 220ms ease;
+}
+
+html.mobile-app-theme .time-filter-toggle.active .time-filter-toggle-icon svg {
+  transform: rotate(180deg);
 }
 
 html.mobile-app-theme .time-filter-toggle-label {
@@ -499,16 +554,17 @@ html.mobile-app-theme .mobile-time-filter-shell .time-filters {
   z-index: auto;
   width: 100%;
   max-width: none;
-  max-height: 110px;
-  display: flex;
-  align-items: stretch;
-  gap: 10px;
+  max-height: clamp(130px, calc(100dvh - var(--mobile-dock-height) - max(12px, env(safe-area-inset-top)) - max(20px, env(safe-area-inset-bottom)) - 56px), 680px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 11px;
   margin: 0;
-  padding: 12px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  overscroll-behavior-x: contain;
-  touch-action: manipulation;
+  padding: 10px 11px 13px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   border: 0;
@@ -521,7 +577,7 @@ html.mobile-app-theme .mobile-time-filter-shell .time-filters {
   visibility: visible;
   pointer-events: auto;
   transform: none;
-  transition: max-height 220ms ease, padding 220ms ease, opacity 180ms ease, transform 220ms ease, visibility 180ms ease;
+  transition: max-height 260ms ease, padding 260ms ease, opacity 180ms ease, transform 260ms ease, visibility 180ms ease;
 }
 
 html.mobile-app-theme .time-filters::-webkit-scrollbar {
@@ -529,7 +585,7 @@ html.mobile-app-theme .time-filters::-webkit-scrollbar {
 }
 
 html.mobile-app-theme .mobile-time-filter-shell .time-filters.is-collapsed {
-  display: flex;
+  overflow: hidden;
   max-height: 0;
   padding-top: 0;
   padding-bottom: 0;
@@ -545,9 +601,81 @@ html.mobile-app-theme .mobile-time-filter-shell .time-filters[hidden] {
 
 html.mobile-app-theme .time-filters .field,
 html.mobile-app-theme .time-filters .field:first-child {
-  flex: 0 0 clamp(188px, 58vw, 290px);
+  width: 100%;
+  flex: none;
   min-width: 0;
-  scroll-snap-align: start;
+  scroll-snap-align: none;
+}
+
+html.mobile-app-theme .time-filters > .desktop-range-mode-field {
+  display: none;
+}
+
+html.mobile-app-theme .mobile-time-filter-quick {
+  display: grid;
+  gap: 8px;
+}
+
+html.mobile-app-theme .mobile-time-filter-heading {
+  display: block;
+  padding-left: 2px;
+  color: #65718c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+html.mobile-app-theme .mobile-time-filter-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+html.mobile-app-theme .mobile-time-filter-options button {
+  min-height: 43px;
+  border: 1px solid rgba(119, 135, 190, 0.22);
+  border-radius: 14px;
+  padding: 7px 6px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #263b68;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: none;
+}
+
+html.mobile-app-theme .mobile-time-filter-options button.is-selected {
+  border-color: rgba(80, 107, 248, 0.45);
+  background: linear-gradient(115deg, rgba(230, 222, 255, 0.95), rgba(221, 242, 255, 0.98));
+  color: #0c61d4;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+}
+
+html.mobile-app-theme .mobile-time-filter-shell .time-filters > #singleDateField,
+html.mobile-app-theme .mobile-time-filter-shell .time-filters > #monthField,
+html.mobile-app-theme .mobile-time-filter-range {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  border: 1px solid rgba(119, 135, 190, 0.16);
+  border-radius: 17px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+html.mobile-app-theme .mobile-time-filter-range .field {
+  padding: 0;
+}
+
+html.mobile-app-theme .mobile-time-filter-apply {
+  display: block;
+  width: 100%;
+  min-height: 38px;
+  border: 0;
+  border-radius: 11px;
+  background: rgba(224, 239, 255, 0.92);
+  color: #0b62be;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: none;
 }
 
 html.mobile-app-theme .time-filters label {
@@ -559,10 +687,22 @@ html.mobile-app-theme .time-filters label {
 
 html.mobile-app-theme .time-filters input,
 html.mobile-app-theme .time-filters select {
-  min-height: 48px;
-  border-radius: 999px;
+  width: 100%;
+  min-height: 42px;
+  border-radius: 12px;
   background-color: rgba(255, 255, 255, 0.9);
   font-size: 16px;
+}
+
+@media (min-width: 500px) {
+  html.mobile-app-theme .mobile-time-filter-range {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  html.mobile-app-theme .mobile-time-filter-range .mobile-time-filter-heading,
+  html.mobile-app-theme .mobile-time-filter-range .mobile-time-filter-apply {
+    grid-column: 1 / -1;
+  }
 }
 
 html.mobile-app-theme .settings-actions,
@@ -2572,6 +2712,18 @@ body.sales-order-detail-open {
   clip: rect(0 0 0 0);
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+.time-filter-current,
+.time-filter-toggle-icon svg,
+.mobile-time-filter-quick,
+.mobile-time-filter-heading,
+.mobile-time-filter-apply {
+  display: none;
+}
+
+.mobile-time-filter-range {
+  display: contents;
 }
 
 .tab-button[data-tab="sales"].active,

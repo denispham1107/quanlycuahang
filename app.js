@@ -110,6 +110,8 @@ const els = {
   renameStore: document.querySelector("#renameStore"),
   deleteStore: document.querySelector("#deleteStore"),
   rangeMode: document.querySelector("#rangeMode"),
+  timeFilterCurrentValue: document.querySelector("#timeFilterCurrentValue"),
+  timePresetButtons: document.querySelectorAll("[data-time-preset]"),
   singleDate: document.querySelector("#singleDate"),
   monthDate: document.querySelector("#monthDate"),
   fromDate: document.querySelector("#fromDate"),
@@ -359,36 +361,6 @@ if (mobileTimeFilterShell && els.timeFilters && els.timeFilterToggle) {
   mobileTimeFilterShell.append(els.timeFilterToggle, els.timeFilters);
   document.body.appendChild(mobileTimeFilterShell);
   els.timeFilters.hidden = true;
-
-  let filterSwipe = null;
-  els.timeFilters.addEventListener("touchstart", (event) => {
-    clearTimeFiltersAutoCollapse();
-    if (event.touches.length !== 1) return;
-    const touch = event.touches[0];
-    filterSwipe = {
-      x: touch.clientX,
-      y: touch.clientY,
-      scrollLeft: els.timeFilters.scrollLeft,
-      horizontal: false
-    };
-  }, { passive: true });
-
-  els.timeFilters.addEventListener("touchmove", (event) => {
-    if (!filterSwipe || event.touches.length !== 1) return;
-    const touch = event.touches[0];
-    const deltaX = touch.clientX - filterSwipe.x;
-    const deltaY = touch.clientY - filterSwipe.y;
-    if (!filterSwipe.horizontal && Math.abs(deltaX) > 8 && Math.abs(deltaX) > Math.abs(deltaY)) {
-      filterSwipe.horizontal = true;
-    }
-    if (!filterSwipe.horizontal) return;
-    if (event.cancelable) event.preventDefault();
-    els.timeFilters.scrollLeft = filterSwipe.scrollLeft - deltaX;
-  }, { passive: false });
-
-  ["touchend", "touchcancel"].forEach((eventName) => {
-    els.timeFilters.addEventListener(eventName, () => { filterSwipe = null; }, { passive: true });
-  });
   els.timeFilters.addEventListener("focusin", clearTimeFiltersAutoCollapse);
 }
 
@@ -652,14 +624,23 @@ if (!USE_MOBILE_APP_THEME) {
   els.rangeMode.addEventListener("blur", applyRangeModeFilter);
 }
 
+els.timePresetButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    els.rangeMode.value = button.dataset.timePreset;
+    applyRangeModeFilter({ type: "change" });
+  });
+});
+
 function applySingleDateFilter() {
   uiState.rangeMode = "day";
+  els.rangeMode.value = "day";
   updateFilterFields();
   render();
 }
 
 function applyMonthFilter() {
   uiState.rangeMode = "month";
+  els.rangeMode.value = "month";
   updateFilterFields();
   render();
 }
@@ -671,6 +652,21 @@ function applyMonthFilter() {
 
 els.singleDate.addEventListener("change", scheduleTimeFiltersAutoCollapse);
 els.monthDate.addEventListener("change", scheduleTimeFiltersAutoCollapse);
+document.querySelector("#applySingleDate")?.addEventListener("click", () => {
+  applySingleDateFilter();
+  scheduleTimeFiltersAutoCollapse();
+});
+document.querySelector("#applyMonthDate")?.addEventListener("click", () => {
+  applyMonthFilter();
+  scheduleTimeFiltersAutoCollapse();
+});
+document.querySelector("#applyCustomRange")?.addEventListener("click", () => {
+  if (!els.fromDate.value || !els.toDate.value) return;
+  uiState.rangeMode = "custom";
+  els.rangeMode.value = "custom";
+  render();
+  scheduleTimeFiltersAutoCollapse();
+});
 
 if (!USE_MOBILE_APP_THEME) {
   ["focus", "click"].forEach((eventName) => {
@@ -685,7 +681,7 @@ if (!USE_MOBILE_APP_THEME) {
     els.rangeMode.value = "custom";
     updateFilterFields();
     render();
-    if (els.fromDate.value && els.toDate.value) {
+    if (!USE_MOBILE_APP_THEME && els.fromDate.value && els.toDate.value) {
       scheduleTimeFiltersAutoCollapse();
     }
   });
@@ -5580,6 +5576,23 @@ function getActiveTabName() {
   return document.querySelector(".tab-button.active")?.dataset.tab || "stores";
 }
 
+function getMobileTimeFilterLabel() {
+  const labels = {
+    all: "Toàn thời gian",
+    today: "Hôm nay",
+    yesterday: "Hôm qua",
+    "this-month": "Tháng này",
+    "last-month": "Tháng trước"
+  };
+  if (labels[uiState.rangeMode]) return labels[uiState.rangeMode];
+
+  const range = getDateRange();
+  if (uiState.rangeMode === "day") return `Theo ngày · ${range.label}`;
+  if (uiState.rangeMode === "week") return `Theo tuần · ${range.label}`;
+  if (uiState.rangeMode === "month") return `Theo tháng · ${range.label}`;
+  return `Tùy chọn · ${range.label}`;
+}
+
 function updateTimeFiltersVisibility(tabName = getActiveTabName()) {
   if (!els.timeFilters || !els.timeFilterToggle || !els.stickyControlDock) return;
   const visibleTabs = new Set(["overview", "income", "expense", "purchase", "sales"]);
@@ -5587,14 +5600,24 @@ function updateTimeFiltersVisibility(tabName = getActiveTabName()) {
   const filtersAvailable = Boolean(store) && visibleTabs.has(tabName);
   const filtersExpanded = filtersAvailable && uiState.timeFiltersExpanded;
 
+  if (USE_MOBILE_APP_THEME && filtersAvailable) {
+    const currentLabel = getMobileTimeFilterLabel();
+    els.timeFilterCurrentValue.textContent = currentLabel;
+    els.timePresetButtons.forEach((button) => {
+      const selected = button.dataset.timePreset === uiState.rangeMode;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    });
+  }
   els.stickyControlDock.classList.toggle("filters-available", filtersAvailable);
   els.timeFilterToggle.hidden = !filtersAvailable;
   els.timeFilterToggle.classList.toggle("active", filtersExpanded);
   els.timeFilterToggle.setAttribute("aria-expanded", String(filtersExpanded));
-  els.timeFilterToggle.setAttribute("aria-label", filtersExpanded ? "Thu gọn bộ lọc thời gian" : "Mở bộ lọc thời gian");
+  els.timeFilterToggle.setAttribute("aria-label", filtersExpanded ? "Thu gọn bộ lọc thời gian" : USE_MOBILE_APP_THEME ? `Mở bộ lọc thời gian: ${els.timeFilterCurrentValue.textContent}` : "Mở bộ lọc thời gian");
   els.timeFilterToggle.title = filtersExpanded ? "Thu gọn bộ lọc thời gian" : "Mở bộ lọc thời gian";
   els.timeFilters.hidden = !filtersAvailable || (USE_MOBILE_APP_THEME && els.appShell.hidden);
   els.timeFilters.classList.toggle("is-collapsed", !filtersExpanded);
+  if (USE_MOBILE_APP_THEME) els.timeFilters.inert = !filtersExpanded;
   if (mobileTimeFilterShell) {
     mobileTimeFilterShell.hidden = !filtersAvailable || els.appShell.hidden;
     mobileTimeFilterShell.classList.toggle("is-expanded", filtersExpanded);

@@ -201,40 +201,59 @@
                   aria-expanded="false"
                   title="Mở bộ lọc thời gian"
                 >
-                  <span class="time-filter-toggle-icon" aria-hidden="true"></span>
+                  <span class="time-filter-current"><span>Bộ lọc thời gian</span><strong id="timeFilterCurrentValue">Hôm nay</strong></span>
+                  <span class="time-filter-toggle-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="m6 9 6 6 6-6" /></svg></span>
                   <span class="time-filter-toggle-label">Mở bộ lọc thời gian</span>
                 </button>
               </nav>
 
               <section class="panel filters time-filters is-collapsed" id="timeFilters">
-                <div class="field">
+                <div class="mobile-time-filter-quick" role="group" aria-label="Chọn nhanh thời gian">
+                  <span class="mobile-time-filter-heading">Chọn nhanh</span>
+                  <div class="mobile-time-filter-options">
+                    <button type="button" data-time-preset="today">Hôm nay</button>
+                    <button type="button" data-time-preset="yesterday">Hôm qua</button>
+                    <button type="button" data-time-preset="this-month">Tháng này</button>
+                    <button type="button" data-time-preset="last-month">Tháng trước</button>
+                    <button type="button" data-time-preset="week">Theo tuần</button>
+                    <button type="button" data-time-preset="all">Toàn thời gian</button>
+                  </div>
+                </div>
+                <div class="field desktop-range-mode-field">
                   <label for="rangeMode">Khoảng thời gian</label>
                   <select id="rangeMode">
                     <option value="all">Toàn thời gian</option>
-                  <option value="today">Hôm nay</option>
-                  <option value="yesterday">Hôm qua</option>
-                  <option value="day">Theo ngày đã chọn</option>
+                    <option value="today">Hôm nay</option>
+                    <option value="yesterday">Hôm qua</option>
+                    <option value="day">Theo ngày đã chọn</option>
                     <option value="this-month">Tháng này</option>
                     <option value="last-month">Tháng trước</option>
                     <option value="week">Theo tuần</option>
+                    <option value="month">Theo tháng đã chọn</option>
                     <option value="custom">Tùy chọn</option>
                   </select>
                 </div>
                 <div class="field" id="singleDateField">
                   <label for="singleDate">Theo ngày</label>
                   <input id="singleDate" type="date" />
+                  <button class="mobile-time-filter-apply" id="applySingleDate" type="button">Chọn ngày</button>
                 </div>
                 <div class="field" id="monthField">
                   <label for="monthDate">Theo tháng</label>
                   <input id="monthDate" type="month" />
+                  <button class="mobile-time-filter-apply" id="applyMonthDate" type="button">Chọn tháng</button>
                 </div>
-                <div class="field" id="fromField">
-                  <label for="fromDate">Từ ngày</label>
-                  <input id="fromDate" type="date" />
-                </div>
-                <div class="field" id="toField">
-                  <label for="toDate">Đến ngày</label>
-                  <input id="toDate" type="date" />
+                <div class="mobile-time-filter-range">
+                  <span class="mobile-time-filter-heading">Khoảng tùy chọn</span>
+                  <div class="field" id="fromField">
+                    <label for="fromDate">Từ ngày</label>
+                    <input id="fromDate" type="date" />
+                  </div>
+                  <div class="field" id="toField">
+                    <label for="toDate">Đến ngày</label>
+                    <input id="toDate" type="date" />
+                  </div>
+                  <button class="mobile-time-filter-apply" id="applyCustomRange" type="button">Áp dụng khoảng ngày</button>
                 </div>
               </section>
             </div>
