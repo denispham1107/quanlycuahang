@@ -7121,6 +7121,41 @@ body.modal-open {
     min-height: 42px;
     font-size: 15px;
   }
+
+  /* Sales has a longer "Chiết Khấu" action than the other quick-entry flows. */
+  html.mobile-app-theme .sales-page-mode #quickEntryForm[data-type="sales"] .modal-actions {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  html.mobile-app-theme .sales-page-mode #quickEntryForm[data-type="sales"] .modal-actions button {
+    width: auto;
+    min-width: 0;
+  }
+
+  html.mobile-app-theme .sales-page-mode #quickEntryForm[data-type="sales"] #quickEntrySubmit {
+    order: -1;
+    flex: 0 0 100%;
+  }
+
+  html.mobile-app-theme .sales-page-mode #quickEntryForm[data-type="sales"] #cancelQuickEntry,
+  html.mobile-app-theme .sales-page-mode #quickEntryForm[data-type="sales"] #saveSalesDraft {
+    flex: 1 1 64px;
+  }
+
+  html.mobile-app-theme .sales-page-mode #quickEntryForm[data-type="sales"] #openOrderDiscount {
+    flex: 1.35 0 112px;
+    min-width: 112px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.2;
+  }
+
+  html.mobile-app-theme .sales-page-mode #quickEntryForm[data-type="sales"] #deleteSalesDraft {
+    order: 3;
+    flex: 0 0 100%;
+  }
 }
 
 /* Purchase has a different set of fields from sales: never let cost occupy
