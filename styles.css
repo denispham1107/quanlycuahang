@@ -8002,3 +8002,86 @@ html.mobile-app-theme [data-mobile-flow-panel="manage"] .category-section {
   html.mobile-app-theme .mobile-flow-category { gap: 7px; padding-inline: 9px; }
   html.mobile-app-theme .mobile-flow-facts > div { padding-inline: 9px; }
 }
+
+/* Create a Thu/Chi category without leaving the quick-entry dialog. */
+.quick-entry-category-picker,
+.quick-category-creator-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.quick-entry-category-picker select,
+.quick-category-creator-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+}
+
+.quick-entry-card .quick-category-toggle,
+.quick-entry-card .quick-category-creator-row button {
+  flex: 0 0 auto;
+  min-height: 44px;
+  border: 1px solid rgba(69, 111, 228, 0.24);
+  border-radius: 13px;
+  padding: 0 12px;
+  background: #eaf3ff;
+  color: #075fd4;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.quick-entry-card .quick-category-creator-row button {
+  background: var(--accent-gradient);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.68);
+}
+
+.quick-category-creator {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  border: 1px solid rgba(95, 118, 221, 0.15);
+  border-radius: 16px;
+  padding: 11px;
+  background: linear-gradient(110deg, rgba(247, 237, 255, 0.92), rgba(231, 245, 255, 0.94));
+}
+
+.quick-category-creator[hidden],
+.quick-category-error[hidden] {
+  display: none;
+}
+
+.quick-category-creator label {
+  color: #3d547e;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.quick-category-creator-row input {
+  min-height: 44px;
+  padding-inline: 11px;
+}
+
+.quick-category-error {
+  margin: 0;
+  color: #bd315b;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.quick-entry-backdrop:not(.sales-page-mode) {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-top: max(14px, env(safe-area-inset-top));
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
+}
+
+.quick-entry-backdrop:not(.sales-page-mode) .quick-entry-card {
+  max-height: calc(100dvh - max(14px, env(safe-area-inset-top)) - max(14px, env(safe-area-inset-bottom)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}

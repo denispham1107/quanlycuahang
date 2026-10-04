@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=44" />
+    <link rel="stylesheet" href="styles.css?v=45" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -747,8 +747,19 @@
             </div>
             <div class="field">
               <label for="quickEntryCategory">Mục</label>
-              <select id="quickEntryCategory" name="categoryId" required></select>
+              <div class="quick-entry-category-picker">
+                <select id="quickEntryCategory" name="categoryId" required></select>
+                <button id="quickCategoryToggle" class="quick-category-toggle" type="button" aria-controls="quickCategoryCreator" aria-expanded="false">+ Mục</button>
+              </div>
             </div>
+          </div>
+          <div class="quick-category-creator" id="quickCategoryCreator" hidden>
+            <label for="quickNewCategoryName">Tên danh mục mới</label>
+            <div class="quick-category-creator-row">
+              <input id="quickNewCategoryName" type="text" maxlength="80" autocomplete="off" placeholder="Nhập tên danh mục..." />
+              <button id="quickCategoryCreate" type="button">Thêm</button>
+            </div>
+            <p class="quick-category-error" id="quickCategoryError" role="alert" hidden></p>
           </div>
         </div>
         <div class="sales-order-fields" id="salesOrderFields" hidden>
@@ -1299,6 +1310,6 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=44"></script>
+    <script defer src="app.js?v=45"></script>
   </body>
 </html>

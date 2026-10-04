@@ -220,6 +220,11 @@ const els = {
   quickEntryTitle: document.querySelector("#quickEntryTitle"),
   quickEntryFields: document.querySelector("#quickEntryFields"),
   quickEntryCategory: document.querySelector("#quickEntryCategory"),
+  quickCategoryToggle: document.querySelector("#quickCategoryToggle"),
+  quickCategoryCreator: document.querySelector("#quickCategoryCreator"),
+  quickNewCategoryName: document.querySelector("#quickNewCategoryName"),
+  quickCategoryCreate: document.querySelector("#quickCategoryCreate"),
+  quickCategoryError: document.querySelector("#quickCategoryError"),
   quickEntryDate: document.querySelector("#quickEntryDate"),
   quickEntryNote: document.querySelector("#quickEntryNote"),
   quickEntryAmount: document.querySelector("#quickEntryAmount"),
@@ -1022,6 +1027,23 @@ els.quickEntryForm.addEventListener("submit", (event) => {
           ? saveBulkPurchaseOrder()
           : addEntry(type, new FormData(els.quickEntryForm));
   if (saved) closeQuickEntryModal();
+});
+
+els.quickCategoryToggle.addEventListener("click", () => {
+  const opening = els.quickCategoryCreator.hidden;
+  setQuickCategoryCreatorOpen(opening);
+  if (opening) els.quickNewCategoryName.focus();
+});
+
+els.quickCategoryCreate.addEventListener("click", createQuickEntryCategory);
+els.quickNewCategoryName.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  createQuickEntryCategory();
+});
+els.quickNewCategoryName.addEventListener("input", () => {
+  els.quickCategoryError.hidden = true;
+  els.quickCategoryError.textContent = "";
 });
 
 els.addSalesItem.addEventListener("click", () => {
@@ -3316,6 +3338,52 @@ function applyEntrySuggestion(form) {
   amountInput.value = formatAmountInput(suggestion.amount);
 }
 
+function setQuickCategoryCreatorOpen(open) {
+  els.quickCategoryCreator.hidden = !open;
+  els.quickCategoryToggle.setAttribute("aria-expanded", String(open));
+  if (!open) {
+    els.quickNewCategoryName.value = "";
+    els.quickCategoryError.textContent = "";
+    els.quickCategoryError.hidden = true;
+  }
+}
+
+function refreshQuickEntryCategoryOptions(store, type, selectedId = "") {
+  const categories = store.categories[type] || [];
+  els.quickEntryCategory.innerHTML = [
+    `<option value="">${categories.length ? "Chọn mục" : "Chưa có mục"}</option>`,
+    ...categories.map((category) => `<option value="${escapeHtml(category.id)}">${escapeHtml(category.name)}</option>`)
+  ].join("");
+  els.quickEntryCategory.disabled = !categories.length;
+  els.quickEntryCategory.value = selectedId;
+  els.quickEntrySubmit.disabled = !categories.length;
+}
+
+function createQuickEntryCategory() {
+  const type = els.quickEntryForm.dataset.type;
+  if (!isAdminUser() || (type !== "income" && type !== "expense")) return;
+
+  const name = els.quickNewCategoryName.value.trim();
+  const store = getActiveStore();
+  if (!store) return;
+  if (!name) {
+    els.quickCategoryError.textContent = "Vui lòng nhập tên danh mục.";
+    els.quickCategoryError.hidden = false;
+    els.quickNewCategoryName.focus();
+    return;
+  }
+  if (store.categories[type].some((category) => category.name.toLocaleLowerCase("vi") === name.toLocaleLowerCase("vi"))) {
+    els.quickCategoryError.textContent = "Danh mục này đã tồn tại. Hãy chọn trong danh sách Mục.";
+    els.quickCategoryError.hidden = false;
+    return;
+  }
+
+  const category = addCategory(type, name);
+  if (!category) return;
+  refreshQuickEntryCategoryOptions(getActiveStore(), type, category.id);
+  setQuickCategoryCreatorOpen(false);
+}
+
 function openQuickEntryModal(type) {
   const store = getActiveStore();
   if (!store || !["income", "expense", "sales", "purchase"].includes(type)) return;
@@ -3346,13 +3414,8 @@ function openQuickEntryModal(type) {
   els.openOrderDiscount.hidden = true;
   els.saveSalesDraft.hidden = true;
   els.quickEntryDate.value = els.singleDate.value || today;
-  els.quickEntryCategory.innerHTML = [
-    '<option value="">Chưa có mục</option>',
-    ...categories.map((category) => `<option value="${category.id}">${escapeHtml(category.name)}</option>`)
-  ].join("");
-  els.quickEntryCategory.value = "";
-  els.quickEntryCategory.disabled = !categories.length;
-  els.quickEntrySubmit.disabled = !categories.length;
+  refreshQuickEntryCategoryOptions(store, type);
+  setQuickCategoryCreatorOpen(!categories.length);
   renderEntrySuggestionList(els.quickEntrySuggestions, getEntrySuggestions(store, type));
   els.quickEntryModal.hidden = false;
 }
@@ -3361,6 +3424,7 @@ function closeQuickEntryModal() {
   els.quickEntryModal.hidden = true;
   els.quickEntryModal.classList.remove("sales-page-mode");
   els.quickEntryForm.reset();
+  setQuickCategoryCreatorOpen(false);
   uiState.salesDraftId = null;
   uiState.salesOrderDiscountPercent = 0;
   uiState.salesOrderDiscountAmount = 0;
