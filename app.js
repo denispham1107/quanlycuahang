@@ -109,11 +109,14 @@ const els = {
   signOutButton: document.querySelector("#signOutButton"),
   storeForm: document.querySelector("#storeForm"),
   storeName: document.querySelector("#storeName"),
+  mobileAddStoreToggle: document.querySelector("#mobileAddStoreToggle"),
   storeList: document.querySelector("#storeList"),
   storeCount: document.querySelector("#storeCount"),
   dashboard: document.querySelector("#dashboard"),
   heroStoreName: document.querySelector("#heroStoreName"),
   heroStoreMeta: document.querySelector("#heroStoreMeta"),
+  storeHeroEntryCount: document.querySelector("#storeHeroEntryCount"),
+  storeHeroTotalCount: document.querySelector("#storeHeroTotalCount"),
   activeStorePanel: document.querySelector(".toolbar"),
   activeStoreName: document.querySelector("#activeStoreName"),
   overviewStoreName: document.querySelector("#overviewStoreName"),
@@ -581,6 +584,13 @@ document.querySelectorAll(".entry-form").forEach((form) => {
   });
 });
 
+els.mobileAddStoreToggle.addEventListener("click", () => {
+  const expanded = els.mobileAddStoreToggle.getAttribute("aria-expanded") === "true";
+  els.mobileAddStoreToggle.setAttribute("aria-expanded", String(!expanded));
+  els.storeForm.classList.toggle("is-open", !expanded);
+  if (!expanded) els.storeName.focus();
+});
+
 els.storeForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const name = els.storeName.value.trim();
@@ -623,6 +633,8 @@ els.storeForm.addEventListener("submit", (event) => {
   state.stores.push(store);
   state.activeStoreId = store.id;
   els.storeName.value = "";
+  els.storeForm.classList.remove("is-open");
+  els.mobileAddStoreToggle.setAttribute("aria-expanded", "false");
   saveAndRender();
 });
 
@@ -3051,6 +3063,7 @@ function selectCategory(type, categoryId) {
 function render() {
   const store = getActiveStore();
   els.storeCount.textContent = state.stores.length;
+  els.storeHeroTotalCount.textContent = state.stores.length;
   renderStores();
 
   els.dashboard.hidden = false;
@@ -3063,6 +3076,7 @@ function render() {
     els.overviewStoreName.textContent = "Chưa chọn cửa hàng";
     els.heroStoreName.textContent = "Chưa chọn cửa hàng";
     els.heroStoreMeta.textContent = "Tạo hoặc chọn một cửa hàng";
+    els.storeHeroEntryCount.textContent = "0 dòng";
     activateTab("stores");
     updateTimeFiltersVisibility();
     updateQuickEntryButton();
@@ -3075,6 +3089,7 @@ function render() {
   els.overviewStoreName.textContent = store.name;
   els.heroStoreName.textContent = store.name;
   els.heroStoreMeta.textContent = `${store.entries.length} dòng`;
+  els.storeHeroEntryCount.textContent = `${store.entries.length} dòng`;
   setDefaultEntryDates();
   updateFilterFields();
   renderCategoryControls(store, "income");
@@ -6002,9 +6017,11 @@ function renderStores() {
       const active = store.id === state.activeStoreId ? " active" : "";
       const entryCount = store.entries.length;
       return `
-        <button class="store-button${active}" type="button" data-store-id="${store.id}">
-          <span class="store-name">${escapeHtml(store.name)}</span>
+        <button class="store-button${active}" type="button" data-store-id="${escapeHtml(store.id)}" aria-pressed="${Boolean(active)}">
+          <span class="store-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10h16M5 10l1-5h12l1 5M6 10v9h12v-9M9 19v-5h6v5" /></svg></span>
+          <span class="store-copy"><span class="store-name">${escapeHtml(store.name)}</span><span class="store-detail">${active ? "Đang chọn · " : ""}${entryCount} dòng dữ liệu</span></span>
           <span class="store-meta">${entryCount} dòng</span>
+          <span class="store-row-trailing" aria-hidden="true">${active ? "✓" : "›"}</span>
         </button>
       `;
     })

@@ -7122,3 +7122,369 @@ body.modal-open {
     font-size: 15px;
   }
 }
+
+/* Mobile Store tab: "Bảng điều khiển". Keep all desktop Store controls unchanged. */
+.store-heading-mobile,
+.app-title-mobile,
+.store-dashboard-description,
+.mobile-add-store-toggle,
+.store-form-label,
+.store-dashboard-stats,
+.store-row-icon,
+.store-detail,
+.store-row-trailing {
+  display: none;
+}
+
+.store-copy {
+  min-width: 0;
+}
+
+.panel-heading h2 .store-heading-desktop,
+.panel-heading h2 .store-heading-mobile {
+  color: inherit;
+  font-size: inherit;
+  white-space: normal;
+}
+
+html.mobile-app-theme .app-title-desktop {
+  display: none;
+}
+
+html.mobile-app-theme .app-title-mobile {
+  display: inline;
+}
+
+html.mobile-app-theme .topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 12px max(12px, env(safe-area-inset-right)) 12px max(12px, env(safe-area-inset-left));
+  background: rgba(255, 247, 252, 0.25);
+}
+
+html.mobile-app-theme .topbar h1 {
+  font-size: clamp(21px, 5.5vw, 27px);
+  white-space: nowrap;
+}
+
+html.mobile-app-theme .topbar .sync-status {
+  margin-top: 5px;
+  font-size: 10px;
+}
+
+html.mobile-app-theme .topbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: auto;
+  gap: 6px;
+  padding: 0;
+}
+
+html.mobile-app-theme .topbar-actions .signed-in-user {
+  width: auto;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+}
+
+html.mobile-app-theme .topbar-actions .signed-in-user small {
+  max-width: 62px;
+  padding: 4px 5px;
+  font-size: 10px;
+}
+
+html.mobile-app-theme .topbar-actions .sign-out-button {
+  min-height: 31px;
+  padding-inline: 7px;
+  font-size: 10px;
+}
+
+html.mobile-app-theme .topbar-actions .settings-menu {
+  grid-row: auto;
+}
+
+html.mobile-app-theme .topbar-actions .settings-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+}
+
+html.mobile-app-theme .store-heading-desktop {
+  display: none;
+}
+
+html.mobile-app-theme .store-heading-mobile {
+  display: inline;
+}
+
+html.mobile-app-theme .active-store-hero {
+  width: min(100%, 780px);
+  min-height: 0;
+  display: grid;
+  gap: 16px;
+  margin-inline: auto;
+  padding: clamp(18px, 4vw, 26px);
+  border-radius: 25px;
+  background: linear-gradient(125deg, rgba(255, 249, 255, 0.96), rgba(231, 224, 255, 0.94) 48%, rgba(206, 236, 255, 0.96));
+}
+
+html.mobile-app-theme .active-store-hero h2 {
+  max-width: 100%;
+  font-size: clamp(25px, 6.8vw, 38px);
+  line-height: 1.12;
+}
+
+html.mobile-app-theme .active-store-hero .eyebrow {
+  margin-bottom: 10px;
+}
+
+html.mobile-app-theme .store-dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+html.mobile-app-theme .store-dashboard-stats > div {
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-radius: 17px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 7px 17px rgba(75, 86, 163, 0.07);
+}
+
+html.mobile-app-theme .store-dashboard-stats p {
+  margin: 0 0 4px;
+  color: #66728f;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+html.mobile-app-theme .store-dashboard-stats strong {
+  color: #123d82;
+  font-size: clamp(16px, 4vw, 21px);
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+html.mobile-app-theme [data-tab-panel="stores"] {
+  width: min(100%, 780px);
+  margin-inline: auto;
+}
+
+html.mobile-app-theme [data-tab-panel="stores"] > .panel {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(16px, 4vw, 24px);
+}
+
+html.mobile-app-theme [data-tab-panel="stores"] .panel-heading {
+  margin-bottom: 4px;
+}
+
+html.mobile-app-theme [data-tab-panel="stores"] .panel-heading h2 {
+  color: #142653;
+  font-size: clamp(19px, 4.8vw, 25px);
+  font-weight: 900;
+}
+
+html.mobile-app-theme [data-tab-panel="stores"] #storeCount {
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgba(225, 237, 255, 0.9);
+  color: #1768ce;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+html.mobile-app-theme [data-tab-panel="stores"] #storeCount::after {
+  content: " cửa hàng";
+}
+
+html.mobile-app-theme .store-dashboard-description {
+  display: block;
+  order: 1;
+  margin: 0 0 14px;
+  color: #66728f;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+html.mobile-app-theme .mobile-add-store-toggle {
+  display: inline-flex;
+  order: 3;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 16px;
+  padding: 9px 14px;
+  background: var(--accent-gradient);
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(83, 91, 224, 0.22);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+html.mobile-app-theme .mobile-add-store-toggle svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+html.mobile-app-theme .mobile-add-store-toggle[aria-expanded="true"] svg {
+  transform: rotate(45deg);
+}
+
+html.mobile-app-theme #storeForm {
+  display: none;
+  order: 4;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-top: 12px;
+  border: 1px solid rgba(125, 151, 216, 0.2);
+  border-radius: 17px;
+  padding: 12px;
+  background: rgba(241, 246, 255, 0.78);
+}
+
+html.mobile-app-theme #storeForm.is-open {
+  display: grid;
+}
+
+html.mobile-app-theme #storeForm .store-form-label {
+  display: block;
+  grid-column: 1 / -1;
+  color: #51617e;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+html.mobile-app-theme #storeForm button {
+  min-height: 46px;
+  padding-inline: 15px;
+  white-space: nowrap;
+}
+
+html.mobile-app-theme #storeList {
+  order: 2;
+  gap: 9px;
+  margin: 0 0 14px;
+}
+
+html.mobile-app-theme #storeList .store-button {
+  grid-template-columns: 38px minmax(0, 1fr) 22px;
+  gap: 11px;
+  min-height: 67px;
+  border: 1px solid rgba(120, 140, 194, 0.22);
+  border-radius: 17px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 6px 16px rgba(73, 87, 164, 0.055);
+}
+
+html.mobile-app-theme #storeList .store-button.active {
+  border-color: rgba(32, 143, 248, 0.5);
+  background: linear-gradient(110deg, rgba(242, 236, 255, 0.95), rgba(229, 245, 255, 0.96));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.76), 0 8px 19px rgba(75, 93, 180, 0.09);
+}
+
+html.mobile-app-theme #storeList .store-row-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f7e9ff, #e3efff);
+  color: #7352e7;
+}
+
+html.mobile-app-theme #storeList .store-row-icon svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+html.mobile-app-theme #storeList .store-copy {
+  display: grid;
+  gap: 3px;
+}
+
+html.mobile-app-theme #storeList .store-name {
+  color: #17234a;
+  font-size: 15px;
+  line-height: 1.18;
+  font-weight: 850;
+}
+
+html.mobile-app-theme #storeList .store-detail {
+  display: block;
+  color: #64728e;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+html.mobile-app-theme #storeList .store-meta {
+  display: none;
+}
+
+html.mobile-app-theme #storeList .store-row-trailing {
+  display: block;
+  color: #517bb9;
+  text-align: center;
+  font-size: 25px;
+  line-height: 1;
+}
+
+html.mobile-app-theme #storeList .store-button.active .store-row-trailing {
+  color: #0b80ef;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+html.mobile-app-theme [data-tab-panel="stores"] > .toolbar {
+  align-items: stretch;
+  flex-direction: column;
+  gap: 12px;
+  padding: clamp(16px, 4vw, 24px);
+}
+
+html.mobile-app-theme [data-tab-panel="stores"] > .toolbar h2 {
+  color: #142653;
+  font-size: clamp(18px, 4.7vw, 24px);
+  font-weight: 900;
+}
+
+html.mobile-app-theme [data-tab-panel="stores"] > .toolbar .toolbar-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+html.mobile-app-theme [data-tab-panel="stores"] > .toolbar .ghost-button {
+  min-width: 0;
+  min-height: 44px;
+  border-radius: 14px;
+  padding: 8px;
+  background: rgba(242, 247, 255, 0.94);
+  color: #1765c2;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+html.mobile-app-theme [data-tab-panel="stores"] > .toolbar .ghost-button.danger {
+  background: rgba(255, 237, 243, 0.93);
+  color: #d64076;
+}

@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=41" />
+    <link rel="stylesheet" href="styles.css?v=42" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -71,7 +71,7 @@
       <header class="topbar">
         <div>
           <p class="eyebrow">Sổ thu chi</p>
-          <h1>Quản lý cửa hàng</h1>
+          <h1><span class="app-title-desktop">Quản lý cửa hàng</span><span class="app-title-mobile">Cửa hàng</span></h1>
           <p class="sync-status" id="syncStatus" data-status="loading">Đang kiểm tra đồng bộ...</p>
         </div>
         <div class="desktop-nav-host" id="desktopNavHost" aria-label="Điều hướng chính"></div>
@@ -159,10 +159,16 @@
         <aside class="sidebar">
           <section class="panel">
             <div class="panel-heading">
-              <h2>Cửa hàng</h2>
+              <h2><span class="store-heading-desktop">Cửa hàng</span><span class="store-heading-mobile">Cửa hàng của bạn</span></h2>
               <span id="storeCount">0</span>
             </div>
+            <p class="store-dashboard-description">Chọn cửa hàng để xem và quản lý dữ liệu.</p>
+            <button class="mobile-add-store-toggle" id="mobileAddStoreToggle" type="button" aria-controls="storeForm" aria-expanded="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+              <span>Thêm cửa hàng</span>
+            </button>
             <form class="inline-form" id="storeForm">
+              <label class="store-form-label" for="storeName">Tên cửa hàng mới</label>
               <input id="storeName" type="text" placeholder="Tên cửa hàng" autocomplete="off" required />
               <button type="submit">Thêm</button>
             </form>
@@ -203,6 +209,10 @@
               <div>
                 <p class="eyebrow">Cửa hàng đang chọn</p>
                 <h2 id="heroStoreName">Chưa chọn cửa hàng</h2>
+              </div>
+              <div class="store-dashboard-stats" aria-label="Thông tin cửa hàng">
+                <div><p>Dữ liệu</p><strong id="storeHeroEntryCount">0 dòng</strong></div>
+                <div><p>Tổng cửa hàng</p><strong id="storeHeroTotalCount">0</strong></div>
               </div>
               <span id="heroStoreMeta" hidden>0 dòng</span>
             </section>
@@ -1196,6 +1206,6 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=41"></script>
+    <script defer src="app.js?v=42"></script>
   </body>
 </html>
