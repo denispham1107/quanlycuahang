@@ -11,15 +11,28 @@ const app = fs.readFileSync(path.join(root, "app.js"), "utf8");
 const worker = fs.readFileSync(path.join(root, "service-worker.js"), "utf8");
 
 test("desktop assets use one cache version and mobile-specific navigation remains separate", () => {
-  assert.match(html, /styles\.css\?v=50/);
-  assert.match(html, /app\.js\?v=50/);
-  assert.match(worker, /quanlycuahang-pwa-v50/);
-  assert.match(worker, /styles\.css\?v=50/);
-  assert.match(worker, /app\.js\?v=50/);
+  assert.match(html, /styles\.css\?v=51/);
+  assert.match(html, /app\.js\?v=51/);
+  assert.match(worker, /quanlycuahang-pwa-v51/);
+  assert.match(worker, /styles\.css\?v=51/);
+  assert.match(worker, /app\.js\?v=51/);
   assert.match(app, /if \(USE_MOBILE_APP_THEME && els\.tabBar\)/);
   assert.match(app, /if \(desktopUi\) \{\s*document\.querySelector\("#desktopNavHost"\)/);
   assert.match(css, /html\.mobile-app-theme \.desktop-filter-rail/);
   assert.match(css, /html:not\(\.mobile-app-theme\) \.desktop-nav-host \.tab-button/);
+});
+
+test("desktop Thu, Chi and Nhập hàng use detailed icons without changing mobile icons", () => {
+  for (const tab of ["income", "expense", "purchase"]) {
+    const button = html.match(new RegExp(`<button class="tab-button"[^>]*data-tab="${tab}"[\\s\\S]*?<\\/button>`))?.[0];
+    assert.ok(button, `Missing ${tab} tab`);
+    assert.match(button, /class="tab-icon"/);
+    assert.match(button, /class="desktop-tab-icon"[^>]*><svg viewBox="0 0 32 32"/);
+    assert.match(button, /class="icon-accent"/);
+  }
+  assert.match(css, /html:not\(\.mobile-app-theme\) \.desktop-nav-host \.desktop-tab-icon \.icon-accent/);
+  assert.match(css, /html:not\(\.mobile-app-theme\) \.desktop-nav-host \.tab-button:is\([^\n]+\)\.active/);
+  assert.match(css, /\.desktop-tab-icon \{\s*display: none;/);
 });
 
 test("desktop income and expense histories follow forms and category summaries", () => {
