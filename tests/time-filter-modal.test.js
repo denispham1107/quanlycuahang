@@ -1,0 +1,106 @@
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const vm = require("node:vm");
+
+const app = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
+const visibilityCode = app.slice(
+  app.indexOf("function isMobileTimeFilterSuppressed() {"),
+  app.indexOf("function updateStickyControlMetrics()")
+);
+
+function makeClassList() {
+  const classes = new Set();
+  return {
+    toggle(name, enabled) {
+      if (enabled) classes.add(name);
+      else classes.delete(name);
+    },
+    contains: (name) => classes.has(name)
+  };
+}
+
+test("mobile time filter hides on the four requested screens and returns after closing", () => {
+  const els = {
+    quickEntryModal: { hidden: true },
+    quickEntryForm: { dataset: { type: "sales" } },
+    customersModal: { hidden: true },
+    aiChatModal: { hidden: true },
+    timeFilters: { hidden: false, classList: makeClassList(), inert: false },
+    timeFilterToggle: { hidden: false, classList: makeClassList(), setAttribute() {} },
+    timeFilterCurrentValue: { textContent: "" },
+    timePresetButtons: [],
+    stickyControlDock: { classList: makeClassList() },
+    appShell: { hidden: false }
+  };
+  const mobileTimeFilterShell = { hidden: true, classList: makeClassList() };
+  const uiState = { timeFiltersExpanded: true };
+  let cancelledAutoCollapse = 0;
+  const context = {
+    USE_MOBILE_APP_THEME: true,
+    els,
+    mobileTimeFilterShell,
+    uiState,
+    desktopUi: null,
+    getActiveStore: () => ({}),
+    getActiveTabName: () => "sales",
+    getMobileTimeFilterLabel: () => "Hôm nay",
+    clearTimeFiltersAutoCollapse: () => { cancelledAutoCollapse += 1; }
+  };
+  vm.createContext(context);
+  vm.runInContext(visibilityCode, context);
+
+  const check = (shouldHide, tab = "sales") => {
+    context.updateTimeFiltersVisibility(tab);
+    assert.equal(mobileTimeFilterShell.hidden, shouldHide);
+    assert.equal(els.timeFilterToggle.hidden, shouldHide);
+    assert.equal(els.timeFilters.hidden, shouldHide);
+  };
+
+  check(false);
+  for (const type of ["sales", "purchase", "purchase-bulk"]) {
+    els.quickEntryForm.dataset.type = type;
+    els.quickEntryModal.hidden = false;
+    check(true, type === "sales" ? "sales" : "purchase");
+    assert.equal(uiState.timeFiltersExpanded, false);
+    els.quickEntryModal.hidden = true;
+    check(false, type === "sales" ? "sales" : "purchase");
+  }
+  assert.equal(cancelledAutoCollapse, 1);
+
+  els.customersModal.hidden = false;
+  check(true);
+  els.customersModal.hidden = true;
+  check(false);
+
+  els.aiChatModal.hidden = false;
+  check(true, "overview");
+  els.aiChatModal.hidden = true;
+  check(false, "overview");
+
+  els.quickEntryForm.dataset.type = "income";
+  els.quickEntryModal.hidden = false;
+  check(false, "income");
+
+  context.USE_MOBILE_APP_THEME = false;
+  context.desktopUi = {};
+  context.mobileTimeFilterShell = null;
+  els.quickEntryForm.dataset.type = "sales";
+  assert.equal(context.isMobileTimeFilterSuppressed(), false);
+  context.updateTimeFiltersVisibility("sales");
+  assert.equal(els.timeFilters.hidden, false);
+});
+
+test("modal open and close handlers refresh the filter without changing desktop behavior", () => {
+  for (const name of [
+    "openSalesOrderModal", "openPurchaseOrderModal", "openBulkPurchaseModal",
+    "openCustomersModal", "closeCustomersModal", "openAIChat", "closeAIChat", "closeQuickEntryModal"
+  ]) {
+    const start = app.indexOf(`function ${name}(`);
+    const end = app.indexOf("\nfunction ", start + 1);
+    assert.ok(start >= 0, `${name} is missing`);
+    assert.match(app.slice(start, end < 0 ? undefined : end), /updateTimeFiltersVisibility\(\)/, `${name} must refresh the filter`);
+  }
+  assert.match(visibilityCode, /if \(!USE_MOBILE_APP_THEME\) return false;/);
+});

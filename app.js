@@ -3436,10 +3436,12 @@ function openQuickEntryModal(type) {
   setQuickCategoryCreatorOpen(!categories.length);
   renderEntrySuggestionList(els.quickEntrySuggestions, getEntrySuggestions(store, type));
   els.quickEntryModal.hidden = false;
+  updateTimeFiltersVisibility();
 }
 
 function closeQuickEntryModal() {
   els.quickEntryModal.hidden = true;
+  updateTimeFiltersVisibility();
   els.quickEntryModal.classList.remove("sales-page-mode");
   els.quickEntryForm.reset();
   setQuickCategoryCreatorOpen(false);
@@ -3501,6 +3503,7 @@ function openSalesOrderModal(store, draft = null) {
   els.deleteSalesDraft.hidden = isEmployeeUser() || !uiState.salesDraftId;
   els.quickEntrySubmit.textContent = "Hoàn Thành";
   els.quickEntryModal.hidden = false;
+  updateTimeFiltersVisibility();
 }
 
 function addSalesItemRow(item = {}) {
@@ -4155,10 +4158,12 @@ function openCustomersModal() {
   uiState.customerSearch = "";
   renderCustomers(store);
   els.customersModal.hidden = false;
+  updateTimeFiltersVisibility();
 }
 
 function closeCustomersModal() {
   els.customersModal.hidden = true;
+  updateTimeFiltersVisibility();
   closeCustomerForm();
 }
 
@@ -4540,6 +4545,7 @@ function openPurchaseOrderModal(store) {
   els.deleteSalesDraft.hidden = true;
   els.quickEntrySubmit.textContent = "Hoàn Thành";
   els.quickEntryModal.hidden = false;
+  updateTimeFiltersVisibility();
 }
 
 function openBulkPurchaseModal(store) {
@@ -4561,6 +4567,7 @@ function openBulkPurchaseModal(store) {
   els.deleteSalesDraft.hidden = true;
   els.quickEntrySubmit.textContent = "Hoàn Thành";
   els.quickEntryModal.hidden = false;
+  updateTimeFiltersVisibility();
   els.bulkPurchaseText.focus();
 }
 
@@ -5633,6 +5640,7 @@ function openAIChat() {
   }
   els.aiChatModal.hidden = false;
   document.body.classList.add("modal-open");
+  updateTimeFiltersVisibility();
   if (!aiChatState.messages.length) {
     aiChatState.messages.push({
       role: "assistant",
@@ -5649,6 +5657,7 @@ function closeAIChat() {
   if (!els.aiChatModal) return;
   els.aiChatModal.hidden = true;
   document.body.classList.remove("modal-open");
+  updateTimeFiltersVisibility();
 }
 
 function addAIMessage(role, content, actions = []) {
@@ -6027,11 +6036,25 @@ function getMobileTimeFilterLabel() {
   return `Tùy chọn · ${range.label}`;
 }
 
+function isMobileTimeFilterSuppressed() {
+  if (!USE_MOBILE_APP_THEME) return false;
+  return Boolean(
+    (els.quickEntryModal && !els.quickEntryModal.hidden && ["sales", "purchase", "purchase-bulk"].includes(els.quickEntryForm?.dataset.type)) ||
+    (els.customersModal && !els.customersModal.hidden) ||
+    (els.aiChatModal && !els.aiChatModal.hidden)
+  );
+}
+
 function updateTimeFiltersVisibility(tabName = getActiveTabName()) {
   if (!els.timeFilters || !els.timeFilterToggle || !els.stickyControlDock) return;
   const visibleTabs = new Set(["overview", "income", "expense", "purchase", "sales"]);
   const store = getActiveStore();
-  const filtersAvailable = Boolean(store) && visibleTabs.has(tabName);
+  const suppressed = isMobileTimeFilterSuppressed();
+  if (suppressed && uiState.timeFiltersExpanded) {
+    clearTimeFiltersAutoCollapse();
+    uiState.timeFiltersExpanded = false;
+  }
+  const filtersAvailable = Boolean(store) && visibleTabs.has(tabName) && !suppressed;
   const filtersExpanded = filtersAvailable && (desktopUi ? true : uiState.timeFiltersExpanded);
 
   if (USE_MOBILE_APP_THEME && filtersAvailable) {
