@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=55" />
+    <link rel="stylesheet" href="styles.css?v=56" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -961,10 +961,11 @@
     </div>
 
     <div class="modal-backdrop customers-backdrop" id="customersModal" hidden>
-      <section class="modal-card customers-card">
+      <section class="modal-card customers-card" role="dialog" aria-modal="true" aria-labelledby="customersTitle">
         <div class="panel-heading">
-          <h2>Thông tin khách hàng</h2>
+          <h2 id="customersTitle">Thông tin khách hàng</h2>
           <span id="customersCount">0 khách</span>
+          <button class="customer-close-top" id="closeCustomersTop" type="button" aria-label="Đóng thông tin khách hàng">×</button>
         </div>
         <div class="customer-filter-row">
           <div class="field">
@@ -974,6 +975,7 @@
             </select>
           </div>
         </div>
+        <div class="customer-member-chips" id="customerMemberChips" role="group" aria-label="Lọc theo gói thành viên"></div>
         <div class="customer-search-row">
           <div class="field">
             <label for="customerSearchInput">Tìm khách hàng</label>
@@ -981,7 +983,7 @@
             <datalist id="customerSearchSuggestions"></datalist>
           </div>
         </div>
-        <button class="ghost-button customer-form-toggle" id="toggleCustomerForm" type="button">Thêm / Cập nhật khách hàng</button>
+        <button class="ghost-button customer-form-toggle" id="toggleCustomerForm" type="button"><span class="customer-add-icon" aria-hidden="true">+</span><span class="customer-add-mobile-label">Thêm khách hàng</span><span class="customer-add-desktop-label">Thêm / Cập nhật khách hàng</span></button>
         <form class="customer-form" id="customerForm" hidden>
           <input type="hidden" name="customerId" />
           <div class="form-row">
@@ -1340,6 +1342,6 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=55"></script>
+    <script defer src="app.js?v=56"></script>
   </body>
 </html>

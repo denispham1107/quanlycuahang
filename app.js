@@ -269,8 +269,11 @@ const els = {
   closeSalesCustomerCatalog: document.querySelector("#closeSalesCustomerCatalog"),
   openCustomers: document.querySelector("#openCustomers"),
   customersModal: document.querySelector("#customersModal"),
+  customersCard: document.querySelector(".customers-card"),
   customersCount: document.querySelector("#customersCount"),
   customersList: document.querySelector("#customersList"),
+  customerMemberChips: document.querySelector("#customerMemberChips"),
+  closeCustomersTop: document.querySelector("#closeCustomersTop"),
   toggleCustomerForm: document.querySelector("#toggleCustomerForm"),
   customerForm: document.querySelector("#customerForm"),
   customerNameInput: document.querySelector("#customerNameInput"),
@@ -1306,6 +1309,14 @@ els.salesCustomerCatalogList.addEventListener("click", (event) => {
 els.openCustomers.addEventListener("click", openCustomersModal);
 
 els.closeCustomers.addEventListener("click", closeCustomersModal);
+els.closeCustomersTop.addEventListener("click", closeCustomersModal);
+
+window.visualViewport?.addEventListener("resize", updateCustomersViewport);
+window.visualViewport?.addEventListener("scroll", updateCustomersViewport);
+els.customersCard.addEventListener("focusin", (event) => {
+  if (!event.target.matches("input, select, textarea")) return;
+  [100, 350].forEach((delay) => window.setTimeout(() => ensureCustomerFocusVisible(event.target), delay));
+});
 
 els.customersModal.addEventListener("click", (event) => {
   if (event.target === els.customersModal) closeCustomersModal();
@@ -1339,6 +1350,13 @@ els.customerMemberFilter.addEventListener("change", () => {
   renderCustomers(getActiveStore());
 });
 
+els.customerMemberChips.addEventListener("click", (event) => {
+  const chip = event.target.closest("[data-customer-tier-filter]");
+  if (!chip) return;
+  uiState.customerMemberFilter = chip.dataset.customerTierFilter;
+  renderCustomers(getActiveStore());
+});
+
 els.customerSearchInput.addEventListener("input", () => {
   uiState.customerSearch = els.customerSearchInput.value;
   renderCustomers(getActiveStore());
@@ -1367,6 +1385,13 @@ els.customersList.addEventListener("click", (event) => {
   const customer = event.target.closest("[data-edit-customer]");
   if (!customer) return;
   openCustomerById(customer.dataset.editCustomer);
+});
+
+els.customersList.addEventListener("keydown", (event) => {
+  if (event.target !== event.target.closest(".customer-card")) return;
+  if (event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+  openCustomerById(event.target.dataset.editCustomer);
 });
 
 els.salesOrderTable.addEventListener("click", (event) => {
@@ -4213,11 +4238,12 @@ function openCustomersModal() {
   const store = getActiveStore();
   if (!store) return;
 
-  uiState.customerFormOpen = false;
+  closeCustomerForm();
   uiState.customerMemberFilter = "all";
   uiState.customerSearch = "";
   renderCustomers(store);
   els.customersModal.hidden = false;
+  updateCustomersViewport();
   updateTimeFiltersVisibility();
 }
 
@@ -4227,9 +4253,30 @@ function closeCustomersModal() {
   closeCustomerForm();
 }
 
+function updateCustomersViewport() {
+  if (!USE_MOBILE_APP_THEME || els.customersModal.hidden) return;
+  const viewport = window.visualViewport;
+  els.customersModal.style.setProperty("--customers-visual-height", `${Math.round(viewport?.height || window.innerHeight)}px`);
+  els.customersModal.style.setProperty("--customers-visual-top", `${Math.round(viewport?.offsetTop || 0)}px`);
+  ensureCustomerFocusVisible(document.activeElement);
+}
+
+function ensureCustomerFocusVisible(target) {
+  if (els.customersModal.hidden || !els.customersCard.contains(target)) return;
+  const cardBounds = els.customersCard.getBoundingClientRect();
+  const targetBounds = target.getBoundingClientRect();
+  if (targetBounds.bottom > cardBounds.bottom - 18) {
+    els.customersCard.scrollTop += targetBounds.bottom - cardBounds.bottom + 18;
+  } else if (targetBounds.top < cardBounds.top + 18) {
+    els.customersCard.scrollTop -= cardBounds.top - targetBounds.top + 18;
+  }
+}
+
 function openCustomerForm(customer = null) {
   uiState.customerFormOpen = true;
   els.customerForm.hidden = false;
+  els.customersCard.classList.add("customer-form-open");
+  els.customersCard.scrollTop = 0;
   els.customerForm.elements.customerId.value = customer?.id && !String(customer.id).startsWith("order-") ? customer.id : "";
   els.customerNameInput.value = customer?.name || "";
   els.customerPhoneInput.value = customer?.phone || "";
@@ -4241,6 +4288,7 @@ function openCustomerForm(customer = null) {
 function closeCustomerForm() {
   uiState.customerFormOpen = false;
   els.customerForm.hidden = true;
+  els.customersCard.classList.remove("customer-form-open");
   els.customerForm.reset();
   els.customerMemberTier.value = "Thường";
 }
@@ -4256,7 +4304,10 @@ function renderCustomers(store) {
   const tierCustomers =
     selectedTier === "all"
       ? allCustomers
-      : allCustomers.filter((customer) => normalizeSearchText(customer.memberTier || "Thường") === selectedTier);
+      : allCustomers.filter((customer) => {
+          const tier = normalizeSearchText(customer.memberTier || "Thường");
+          return selectedTier === "other" ? tier !== "thuong" : tier === selectedTier;
+        });
   const query = normalizeSearchText(uiState.customerSearch || "");
   const customers = query
     ? tierCustomers.filter((customer) => {
@@ -4287,6 +4338,7 @@ function renderCustomers(store) {
       const createdTime = formatTime(customer.createdAt);
       const tierName = customer.memberTier || "Thường";
       const tierClass = isRegularMemberTier(tierName) ? "is-regular" : "is-premium";
+      const customerInitial = Array.from(String(customer.name || "?").trim())[0]?.toLocaleUpperCase("vi") || "?";
       return `
         <div class="customer-card" role="button" tabindex="0" data-edit-customer="${customer.id}">
           <span class="date-stack">
@@ -4306,6 +4358,19 @@ function renderCustomers(store) {
             <button class="member-tier-badge ${tierClass}" type="button" data-member-tier-customer="${customer.id}" title="Xem thời hạn gói" aria-label="Xem thời hạn gói ${escapeHtml(tierName)}">${escapeHtml(tierName)}</button>
           </span>
           <button class="customer-history-button" type="button" data-customer-history="${customer.id}" title="Lịch sử giao dịch" aria-label="Lịch sử giao dịch">LS</button>
+          <div class="customer-mobile-card">
+            <span class="customer-avatar" aria-hidden="true">${escapeHtml(customerInitial)}</span>
+            <span class="customer-mobile-info">
+              <strong>${escapeHtml(customer.name)}</strong>
+              <span class="customer-mobile-phone">${escapeHtml(customer.phone)}</span>
+              <button class="member-tier-badge ${tierClass}" type="button" data-member-tier-customer="${customer.id}" title="Xem thời hạn gói" aria-label="Xem thời hạn gói ${escapeHtml(tierName)}">♛ ${escapeHtml(tierName)}</button>
+            </span>
+            <span class="customer-mobile-actions">
+              <small>${createdDate}</small>
+              <button class="customer-mobile-history" type="button" data-customer-history="${customer.id}" aria-label="Lịch sử giao dịch của ${escapeHtml(customer.name)}">▤ <span>Lịch sử</span></button>
+            </span>
+            <button class="customer-mobile-edit" type="button" data-edit-customer="${customer.id}" aria-label="Sửa thông tin ${escapeHtml(customer.name)}">✎</button>
+          </div>
         </div>
       `;
     })
@@ -4320,7 +4385,7 @@ function renderCustomerMemberFilter(customers) {
   });
 
   const tiers = [...tierMap.entries()].sort((a, b) => a[1].localeCompare(b[1], "vi"));
-  const validFilters = new Set(["all", ...tiers.map(([key]) => key)]);
+  const validFilters = new Set(["all", "thuong", "other", ...tiers.map(([key]) => key)]);
   if (!validFilters.has(uiState.customerMemberFilter)) {
     uiState.customerMemberFilter = "all";
   }
@@ -4329,7 +4394,14 @@ function renderCustomerMemberFilter(customers) {
     '<option value="all">Tất cả</option>',
     ...tiers.map(([key, name]) => `<option value="${key}">${escapeHtml(name)}</option>`)
   ].join("");
-  els.customerMemberFilter.value = uiState.customerMemberFilter;
+  els.customerMemberFilter.value = tiers.some(([key]) => key === uiState.customerMemberFilter)
+    ? uiState.customerMemberFilter
+    : "all";
+  els.customerMemberChips.innerHTML = [
+    ["all", "Tất cả"],
+    ["thuong", "Thường"],
+    ["other", "Khác"]
+  ].map(([value, label]) => `<button class="customer-member-chip${uiState.customerMemberFilter === value ? " is-active" : ""}" type="button" data-customer-tier-filter="${value}" aria-pressed="${uiState.customerMemberFilter === value}">${label}</button>`).join("");
 }
 
 function renderCustomerSearchSuggestions(customers) {
