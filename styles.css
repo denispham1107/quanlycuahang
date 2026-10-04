@@ -17,6 +17,526 @@
   --money-gradient: linear-gradient(90deg, #c157ff 0%, #ff70c8 100%);
 }
 
+/* Desktop workspace: the mobile PWA keeps its own layout and behavior. */
+html.mobile-app-theme .desktop-nav-host,
+html.mobile-app-theme .desktop-filter-rail,
+html.mobile-app-theme .desktop-page-heading,
+html.mobile-app-theme .desktop-insights {
+  display: none !important;
+}
+
+html:not(.mobile-app-theme) body {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 202, 248, 0.95), transparent 35%),
+    radial-gradient(circle at 100% 10%, rgba(150, 220, 255, 0.96), transparent 39%),
+    radial-gradient(circle at 50% 100%, rgba(178, 185, 255, 0.8), transparent 48%),
+    linear-gradient(125deg, #fce9ff 0%, #e8eaff 52%, #b7eaff 100%);
+  background-attachment: fixed;
+  color: #0b1641;
+}
+
+html:not(.mobile-app-theme) .topbar {
+  top: 0;
+  z-index: 75;
+  width: calc(100% - 48px);
+  min-height: 78px;
+  margin: 14px 24px 0;
+  padding: 9px 15px 9px 20px;
+  border: 1.5px solid rgba(255, 255, 255, 0.92);
+  border-radius: 24px;
+  background: linear-gradient(110deg, rgba(255, 249, 255, 0.93), rgba(239, 249, 255, 0.87));
+  box-shadow: 0 16px 34px rgba(79, 92, 174, 0.14), inset 0 1px 0 #fff;
+  backdrop-filter: blur(20px);
+}
+
+html:not(.mobile-app-theme) .topbar > div:first-child {
+  order: 3;
+  flex: 0 1 auto;
+}
+
+html:not(.mobile-app-theme) .topbar > div:first-child .eyebrow,
+html:not(.mobile-app-theme) .topbar > div:first-child h1 {
+  display: none;
+}
+
+html:not(.mobile-app-theme) .topbar .sync-status {
+  max-width: 150px;
+  margin: 0;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html:not(.mobile-app-theme) .desktop-nav-host {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+html:not(.mobile-app-theme) .topbar-actions {
+  order: 2;
+  flex: 0 0 auto;
+  align-items: center;
+}
+
+html:not(.mobile-app-theme) .desktop-nav-host .tab-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  width: max-content;
+  min-width: 100%;
+  gap: clamp(3px, 0.55vw, 10px);
+  padding: 0;
+}
+
+html:not(.mobile-app-theme) .desktop-nav-host .tab-button,
+html:not(.mobile-app-theme) .desktop-nav-host .tab-button[data-tab="sales"],
+html:not(.mobile-app-theme) .desktop-nav-host .tab-button[data-tab="purchase"] {
+  flex: 0 0 auto;
+  order: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 50px;
+  margin: 0;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  padding: 0 clamp(10px, 1.3vw, 20px);
+  background: transparent;
+  color: #152454;
+  box-shadow: none;
+  font-size: clamp(13px, 1.1vw, 16px);
+  font-weight: 800;
+}
+
+html:not(.mobile-app-theme) .desktop-nav-host .tab-button[data-tab="stores"] { order: 1; }
+html:not(.mobile-app-theme) .desktop-nav-host .tab-button[data-tab="overview"] { order: 2; }
+html:not(.mobile-app-theme) .desktop-nav-host .tab-button[data-tab="income"] { order: 3; }
+html:not(.mobile-app-theme) .desktop-nav-host .tab-button[data-tab="expense"] { order: 4; }
+html:not(.mobile-app-theme) .desktop-nav-host .tab-button[data-tab="purchase"] { order: 5; }
+html:not(.mobile-app-theme) .desktop-nav-host .tab-button[data-tab="sales"] { order: 6; }
+
+html:not(.mobile-app-theme) .desktop-nav-host .tab-button:hover {
+  background: rgba(172, 186, 255, 0.2);
+}
+
+html:not(.mobile-app-theme) .desktop-nav-host .tab-button.active,
+html:not(.mobile-app-theme) .desktop-nav-host .tab-button[data-tab="sales"].active,
+html:not(.mobile-app-theme) .desktop-nav-host .tab-button[data-tab="purchase"].active {
+  border-color: rgba(255, 255, 255, 0.8);
+  background: linear-gradient(110deg, #bb36f5 0%, #7151f8 49%, #079ff8 100%);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(80, 91, 220, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+html:not(.mobile-app-theme) .desktop-nav-host .tab-icon {
+  display: none;
+  width: 22px;
+  height: 22px;
+}
+
+.desktop-tab-icon {
+  display: none;
+}
+
+html:not(.mobile-app-theme) .desktop-nav-host .desktop-tab-icon {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+}
+
+html:not(.mobile-app-theme) .desktop-tab-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+html:not(.mobile-app-theme) .desktop-nav-host .tab-label {
+  white-space: nowrap;
+}
+
+html:not(.mobile-app-theme) .layout {
+  grid-template-columns: minmax(260px, 305px) minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+  padding: 18px 24px 42px;
+}
+
+html:not(.mobile-app-theme) body[data-active-tab="stores"] .layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+html:not(.mobile-app-theme) .sidebar {
+  position: sticky;
+  top: 110px;
+  align-self: start;
+}
+
+html:not(.mobile-app-theme) body[data-active-tab="stores"] .sidebar,
+html:not(.mobile-app-theme) .desktop-filter-rail[hidden],
+html:not(.mobile-app-theme) .desktop-page-heading[hidden],
+html:not(.mobile-app-theme) .desktop-insights[hidden],
+html:not(.mobile-app-theme) .desktop-category-field[hidden] {
+  display: none;
+}
+
+html:not(.mobile-app-theme) .desktop-filter-rail {
+  display: block;
+  max-height: calc(100vh - 130px);
+  overflow-y: auto;
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  border-radius: 24px;
+  padding: 20px;
+  background: linear-gradient(145deg, rgba(255, 247, 255, 0.88), rgba(237, 247, 255, 0.82));
+  box-shadow: 0 20px 42px rgba(80, 91, 168, 0.16), inset 0 1px 0 #fff;
+  scrollbar-width: thin;
+}
+
+html:not(.mobile-app-theme) .desktop-filter-heading {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 20px;
+}
+
+html:not(.mobile-app-theme) .desktop-filter-heading h2 {
+  flex: 1 1 auto;
+  margin: 0;
+  color: #0e1746;
+  font-size: 22px;
+}
+
+html:not(.mobile-app-theme) .desktop-filter-heading-icon {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 11px;
+  background: rgba(245, 237, 255, 0.95);
+  color: #6835f5;
+}
+
+html:not(.mobile-app-theme) .desktop-filter-heading-icon svg {
+  width: 23px;
+  height: 23px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+html:not(.mobile-app-theme) .desktop-filter-heading button {
+  width: 34px;
+  height: 34px;
+  min-height: 0;
+  border: 1px solid #dfe6ff;
+  border-radius: 10px;
+  background: #fff;
+  color: #2349d7;
+  font-size: 20px;
+  line-height: 1;
+  box-shadow: 0 7px 15px rgba(62, 78, 156, 0.1);
+}
+
+html:not(.mobile-app-theme) .desktop-filter-body {
+  display: grid;
+  gap: 13px;
+}
+
+html:not(.mobile-app-theme) .desktop-filter-body .time-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  max-height: none;
+  margin: 0;
+  overflow: visible;
+  border: 0;
+  padding: 0;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+html:not(.mobile-app-theme) .desktop-filter-body .time-filters[hidden] {
+  display: none;
+}
+
+html:not(.mobile-app-theme) .desktop-filter-body .time-filter-toggle,
+html:not(.mobile-app-theme) .desktop-filter-body .mobile-time-filter-apply {
+  display: none !important;
+}
+
+html:not(.mobile-app-theme) .desktop-filter-body .time-filters label,
+html:not(.mobile-app-theme) .desktop-category-field label {
+  padding-left: 0;
+  color: #40547d;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+html:not(.mobile-app-theme) .desktop-filter-body .time-filters input,
+html:not(.mobile-app-theme) .desktop-filter-body .time-filters select,
+html:not(.mobile-app-theme) .desktop-category-field select {
+  min-height: 44px;
+  border: 1px solid #d8e2f4;
+  border-radius: 13px;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #111d3d;
+  font-size: 15px;
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(84, 100, 166, 0.08);
+}
+
+html:not(.mobile-app-theme) .desktop-filter-body .desktop-category-field {
+  display: grid;
+  gap: 7px;
+}
+
+html:not(.mobile-app-theme) .desktop-filter-body .desktop-category-field[hidden] {
+  display: none;
+}
+
+html:not(.mobile-app-theme) .desktop-filter-apply,
+html:not(.mobile-app-theme) .desktop-filter-reset {
+  width: 100%;
+  min-height: 45px;
+  border-radius: 13px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+html:not(.mobile-app-theme) .desktop-filter-apply {
+  margin-top: 3px;
+  background: linear-gradient(110deg, #bd35f5, #7752f8 50%, #0aa4f4);
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(100, 87, 222, 0.22);
+}
+
+html:not(.mobile-app-theme) .desktop-filter-reset {
+  border: 1px solid #d5dff2;
+  background: rgba(255, 255, 255, 0.74);
+  color: #1a2a63;
+}
+
+html:not(.mobile-app-theme) body.desktop-filters-collapsed .layout {
+  grid-template-columns: 76px minmax(0, 1fr);
+}
+
+html:not(.mobile-app-theme) body.desktop-filters-collapsed .desktop-filter-rail {
+  padding: 18px;
+}
+
+html:not(.mobile-app-theme) body.desktop-filters-collapsed .desktop-filter-heading {
+  flex-direction: column;
+  margin: 0;
+}
+
+html:not(.mobile-app-theme) body.desktop-filters-collapsed .desktop-filter-heading h2,
+html:not(.mobile-app-theme) body.desktop-filters-collapsed .desktop-filter-body {
+  display: none;
+}
+
+html:not(.mobile-app-theme) .dashboard {
+  align-content: start;
+  min-height: calc(100vh - 130px);
+  gap: 22px;
+  border: 1.5px solid rgba(255, 255, 255, 0.88);
+  border-radius: 24px;
+  padding: 26px;
+  background: linear-gradient(125deg, rgba(255, 255, 255, 0.91), rgba(242, 251, 255, 0.87));
+  box-shadow: 0 20px 45px rgba(75, 91, 166, 0.14), inset 0 1px 0 #fff;
+}
+
+html:not(.mobile-app-theme) body:not([data-active-tab="stores"]) .toolbar,
+html:not(.mobile-app-theme) body:not([data-active-tab="stores"]) .active-store-hero,
+html:not(.mobile-app-theme) .sticky-control-dock,
+html:not(.mobile-app-theme) .tab-spacer {
+  display: none !important;
+}
+
+html:not(.mobile-app-theme) .desktop-page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+html:not(.mobile-app-theme) .desktop-page-heading h2 {
+  margin: 0 0 5px;
+  color: #0b1338;
+  font-size: clamp(29px, 2.7vw, 39px);
+  line-height: 1.1;
+}
+
+html:not(.mobile-app-theme) .desktop-page-heading p {
+  margin: 0;
+  color: #51638c;
+  font-size: 17px;
+}
+
+html:not(.mobile-app-theme) .desktop-page-heading button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 52px;
+  border-radius: 17px;
+  padding: 0 26px;
+  background: linear-gradient(110deg, #bd35f5, #7651f7 48%, #069cf7);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 11px 23px rgba(87, 94, 220, 0.22);
+}
+
+html:not(.mobile-app-theme) .desktop-page-heading button[hidden] {
+  display: none;
+}
+
+html:not(.mobile-app-theme) .desktop-page-heading button span:first-child {
+  font-size: 24px;
+  font-weight: 500;
+}
+
+html:not(.mobile-app-theme) .desktop-insights {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 15px;
+}
+
+html:not(.mobile-app-theme) .desktop-insight {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 132px;
+  min-width: 0;
+  border: 1px solid rgba(174, 162, 255, 0.66);
+  border-radius: 18px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(252, 250, 255, 0.97), rgba(230, 230, 255, 0.88));
+  box-shadow: 0 12px 26px rgba(89, 93, 182, 0.08);
+}
+
+html:not(.mobile-app-theme) .desktop-insight.category-one {
+  border-color: rgba(245, 183, 249, 0.7);
+  background: linear-gradient(135deg, #fff9ff, #f8e9ff);
+}
+
+html:not(.mobile-app-theme) .desktop-insight.category-two {
+  border-color: rgba(157, 230, 225, 0.7);
+  background: linear-gradient(135deg, #faffff, #e5fbf7);
+}
+
+html:not(.mobile-app-theme) .desktop-insight-icon {
+  flex: 0 0 62px;
+  display: grid;
+  width: 62px;
+  height: 62px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(133, 164, 255, 0.19);
+  color: #2849e9;
+  font-size: 28px;
+  font-weight: 900;
+}
+
+html:not(.mobile-app-theme) .desktop-insight.category-one .desktop-insight-icon {
+  background: rgba(229, 146, 246, 0.22);
+  color: #8035e2;
+}
+
+html:not(.mobile-app-theme) .desktop-insight.category-two .desktop-insight-icon {
+  background: rgba(121, 224, 186, 0.22);
+  color: #0a8c69;
+}
+
+html:not(.mobile-app-theme) .desktop-insight div {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+html:not(.mobile-app-theme) .desktop-insight div span {
+  color: #223766;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+html:not(.mobile-app-theme) .desktop-insight strong {
+  color: #111422;
+  font-size: clamp(20px, 2.2vw, 29px);
+  white-space: nowrap;
+}
+
+html:not(.mobile-app-theme) [data-tab-panel="income"].active,
+html:not(.mobile-app-theme) [data-tab-panel="expense"].active {
+  gap: 18px;
+}
+
+html:not(.mobile-app-theme) [data-tab-panel="income"] > .panel:nth-child(3),
+html:not(.mobile-app-theme) [data-tab-panel="expense"] > .panel:nth-child(3) { order: 1; }
+html:not(.mobile-app-theme) [data-tab-panel="income"] > .panel:nth-child(1),
+html:not(.mobile-app-theme) [data-tab-panel="expense"] > .panel:nth-child(1) { order: 2; }
+html:not(.mobile-app-theme) [data-tab-panel="income"] > .panel:nth-child(2),
+html:not(.mobile-app-theme) [data-tab-panel="expense"] > .panel:nth-child(2) { order: 3; }
+
+html:not(.mobile-app-theme) .tab-panel > .panel {
+  border: 1px solid #e2e9f8;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 10px 25px rgba(86, 100, 166, 0.07);
+}
+
+html:not(.mobile-app-theme) .tab-panel .history-tools {
+  margin-bottom: 16px;
+}
+
+html:not(.mobile-app-theme) .tab-panel .table-wrap {
+  border: 1px solid #e1e8f6;
+  border-radius: 15px;
+  background: #fff;
+}
+
+html:not(.mobile-app-theme) .tab-panel table {
+  min-width: 600px;
+}
+
+html:not(.mobile-app-theme) .tab-panel thead {
+  background: rgba(235, 243, 255, 0.8);
+}
+
+html:not(.mobile-app-theme) .tab-panel th {
+  color: #15234f;
+  font-size: 14px;
+}
+
+html:not(.mobile-app-theme) .tab-panel td {
+  color: #162348;
+  font-size: 15px;
+}
+
+html:not(.mobile-app-theme) .quick-entry-fab:not(.ai-fab) {
+  display: none;
+}
+
+@media (max-width: 1120px) {
+  html:not(.mobile-app-theme) .topbar .sync-status { display: none; }
+  html:not(.mobile-app-theme) .layout { grid-template-columns: 250px minmax(0, 1fr); }
+  html:not(.mobile-app-theme) .desktop-insight { gap: 9px; padding: 12px; }
+  html:not(.mobile-app-theme) .desktop-insight-icon { flex-basis: 48px; width: 48px; height: 48px; }
+}
+
 /* 2026 mobile app glass theme.
    The class is attached from app.js only for iOS/iPadOS and Android so desktop
    keeps its established layout while sharing the refreshed background/colors. */

@@ -358,6 +358,55 @@ const els = {
 
 moveStoreSectionsIntoTab();
 
+const desktopUi = !USE_MOBILE_APP_THEME ? {
+  filterRail: document.querySelector("#desktopFilterRail"),
+  filterBody: document.querySelector("#desktopFilterBody"),
+  collapse: document.querySelector("#desktopFilterCollapse"),
+  categoryField: document.querySelector("#desktopCategoryField"),
+  categoryFilter: document.querySelector("#desktopCategoryFilter"),
+  heading: document.querySelector("#desktopPageHeading"),
+  title: document.querySelector("#desktopPageTitle"),
+  subtitle: document.querySelector("#desktopPageSubtitle"),
+  primaryAction: document.querySelector("#desktopPrimaryAction"),
+  primaryActionLabel: document.querySelector("#desktopPrimaryActionLabel"),
+  insights: document.querySelector("#desktopInsights")
+} : null;
+
+if (desktopUi) {
+  document.querySelector("#desktopNavHost").appendChild(els.tabBar);
+  document.querySelector("#desktopFilterControls").append(els.timeFilterToggle, els.timeFilters);
+  desktopUi.collapse.addEventListener("click", () => {
+    const collapsed = document.body.classList.toggle("desktop-filters-collapsed");
+    desktopUi.collapse.setAttribute("aria-expanded", String(!collapsed));
+    desktopUi.collapse.setAttribute("aria-label", collapsed ? "Mở bộ lọc" : "Thu gọn bộ lọc");
+    desktopUi.collapse.title = collapsed ? "Mở bộ lọc" : "Thu gọn bộ lọc";
+    desktopUi.collapse.textContent = collapsed ? "»" : "«";
+  });
+  desktopUi.primaryAction.addEventListener("click", () => els.quickEntryButton.click());
+  document.querySelector("#desktopFilterApply").addEventListener("click", render);
+  document.querySelector("#desktopFilterReset").addEventListener("click", () => {
+    els.rangeMode.value = "today";
+    uiState.rangeMode = "today";
+    els.singleDate.value = today;
+    els.monthDate.value = today.slice(0, 7);
+    els.fromDate.value = today;
+    els.toDate.value = today;
+    desktopUi.categoryFilter.value = "all";
+    const linked = getDesktopCategorySource();
+    if (linked) {
+      linked.value = "all";
+      linked.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    render();
+  });
+  desktopUi.categoryFilter.addEventListener("change", () => {
+    const linked = getDesktopCategorySource();
+    if (!linked) return;
+    linked.value = desktopUi.categoryFilter.value;
+    linked.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+}
+
 if (USE_MOBILE_APP_THEME && els.tabBar) {
   // The bottom navigation must not be clipped by a short tab panel or the dock.
   document.body.appendChild(els.tabBar);
@@ -1838,7 +1887,7 @@ function applyRoleAccess() {
     button.disabled = !allowed;
   });
   els.activeStorePanel.dataset.roleHidden = employee ? "true" : "false";
-  document.querySelector(".sidebar")?.setAttribute("data-role-hidden", employee ? "true" : "false");
+  document.querySelector(".sidebar")?.setAttribute("data-role-hidden", employee && USE_MOBILE_APP_THEME ? "true" : "false");
   els.openCustomers.dataset.roleHidden = employee ? "true" : "false";
   els.openBulkPurchase.dataset.roleHidden = employee && !purchaseCreate ? "true" : "false";
   els.toggleInventory.dataset.roleHidden = employee && !inventoryView ? "true" : "false";
@@ -3018,6 +3067,7 @@ function render() {
     updateTimeFiltersVisibility();
     updateQuickEntryButton();
     updatePinnedTabs();
+    updateDesktopPageChrome();
     return;
   }
 
@@ -3034,6 +3084,8 @@ function render() {
   renderReports(store);
   renderInventory(store);
   renderInventoryLogs(store);
+  renderDesktopInsights(store);
+  updateDesktopCategoryFilter();
   if (els.activityHistoryModal && !els.activityHistoryModal.hidden) {
     renderActivityHistory(store);
   }
@@ -3044,6 +3096,7 @@ function render() {
   updateTimeFiltersVisibility();
   updateQuickEntryButton();
   updatePinnedTabs();
+  updateDesktopPageChrome();
 }
 
 function renderHistoryFilters(store) {
@@ -5734,10 +5787,93 @@ function activateTab(tabName) {
   updateTimeFiltersVisibility(tabName);
   updateQuickEntryButton();
   updatePinnedTabs();
+  updateDesktopCategoryFilter();
+  updateDesktopPageChrome(tabName);
+  renderDesktopInsights(getActiveStore());
 }
 
 function getActiveTabName() {
   return document.querySelector(".tab-button.active")?.dataset.tab || "stores";
+}
+
+function getDesktopCategorySource() {
+  const tabName = getActiveTabName();
+  if (tabName === "income") return els.incomeHistoryFilter;
+  if (tabName === "expense") return els.expenseHistoryFilter;
+  if (tabName === "sales") return els.salesGoodsFilter;
+  return null;
+}
+
+function updateDesktopCategoryFilter() {
+  if (!desktopUi) return;
+  const source = getDesktopCategorySource();
+  desktopUi.categoryField.hidden = !source;
+  if (!source) return;
+  const options = [...source.options];
+  desktopUi.categoryFilter.innerHTML = options.length
+    ? options.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.textContent)}</option>`).join("")
+    : '<option value="all">Tất cả</option>';
+  desktopUi.categoryFilter.value = source.value;
+}
+
+function updateDesktopPageChrome(tabName = getActiveTabName()) {
+  if (!desktopUi) return;
+  const pages = {
+    stores: ["Cửa hàng", "Chọn và quản lý cửa hàng của bạn", ""],
+    overview: ["Tổng quan", "Theo dõi hoạt động của cửa hàng", ""],
+    income: ["Thu", "Theo dõi và quản lý các khoản thu", "Thêm thu"],
+    expense: ["Chi", "Theo dõi và quản lý các khoản chi", "Thêm chi"],
+    purchase: ["Nhập hàng", "Theo dõi nhập hàng và kho", "Nhập hàng"],
+    sales: ["Bán hàng", "Quản lý đơn hàng và doanh thu", "Tạo đơn hàng"]
+  };
+  const [title, subtitle, action] = pages[tabName] || pages.stores;
+  document.body.dataset.activeTab = tabName;
+  desktopUi.title.textContent = title;
+  desktopUi.subtitle.textContent = subtitle;
+  desktopUi.primaryActionLabel.textContent = action;
+  desktopUi.primaryAction.hidden = !action || els.quickEntryButton.hidden;
+  desktopUi.filterRail.hidden = tabName === "stores" || !getActiveStore();
+  desktopUi.heading.hidden = tabName === "stores";
+  desktopUi.insights.hidden = !["income", "expense", "sales", "purchase"].includes(tabName);
+}
+
+function renderDesktopInsights(store) {
+  if (!desktopUi || !store) return;
+  const range = getDateRange();
+  const inRange = (entry) => entry.date >= range.start && entry.date <= range.end && !isCancelledEntry(entry);
+  const tabName = getActiveTabName();
+  let cards = [];
+  if (tabName === "income" || tabName === "expense") {
+    const entries = (store.entries || []).filter((entry) => entry.type === tabName && (tabName !== "income" || !entry.orderId) && inRange(entry));
+    const total = sumEntries(entries);
+    const categoryTotals = (store.categories?.[tabName] || []).map((category) => ({
+      label: category.name,
+      amount: sumEntries(entries.filter((entry) => entry.categoryId === category.id))
+    })).sort((a, b) => b.amount - a.amount);
+    cards = [
+      { label: tabName === "income" ? "Tổng thu" : "Tổng chi", value: formatCurrency(total), kind: "total" },
+      ...categoryTotals.slice(0, 2).map((item, index) => ({ label: item.label, value: formatCurrency(item.amount), kind: index === 0 ? "category-one" : "category-two" }))
+    ];
+  } else if (tabName === "sales") {
+    const orders = (store.orders || []).filter(inRange);
+    cards = [
+      { label: "Tổng bán hàng", value: formatCurrency(orders.reduce((sum, order) => sum + Number(order.total || 0), 0)), kind: "total" },
+      { label: "Đơn hàng", value: String(orders.length), kind: "category-one" },
+      { label: "Hàng hóa đã bán", value: String(orders.reduce((sum, order) => sum + (order.items || []).length, 0)), kind: "category-two" }
+    ];
+  } else if (tabName === "purchase") {
+    cards = [
+      { label: "Mặt hàng trong kho", value: String((store.inventory || []).length), kind: "total" },
+      { label: "Lượt cập nhật kho", value: String((store.inventoryLogs || []).filter(inRange).length), kind: "category-one" },
+      { label: "Tổng tồn kho", value: String((store.inventory || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0)), kind: "category-two" }
+    ];
+  }
+  desktopUi.insights.innerHTML = cards.map((card) => `
+    <article class="desktop-insight ${card.kind}">
+      <span class="desktop-insight-icon" aria-hidden="true">${card.kind === "total" ? "◉" : card.kind === "category-one" ? "▤" : "⌂"}</span>
+      <div><span>${escapeHtml(card.label)}</span><strong>${escapeHtml(card.value)}</strong></div>
+    </article>
+  `).join("");
 }
 
 function getMobileTimeFilterLabel() {
@@ -5762,7 +5898,7 @@ function updateTimeFiltersVisibility(tabName = getActiveTabName()) {
   const visibleTabs = new Set(["overview", "income", "expense", "purchase", "sales"]);
   const store = getActiveStore();
   const filtersAvailable = Boolean(store) && visibleTabs.has(tabName);
-  const filtersExpanded = filtersAvailable && uiState.timeFiltersExpanded;
+  const filtersExpanded = filtersAvailable && (desktopUi ? true : uiState.timeFiltersExpanded);
 
   if (USE_MOBILE_APP_THEME && filtersAvailable) {
     const currentLabel = getMobileTimeFilterLabel();
@@ -5774,7 +5910,7 @@ function updateTimeFiltersVisibility(tabName = getActiveTabName()) {
     });
   }
   els.stickyControlDock.classList.toggle("filters-available", filtersAvailable);
-  els.timeFilterToggle.hidden = !filtersAvailable;
+  els.timeFilterToggle.hidden = Boolean(desktopUi) || !filtersAvailable;
   els.timeFilterToggle.classList.toggle("active", filtersExpanded);
   els.timeFilterToggle.setAttribute("aria-expanded", String(filtersExpanded));
   els.timeFilterToggle.setAttribute("aria-label", filtersExpanded ? "Thu gọn bộ lọc thời gian" : USE_MOBILE_APP_THEME ? `Mở bộ lọc thời gian: ${els.timeFilterCurrentValue.textContent}` : "Mở bộ lọc thời gian");
@@ -5806,7 +5942,7 @@ function updatePinnedTabs() {
     return;
   }
 
-  if (USE_MOBILE_APP_THEME) {
+  if (USE_MOBILE_APP_THEME || desktopUi) {
     resetPinnedTabs();
     return;
   }

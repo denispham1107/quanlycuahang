@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=39" />
+    <link rel="stylesheet" href="styles.css?v=40" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -74,6 +74,7 @@
           <h1>Quản lý cửa hàng</h1>
           <p class="sync-status" id="syncStatus" data-status="loading">Đang kiểm tra đồng bộ...</p>
         </div>
+        <div class="desktop-nav-host" id="desktopNavHost" aria-label="Điều hướng chính"></div>
         <div class="topbar-actions">
           <div class="signed-in-user" id="signedInUser" hidden>
             <span class="signed-in-user-name" id="signedInUserName"></span>
@@ -167,6 +168,22 @@
             </form>
             <div class="store-list" id="storeList"></div>
           </section>
+          <section class="desktop-filter-rail" id="desktopFilterRail" aria-label="Bộ lọc dữ liệu">
+            <div class="desktop-filter-heading">
+              <span class="desktop-filter-heading-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 5h18l-7 8v5l-4 2v-7L3 5Z" /></svg></span>
+              <h2>Bộ lọc</h2>
+              <button id="desktopFilterCollapse" type="button" aria-label="Thu gọn bộ lọc" aria-expanded="true" title="Thu gọn bộ lọc">«</button>
+            </div>
+            <div class="desktop-filter-body" id="desktopFilterBody">
+              <div id="desktopFilterControls"></div>
+              <div class="field desktop-category-field" id="desktopCategoryField">
+                <label for="desktopCategoryFilter">Danh mục</label>
+                <select id="desktopCategoryFilter"><option value="all">Tất cả</option></select>
+              </div>
+              <button class="desktop-filter-apply" id="desktopFilterApply" type="button">Lọc dữ liệu</button>
+              <button class="desktop-filter-reset" id="desktopFilterReset" type="button">Đặt lại</button>
+            </div>
+          </section>
         </aside>
 
         <section class="workspace" id="workspace">
@@ -190,31 +207,46 @@
               <span id="heroStoreMeta" hidden>0 dòng</span>
             </section>
 
+            <section class="desktop-page-heading" id="desktopPageHeading" aria-labelledby="desktopPageTitle">
+              <div>
+                <h2 id="desktopPageTitle">Tổng quan</h2>
+                <p id="desktopPageSubtitle">Theo dõi hoạt động của cửa hàng</p>
+              </div>
+              <button id="desktopPrimaryAction" type="button" hidden><span aria-hidden="true">＋</span><span id="desktopPrimaryActionLabel">Thêm</span></button>
+            </section>
+            <div class="desktop-insights" id="desktopInsights" aria-label="Thống kê nhanh" hidden></div>
+
             <div class="tab-spacer" id="tabSpacer" aria-hidden="true"></div>
             <div class="sticky-control-dock" id="stickyControlDock">
               <nav class="tab-bar" id="tabBar" aria-label="Nhóm chức năng">
                 <button class="tab-button active" type="button" data-tab="stores" aria-selected="true">
                   <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10h16M5 10l1-5h12l1 5M6 10v9h12v-9M9 19v-5h6v5" /></svg></span>
+                  <span class="desktop-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10H3V10Z"/><path d="M9 20v-7h6v7"/></svg></span>
                   <span class="tab-label">Cửa Hàng</span>
                 </button>
                 <button class="tab-button" type="button" data-tab="overview" aria-selected="false">
                   <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v9h9A9 9 0 1 1 12 3Z" /><path d="M15 3.6A9 9 0 0 1 20.4 9H15V3.6Z" /></svg></span>
+                  <span class="desktop-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 20h18M5 20v-8h4v8M10 20V5h4v15M15 20v-11h4v11"/></svg></span>
                   <span class="tab-label">Tổng quan</span>
                 </button>
                 <button class="tab-button" type="button" data-tab="income" aria-selected="false">
                   <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 20v-6M12 20V9M19 20V4" /></svg></span>
+                  <span class="desktop-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6M4 17v2c0 1.7 3.6 3 8 3s8-1.3 8-3v-2"/></svg></span>
                   <span class="tab-label">Thu</span>
                 </button>
                 <button class="tab-button" type="button" data-tab="purchase" aria-selected="false">
                   <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 7 8-4 8 4-8 4-8-4Z" /><path d="m4 7 8 4 8-4v10l-8 4-8-4V7Z" /><path d="M12 11v10" /></svg></span>
+                  <span class="desktop-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 3h10l3 3h3v15H4V3Z"/><path d="M12 11v7M8.5 14.5h7"/></svg></span>
                   <span class="tab-label">Nhập hàng</span>
                 </button>
                 <button class="tab-button" type="button" data-tab="sales" aria-selected="false">
                   <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 5h2l2 10h10l3-7H7" /><circle cx="9" cy="19" r="1.5" /><circle cx="17" cy="19" r="1.5" /></svg></span>
+                  <span class="desktop-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M2 4h3l2 12h12l2-9H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg></span>
                   <span class="tab-label">Bán Hàng</span>
                 </button>
                 <button class="tab-button" type="button" data-tab="expense" aria-selected="false">
                   <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16v12H4z" /><path d="M4 7V5h12v2M15 12h5v4h-5a2 2 0 0 1 0-4Z" /></svg></span>
+                  <span class="desktop-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M7 12h10"/></svg></span>
                   <span class="tab-label">Chi</span>
                 </button>
                 <button
@@ -1164,6 +1196,6 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=39"></script>
+    <script defer src="app.js?v=40"></script>
   </body>
 </html>
