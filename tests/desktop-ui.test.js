@@ -11,11 +11,11 @@ const app = fs.readFileSync(path.join(root, "app.js"), "utf8");
 const worker = fs.readFileSync(path.join(root, "service-worker.js"), "utf8");
 
 test("desktop assets use one cache version and mobile-specific navigation remains separate", () => {
-  assert.match(html, /styles\.css\?v=43/);
-  assert.match(html, /app\.js\?v=43/);
-  assert.match(worker, /quanlycuahang-pwa-v43/);
-  assert.match(worker, /styles\.css\?v=43/);
-  assert.match(worker, /app\.js\?v=43/);
+  assert.match(html, /styles\.css\?v=44/);
+  assert.match(html, /app\.js\?v=44/);
+  assert.match(worker, /quanlycuahang-pwa-v44/);
+  assert.match(worker, /styles\.css\?v=44/);
+  assert.match(worker, /app\.js\?v=44/);
   assert.match(app, /if \(USE_MOBILE_APP_THEME && els\.tabBar\)/);
   assert.match(app, /if \(desktopUi\) \{\s*document\.querySelector\("#desktopNavHost"\)/);
   assert.match(css, /html\.mobile-app-theme \.desktop-filter-rail/);
@@ -24,8 +24,8 @@ test("desktop assets use one cache version and mobile-specific navigation remain
 
 test("desktop income and expense histories follow forms and category summaries", () => {
   for (const tab of ["income", "expense"]) {
-    for (const [child, order] of [[1, 1], [2, 2], [3, 3]]) {
-      assert.match(css, new RegExp(`html:not\\(\\.mobile-app-theme\\) \\[data-tab-panel="${tab}"\\] > \\.panel:nth-child\\(${child}\\)[\\s\\S]*?order: ${order};`));
+    for (const [section, order] of [["manage", 1], ["report", 2], ["history", 3]]) {
+      assert.match(css, new RegExp(`html:not\\(\\.mobile-app-theme\\) \\[data-tab-panel="${tab}"\\] > \\.panel\\[data-mobile-flow-panel="${section}"\\][\\s\\S]*?order: ${order};`));
     }
   }
 });

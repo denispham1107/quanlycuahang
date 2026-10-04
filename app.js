@@ -893,6 +893,20 @@ els.quickEntryButton.addEventListener("click", () => {
   openQuickEntryModal(els.quickEntryButton.dataset.type);
 });
 
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-mobile-flow-action]");
+  if (!button || !USE_MOBILE_APP_THEME) return;
+  const type = button.dataset.flowType;
+  const action = button.dataset.mobileFlowAction;
+  if (type !== "income" && type !== "expense") return;
+  if (action === "add") {
+    openQuickEntryModal(type);
+    return;
+  }
+  const view = action === "manage" ? "manage" : action === "report" ? "report" : action === "history" ? "history" : "";
+  setMobileCashFlowPanel(type, view, action === "manage" ? ".category-section" : null);
+});
+
 if (els.aiButton) {
   els.aiButton.addEventListener("click", openAIChat);
 }
@@ -6157,6 +6171,59 @@ function renderReports(store) {
   renderEntryTable(els.incomeEntryTable, store, filteredIncomeEntries);
   renderEntryTable(els.expenseEntryTable, store, filteredExpenseEntries);
   renderSalesOrderTable(els.salesOrderTable, salesOrders);
+  renderMobileCashFlow(store, "income", range, activeIncomeEntries);
+  renderMobileCashFlow(store, "expense", range, activeExpenseEntries);
+}
+
+function renderMobileCashFlow(store, type, range, entries) {
+  const prefix = type === "income" ? "mobileIncomeFlow" : "mobileExpenseFlow";
+  const categories = store.categories[type] || [];
+  const total = sumEntries(entries);
+  const categoryTotals = new Map(categories.map((category) => [category.id, 0]));
+  entries.forEach((entry) => {
+    categoryTotals.set(entry.categoryId, (categoryTotals.get(entry.categoryId) || 0) + Number(entry.amount || 0));
+  });
+
+  document.getElementById(`${prefix}Context`).textContent = `${store.name} · ${range.label}`;
+  document.getElementById(`${prefix}Total`).textContent = formatCurrency(total);
+  document.getElementById(`${prefix}Status`).textContent = entries.length
+    ? `${entries.length} giao dịch trong kỳ`
+    : "Chưa có giao dịch trong kỳ";
+  document.getElementById(`${prefix}EntryCount`).textContent = entries.length.toLocaleString("vi-VN");
+  document.getElementById(`${prefix}CategoryCount`).textContent = categories.length.toLocaleString("vi-VN");
+
+  const preview = categories.slice(0, 3);
+  document.getElementById(`${prefix}Categories`).innerHTML = preview.length
+    ? preview.map((category) => `
+        <button class="mobile-flow-category" type="button" data-history-jump-type="${type}" data-history-jump-category="${escapeHtml(category.id)}" aria-label="Xem lịch sử mục ${escapeHtml(category.name)}">
+          <span>${escapeHtml(category.name)}</span><strong>${formatCurrency(categoryTotals.get(category.id) || 0)}</strong>
+        </button>
+      `).join("")
+    : '<div class="mobile-flow-empty">Chưa có danh mục. Chọn Quản lý để thêm mục.</div>';
+  const more = document.getElementById(`${prefix}More`);
+  more.hidden = categories.length === 0;
+  more.firstChild.textContent = `Xem đủ ${categories.length} danh mục `;
+
+  const categoryNames = new Map(categories.map((category) => [category.id, category.name]));
+  document.getElementById(`${prefix}History`).innerHTML = entries.length
+    ? entries.slice(0, 2).map((entry) => `
+        <div class="mobile-flow-history-row">
+          <div><strong>${escapeHtml(entry.note || categoryNames.get(entry.categoryId) || "Khoản chưa đặt tên")}</strong><span>${formatDate(entry.date)} · ${escapeHtml(categoryNames.get(entry.categoryId) || "Mục đã xóa")}</span></div>
+          <b>${formatCurrency(entry.amount)}</b>
+        </div>
+      `).join("")
+    : `<div class="mobile-flow-empty">Chưa có khoản ${type === "income" ? "thu" : "chi"} trong kỳ này.</div>`;
+}
+
+function setMobileCashFlowPanel(type, view, innerTarget = null) {
+  if (!USE_MOBILE_APP_THEME) return;
+  const panel = document.querySelector(`[data-tab-panel="${type}"]`);
+  if (!panel) return;
+  panel.dataset.mobileFlowView = view;
+  const target = view
+    ? panel.querySelector(`[data-mobile-flow-panel="${view}"]${innerTarget ? ` ${innerTarget}` : ""}`)
+    : panel.querySelector(".mobile-cash-flow");
+  window.requestAnimationFrame(() => target?.scrollIntoView({ behavior: "smooth", block: "start" }));
 }
 
 function renderSalesGoodsReport(container, orders, store) {
@@ -7354,6 +7421,7 @@ function jumpToHistoryCategory(type, categoryId) {
 
   filter.value = categoryId;
   if (search) search.value = "";
+  setMobileCashFlowPanel(type, "history");
   render();
 
   window.requestAnimationFrame(() => {

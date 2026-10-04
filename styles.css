@@ -484,12 +484,12 @@ html:not(.mobile-app-theme) [data-tab-panel="expense"].active {
   gap: 18px;
 }
 
-html:not(.mobile-app-theme) [data-tab-panel="income"] > .panel:nth-child(1),
-html:not(.mobile-app-theme) [data-tab-panel="expense"] > .panel:nth-child(1) { order: 1; }
-html:not(.mobile-app-theme) [data-tab-panel="income"] > .panel:nth-child(2),
-html:not(.mobile-app-theme) [data-tab-panel="expense"] > .panel:nth-child(2) { order: 2; }
-html:not(.mobile-app-theme) [data-tab-panel="income"] > .panel:nth-child(3),
-html:not(.mobile-app-theme) [data-tab-panel="expense"] > .panel:nth-child(3) { order: 3; }
+html:not(.mobile-app-theme) [data-tab-panel="income"] > .panel[data-mobile-flow-panel="manage"],
+html:not(.mobile-app-theme) [data-tab-panel="expense"] > .panel[data-mobile-flow-panel="manage"] { order: 1; }
+html:not(.mobile-app-theme) [data-tab-panel="income"] > .panel[data-mobile-flow-panel="report"],
+html:not(.mobile-app-theme) [data-tab-panel="expense"] > .panel[data-mobile-flow-panel="report"] { order: 2; }
+html:not(.mobile-app-theme) [data-tab-panel="income"] > .panel[data-mobile-flow-panel="history"],
+html:not(.mobile-app-theme) [data-tab-panel="expense"] > .panel[data-mobile-flow-panel="history"] { order: 3; }
 
 html:not(.mobile-app-theme) .tab-panel > .panel {
   border: 1px solid #e2e9f8;
@@ -7698,4 +7698,307 @@ html.mobile-app-theme .mobile-overview-result strong {
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
+}
+
+/* Thu / Chi: compact mobile dashboard; full management and history remain on demand. */
+.mobile-cash-flow,
+.mobile-flow-close {
+  display: none;
+}
+
+html.mobile-app-theme [data-tab-panel="income"],
+html.mobile-app-theme [data-tab-panel="expense"] {
+  width: min(100%, 780px);
+  margin-inline: auto;
+  gap: 12px;
+}
+
+html.mobile-app-theme [data-tab-panel="income"] > .panel[data-mobile-flow-panel],
+html.mobile-app-theme [data-tab-panel="expense"] > .panel[data-mobile-flow-panel] {
+  display: none;
+}
+
+html.mobile-app-theme [data-tab-panel="income"][data-mobile-flow-view="manage"] > .panel[data-mobile-flow-panel="manage"],
+html.mobile-app-theme [data-tab-panel="expense"][data-mobile-flow-view="manage"] > .panel[data-mobile-flow-panel="manage"],
+html.mobile-app-theme [data-tab-panel="income"][data-mobile-flow-view="report"] > .panel[data-mobile-flow-panel="report"],
+html.mobile-app-theme [data-tab-panel="expense"][data-mobile-flow-view="report"] > .panel[data-mobile-flow-panel="report"],
+html.mobile-app-theme [data-tab-panel="income"][data-mobile-flow-view="history"] > .panel[data-mobile-flow-panel="history"],
+html.mobile-app-theme [data-tab-panel="expense"][data-mobile-flow-view="history"] > .panel[data-mobile-flow-panel="history"] {
+  display: block;
+}
+
+html.mobile-app-theme .mobile-cash-flow {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+  padding: 12px 1px 0;
+  scroll-margin-top: 72px;
+}
+
+html.mobile-app-theme .mobile-flow-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 0 3px;
+}
+
+html.mobile-app-theme .mobile-flow-heading > div {
+  min-width: 0;
+}
+
+html.mobile-app-theme .mobile-flow-context {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #586987;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+html.mobile-app-theme .mobile-flow-heading h2 {
+  margin: 3px 0 0;
+  color: #123b77;
+  font-size: clamp(22px, 5vw, 29px);
+  line-height: 1.1;
+  font-weight: 900;
+}
+
+html.mobile-app-theme .mobile-flow-add {
+  flex: 0 0 46px;
+  width: 46px;
+  height: 46px;
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  border-radius: 15px;
+  background: var(--accent-gradient);
+  color: #fff;
+  font-size: 27px;
+  line-height: 1;
+  box-shadow: 0 8px 18px rgba(75, 91, 226, 0.22);
+}
+
+html.mobile-app-theme .mobile-flow-add[hidden],
+html.mobile-app-theme .mobile-flow-more[hidden] {
+  display: none;
+}
+
+html.mobile-app-theme body[data-active-tab="income"] .quick-entry-fab,
+html.mobile-app-theme body[data-active-tab="expense"] .quick-entry-fab {
+  display: none;
+}
+
+html.mobile-app-theme .mobile-flow-hero {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 17px 18px;
+  border: 1.5px solid rgba(255, 255, 255, 0.91);
+  border-radius: 23px;
+  background: linear-gradient(115deg, rgba(246, 222, 255, 0.94), rgba(217, 239, 255, 0.95));
+  box-shadow: 0 12px 25px rgba(83, 88, 160, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.88);
+}
+
+html.mobile-app-theme .mobile-flow-hero > span {
+  color: #4f617d;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+html.mobile-app-theme .mobile-flow-hero strong {
+  color: #18377a;
+  font-size: clamp(30px, 7vw, 38px);
+  font-weight: 900;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+html.mobile-app-theme .mobile-flow-hero small {
+  color: #61708b;
+  font-size: 12px;
+}
+
+html.mobile-app-theme .mobile-flow-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+html.mobile-app-theme .mobile-flow-facts > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  gap: 7px;
+  padding: 11px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.84);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.81);
+}
+
+html.mobile-app-theme .mobile-flow-facts span {
+  color: #586987;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+html.mobile-app-theme .mobile-flow-facts strong {
+  color: #18377a;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+html.mobile-app-theme .mobile-flow-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 5px 3px 0;
+}
+
+html.mobile-app-theme .mobile-flow-section-heading h3 {
+  margin: 0;
+  color: #163869;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+html.mobile-app-theme .mobile-flow-section-heading button,
+html.mobile-app-theme .mobile-flow-more,
+html.mobile-app-theme .mobile-flow-close {
+  border: 0;
+  background: transparent;
+  color: #0878f7;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+html.mobile-app-theme .mobile-flow-section-heading button {
+  min-height: 34px;
+  padding: 5px 2px;
+}
+
+html.mobile-app-theme .mobile-flow-section-heading button span,
+html.mobile-app-theme .mobile-flow-more span {
+  font-size: 20px;
+  vertical-align: -1px;
+}
+
+html.mobile-app-theme .mobile-flow-categories,
+html.mobile-app-theme .mobile-flow-history-preview {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+html.mobile-app-theme .mobile-flow-category,
+html.mobile-app-theme .mobile-flow-history-row,
+html.mobile-app-theme .mobile-flow-empty {
+  min-width: 0;
+  border: 1px solid rgba(119, 132, 178, 0.16);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 5px 13px rgba(72, 86, 160, 0.055);
+}
+
+html.mobile-app-theme .mobile-flow-category {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 45px;
+  padding: 8px 12px;
+  color: #1b2945;
+  text-align: left;
+}
+
+html.mobile-app-theme .mobile-flow-category span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+html.mobile-app-theme .mobile-flow-category strong {
+  flex: none;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+html.mobile-app-theme .mobile-flow-more {
+  justify-self: start;
+  min-height: 28px;
+  padding: 1px 5px;
+}
+
+html.mobile-app-theme .mobile-flow-history-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+}
+
+html.mobile-app-theme .mobile-flow-history-row > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+html.mobile-app-theme .mobile-flow-history-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+html.mobile-app-theme .mobile-flow-history-row span {
+  color: #68748b;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.mobile-app-theme .mobile-flow-history-row b {
+  flex: none;
+  color: #1259b7;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+html.mobile-app-theme .mobile-flow-empty {
+  padding: 15px 13px;
+  color: #68748b;
+  font-size: 12px;
+}
+
+html.mobile-app-theme .mobile-flow-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 4px 7px;
+  white-space: nowrap;
+}
+
+html.mobile-app-theme [data-tab-panel="income"] > .panel[data-mobile-flow-panel],
+html.mobile-app-theme [data-tab-panel="expense"] > .panel[data-mobile-flow-panel] {
+  scroll-margin-top: 72px;
+}
+
+html.mobile-app-theme [data-mobile-flow-panel="manage"] .category-section {
+  scroll-margin-top: 72px;
+}
+
+@media (max-width: 360px) {
+  html.mobile-app-theme .mobile-flow-category { gap: 7px; padding-inline: 9px; }
+  html.mobile-app-theme .mobile-flow-facts > div { padding-inline: 9px; }
 }
