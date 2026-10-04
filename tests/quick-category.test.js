@@ -17,6 +17,12 @@ test("quick Thu/Chi entry has an inline category creator with non-submit buttons
   assert.match(app, /els\.quickCategoryCreate\.addEventListener\("click", createQuickEntryCategory\)/);
 });
 
+test("quick category input and buttons keep separate columns on narrow screens", () => {
+  assert.match(css, /\.quick-entry-category-picker,\s*\.quick-category-creator-row\s*\{\s*display: grid;\s*grid-template-columns: minmax\(0, 1fr\) max-content;/);
+  assert.match(css, /\.quick-entry-card \.quick-category-toggle,\s*\.quick-entry-card \.quick-category-creator-row button\s*\{\s*width: auto;/);
+  assert.match(css, /\.quick-entry-category-picker select,\s*\.quick-category-creator-row input\s*\{\s*min-width: 0;\s*width: 100%;/);
+});
+
 test("creating a quick category keeps draft fields and selects the new category", () => {
   const start = app.indexOf("function setQuickCategoryCreatorOpen(open) {");
   const end = app.indexOf("function openQuickEntryModal(type) {", start);

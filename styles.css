@@ -8006,22 +8006,31 @@ html.mobile-app-theme [data-mobile-flow-panel="manage"] .category-section {
 /* Create a Thu/Chi category without leaving the quick-entry dialog. */
 .quick-entry-category-picker,
 .quick-category-creator-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
   align-items: center;
   gap: 8px;
-  min-width: 0;
-}
-
-.quick-entry-category-picker select,
-.quick-category-creator-row input {
-  flex: 1 1 auto;
   min-width: 0;
   width: 100%;
 }
 
+.quick-entry-category-picker select,
+.quick-category-creator-row input {
+  min-width: 0;
+  width: 100%;
+}
+
+#quickEntryFields .field,
+.quick-category-creator {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .quick-entry-card .quick-category-toggle,
 .quick-entry-card .quick-category-creator-row button {
-  flex: 0 0 auto;
+  width: auto;
+  max-width: 100%;
+  justify-self: end;
   min-height: 44px;
   border: 1px solid rgba(69, 111, 228, 0.24);
   border-radius: 13px;
