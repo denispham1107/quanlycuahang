@@ -8082,6 +8082,29 @@ html.mobile-app-theme [data-mobile-flow-panel="manage"] .category-section {
   font-weight: 750;
 }
 
+/* Form-wide gradient rules must not swallow compact icon and stepper labels. */
+.quantity-stepper .quantity-step,
+.sales-name-picker .catalog-button {
+  border: 1px solid rgba(36, 94, 178, 0.2);
+  background: #eaf3ff;
+  color: #0b376f;
+  box-shadow: 0 6px 14px rgba(72, 86, 160, 0.1);
+}
+
+.customer-name-picker .catalog-button {
+  border: 1px solid rgba(162, 29, 91, 0.16);
+  background: #fff0f6;
+  color: #a21d5b;
+  box-shadow: 0 6px 14px rgba(162, 29, 91, 0.09);
+}
+
+.export-inventory-card .export-reason-delete {
+  border: 1px solid rgba(180, 35, 88, 0.18);
+  background: #fff0f4;
+  color: #b42358;
+  box-shadow: 0 6px 14px rgba(180, 35, 88, 0.08);
+}
+
 .quick-entry-backdrop:not(.sales-page-mode) {
   overflow-y: auto;
   overscroll-behavior: contain;
