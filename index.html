@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=49" />
+    <link rel="stylesheet" href="styles.css?v=50" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -159,7 +159,7 @@
         <aside class="sidebar">
           <section class="panel">
             <div class="panel-heading">
-              <h2><span class="store-heading-desktop">Cửa hàng</span><span class="store-heading-mobile">Cửa hàng của bạn</span></h2>
+              <h2><span class="store-heading-desktop">Danh sách</span><span class="store-heading-mobile">Cửa hàng của bạn</span></h2>
               <span id="storeCount">0</span>
             </div>
             <p class="store-dashboard-description">Chọn cửa hàng để xem và quản lý dữ liệu.</p>
@@ -209,6 +209,7 @@
               <div>
                 <p class="eyebrow">Cửa hàng đang chọn</p>
                 <h2 id="heroStoreName">Chưa chọn cửa hàng</h2>
+                <p class="desktop-store-hero-description">Mỗi cửa hàng có không gian dữ liệu riêng để theo dõi và quản lý.</p>
               </div>
               <div class="store-dashboard-stats" aria-label="Thông tin cửa hàng">
                 <div><p>Dữ liệu</p><strong id="storeHeroEntryCount">0 dòng</strong></div>
@@ -324,7 +325,19 @@
               </section>
             </div>
 
-            <section class="tab-panel active" data-tab-panel="stores"></section>
+            <section class="tab-panel active" data-tab-panel="stores">
+              <header class="desktop-store-heading">
+                <div>
+                  <p class="eyebrow">Không gian quản lý</p>
+                  <h2>Cửa hàng</h2>
+                  <p>Chọn cửa hàng để xem và quản lý dữ liệu riêng.</p>
+                </div>
+                <button id="desktopAddStoreShortcut" type="button" data-admin-only>＋ Thêm cửa hàng</button>
+              </header>
+              <div class="desktop-store-layout">
+                <div class="desktop-store-details"></div>
+              </div>
+            </section>
 
             <section class="tab-panel" data-tab-panel="overview" hidden>
               <section class="mobile-overview-flow" aria-label="Tổng quan dòng tiền">
@@ -375,7 +388,7 @@
               </section>
 
               <section class="selected-range-card">
-                <span>Đang xem</span>
+                <span>Đang xem <b class="desktop-overview-store-inline">· <span id="desktopOverviewStoreName">Cửa hàng</span></b></span>
                 <strong id="selectedRangeLabel">Hôm nay</strong>
               </section>
 
@@ -401,6 +414,21 @@
                   <span>Còn lại</span>
                   <strong id="balance">0 đ</strong>
                 </article>
+              </section>
+              <section class="desktop-overview-breakdown" aria-labelledby="desktopOverviewBreakdownTitle">
+                <div class="desktop-overview-breakdown-heading">
+                  <div>
+                    <p class="eyebrow">Phân tích nhanh</p>
+                    <h3 id="desktopOverviewBreakdownTitle">Dòng tiền trong khoảng đã chọn</h3>
+                  </div>
+                  <span id="desktopOverviewRangeLabel">Hôm nay</span>
+                </div>
+                <p class="desktop-overview-empty" id="desktopOverviewEmpty">Chưa có giao dịch trong khoảng thời gian này. Các chỉ số sẽ cập nhật khi phát sinh dữ liệu.</p>
+                <div class="desktop-overview-bars" id="desktopOverviewBars" hidden>
+                  <div class="desktop-overview-bar" data-overview-bar="income"><div><span>Tổng thu</span><strong>0 đ</strong></div><span class="desktop-overview-track"><span></span></span></div>
+                  <div class="desktop-overview-bar" data-overview-bar="sales"><div><span>Tổng bán hàng</span><strong>0 đ</strong></div><span class="desktop-overview-track"><span></span></span></div>
+                  <div class="desktop-overview-bar" data-overview-bar="expense"><div><span>Tổng chi</span><strong>0 đ</strong></div><span class="desktop-overview-track"><span></span></span></div>
+                </div>
               </section>
             </section>
 
@@ -1310,6 +1338,6 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=49"></script>
+    <script defer src="app.js?v=50"></script>
   </body>
 </html>

@@ -21,7 +21,12 @@
 html.mobile-app-theme .desktop-nav-host,
 html.mobile-app-theme .desktop-filter-rail,
 html.mobile-app-theme .desktop-page-heading,
-html.mobile-app-theme .desktop-insights {
+html.mobile-app-theme .desktop-insights,
+html.mobile-app-theme .desktop-store-heading,
+html.mobile-app-theme .desktop-store-layout,
+html.mobile-app-theme .desktop-store-hero-description,
+html.mobile-app-theme .desktop-overview-store-inline,
+html.mobile-app-theme .desktop-overview-breakdown {
   display: none !important;
 }
 
@@ -528,6 +533,391 @@ html:not(.mobile-app-theme) .tab-panel td {
 
 html:not(.mobile-app-theme) .quick-entry-fab:not(.ai-fab) {
   display: none;
+}
+
+/* Desktop “Điều hành”: a store master-detail page and a readable cash-flow overview. */
+html:not(.mobile-app-theme) body[data-active-tab="stores"] .dashboard {
+  gap: 0;
+}
+
+html:not(.mobile-app-theme) [data-tab-panel="stores"].active {
+  gap: 20px;
+}
+
+html:not(.mobile-app-theme) .desktop-store-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+html:not(.mobile-app-theme) .desktop-store-heading h2 {
+  margin: 0;
+  color: #101a46;
+  font-size: clamp(28px, 2.7vw, 38px);
+  line-height: 1.08;
+}
+
+html:not(.mobile-app-theme) .desktop-store-heading p:last-child {
+  margin: 5px 0 0;
+  color: #526383;
+  font-size: 15px;
+}
+
+html:not(.mobile-app-theme) #desktopAddStoreShortcut {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 46px;
+  border: 0;
+  border-radius: 13px;
+  padding: 0 18px;
+  background: linear-gradient(110deg, #ab40f0, #147ff1);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: 0 10px 22px rgba(83, 91, 209, 0.21);
+}
+
+html:not(.mobile-app-theme) .desktop-store-layout {
+  display: grid;
+  grid-template-columns: minmax(265px, 310px) minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+  min-width: 0;
+}
+
+html:not(.mobile-app-theme) .desktop-store-details {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-width: 0;
+}
+
+html:not(.mobile-app-theme) .desktop-store-layout > .panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 315px;
+  border: 1px solid #dee7f5;
+  border-radius: 20px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 13px 28px rgba(64, 88, 153, 0.08);
+}
+
+html:not(.mobile-app-theme) .desktop-store-layout .panel-heading {
+  order: 0;
+  margin-bottom: 9px;
+}
+
+html:not(.mobile-app-theme) .desktop-store-layout .panel-heading h2 {
+  color: #132652;
+  font-size: 18px;
+}
+
+html:not(.mobile-app-theme) .desktop-store-layout .panel-heading span {
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: #edf4ff;
+  color: #126ee2;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+html:not(.mobile-app-theme) .desktop-store-layout .store-dashboard-description {
+  display: none;
+}
+
+html:not(.mobile-app-theme) .desktop-store-layout #storeList {
+  order: 1;
+  gap: 8px;
+  margin: 0;
+}
+
+html:not(.mobile-app-theme) .desktop-store-layout .store-button {
+  min-height: 52px;
+  border-color: #dce5f5;
+  border-radius: 13px;
+  padding: 10px 12px;
+  color: #19315e;
+  box-shadow: none;
+}
+
+html:not(.mobile-app-theme) .desktop-store-layout .store-button.active {
+  border-color: #87bbfa;
+  background: linear-gradient(110deg, #f2edff, #e6f5ff);
+  color: #0c54b6;
+}
+
+html:not(.mobile-app-theme) .desktop-store-layout .store-name {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+html:not(.mobile-app-theme) .desktop-store-layout .store-meta {
+  white-space: nowrap;
+  color: #62718e;
+  font-size: 12px;
+}
+
+html:not(.mobile-app-theme) .desktop-store-layout #storeForm {
+  order: 2;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 18px;
+}
+
+html:not(.mobile-app-theme) .desktop-store-layout .store-form-label {
+  display: block;
+  color: #536585;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+html:not(.mobile-app-theme) .desktop-store-layout #storeName {
+  border-color: #d9e4f4;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+html:not(.mobile-app-theme) .desktop-store-layout #storeForm button {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(110deg, #ad40f0, #147ff1);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+html:not(.mobile-app-theme) .desktop-store-details .active-store-hero {
+  min-height: 192px;
+  align-items: center;
+  border-color: rgba(173, 202, 255, 0.9);
+  border-radius: 20px;
+  padding: 24px 26px;
+  background: linear-gradient(110deg, #f7e8fb, #e1edff 58%, #d4f0ff);
+  box-shadow: 0 14px 30px rgba(85, 100, 185, 0.11), inset 0 1px 0 #fff;
+  transform: none;
+}
+
+html:not(.mobile-app-theme) .desktop-store-details .active-store-hero::before {
+  opacity: 0.13;
+}
+
+html:not(.mobile-app-theme) .desktop-store-details .active-store-hero h2 {
+  color: #123b80;
+  font-size: clamp(30px, 3vw, 42px);
+  line-height: 1.12;
+  text-shadow: 0 2px 0 #fff, 0 10px 20px rgba(43, 78, 147, 0.12);
+}
+
+html:not(.mobile-app-theme) .desktop-store-hero-description {
+  max-width: 38rem;
+  margin: 11px 0 0;
+  color: #526989;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+html:not(.mobile-app-theme) .desktop-store-details .toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  min-height: 93px;
+  gap: 14px;
+  border: 1px solid #e0e8f6;
+  border-radius: 18px;
+  padding: 17px 20px;
+  box-shadow: 0 10px 23px rgba(65, 85, 145, 0.07);
+}
+
+html:not(.mobile-app-theme) .desktop-store-details .toolbar[hidden] {
+  display: none;
+}
+
+html:not(.mobile-app-theme) .desktop-store-details .toolbar h2 {
+  color: #142c5e;
+  font-size: 18px;
+}
+
+html:not(.mobile-app-theme) .desktop-store-details .store-dashboard-stats {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-right: auto;
+}
+
+html:not(.mobile-app-theme) .desktop-store-details .store-dashboard-stats > div + div {
+  display: none;
+}
+
+html:not(.mobile-app-theme) .desktop-store-details .store-dashboard-stats p {
+  margin: 0 0 3px;
+  color: #64728f;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+html:not(.mobile-app-theme) .desktop-store-details .store-dashboard-stats strong {
+  color: #176ddd;
+  font-size: 17px;
+}
+
+html:not(.mobile-app-theme) .desktop-store-details .toolbar-actions .ghost-button {
+  min-height: 40px;
+  border-color: #dbe4f3;
+  border-radius: 11px;
+  padding: 0 13px;
+  background: #f8faff;
+  color: #1a315f;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+html:not(.mobile-app-theme) .desktop-store-details .toolbar-actions .ghost-button.danger {
+  color: #c04376;
+}
+
+html:not(.mobile-app-theme) [data-tab-panel="overview"].active {
+  gap: 15px;
+}
+
+html:not(.mobile-app-theme) [data-tab-panel="overview"] > .selected-range-card {
+  min-height: 62px;
+  border-color: #e2e8fa;
+  border-radius: 16px;
+  padding: 11px 16px;
+  box-shadow: 0 9px 22px rgba(75, 97, 170, 0.07);
+}
+
+html:not(.mobile-app-theme) .desktop-overview-store-inline {
+  color: #244d9b;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: none;
+}
+
+html:not(.mobile-app-theme) [data-tab-panel="overview"] > .overview-store-nameplate {
+  display: none;
+}
+
+html:not(.mobile-app-theme) [data-tab-panel="overview"] > .summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 13px;
+}
+
+html:not(.mobile-app-theme) [data-tab-panel="overview"] .metric {
+  min-height: 126px;
+  border: 1px solid #e2e9f6;
+  border-radius: 18px;
+  padding: 17px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 12px 24px rgba(69, 84, 149, 0.08);
+}
+
+html:not(.mobile-app-theme) [data-tab-panel="overview"] .metric span {
+  color: #536686;
+  font-size: 13px;
+}
+
+html:not(.mobile-app-theme) [data-tab-panel="overview"] .metric strong {
+  margin-top: 21px;
+  font-size: clamp(25px, 2.4vw, 34px);
+}
+
+html:not(.mobile-app-theme) .desktop-overview-breakdown {
+  display: grid;
+  gap: 14px;
+  min-height: 190px;
+  border: 1px solid #e0e8f6;
+  border-radius: 18px;
+  padding: 19px 21px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 25px rgba(74, 95, 159, 0.07);
+}
+
+html:not(.mobile-app-theme) .desktop-overview-breakdown-heading,
+html:not(.mobile-app-theme) .desktop-overview-bar > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+html:not(.mobile-app-theme) .desktop-overview-breakdown h3 {
+  margin: 0;
+  color: #152751;
+  font-size: 18px;
+}
+
+html:not(.mobile-app-theme) .desktop-overview-breakdown-heading > span {
+  color: #55709d;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+}
+
+html:not(.mobile-app-theme) .desktop-overview-empty {
+  display: grid;
+  place-items: center;
+  min-height: 105px;
+  margin: 0;
+  border: 1px dashed #d9e4f5;
+  border-radius: 13px;
+  color: #5d6f8f;
+  font-size: 13px;
+  text-align: center;
+}
+
+html:not(.mobile-app-theme) .desktop-overview-empty[hidden],
+html:not(.mobile-app-theme) .desktop-overview-bars[hidden] {
+  display: none;
+}
+
+html:not(.mobile-app-theme) .desktop-overview-bars {
+  display: grid;
+  gap: 11px;
+}
+
+html:not(.mobile-app-theme) .desktop-overview-bar {
+  display: grid;
+  gap: 5px;
+  color: #3f567d;
+  font-size: 12px;
+}
+
+html:not(.mobile-app-theme) .desktop-overview-bar strong {
+  color: #172955;
+  font-size: 13px;
+}
+
+html:not(.mobile-app-theme) .desktop-overview-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eaf0fb;
+}
+
+html:not(.mobile-app-theme) .desktop-overview-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #aa43f1, #1489f2);
+}
+
+html:not(.mobile-app-theme) [data-overview-bar="expense"] .desktop-overview-track > span {
+  background: linear-gradient(90deg, #ee65a9, #f28a97);
+}
+
+@media (max-width: 1160px) {
+  html:not(.mobile-app-theme) .desktop-store-layout { grid-template-columns: minmax(250px, 285px) minmax(0, 1fr); }
+  html:not(.mobile-app-theme) [data-tab-panel="overview"] > .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 850px) {
+  html:not(.mobile-app-theme) .desktop-store-layout { grid-template-columns: minmax(0, 1fr); }
+  html:not(.mobile-app-theme) .desktop-store-details .toolbar { align-items: flex-start; }
+  html:not(.mobile-app-theme) .desktop-store-heading { align-items: flex-start; flex-wrap: wrap; }
 }
 
 @media (max-width: 1120px) {

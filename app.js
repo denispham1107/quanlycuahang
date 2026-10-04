@@ -389,6 +389,10 @@ const desktopUi = !USE_MOBILE_APP_THEME ? {
 if (desktopUi) {
   document.querySelector("#desktopNavHost").appendChild(els.tabBar);
   document.querySelector("#desktopFilterControls").append(els.timeFilterToggle, els.timeFilters);
+  document.querySelector("#desktopAddStoreShortcut").addEventListener("click", () => {
+    els.storeName.scrollIntoView({ behavior: "smooth", block: "center" });
+    els.storeName.focus({ preventScroll: true });
+  });
   desktopUi.collapse.addEventListener("click", () => {
     const collapsed = document.body.classList.toggle("desktop-filters-collapsed");
     desktopUi.collapse.setAttribute("aria-expanded", String(!collapsed));
@@ -571,8 +575,20 @@ function moveStoreSectionsIntoTab() {
   const storePanel = document.querySelector(".sidebar .panel");
   if (!storesPanel) return;
 
-  if (storePanel) storesPanel.append(storePanel);
-  if (els.activeStorePanel) storesPanel.append(els.activeStorePanel);
+  if (USE_MOBILE_APP_THEME) {
+    if (storePanel) storesPanel.append(storePanel);
+    if (els.activeStorePanel) storesPanel.append(els.activeStorePanel);
+    return;
+  }
+
+  const storeLayout = storesPanel.querySelector(".desktop-store-layout");
+  const details = storesPanel.querySelector(".desktop-store-details");
+  const hero = document.querySelector("#activeStoreHero");
+  const stats = hero?.querySelector(".store-dashboard-stats");
+  if (storePanel) storeLayout.prepend(storePanel);
+  if (hero) details.append(hero);
+  if (stats && els.activeStorePanel) els.activeStorePanel.insertBefore(stats, els.activeStorePanel.querySelector(".toolbar-actions"));
+  if (els.activeStorePanel) details.append(els.activeStorePanel);
 }
 
 document.querySelectorAll(".category-form").forEach((form) => {
@@ -3116,6 +3132,7 @@ function render() {
   if (!store) {
     els.activeStoreName.textContent = "Chưa chọn cửa hàng";
     els.overviewStoreName.textContent = "Chưa chọn cửa hàng";
+    if (desktopUi) document.querySelector("#desktopOverviewStoreName").textContent = "Chưa chọn cửa hàng";
     els.mobileOverviewStoreName.textContent = "Chưa chọn cửa hàng";
     els.heroStoreName.textContent = "Chưa chọn cửa hàng";
     els.heroStoreMeta.textContent = "Tạo hoặc chọn một cửa hàng";
@@ -3130,6 +3147,7 @@ function render() {
 
   els.activeStoreName.textContent = store.name;
   els.overviewStoreName.textContent = store.name;
+  if (desktopUi) document.querySelector("#desktopOverviewStoreName").textContent = store.name;
   els.mobileOverviewStoreName.textContent = store.name;
   els.heroStoreName.textContent = store.name;
   els.heroStoreMeta.textContent = `${store.entries.length} dòng`;
@@ -5938,6 +5956,21 @@ function updateDesktopPageChrome(tabName = getActiveTabName()) {
   desktopUi.insights.hidden = !["income", "expense", "sales", "purchase"].includes(tabName);
 }
 
+function renderDesktopOverviewBreakdown(rangeLabel, amounts) {
+  if (!desktopUi) return;
+  document.querySelector("#desktopOverviewRangeLabel").textContent = rangeLabel;
+  const maxAmount = Math.max(0, ...Object.values(amounts));
+  const empty = document.querySelector("#desktopOverviewEmpty");
+  const bars = document.querySelector("#desktopOverviewBars");
+  empty.hidden = maxAmount > 0;
+  bars.hidden = maxAmount === 0;
+  bars.querySelectorAll("[data-overview-bar]").forEach((row) => {
+    const amount = Math.max(0, amounts[row.dataset.overviewBar] || 0);
+    row.querySelector("strong").textContent = formatCurrency(amount);
+    row.querySelector(".desktop-overview-track > span").style.width = `${maxAmount ? amount / maxAmount * 100 : 0}%`;
+  });
+}
+
 function renderDesktopInsights(store) {
   if (!desktopUi || !store) return;
   const range = getDateRange();
@@ -6220,6 +6253,7 @@ function renderReports(store) {
   els.mobileTotalSales.textContent = formatCurrency(totalSalesAmount);
   els.mobileBalance.textContent = els.balance.textContent;
   els.salesHistoryDateLabel.textContent = range.label;
+  renderDesktopOverviewBreakdown(range.label, { income: totalIncome, sales: totalSalesAmount, expense: totalExpense });
   els.salesRangeLabel.innerHTML = `
     <span>Tổng</span>
     <span class="report-amount sales-range-total">${formatCurrency(totalSalesAmount)}</span>

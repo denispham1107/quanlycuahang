@@ -11,11 +11,11 @@ const app = fs.readFileSync(path.join(root, "app.js"), "utf8");
 const worker = fs.readFileSync(path.join(root, "service-worker.js"), "utf8");
 
 test("desktop assets use one cache version and mobile-specific navigation remains separate", () => {
-  assert.match(html, /styles\.css\?v=49/);
-  assert.match(html, /app\.js\?v=49/);
-  assert.match(worker, /quanlycuahang-pwa-v49/);
-  assert.match(worker, /styles\.css\?v=49/);
-  assert.match(worker, /app\.js\?v=49/);
+  assert.match(html, /styles\.css\?v=50/);
+  assert.match(html, /app\.js\?v=50/);
+  assert.match(worker, /quanlycuahang-pwa-v50/);
+  assert.match(worker, /styles\.css\?v=50/);
+  assert.match(worker, /app\.js\?v=50/);
   assert.match(app, /if \(USE_MOBILE_APP_THEME && els\.tabBar\)/);
   assert.match(app, /if \(desktopUi\) \{\s*document\.querySelector\("#desktopNavHost"\)/);
   assert.match(css, /html\.mobile-app-theme \.desktop-filter-rail/);
@@ -57,4 +57,55 @@ test("desktop income cards exclude cancelled entries and preserve category total
   assert.match(context.desktopUi.insights.innerHTML, /Tiền thuê nhà/);
   assert.equal((context.desktopUi.insights.innerHTML.match(/500 đ/g) || []).length, 2);
   assert.doesNotMatch(context.desktopUi.insights.innerHTML, /900 đ/);
+});
+
+test("Điều hành keeps the Store master-detail layout desktop-only", () => {
+  assert.match(html, /class="desktop-store-heading"/);
+  assert.match(html, /class="desktop-store-layout"/);
+  assert.match(html, /class="desktop-store-details"/);
+  assert.match(app, /if \(USE_MOBILE_APP_THEME\) \{\s*if \(storePanel\) storesPanel\.append\(storePanel\);/);
+  assert.match(app, /if \(hero\) details\.append\(hero\);/);
+  assert.match(css, /html:not\(\.mobile-app-theme\) \.desktop-store-layout \{\s*display: grid;/);
+  assert.match(css, /html\.mobile-app-theme \.desktop-store-layout,/);
+  assert.match(css, /html\.mobile-app-theme \.desktop-overview-breakdown \{\s*display: none !important;/);
+});
+
+test("desktop overview breakdown handles empty and nonempty filtered values", () => {
+  const start = app.indexOf("function renderDesktopOverviewBreakdown(rangeLabel, amounts) {");
+  const end = app.indexOf("function renderDesktopInsights(store) {", start);
+  assert.ok(start >= 0 && end > start);
+  const rows = ["income", "sales", "expense"].map((kind) => {
+    const value = { textContent: "" };
+    const fill = { style: { width: "" } };
+    return {
+      dataset: { overviewBar: kind },
+      querySelector: (selector) => selector === "strong" ? value : fill,
+      value,
+      fill
+    };
+  });
+  const labels = { textContent: "" };
+  const empty = { hidden: false };
+  const bars = { hidden: true, querySelectorAll: () => rows };
+  const elements = {
+    "#desktopOverviewRangeLabel": labels,
+    "#desktopOverviewEmpty": empty,
+    "#desktopOverviewBars": bars
+  };
+  const context = {
+    desktopUi: {},
+    document: { querySelector: (selector) => elements[selector] },
+    formatCurrency: (amount) => `${amount} đ`
+  };
+  vm.createContext(context);
+  vm.runInContext(app.slice(start, end), context);
+  context.renderDesktopOverviewBreakdown("04/10/2026", { income: 0, sales: 0, expense: 0 });
+  assert.equal(labels.textContent, "04/10/2026");
+  assert.equal(empty.hidden, false);
+  assert.equal(bars.hidden, true);
+  context.renderDesktopOverviewBreakdown("04/10/2026", { income: 100, sales: 50, expense: 25 });
+  assert.equal(empty.hidden, true);
+  assert.equal(bars.hidden, false);
+  assert.deepEqual(rows.map((row) => row.value.textContent), ["100 đ", "50 đ", "25 đ"]);
+  assert.deepEqual(rows.map((row) => row.fill.style.width), ["100%", "50%", "25%"]);
 });
