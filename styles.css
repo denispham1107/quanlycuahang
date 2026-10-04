@@ -484,12 +484,12 @@ html:not(.mobile-app-theme) [data-tab-panel="expense"].active {
   gap: 18px;
 }
 
-html:not(.mobile-app-theme) [data-tab-panel="income"] > .panel:nth-child(3),
-html:not(.mobile-app-theme) [data-tab-panel="expense"] > .panel:nth-child(3) { order: 1; }
 html:not(.mobile-app-theme) [data-tab-panel="income"] > .panel:nth-child(1),
-html:not(.mobile-app-theme) [data-tab-panel="expense"] > .panel:nth-child(1) { order: 2; }
+html:not(.mobile-app-theme) [data-tab-panel="expense"] > .panel:nth-child(1) { order: 1; }
 html:not(.mobile-app-theme) [data-tab-panel="income"] > .panel:nth-child(2),
-html:not(.mobile-app-theme) [data-tab-panel="expense"] > .panel:nth-child(2) { order: 3; }
+html:not(.mobile-app-theme) [data-tab-panel="expense"] > .panel:nth-child(2) { order: 2; }
+html:not(.mobile-app-theme) [data-tab-panel="income"] > .panel:nth-child(3),
+html:not(.mobile-app-theme) [data-tab-panel="expense"] > .panel:nth-child(3) { order: 3; }
 
 html:not(.mobile-app-theme) .tab-panel > .panel {
   border: 1px solid #e2e9f8;
