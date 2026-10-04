@@ -454,6 +454,29 @@ function updateCashQuickEntryViewport() {
   const viewport = window.visualViewport;
   els.quickEntryModal.style.setProperty("--cash-quick-viewport-height", `${viewport?.height || window.innerHeight}px`);
   els.quickEntryModal.style.setProperty("--cash-quick-viewport-top", `${viewport?.offsetTop || 0}px`);
+  if (!els.quickCategoryCreator.hidden && document.activeElement === els.quickNewCategoryName) {
+    requestAnimationFrame(ensureQuickCategoryCreatorVisible);
+  }
+}
+
+function ensureQuickCategoryCreatorVisible() {
+  if (!USE_MOBILE_APP_THEME || els.quickEntryModal.hidden ||
+      !els.quickEntryModal.classList.contains("cash-quick-entry-mode") || els.quickCategoryCreator.hidden) return;
+
+  const card = els.quickEntryForm;
+  const cardRect = card.getBoundingClientRect();
+  const creatorRect = els.quickCategoryCreator.getBoundingClientRect();
+  const viewport = window.visualViewport;
+  const viewportTop = viewport?.offsetTop || 0;
+  const viewportBottom = viewportTop + (viewport?.height || window.innerHeight);
+  const visibleTop = Math.max(cardRect.top, viewportTop) + 16;
+  const visibleBottom = Math.min(cardRect.bottom, viewportBottom) - 16;
+
+  if (creatorRect.height > visibleBottom - visibleTop || creatorRect.top < visibleTop) {
+    card.scrollTop += creatorRect.top - visibleTop;
+  } else if (creatorRect.bottom > visibleBottom) {
+    card.scrollTop += creatorRect.bottom - visibleBottom;
+  }
 }
 
 if (USE_MOBILE_APP_THEME && window.visualViewport) {
@@ -1070,7 +1093,12 @@ els.quickEntryForm.addEventListener("submit", (event) => {
 els.quickCategoryToggle.addEventListener("click", () => {
   const opening = els.quickCategoryCreator.hidden;
   setQuickCategoryCreatorOpen(opening);
-  if (opening) els.quickNewCategoryName.focus();
+  if (opening) {
+    els.quickNewCategoryName.focus({ preventScroll: true });
+    requestAnimationFrame(ensureQuickCategoryCreatorVisible);
+    // iOS changes the visual viewport after focus; check again once its keyboard settles.
+    window.setTimeout(ensureQuickCategoryCreatorVisible, 350);
+  }
 });
 
 els.quickCategoryCreate.addEventListener("click", createQuickEntryCategory);

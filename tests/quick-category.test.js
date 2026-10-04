@@ -34,6 +34,53 @@ test("Nhập nhanh mobile sheet keeps controls legible without changing desktop 
   assert.match(css, /html\.mobile-app-theme \.cash-quick-entry-mode \.quick-entry-card \.modal-actions #quickEntrySubmit \{[\s\S]*?background: var\(--cash-quick-gradient\);[\s\S]*?color: #fff;/);
 });
 
+test("Thu and Chi reveal the category name field again after the mobile keyboard resizes", () => {
+  const start = app.indexOf("function updateCashQuickEntryViewport() {");
+  const end = app.indexOf("if (USE_MOBILE_APP_THEME && window.visualViewport)", start);
+  assert.ok(start >= 0 && end > start);
+  assert.match(app, /els\.quickNewCategoryName\.focus\(\{ preventScroll: true \}\);[\s\S]*?window\.setTimeout\(ensureQuickCategoryCreatorVisible, 350\)/);
+
+  for (const type of ["income", "expense"]) {
+    const viewport = { offsetTop: 65, height: 640 };
+    const card = {
+      scrollTop: 0,
+      getBoundingClientRect() {
+        return { top: 80, bottom: Math.min(660, viewport.offsetTop + viewport.height - 10) };
+      }
+    };
+    const input = {};
+    const els = {
+      quickEntryModal: {
+        hidden: false,
+        classList: { contains: (name) => name === "cash-quick-entry-mode" },
+        style: { setProperty() {} }
+      },
+      quickEntryForm: card,
+      quickCategoryCreator: {
+        hidden: false,
+        getBoundingClientRect: () => ({ top: 790 - card.scrollTop, bottom: 880 - card.scrollTop, height: 90 })
+      },
+      quickNewCategoryName: input
+    };
+    const context = {
+      USE_MOBILE_APP_THEME: true,
+      els,
+      document: { activeElement: input },
+      window: { visualViewport: viewport, innerHeight: 700 },
+      requestAnimationFrame: (callback) => callback()
+    };
+    vm.createContext(context);
+    vm.runInContext(app.slice(start, end), context);
+
+    context.ensureQuickCategoryCreatorVisible();
+    assert.equal(card.scrollTop, 236, `${type}: show creator before keyboard opens`);
+    viewport.height = 400;
+    context.updateCashQuickEntryViewport();
+    assert.equal(card.scrollTop, 441, `${type}: show creator after keyboard opens`);
+    assert.ok(els.quickCategoryCreator.getBoundingClientRect().bottom <= card.getBoundingClientRect().bottom - 16);
+  }
+});
+
 test("creating a quick category keeps draft fields and selects the new category", () => {
   const start = app.indexOf("function setQuickCategoryCreatorOpen(open) {");
   const end = app.indexOf("function openQuickEntryModal(type) {", start);
