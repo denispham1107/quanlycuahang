@@ -7488,3 +7488,214 @@ html.mobile-app-theme [data-tab-panel="stores"] > .toolbar .ghost-button.danger 
   background: rgba(255, 237, 243, 0.93);
   color: #d64076;
 }
+
+/* Mobile Overview: show the existing totals as one readable cash-flow sequence. */
+.mobile-overview-flow {
+  display: none;
+}
+
+html.mobile-app-theme [data-tab-panel="overview"] {
+  width: min(100%, 780px);
+  margin-inline: auto;
+}
+
+html.mobile-app-theme [data-tab-panel="overview"] > .selected-range-card,
+html.mobile-app-theme [data-tab-panel="overview"] > .overview-store-nameplate,
+html.mobile-app-theme [data-tab-panel="overview"] > .summary-grid {
+  display: none;
+}
+
+html.mobile-app-theme .mobile-overview-flow {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  margin-top: 12px;
+}
+
+html.mobile-app-theme .mobile-overview-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  min-width: 0;
+}
+
+html.mobile-app-theme .mobile-overview-heading > div {
+  min-width: 0;
+  flex: 1 1 170px;
+}
+
+html.mobile-app-theme .mobile-overview-heading p {
+  margin: 0 0 5px;
+  color: #1269d4;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+html.mobile-app-theme .mobile-overview-heading h2 {
+  margin: 0;
+  color: #073b7e;
+  font-size: clamp(24px, 6vw, 34px);
+  line-height: 1.12;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.82);
+}
+
+html.mobile-app-theme .mobile-overview-heading > span {
+  flex: 0 1 auto;
+  max-width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #315c9a;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+html.mobile-app-theme .mobile-overview-steps {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+}
+
+html.mobile-app-theme .mobile-overview-step {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  border-radius: 22px;
+  padding: clamp(15px, 4vw, 22px);
+  box-shadow: var(--mobile-card-shadow);
+}
+
+html.mobile-app-theme .mobile-overview-step.money-in {
+  background: linear-gradient(118deg, rgba(244, 249, 255, 0.97), rgba(225, 240, 255, 0.94));
+}
+
+html.mobile-app-theme .mobile-overview-step.money-out {
+  background: linear-gradient(118deg, rgba(255, 247, 251, 0.97), rgba(255, 232, 244, 0.93));
+}
+
+html.mobile-app-theme .mobile-overview-step-heading,
+html.mobile-app-theme .mobile-overview-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+html.mobile-app-theme .mobile-overview-step-heading h3 {
+  margin: 0;
+  color: #112b5b;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+html.mobile-app-theme .mobile-overview-step-heading > svg {
+  width: 22px;
+  height: 22px;
+  color: #217ee6;
+}
+
+html.mobile-app-theme .money-out .mobile-overview-step-heading > svg {
+  color: #df5b99;
+}
+
+html.mobile-app-theme .mobile-overview-line {
+  min-height: 37px;
+  border-top: 1px solid rgba(112, 142, 190, 0.16);
+  padding-top: 10px;
+}
+
+html.mobile-app-theme .mobile-overview-line > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: #364b72;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+html.mobile-app-theme .mobile-overview-line svg {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+  color: #2b81e8;
+}
+
+html.mobile-app-theme .money-out .mobile-overview-line svg {
+  color: #df5b99;
+}
+
+html.mobile-app-theme .mobile-overview-step svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+html.mobile-app-theme .mobile-overview-line strong {
+  color: #102750;
+  font-size: 16px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+html.mobile-app-theme .mobile-overview-connector {
+  display: grid;
+  place-items: center;
+  min-height: 35px;
+  color: #526b9b;
+}
+
+html.mobile-app-theme .mobile-overview-connector span {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.82);
+  font-size: 17px;
+  font-weight: 900;
+  box-shadow: 0 5px 12px rgba(71, 88, 165, 0.08);
+}
+
+html.mobile-app-theme .mobile-overview-result {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  border: 1.5px solid rgba(255, 255, 255, 0.94);
+  border-radius: 23px;
+  padding: clamp(17px, 4.5vw, 24px);
+  background: linear-gradient(120deg, rgba(233, 225, 255, 0.96), rgba(219, 241, 255, 0.96));
+  box-shadow: 0 13px 27px rgba(71, 89, 167, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.84);
+}
+
+html.mobile-app-theme .mobile-overview-result h3 {
+  margin: 0;
+  color: #2b477d;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+html.mobile-app-theme .mobile-overview-result strong {
+  color: #0878f7;
+  font-size: clamp(29px, 7vw, 40px);
+  font-weight: 900;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}

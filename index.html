@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=42" />
+    <link rel="stylesheet" href="styles.css?v=43" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -327,6 +327,53 @@
             <section class="tab-panel active" data-tab-panel="stores"></section>
 
             <section class="tab-panel" data-tab-panel="overview" hidden>
+              <section class="mobile-overview-flow" aria-label="Tổng quan dòng tiền">
+                <header class="mobile-overview-heading">
+                  <div>
+                    <p>Dòng tiền</p>
+                    <h2 id="mobileOverviewStoreName">Cửa hàng</h2>
+                  </div>
+                  <span id="mobileOverviewRangeLabel">Hôm nay</span>
+                </header>
+
+                <div class="mobile-overview-steps">
+                  <section class="mobile-overview-step money-in" aria-labelledby="mobileMoneyInTitle">
+                    <div class="mobile-overview-step-heading">
+                      <h3 id="mobileMoneyInTitle">Tiền vào</h3>
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7v10h10M7 17 18 6" /></svg>
+                    </div>
+                    <div class="mobile-overview-line">
+                      <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9m7 10V5m7 14v-7" /></svg>Tổng thu</span>
+                      <strong id="mobileTotalIncome">0 đ</strong>
+                    </div>
+                    <div class="mobile-overview-line">
+                      <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h2l2 11h11l2-8H6M9 21h.01M18 21h.01" /></svg>Bán hàng</span>
+                      <strong id="mobileTotalSales">0 đ</strong>
+                    </div>
+                  </section>
+
+                  <div class="mobile-overview-connector" aria-hidden="true"><span>↓</span></div>
+
+                  <section class="mobile-overview-step money-out" aria-labelledby="mobileMoneyOutTitle">
+                    <div class="mobile-overview-step-heading">
+                      <h3 id="mobileMoneyOutTitle">Tiền ra</h3>
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 18 6M8 6h10v10" /></svg>
+                    </div>
+                    <div class="mobile-overview-line">
+                      <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v12H3zM3 11h18M7 15h3" /></svg>Tổng chi</span>
+                      <strong id="mobileTotalExpense">0 đ</strong>
+                    </div>
+                  </section>
+
+                  <div class="mobile-overview-connector" aria-hidden="true"><span>=</span></div>
+
+                  <section class="mobile-overview-result" aria-labelledby="mobileBalanceTitle">
+                    <h3 id="mobileBalanceTitle">Còn lại trong kỳ</h3>
+                    <strong id="mobileBalance" aria-live="polite">0 đ</strong>
+                  </section>
+                </div>
+              </section>
+
               <section class="selected-range-card">
                 <span>Đang xem</span>
                 <strong id="selectedRangeLabel">Hôm nay</strong>
@@ -1206,6 +1253,6 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=42"></script>
+    <script defer src="app.js?v=43"></script>
   </body>
 </html>

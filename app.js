@@ -120,6 +120,12 @@ const els = {
   activeStorePanel: document.querySelector(".toolbar"),
   activeStoreName: document.querySelector("#activeStoreName"),
   overviewStoreName: document.querySelector("#overviewStoreName"),
+  mobileOverviewStoreName: document.querySelector("#mobileOverviewStoreName"),
+  mobileOverviewRangeLabel: document.querySelector("#mobileOverviewRangeLabel"),
+  mobileTotalIncome: document.querySelector("#mobileTotalIncome"),
+  mobileTotalSales: document.querySelector("#mobileTotalSales"),
+  mobileTotalExpense: document.querySelector("#mobileTotalExpense"),
+  mobileBalance: document.querySelector("#mobileBalance"),
   renameStore: document.querySelector("#renameStore"),
   deleteStore: document.querySelector("#deleteStore"),
   rangeMode: document.querySelector("#rangeMode"),
@@ -3074,6 +3080,7 @@ function render() {
   if (!store) {
     els.activeStoreName.textContent = "Chưa chọn cửa hàng";
     els.overviewStoreName.textContent = "Chưa chọn cửa hàng";
+    els.mobileOverviewStoreName.textContent = "Chưa chọn cửa hàng";
     els.heroStoreName.textContent = "Chưa chọn cửa hàng";
     els.heroStoreMeta.textContent = "Tạo hoặc chọn một cửa hàng";
     els.storeHeroEntryCount.textContent = "0 dòng";
@@ -3087,6 +3094,7 @@ function render() {
 
   els.activeStoreName.textContent = store.name;
   els.overviewStoreName.textContent = store.name;
+  els.mobileOverviewStoreName.textContent = store.name;
   els.heroStoreName.textContent = store.name;
   els.heroStoreMeta.textContent = `${store.entries.length} dòng`;
   els.storeHeroEntryCount.textContent = `${store.entries.length} dòng`;
@@ -6103,7 +6111,10 @@ function renderReports(store) {
 
   els.totalIncome.textContent = formatCurrency(totalIncome);
   els.totalExpense.textContent = formatCurrency(totalExpense);
+  els.mobileTotalIncome.textContent = formatCurrency(totalIncome);
+  els.mobileTotalExpense.textContent = formatCurrency(totalExpense);
   els.selectedRangeLabel.textContent = range.label;
+  els.mobileOverviewRangeLabel.textContent = range.label;
   els.incomeRangeLabel.textContent = range.label;
   els.expenseRangeLabel.textContent = range.label;
   els.incomeHistoryRangeLabel.textContent = range.label;
@@ -6128,6 +6139,8 @@ function renderReports(store) {
   const totalSalesAmount = activeSalesOrders.reduce((sum, order) => sum + Number(order.total || 0), 0);
   els.totalSales.textContent = formatCurrency(totalSalesAmount);
   els.balance.textContent = formatCurrency(totalIncome + totalSalesAmount - totalExpense);
+  els.mobileTotalSales.textContent = formatCurrency(totalSalesAmount);
+  els.mobileBalance.textContent = els.balance.textContent;
   els.salesHistoryDateLabel.textContent = range.label;
   els.salesRangeLabel.innerHTML = `
     <span>Tổng</span>
