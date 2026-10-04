@@ -21,7 +21,7 @@ function makeClassList() {
   };
 }
 
-test("mobile time filter hides on the four requested screens and returns after closing", () => {
+test("mobile time filter hides on entry sheets and overlays and returns after closing", () => {
   const els = {
     quickEntryModal: { hidden: true },
     quickEntryForm: { dataset: { type: "sales" } },
@@ -79,9 +79,13 @@ test("mobile time filter hides on the four requested screens and returns after c
   els.aiChatModal.hidden = true;
   check(false, "overview");
 
-  els.quickEntryForm.dataset.type = "income";
-  els.quickEntryModal.hidden = false;
-  check(false, "income");
+  for (const type of ["income", "expense"]) {
+    els.quickEntryForm.dataset.type = type;
+    els.quickEntryModal.hidden = false;
+    check(true, type);
+    els.quickEntryModal.hidden = true;
+    check(false, type);
+  }
 
   context.USE_MOBILE_APP_THEME = false;
   context.desktopUi = {};

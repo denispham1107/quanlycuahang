@@ -218,6 +218,7 @@ const els = {
   quickEntryModal: document.querySelector("#quickEntryModal"),
   quickEntryForm: document.querySelector("#quickEntryForm"),
   quickEntryTitle: document.querySelector("#quickEntryTitle"),
+  quickEntryClose: document.querySelector("#quickEntryClose"),
   quickEntryFields: document.querySelector("#quickEntryFields"),
   quickEntryCategory: document.querySelector("#quickEntryCategory"),
   quickCategoryToggle: document.querySelector("#quickCategoryToggle"),
@@ -372,6 +373,13 @@ const els = {
 
 moveStoreSectionsIntoTab();
 
+if (USE_MOBILE_APP_THEME) {
+  // Match the visual and keyboard order of the amount-first mobile quick sheet.
+  const [mainRow, detailRow] = els.quickEntryFields.querySelectorAll(":scope > .form-row");
+  mainRow?.prepend(els.quickEntryAmount.closest(".field"));
+  detailRow?.prepend(els.quickEntryCategory.closest(".field"));
+}
+
 const desktopUi = !USE_MOBILE_APP_THEME ? {
   filterRail: document.querySelector("#desktopFilterRail"),
   filterBody: document.querySelector("#desktopFilterBody"),
@@ -439,6 +447,18 @@ if (mobileTimeFilterShell && els.timeFilters && els.timeFilterToggle) {
   document.body.appendChild(mobileTimeFilterShell);
   els.timeFilters.hidden = true;
   els.timeFilters.addEventListener("focusin", clearTimeFiltersAutoCollapse);
+}
+
+function updateCashQuickEntryViewport() {
+  if (!USE_MOBILE_APP_THEME || !els.quickEntryModal.classList.contains("cash-quick-entry-mode")) return;
+  const viewport = window.visualViewport;
+  els.quickEntryModal.style.setProperty("--cash-quick-viewport-height", `${viewport?.height || window.innerHeight}px`);
+  els.quickEntryModal.style.setProperty("--cash-quick-viewport-top", `${viewport?.offsetTop || 0}px`);
+}
+
+if (USE_MOBILE_APP_THEME && window.visualViewport) {
+  window.visualViewport.addEventListener("resize", updateCashQuickEntryViewport);
+  window.visualViewport.addEventListener("scroll", updateCashQuickEntryViewport);
 }
 
 if (els.aiChatMode) {
@@ -1030,6 +1050,8 @@ els.applyOrderDiscount.addEventListener("click", () => {
 els.quickEntryModal.addEventListener("click", (event) => {
   if (event.target === els.quickEntryModal) closeQuickEntryModal();
 });
+
+els.quickEntryClose.addEventListener("click", closeQuickEntryModal);
 
 els.quickEntryForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -3419,6 +3441,7 @@ function openQuickEntryModal(type) {
   }
 
   els.quickEntryModal.classList.remove("sales-page-mode");
+  els.quickEntryModal.classList.toggle("cash-quick-entry-mode", USE_MOBILE_APP_THEME);
   const categories = store.categories[type] || [];
   els.quickEntryFields.hidden = false;
   els.salesOrderFields.hidden = true;
@@ -3432,9 +3455,11 @@ function openQuickEntryModal(type) {
   els.openOrderDiscount.hidden = true;
   els.saveSalesDraft.hidden = true;
   els.quickEntryDate.value = els.singleDate.value || today;
+  els.quickEntryAmount.placeholder = USE_MOBILE_APP_THEME ? "0 đ" : "";
   refreshQuickEntryCategoryOptions(store, type);
   setQuickCategoryCreatorOpen(!categories.length);
   renderEntrySuggestionList(els.quickEntrySuggestions, getEntrySuggestions(store, type));
+  updateCashQuickEntryViewport();
   els.quickEntryModal.hidden = false;
   updateTimeFiltersVisibility();
 }
@@ -3442,7 +3467,7 @@ function openQuickEntryModal(type) {
 function closeQuickEntryModal() {
   els.quickEntryModal.hidden = true;
   updateTimeFiltersVisibility();
-  els.quickEntryModal.classList.remove("sales-page-mode");
+  els.quickEntryModal.classList.remove("sales-page-mode", "cash-quick-entry-mode");
   els.quickEntryForm.reset();
   setQuickCategoryCreatorOpen(false);
   uiState.salesDraftId = null;
@@ -3481,6 +3506,7 @@ function applyQuickEntrySuggestion() {
 
 function openSalesOrderModal(store, draft = null) {
   els.quickEntryForm.dataset.type = "sales";
+  els.quickEntryModal.classList.remove("cash-quick-entry-mode");
   els.quickEntryModal.classList.add("sales-page-mode");
   els.quickEntryTitle.textContent = "Tạo đơn bán hàng";
   els.quickEntryFields.hidden = true;
@@ -4528,6 +4554,7 @@ function renderCustomerHistoryOrder(order) {
 
 function openPurchaseOrderModal(store) {
   els.quickEntryForm.dataset.type = "purchase";
+  els.quickEntryModal.classList.remove("cash-quick-entry-mode");
   els.quickEntryModal.classList.add("sales-page-mode");
   els.quickEntryTitle.textContent = "Nhập hàng vào kho";
   els.quickEntryFields.hidden = true;
@@ -4552,6 +4579,7 @@ function openBulkPurchaseModal(store) {
   if (!store) return;
 
   els.quickEntryForm.dataset.type = "purchase-bulk";
+  els.quickEntryModal.classList.remove("cash-quick-entry-mode");
   els.quickEntryModal.classList.add("sales-page-mode");
   els.quickEntryTitle.textContent = "Nhập hàng từ Danh Sách";
   els.quickEntryFields.hidden = true;
@@ -6039,7 +6067,7 @@ function getMobileTimeFilterLabel() {
 function isMobileTimeFilterSuppressed() {
   if (!USE_MOBILE_APP_THEME) return false;
   return Boolean(
-    (els.quickEntryModal && !els.quickEntryModal.hidden && ["sales", "purchase", "purchase-bulk"].includes(els.quickEntryForm?.dataset.type)) ||
+    (els.quickEntryModal && !els.quickEntryModal.hidden) ||
     (els.customersModal && !els.customersModal.hidden) ||
     (els.aiChatModal && !els.aiChatModal.hidden)
   );

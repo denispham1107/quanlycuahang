@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=52" />
+    <link rel="stylesheet" href="styles.css?v=53" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -751,10 +751,12 @@
     </div>
 
     <div class="modal-backdrop quick-entry-backdrop" id="quickEntryModal" hidden>
-      <form class="modal-card quick-entry-card" id="quickEntryForm" novalidate>
+      <form class="modal-card quick-entry-card" id="quickEntryForm" role="dialog" aria-modal="true" aria-labelledby="quickEntryTitle" novalidate>
         <div class="panel-heading">
+          <span class="quick-cash-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 3v17m-6-6 6 6 6-6" /></svg></span>
           <h2 id="quickEntryTitle">Thêm khoản</h2>
           <span>Nhập nhanh</span>
+          <button class="quick-cash-close" id="quickEntryClose" type="button" aria-label="Đóng cửa sổ thêm khoản">×</button>
         </div>
         <div id="quickEntryFields">
           <div class="form-row">
@@ -1338,6 +1340,6 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=52"></script>
+    <script defer src="app.js?v=53"></script>
   </body>
 </html>

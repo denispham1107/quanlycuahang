@@ -23,6 +23,17 @@ test("quick category input and buttons keep separate columns on narrow screens",
   assert.match(css, /\.quick-entry-category-picker select,\s*\.quick-category-creator-row input\s*\{\s*min-width: 0;\s*width: 100%;/);
 });
 
+test("Nhập nhanh mobile sheet keeps controls legible without changing desktop or sales", () => {
+  assert.match(html, /id="quickEntryClose" type="button" aria-label="Đóng cửa sổ thêm khoản"/);
+  assert.match(html, /class="quick-cash-symbol" aria-hidden="true"/);
+  assert.match(app, /if \(USE_MOBILE_APP_THEME\) \{\s*\/\/ Match the visual and keyboard order[\s\S]*?mainRow\?\.prepend\(els\.quickEntryAmount\.closest\("\.field"\)\);[\s\S]*?detailRow\?\.prepend\(els\.quickEntryCategory\.closest\("\.field"\)\);/);
+  assert.match(app, /els\.quickEntryClose\.addEventListener\("click", closeQuickEntryModal\)/);
+  assert.match(css, /html\.mobile-app-theme \.quick-entry-backdrop\.cash-quick-entry-mode \{/);
+  assert.match(css, /html\.mobile-app-theme \.cash-quick-entry-mode \.quick-entry-card \.modal-actions \{\s*display: grid;\s*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
+  assert.match(css, /html\.mobile-app-theme \.cash-quick-entry-mode \.quick-entry-card \.modal-actions #cancelQuickEntry \{[\s\S]*?background: #fff;[\s\S]*?color: #18285a;/);
+  assert.match(css, /html\.mobile-app-theme \.cash-quick-entry-mode \.quick-entry-card \.modal-actions #quickEntrySubmit \{[\s\S]*?background: var\(--cash-quick-gradient\);[\s\S]*?color: #fff;/);
+});
+
 test("creating a quick category keeps draft fields and selects the new category", () => {
   const start = app.indexOf("function setQuickCategoryCreatorOpen(open) {");
   const end = app.indexOf("function openQuickEntryModal(type) {", start);

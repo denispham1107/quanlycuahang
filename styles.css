@@ -8637,3 +8637,232 @@ html.mobile-app-theme [data-mobile-flow-panel="manage"] .category-section {
   overflow-y: auto;
   overscroll-behavior: contain;
 }
+
+/* Mẫu Nhập nhanh: Thu/Chi only. Sales, purchase and desktop retain their layout. */
+.quick-cash-symbol,
+.quick-cash-close {
+  display: none;
+}
+
+html.mobile-app-theme .quick-entry-backdrop.cash-quick-entry-mode {
+  top: var(--cash-quick-viewport-top, 0px);
+  bottom: auto;
+  height: var(--cash-quick-viewport-height, 100dvh);
+  align-items: end;
+  justify-items: center;
+  padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  background: rgba(25, 30, 78, 0.42);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+}
+
+html.mobile-app-theme .cash-quick-entry-mode .quick-entry-card {
+  width: min(100%, 520px);
+  max-height: calc(var(--cash-quick-viewport-height, 100dvh) - max(10px, env(safe-area-inset-top)) - max(10px, env(safe-area-inset-bottom)));
+  margin: 0;
+  gap: 12px;
+  border: 1.5px solid rgba(255, 255, 255, 0.94);
+  border-radius: 28px;
+  padding: 12px 16px max(16px, env(safe-area-inset-bottom));
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.97), rgba(247, 249, 255, 0.97));
+  box-shadow: 0 22px 60px rgba(35, 43, 115, 0.3), inset 0 1px 0 #fff;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode .quick-entry-card::before {
+  content: "";
+  justify-self: center;
+  width: 46px;
+  height: 5px;
+  border-radius: 999px;
+  background: #c9cae2;
+}
+
+html.mobile-app-theme #quickEntryForm[data-type="income"] {
+  --cash-quick-accent: #535ced;
+  --cash-quick-tint: #e9edff;
+  --cash-quick-line: #b9c0fc;
+  --cash-quick-gradient: linear-gradient(110deg, #4b8cf9, #7150f4);
+}
+
+html.mobile-app-theme #quickEntryForm[data-type="expense"] {
+  --cash-quick-accent: #c82d8a;
+  --cash-quick-tint: #ffe5f3;
+  --cash-quick-line: #efb4d5;
+  --cash-quick-gradient: linear-gradient(110deg, #f467ad, #ae48de);
+}
+
+html.mobile-app-theme .cash-quick-entry-mode .quick-entry-card .panel-heading {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) 38px;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  margin: 0 0 2px;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode .quick-entry-card .panel-heading h2 {
+  min-width: 0;
+  font-size: clamp(21px, 6vw, 26px);
+  line-height: 1.15;
+  color: #122456;
+  overflow-wrap: anywhere;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode .quick-entry-card .panel-heading > span:not(.quick-cash-symbol) {
+  display: none;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode .quick-cash-symbol {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 16px;
+  background: var(--cash-quick-tint);
+  color: var(--cash-quick-accent);
+}
+
+html.mobile-app-theme .cash-quick-entry-mode .quick-cash-symbol svg {
+  width: 25px;
+  height: 25px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode #quickEntryForm[data-type="expense"] .quick-cash-symbol svg {
+  transform: rotate(180deg);
+}
+
+html.mobile-app-theme .cash-quick-entry-mode #quickEntryClose {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+  place-items: center;
+  border: 1px solid rgba(113, 129, 192, 0.16);
+  border-radius: 13px;
+  padding: 0;
+  background: #f2f4fc;
+  color: #5d6590;
+  box-shadow: none;
+  font-size: 25px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode #quickEntryFields {
+  gap: 10px;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode #quickEntryFields > .form-row {
+  display: contents;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode #quickEntryFields .field {
+  gap: 5px;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode #quickEntryFields .field > label {
+  color: #354570;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode #quickEntryAmount {
+  width: 100%;
+  min-height: 78px;
+  border: 1.5px solid var(--cash-quick-line);
+  border-radius: 18px;
+  padding: 10px 16px;
+  background: var(--cash-quick-tint);
+  color: #273867;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  font-size: clamp(29px, 8vw, 36px);
+  font-weight: 850;
+  letter-spacing: -0.035em;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode #quickEntryAmount::placeholder {
+  color: var(--cash-quick-accent);
+  opacity: 0.85;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode #quickEntryNote,
+html.mobile-app-theme .cash-quick-entry-mode #quickEntryDate,
+html.mobile-app-theme .cash-quick-entry-mode #quickEntryCategory {
+  width: 100%;
+  min-height: 50px;
+  border-radius: 15px;
+  background: #fff;
+  color: #13234b;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode .quick-entry-category-picker {
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: 8px;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode .quick-entry-card .quick-category-toggle {
+  width: auto;
+  min-height: 50px;
+  border-color: var(--cash-quick-line);
+  background: var(--cash-quick-tint);
+  color: var(--cash-quick-accent);
+  box-shadow: none;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode .quick-category-creator {
+  border-color: var(--cash-quick-line);
+  background: linear-gradient(110deg, #fff, var(--cash-quick-tint));
+}
+
+html.mobile-app-theme .cash-quick-entry-mode .quick-entry-card .modal-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 3px;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode .quick-entry-card .modal-actions > button[hidden] {
+  display: none;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode .quick-entry-card .modal-actions #cancelQuickEntry,
+html.mobile-app-theme .cash-quick-entry-mode .quick-entry-card .modal-actions #quickEntrySubmit {
+  width: 100%;
+  min-height: 52px;
+  border-radius: 15px;
+  font-size: 16px;
+  font-weight: 850;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode .quick-entry-card .modal-actions #cancelQuickEntry {
+  border: 1.5px solid var(--cash-quick-line);
+  background: #fff;
+  color: #18285a;
+  box-shadow: none;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode .quick-entry-card .modal-actions #quickEntrySubmit {
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  background: var(--cash-quick-gradient);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(79, 91, 237, 0.22);
+}
+
+@media (max-width: 360px) {
+  html.mobile-app-theme .cash-quick-entry-mode .quick-entry-card {
+    padding-inline: 12px;
+  }
+
+  html.mobile-app-theme .cash-quick-entry-mode #quickEntryAmount {
+    min-height: 70px;
+  }
+}
