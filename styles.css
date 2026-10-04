@@ -8823,6 +8823,17 @@ html.mobile-app-theme .cash-quick-entry-mode .quick-category-creator {
   background: linear-gradient(110deg, #fff, var(--cash-quick-tint));
 }
 
+/* Category creation is a compact subview of the same sheet, so iOS keyboards
+   cannot leave its input underneath the sheet's clipped lower edge. */
+html.mobile-app-theme .cash-quick-entry-mode.cash-category-editing #quickEntryFields .quick-cash-hide-when-category,
+html.mobile-app-theme .cash-quick-entry-mode.cash-category-editing .quick-entry-card .modal-actions {
+  display: none;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode.cash-category-editing .quick-entry-card {
+  overflow-y: auto;
+}
+
 html.mobile-app-theme .cash-quick-entry-mode .quick-entry-card .modal-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

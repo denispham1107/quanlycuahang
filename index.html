@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=54" />
+    <link rel="stylesheet" href="styles.css?v=55" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -760,18 +760,18 @@
         </div>
         <div id="quickEntryFields">
           <div class="form-row">
-            <div class="field">
+            <div class="field quick-cash-hide-when-category">
               <label for="quickEntryNote">Tên khoản</label>
               <input id="quickEntryNote" name="note" type="text" autocomplete="off" list="quickEntrySuggestions" />
               <datalist id="quickEntrySuggestions"></datalist>
             </div>
-            <div class="field">
+            <div class="field quick-cash-hide-when-category">
               <label for="quickEntryAmount">Số tiền</label>
               <input id="quickEntryAmount" name="amount" type="text" inputmode="numeric" autocomplete="off" required />
             </div>
           </div>
           <div class="form-row">
-            <div class="field">
+            <div class="field quick-cash-hide-when-category">
               <label for="quickEntryDate">Ngày</label>
               <input id="quickEntryDate" name="date" type="date" required />
             </div>
@@ -1340,6 +1340,6 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=54"></script>
+    <script defer src="app.js?v=55"></script>
   </body>
 </html>

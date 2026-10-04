@@ -3409,7 +3409,13 @@ function applyEntrySuggestion(form) {
 function setQuickCategoryCreatorOpen(open) {
   els.quickCategoryCreator.hidden = !open;
   els.quickCategoryToggle.setAttribute("aria-expanded", String(open));
+  const compact = USE_MOBILE_APP_THEME && els.quickEntryModal.classList.contains("cash-quick-entry-mode");
+  els.quickEntryModal.classList.toggle("cash-category-editing", compact && open);
+  els.quickCategoryToggle.textContent = compact && open ? "Hủy" : "+ Mục";
+  els.quickCategoryToggle.setAttribute("aria-label", compact && open ? "Hủy tạo danh mục mới" : "Tạo danh mục mới");
+  if (compact) els.quickEntryForm.scrollTop = 0;
   if (!open) {
+    if (compact && document.activeElement === els.quickNewCategoryName) els.quickNewCategoryName.blur();
     els.quickNewCategoryName.value = "";
     els.quickCategoryError.textContent = "";
     els.quickCategoryError.hidden = true;
