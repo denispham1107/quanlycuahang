@@ -135,7 +135,7 @@ test("mobile customer date and time keep the original timestamp through edits", 
   els.customerCreatedDate.value = "";
   context.syncCustomerCreatedAtFromMobile();
   assert.equal(els.customerCreatedAt.value, "");
-  assert.match(app, /els\.customerCreatedAt\.value = toDateTimeLocalValue\(customer\?\.createdAt \|\| new Date\(\)\.toISOString\(\)\);[\s\S]*?els\.customerCreatedDate\.value = createdDate \? formatDate\(createdDate\) : "";[\s\S]*?els\.customerCreatedTime\.value = createdTime;/);
+  assert.match(app, /const initialCreatedAt = customer\?\.createdAt \|\| new Date\(\);[\s\S]*?els\.customerCreatedAt\.value = toDateTimeLocalValue\(initialCreatedAt\);[\s\S]*?els\.customerCreatedDate\.value = createdDate \? formatDate\(createdDate\) : "";[\s\S]*?els\.customerCreatedTime\.value = createdTime;/);
   assert.match(app, /if \(USE_MOBILE_APP_THEME\) syncCustomerCreatedAtFromMobile\(\);\s*saveCustomerFromForm\(new FormData\(els\.customerForm\)\)/);
 });
 
@@ -163,6 +163,61 @@ test("opening an existing customer loads both compact date and time controls", (
   assert.equal(els.customerCreatedTime.value, "04:37");
   assert.equal(els.customerCreatedAt.value, "2026-08-29T04:37");
   assert.ok(classes.has("customer-form-open"));
+});
+
+test("each new customer form uses its own opening time while edits keep the saved time", () => {
+  const start = app.indexOf("function openCustomerForm(customer = null) {");
+  const end = app.indexOf("function closeCustomerForm() {", start);
+  let currentMoment = "2026-10-05T09:30:00.000Z";
+  class ClockDate extends Date {
+    constructor(...args) { super(...(args.length ? args : [currentMoment])); }
+  }
+  const els = {
+    customerForm: { hidden: true, elements: { customerId: { value: "" } } },
+    customersCard: { classList: { add() {} } },
+    customersPage: { scrollTop: 0 },
+    customerNameInput: { value: "", focus() {} },
+    customerPhoneInput: { value: "" },
+    customerMemberTier: { value: "" },
+    customerCreatedAt: { value: "" },
+    customerCreatedDate: { value: "", setCustomValidity() {} },
+    customerCreatedTime: { value: "", setCustomValidity() {} }
+  };
+  const sources = [];
+  const context = {
+    els, uiState: {}, USE_MOBILE_APP_THEME: true, Date: ClockDate,
+    formatDate: (date) => date.split("-").reverse().join("/"),
+    toDateTimeLocalValue(value) {
+      sources.push(value);
+      return typeof value === "string" ? "2026-08-29T04:37" : value.toISOString().slice(0, 16);
+    }
+  };
+  vm.createContext(context);
+  vm.runInContext(app.slice(start, end), context);
+
+  context.openCustomerForm();
+  assert.equal(sources[0].toISOString(), currentMoment);
+  assert.equal(els.customerCreatedDate.value, "05/10/2026");
+  assert.equal(els.customerCreatedTime.value, "09:30");
+  els.customerCreatedTime.value = "11:45";
+  context.syncCustomerCreatedAtFromMobile();
+  assert.equal(els.customerCreatedAt.value, "2026-10-05T11:45");
+
+  currentMoment = "2026-10-05T09:31:00.000Z";
+  context.openCustomerForm();
+  assert.equal(sources[1].toISOString(), currentMoment);
+  assert.equal(els.customerCreatedTime.value, "09:31");
+
+  context.openCustomerForm({ id: "old", createdAt: "2026-08-28T21:37:00.000Z" });
+  assert.equal(sources[2], "2026-08-28T21:37:00.000Z");
+  assert.equal(els.customerCreatedDate.value, "29/08/2026");
+  assert.equal(els.customerCreatedTime.value, "04:37");
+
+  currentMoment = "2026-10-05T09:32:00.000Z";
+  context.USE_MOBILE_APP_THEME = false;
+  context.openCustomerForm();
+  assert.equal(sources[3].toISOString(), currentMoment);
+  assert.equal(els.customerCreatedAt.value, "2026-10-05T09:32");
 });
 
 test("customer page has browser back navigation and cleans up on sign-out", () => {

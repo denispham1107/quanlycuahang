@@ -4352,6 +4352,8 @@ function ensureCustomerFocusVisible(target) {
 }
 
 function openCustomerForm(customer = null) {
+  // Capture the opening moment for a new customer; editing keeps the saved timestamp.
+  const initialCreatedAt = customer?.createdAt || new Date();
   uiState.customerFormOpen = true;
   els.customerForm.hidden = false;
   els.customersCard.classList.add("customer-form-open");
@@ -4360,7 +4362,7 @@ function openCustomerForm(customer = null) {
   els.customerNameInput.value = customer?.name || "";
   els.customerPhoneInput.value = customer?.phone || "";
   els.customerMemberTier.value = customer?.memberTier || "Thường";
-  els.customerCreatedAt.value = toDateTimeLocalValue(customer?.createdAt || new Date().toISOString());
+  els.customerCreatedAt.value = toDateTimeLocalValue(initialCreatedAt);
   const [createdDate = "", createdTime = ""] = els.customerCreatedAt.value.split("T");
   els.customerCreatedDate.value = createdDate ? formatDate(createdDate) : "";
   els.customerCreatedTime.value = createdTime;
