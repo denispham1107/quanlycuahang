@@ -90,6 +90,11 @@ test("mobile customer form and keyboard viewport remain usable in the full page"
   assert.match(css, /html\.mobile-app-theme \.customers-card\.customer-form-open \.customers-list/);
   assert.match(css, /html\.mobile-app-theme \.customer-member-chip\.is-active/);
   assert.match(css, /html\.mobile-app-theme \.customer-mobile-edit \{[\s\S]*?background: #edf2ff;[\s\S]*?color: #172e75;/);
+  assert.match(css, /html\.mobile-app-theme \.customer-form-toggle \{[^}]*align-items: center;[^}]*justify-content: center;[^}]*line-height: 1\.2;/);
+  assert.match(css, /html\.mobile-app-theme \.customer-add-icon \{[^}]*align-items: center;[^}]*line-height: 1;/);
+  assert.match(css, /html\.mobile-app-theme \.customers-card \.customer-form \{[^}]*min-width: 0;[^}]*width: 100%;/);
+  assert.match(css, /html\.mobile-app-theme \.customers-card\.customer-form-open \.customer-form \.field \{\s*min-width: 0;/);
+  assert.match(css, /html\.mobile-app-theme #customerCreatedAt \{[^}]*min-width: 0;[^}]*width: 100%;[^}]*max-width: 100%;/);
 });
 
 test("customer page has browser back navigation and cleans up on sign-out", () => {

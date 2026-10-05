@@ -29,6 +29,8 @@ test("Nhập nhanh mobile sheet keeps controls legible without changing desktop 
   assert.match(app, /if \(USE_MOBILE_APP_THEME\) \{\s*\/\/ Match the visual and keyboard order[\s\S]*?mainRow\?\.prepend\(els\.quickEntryAmount\.closest\("\.field"\)\);[\s\S]*?detailRow\?\.prepend\(els\.quickEntryCategory\.closest\("\.field"\)\);/);
   assert.match(app, /els\.quickEntryClose\.addEventListener\("click", closeQuickEntryModal\)/);
   assert.match(css, /html\.mobile-app-theme \.quick-entry-backdrop\.cash-quick-entry-mode \{/);
+  assert.match(css, /html\.mobile-app-theme \.quick-entry-backdrop\.cash-quick-entry-mode \{[^}]*align-items: center;[^}]*justify-items: center;/);
+  assert.match(css, /html\.mobile-app-theme \.cash-quick-entry-mode \.quick-entry-card \{[^}]*max-height: calc\(var\(--cash-quick-viewport-height, 100dvh\)/);
   assert.match(css, /html\.mobile-app-theme \.cash-quick-entry-mode \.quick-entry-card \.modal-actions \{\s*display: grid;\s*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
   assert.match(css, /html\.mobile-app-theme \.cash-quick-entry-mode \.quick-entry-card \.modal-actions #cancelQuickEntry \{[\s\S]*?background: #fff;[\s\S]*?color: #18285a;/);
   assert.match(css, /html\.mobile-app-theme \.cash-quick-entry-mode \.quick-entry-card \.modal-actions #quickEntrySubmit \{[\s\S]*?background: var\(--cash-quick-gradient\);[\s\S]*?color: #fff;/);
