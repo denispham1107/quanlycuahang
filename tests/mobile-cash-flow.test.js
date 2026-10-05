@@ -16,10 +16,21 @@ test("Thu and Chi use the same compact mobile layout while desktop panels stay a
       assert.match(html, new RegExp(`data-mobile-flow-panel="${section}"`));
     }
   }
-  assert.match(css, /\.mobile-cash-flow,\s*\.mobile-flow-close\s*\{\s*display: none;/);
+  assert.match(css, /\.mobile-cash-flow,\s*\.mobile-flow-history-overview,\s*\.mobile-flow-close\s*\{\s*display: none;/);
   assert.match(css, /html\.mobile-app-theme \.mobile-cash-flow\s*\{\s*display: grid;/);
+  assert.match(css, /html\.mobile-app-theme \.mobile-flow-history-overview\s*\{\s*display: grid;/);
   assert.match(css, /data-mobile-flow-view="history"/);
+  assert.match(css, /data-mobile-flow-view="report-history"/);
   assert.match(app, /setMobileCashFlowPanel\(type, "history"\)/);
+  for (const type of ["income", "expense"]) {
+    const tabStart = html.indexOf(`<section class="tab-panel" data-tab-panel="${type}"`);
+    const nextTab = html.indexOf('<section class="tab-panel"', tabStart + 1);
+    const tab = html.slice(tabStart, nextTab < 0 ? undefined : nextTab);
+    const report = tab.indexOf('data-mobile-flow-panel="report"');
+    const historyHeading = tab.indexOf('class="mobile-flow-history-overview"');
+    const history = tab.indexOf('data-mobile-flow-panel="history"');
+    assert.ok(report >= 0 && report < historyHeading && historyHeading < history, `${type} history follows the category report`);
+  }
 });
 
 test("compact summaries use the selected store, range, live category totals and recent entries", () => {
@@ -59,28 +70,45 @@ test("compact summaries use the selected store, range, live category totals and 
   assert.match(document.getElementById("mobileIncomeFlowHistory").innerHTML, /Khoản A/);
 });
 
-test("mobile detail actions reveal the requested panel and can collapse it again", () => {
+test("Thu and Chi retain the category report when history opens and collapse details independently", () => {
   const start = app.indexOf("function setMobileCashFlowPanel(type, view, innerTarget = null) {");
   const end = app.indexOf("function renderSalesGoodsReport(", start);
   assert.ok(start >= 0 && end > start);
   const calls = [];
-  const panel = {
+  const panels = Object.fromEntries(["income", "expense"].map((type) => [type, {
     dataset: {},
     querySelector(selector) {
-      return { scrollIntoView(options) { calls.push({ selector, options }); } };
+      return { scrollIntoView(options) { calls.push({ type, selector, options }); } };
     }
-  };
+  }]));
   const context = {
     USE_MOBILE_APP_THEME: true,
-    document: { querySelector: () => panel },
+    document: { querySelector: (selector) => panels[selector.match(/"(income|expense)"/)[1]] },
     window: { requestAnimationFrame: (callback) => callback() }
   };
   vm.createContext(context);
   vm.runInContext(app.slice(start, end), context);
-  context.setMobileCashFlowPanel("expense", "manage", ".category-section");
-  assert.equal(panel.dataset.mobileFlowView, "manage");
-  assert.equal(calls[0].selector, '[data-mobile-flow-panel="manage"] .category-section');
-  context.setMobileCashFlowPanel("expense", "");
-  assert.equal(panel.dataset.mobileFlowView, "");
-  assert.equal(calls[1].selector, ".mobile-cash-flow");
+  for (const type of ["income", "expense"]) {
+    const panel = panels[type];
+    context.setMobileCashFlowPanel(type, "manage", ".category-section");
+    assert.equal(panel.dataset.mobileFlowView, "manage");
+    assert.equal(calls.at(-1).selector, '[data-mobile-flow-panel="manage"] .category-section');
+    context.setMobileCashFlowPanel(type, "");
+    assert.equal(panel.dataset.mobileFlowView, "");
+    context.setMobileCashFlowPanel(type, "report");
+    assert.equal(panel.dataset.mobileFlowView, "report");
+    context.setMobileCashFlowPanel(type, "history");
+    assert.equal(panel.dataset.mobileFlowView, "report-history");
+    assert.equal(calls.at(-1).selector, ".mobile-flow-history-overview");
+    context.setMobileCashFlowPanel(type, "close-history");
+    assert.equal(panel.dataset.mobileFlowView, "report");
+    context.setMobileCashFlowPanel(type, "history");
+    context.setMobileCashFlowPanel(type, "close-report");
+    assert.equal(panel.dataset.mobileFlowView, "history");
+    context.setMobileCashFlowPanel(type, "close-history");
+    assert.equal(panel.dataset.mobileFlowView, "");
+    context.setMobileCashFlowPanel(type, "history");
+    context.setMobileCashFlowPanel(type, "report");
+    assert.equal(panel.dataset.mobileFlowView, "report-history");
+  }
 });

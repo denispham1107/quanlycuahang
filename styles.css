@@ -8296,6 +8296,7 @@ html.mobile-app-theme .mobile-overview-result strong {
 
 /* Thu / Chi: compact mobile dashboard; full management and history remain on demand. */
 .mobile-cash-flow,
+.mobile-flow-history-overview,
 .mobile-flow-close {
   display: none;
 }
@@ -8316,8 +8317,12 @@ html.mobile-app-theme [data-tab-panel="income"][data-mobile-flow-view="manage"] 
 html.mobile-app-theme [data-tab-panel="expense"][data-mobile-flow-view="manage"] > .panel[data-mobile-flow-panel="manage"],
 html.mobile-app-theme [data-tab-panel="income"][data-mobile-flow-view="report"] > .panel[data-mobile-flow-panel="report"],
 html.mobile-app-theme [data-tab-panel="expense"][data-mobile-flow-view="report"] > .panel[data-mobile-flow-panel="report"],
+html.mobile-app-theme [data-tab-panel="income"][data-mobile-flow-view="report-history"] > .panel[data-mobile-flow-panel="report"],
+html.mobile-app-theme [data-tab-panel="expense"][data-mobile-flow-view="report-history"] > .panel[data-mobile-flow-panel="report"],
 html.mobile-app-theme [data-tab-panel="income"][data-mobile-flow-view="history"] > .panel[data-mobile-flow-panel="history"],
-html.mobile-app-theme [data-tab-panel="expense"][data-mobile-flow-view="history"] > .panel[data-mobile-flow-panel="history"] {
+html.mobile-app-theme [data-tab-panel="expense"][data-mobile-flow-view="history"] > .panel[data-mobile-flow-panel="history"],
+html.mobile-app-theme [data-tab-panel="income"][data-mobile-flow-view="report-history"] > .panel[data-mobile-flow-panel="history"],
+html.mobile-app-theme [data-tab-panel="expense"][data-mobile-flow-view="report-history"] > .panel[data-mobile-flow-panel="history"] {
   display: block;
 }
 
@@ -8326,6 +8331,14 @@ html.mobile-app-theme .mobile-cash-flow {
   min-width: 0;
   gap: 10px;
   padding: 12px 1px 0;
+  scroll-margin-top: 72px;
+}
+
+html.mobile-app-theme .mobile-flow-history-overview {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+  padding: 0 1px;
   scroll-margin-top: 72px;
 }
 

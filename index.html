@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=61" />
+    <link rel="stylesheet" href="styles.css?v=62" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -450,8 +450,6 @@
                 <div class="mobile-flow-section-heading"><h3>Danh mục</h3><button type="button" data-mobile-flow-action="manage" data-flow-type="income">Quản lý <span aria-hidden="true">›</span></button></div>
                 <div class="mobile-flow-categories" id="mobileIncomeFlowCategories"></div>
                 <button class="mobile-flow-more" type="button" data-mobile-flow-action="report" data-flow-type="income" id="mobileIncomeFlowMore">Xem tất cả danh mục <span aria-hidden="true">›</span></button>
-                <div class="mobile-flow-section-heading"><h3>Lịch sử</h3><button type="button" data-mobile-flow-action="history" data-flow-type="income">Xem tất cả <span aria-hidden="true">›</span></button></div>
-                <div class="mobile-flow-history-preview" id="mobileIncomeFlowHistory"></div>
               </section>
               <article class="panel" data-mobile-flow-panel="manage">
                 <div class="panel-heading">
@@ -489,6 +487,10 @@
                 </div>
                 <div class="report-list" id="incomeReport"></div>
               </article>
+              <section class="mobile-flow-history-overview" aria-label="Tóm tắt lịch sử khoản thu">
+                <div class="mobile-flow-section-heading"><h3>Lịch sử</h3><button type="button" data-mobile-flow-action="history" data-flow-type="income">Xem tất cả <span aria-hidden="true">›</span></button></div>
+                <div class="mobile-flow-history-preview" id="mobileIncomeFlowHistory"></div>
+              </section>
               <article class="panel" data-mobile-flow-panel="history">
                 <div class="panel-heading">
                   <h2>Lịch sử khoản thu</h2>
@@ -608,8 +610,6 @@
                 <div class="mobile-flow-section-heading"><h3>Danh mục</h3><button type="button" data-mobile-flow-action="manage" data-flow-type="expense">Quản lý <span aria-hidden="true">›</span></button></div>
                 <div class="mobile-flow-categories" id="mobileExpenseFlowCategories"></div>
                 <button class="mobile-flow-more" type="button" data-mobile-flow-action="report" data-flow-type="expense" id="mobileExpenseFlowMore">Xem tất cả danh mục <span aria-hidden="true">›</span></button>
-                <div class="mobile-flow-section-heading"><h3>Lịch sử</h3><button type="button" data-mobile-flow-action="history" data-flow-type="expense">Xem tất cả <span aria-hidden="true">›</span></button></div>
-                <div class="mobile-flow-history-preview" id="mobileExpenseFlowHistory"></div>
               </section>
               <article class="panel" data-mobile-flow-panel="manage">
                 <div class="panel-heading">
@@ -647,6 +647,10 @@
                 </div>
                 <div class="report-list" id="expenseReport"></div>
               </article>
+              <section class="mobile-flow-history-overview" aria-label="Tóm tắt lịch sử khoản chi">
+                <div class="mobile-flow-section-heading"><h3>Lịch sử</h3><button type="button" data-mobile-flow-action="history" data-flow-type="expense">Xem tất cả <span aria-hidden="true">›</span></button></div>
+                <div class="mobile-flow-history-preview" id="mobileExpenseFlowHistory"></div>
+              </section>
               <article class="panel" data-mobile-flow-panel="history">
                 <div class="panel-heading">
                   <h2>Lịch sử khoản chi</h2>
@@ -1358,6 +1362,6 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=61"></script>
+    <script defer src="app.js?v=62"></script>
   </body>
 </html>

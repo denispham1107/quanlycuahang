@@ -972,7 +972,9 @@ document.addEventListener("click", (event) => {
     openQuickEntryModal(type);
     return;
   }
-  const view = action === "manage" ? "manage" : action === "report" ? "report" : action === "history" ? "history" : "";
+  const view = action === "close"
+    ? `close-${button.closest("[data-mobile-flow-panel]")?.dataset.mobileFlowPanel || ""}`
+    : action;
   setMobileCashFlowPanel(type, view, action === "manage" ? ".category-section" : null);
 });
 
@@ -6596,10 +6598,23 @@ function setMobileCashFlowPanel(type, view, innerTarget = null) {
   if (!USE_MOBILE_APP_THEME) return;
   const panel = document.querySelector(`[data-tab-panel="${type}"]`);
   if (!panel) return;
-  panel.dataset.mobileFlowView = view;
-  const target = view
-    ? panel.querySelector(`[data-mobile-flow-panel="${view}"]${innerTarget ? ` ${innerTarget}` : ""}`)
-    : panel.querySelector(".mobile-cash-flow");
+  const current = panel.dataset.mobileFlowView || "";
+  const reportOpen = current === "report" || current === "report-history";
+  const historyOpen = current === "history" || current === "report-history";
+  let next = "";
+  if (view === "manage") next = "manage";
+  if (view === "report") next = historyOpen ? "report-history" : "report";
+  if (view === "history") next = reportOpen ? "report-history" : "history";
+  if (view === "close-report") next = historyOpen ? "history" : "";
+  if (view === "close-history") next = reportOpen ? "report" : "";
+  panel.dataset.mobileFlowView = next;
+  const target = view === "manage"
+    ? panel.querySelector(`[data-mobile-flow-panel="manage"]${innerTarget ? ` ${innerTarget}` : ""}`)
+    : view === "history" || next === "history"
+      ? panel.querySelector(".mobile-flow-history-overview")
+      : view === "report" || next === "report"
+        ? panel.querySelector('[data-mobile-flow-panel="report"]')
+        : panel.querySelector(".mobile-cash-flow");
   window.requestAnimationFrame(() => target?.scrollIntoView({ behavior: "smooth", block: "start" }));
 }
 
