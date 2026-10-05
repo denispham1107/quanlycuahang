@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=59" />
+    <link rel="stylesheet" href="styles.css?v=60" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -1011,12 +1011,13 @@
               <div class="customer-created-mobile" role="group" aria-label="Ngày giờ khởi tạo">
                 <div class="field">
                   <label for="customerCreatedDate">Ngày khởi tạo</label>
-                  <input id="customerCreatedDate" type="date" />
+                  <input id="customerCreatedDate" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/yyyy" autocomplete="off" />
                 </div>
                 <div class="field">
                   <label for="customerCreatedTime">Giờ khởi tạo</label>
-                  <input id="customerCreatedTime" type="time" />
+                  <input id="customerCreatedTime" type="text" inputmode="numeric" maxlength="5" placeholder="HH:mm" autocomplete="off" />
                 </div>
+                <small class="customer-created-hint">Có thể nhập liền 8 số ngày và 4 số giờ, ví dụ 29082026 và 0437.</small>
               </div>
             </div>
           </div>
@@ -1357,6 +1358,6 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=59"></script>
+    <script defer src="app.js?v=60"></script>
   </body>
 </html>

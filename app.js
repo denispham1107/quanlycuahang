@@ -1355,6 +1355,16 @@ if (USE_MOBILE_APP_THEME) {
 for (const input of [els.customerCreatedDate, els.customerCreatedTime]) {
   input.addEventListener("input", syncCustomerCreatedAtFromMobile);
   input.addEventListener("change", syncCustomerCreatedAtFromMobile);
+  input.addEventListener("blur", () => {
+    if (input === els.customerCreatedDate) {
+      const date = parseCustomerMobileDate(input.value);
+      if (date) input.value = formatDate(date);
+    } else {
+      const time = parseCustomerMobileTime(input.value);
+      if (time) input.value = time;
+    }
+    syncCustomerCreatedAtFromMobile();
+  });
 }
 
 els.customerForm.addEventListener("submit", (event) => {
@@ -4352,14 +4362,40 @@ function openCustomerForm(customer = null) {
   els.customerMemberTier.value = customer?.memberTier || "Thường";
   els.customerCreatedAt.value = toDateTimeLocalValue(customer?.createdAt || new Date().toISOString());
   const [createdDate = "", createdTime = ""] = els.customerCreatedAt.value.split("T");
-  els.customerCreatedDate.value = createdDate;
+  els.customerCreatedDate.value = createdDate ? formatDate(createdDate) : "";
   els.customerCreatedTime.value = createdTime;
+  if (USE_MOBILE_APP_THEME) syncCustomerCreatedAtFromMobile();
   els.customerNameInput.focus();
 }
 
+function parseCustomerMobileDate(value) {
+  const text = String(value || "").trim();
+  const parts = /^\d{8}$/.test(text)
+    ? [text.slice(0, 2), text.slice(2, 4), text.slice(4)]
+    : text.match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/)?.slice(1);
+  if (!parts) return "";
+  const [day, month, year] = parts.map(Number);
+  const parsed = new Date(year, month - 1, day);
+  if (parsed.getFullYear() !== year || parsed.getMonth() !== month - 1 || parsed.getDate() !== day) return "";
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function parseCustomerMobileTime(value) {
+  const text = String(value || "").trim();
+  const parts = /^\d{3,4}$/.test(text)
+    ? [text.slice(0, -2), text.slice(-2)]
+    : text.match(/^(\d{1,2}):(\d{2})$/)?.slice(1);
+  if (!parts) return "";
+  const [hour, minute] = parts.map(Number);
+  if (hour > 23 || minute > 59) return "";
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
 function syncCustomerCreatedAtFromMobile() {
-  const date = els.customerCreatedDate.value;
-  const time = els.customerCreatedTime.value;
+  const date = parseCustomerMobileDate(els.customerCreatedDate.value);
+  const time = parseCustomerMobileTime(els.customerCreatedTime.value);
+  els.customerCreatedDate.setCustomValidity(date || !els.customerCreatedDate.value ? "" : "Ngày không hợp lệ. Nhập dd/mm/yyyy hoặc 8 chữ số.");
+  els.customerCreatedTime.setCustomValidity(time || !els.customerCreatedTime.value ? "" : "Giờ không hợp lệ. Nhập HH:mm hoặc 4 chữ số.");
   els.customerCreatedAt.value = date && time ? `${date}T${time}` : "";
 }
 
@@ -4369,6 +4405,8 @@ function closeCustomerForm() {
   els.customersCard.classList.remove("customer-form-open");
   els.customerForm.reset();
   els.customerMemberTier.value = "Thường";
+  els.customerCreatedDate.setCustomValidity("");
+  els.customerCreatedTime.setCustomValidity("");
 }
 
 function renderCustomers(store) {
@@ -4592,9 +4630,13 @@ function saveCustomerFromForm(formData) {
   const name = String(formData.get("customerName") || "").trim();
   const phone = String(formData.get("customerPhone") || "").trim();
   const memberTier = String(formData.get("memberTier") || "").trim() || "Thường";
-  const createdAt = fromDateTimeLocalValue(String(formData.get("createdAt") || "")) || new Date().toISOString();
+  const createdAt = fromDateTimeLocalValue(String(formData.get("createdAt") || ""));
   if (!name || !phone) {
     window.alert("Vui lòng nhập tên khách hàng và số điện thoại.");
+    return false;
+  }
+  if (!createdAt) {
+    window.alert("Ngày giờ khởi tạo không hợp lệ.");
     return false;
   }
 
