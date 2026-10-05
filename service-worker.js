@@ -1,17 +1,17 @@
-const CACHE_VERSION = "quanlycuahang-pwa-v66";
+const CACHE_VERSION = "quanlycuahang-pwa-v67";
 const FIREBASE_SDK_PREFIX = "https://www.gstatic.com/firebasejs/10.12.5/";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=66",
-  "./app.js?v=66",
+  "./styles.css?v=67",
+  "./app.js?v=67",
   "./firebase-config.js",
-  "./manifest.webmanifest",
-  "./icons/icon.svg",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png",
-  "./icons/icon-maskable-512.png",
-  "./icons/apple-touch-icon.png"
+  "./manifest.webmanifest?v=67",
+  "./icons/icon-v3.svg",
+  "./icons/icon-v3-192.png",
+  "./icons/icon-v3-512.png",
+  "./icons/icon-v3-maskable-512.png",
+  "./icons/apple-touch-icon-v3.png"
 ];
 
 self.addEventListener("install", (event) => {
