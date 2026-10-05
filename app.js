@@ -255,7 +255,10 @@ const els = {
   salesOrderDetailStatus: document.querySelector("#salesOrderDetailStatus"),
   salesOrderDetailContent: document.querySelector("#salesOrderDetailContent"),
   closeSalesOrderDetail: document.querySelector("#closeSalesOrderDetail"),
-  salesCatalogModal: document.querySelector("#salesCatalogModal"),
+  salesCatalogPage: document.querySelector("#salesCatalogPage"),
+  salesCatalogTotalCount: document.querySelector("#salesCatalogTotalCount"),
+  salesCatalogAvailableCount: document.querySelector("#salesCatalogAvailableCount"),
+  salesCatalogGroupCount: document.querySelector("#salesCatalogGroupCount"),
   salesCatalogCount: document.querySelector("#salesCatalogCount"),
   salesCatalogSearch: document.querySelector("#salesCatalogSearch"),
   salesCatalogFilter: document.querySelector("#salesCatalogFilter"),
@@ -1164,7 +1167,7 @@ els.salesItems.addEventListener("change", (event) => {
 els.salesItems.addEventListener("click", (event) => {
   const catalogButton = event.target.closest("[data-open-sales-catalog]");
   if (catalogButton) {
-    openSalesCatalogModal(catalogButton.closest(".sales-item-row"));
+    openSalesCatalogPage(catalogButton.closest(".sales-item-row"));
     return;
   }
 
@@ -1264,10 +1267,12 @@ els.inventoryHistoryModal.addEventListener("click", (event) => {
 
 els.closeSalesOrderDetail.addEventListener("click", closeSalesOrderDetailModal);
 
-els.closeSalesCatalog.addEventListener("click", closeSalesCatalogModal);
-
-els.salesCatalogModal.addEventListener("click", (event) => {
-  if (event.target === els.salesCatalogModal) closeSalesCatalogModal();
+els.closeSalesCatalog.addEventListener("click", closeSalesCatalogPage);
+window.visualViewport?.addEventListener("resize", updateSalesCatalogViewport);
+window.visualViewport?.addEventListener("scroll", updateSalesCatalogViewport);
+els.salesCatalogPage.addEventListener("focusin", (event) => {
+  if (!event.target.matches("input, select")) return;
+  [100, 350].forEach((delay) => window.setTimeout(() => ensureSalesCatalogFocusVisible(event.target), delay));
 });
 
 els.openSalesCustomerCatalog.addEventListener("click", openSalesCustomerCatalogModal);
@@ -1323,6 +1328,14 @@ els.customersCard.addEventListener("focusin", (event) => {
 });
 
 window.addEventListener("popstate", () => {
+  if (window.location.hash === "#sales-catalog" && els.authScreen.hidden && getActiveStore() && uiState.salesCatalogRow?.isConnected && !els.quickEntryModal.hidden) {
+    openSalesCatalogPage(uiState.salesCatalogRow, { fromHistory: true });
+  } else {
+    hideSalesCatalogPage();
+    if (window.location.hash === "#sales-catalog") {
+      window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
+    }
+  }
   if (window.location.hash === "#customers" && els.authScreen.hidden && getActiveStore()) {
     openCustomersPage({ fromHistory: true });
   } else {
@@ -1976,6 +1989,9 @@ function showAuthenticatedApp(profile) {
   els.signedInUser.hidden = false;
   els.signedInUserName.textContent = profile.displayName || authState.user?.email || "Tài khoản";
   els.signedInUserRole.textContent = profile.role === "admin" ? "Admin" : "Nhân viên";
+  if (window.location.hash === "#sales-catalog" && !uiState.salesCatalogRow) {
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
+  }
   if (window.location.hash === "#customers" && getActiveStore()) openCustomersPage({ fromHistory: true });
 }
 
@@ -1987,6 +2003,7 @@ function clearAuthStartupTimers() {
 
 function showAuthLoading(message = "Đang kiểm tra tài khoản và quyền truy cập...") {
   document.body.classList.add("auth-pending");
+  hideSalesCatalogPage({ restoreFocus: false });
   hideCustomersPage({ restoreFocus: false });
   els.appShell.hidden = true;
   updateTimeFiltersVisibility();
@@ -2001,6 +2018,7 @@ function showAuthLoading(message = "Đang kiểm tra tài khoản và quyền tr
 
 function showAuthProblem(message) {
   document.body.classList.add("auth-pending");
+  hideSalesCatalogPage({ restoreFocus: false });
   hideCustomersPage({ restoreFocus: false });
   els.appShell.hidden = true;
   updateTimeFiltersVisibility();
@@ -2018,8 +2036,9 @@ function showLoginScreen(message = "") {
   document.body.classList.add("auth-pending");
   document.body.classList.remove("modal-open");
   document.body.classList.remove("sales-order-detail-open");
+  hideSalesCatalogPage({ restoreFocus: false });
   hideCustomersPage({ restoreFocus: false });
-  if (window.location.hash === "#customers") {
+  if (["#customers", "#sales-catalog"].includes(window.location.hash)) {
     window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
   }
   if (els.salesOrderDetailModal) els.salesOrderDetailModal.hidden = true;
@@ -3244,8 +3263,10 @@ function render() {
   els.deleteStore.disabled = !store;
   applyRoleAccess();
   if (!store) {
+    hideSalesCatalogPage({ restoreFocus: false });
+    uiState.salesCatalogRow = null;
     if (!els.customersPage.hidden) hideCustomersPage({ restoreFocus: false });
-    if (window.location.hash === "#customers") {
+    if (["#customers", "#sales-catalog"].includes(window.location.hash)) {
       window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
     }
     els.activeStoreName.textContent = "Chưa chọn cửa hàng";
@@ -3287,6 +3308,7 @@ function render() {
   if (!els.customersPage.hidden && !uiState.customerFormOpen) {
     renderCustomers(store);
   }
+  if (!els.salesCatalogPage.hidden) renderSalesCatalog();
   els.tabBar.dataset.pinTop = "";
   updateTimeFiltersVisibility();
   updateQuickEntryButton();
@@ -3571,6 +3593,11 @@ function openQuickEntryModal(type) {
 
 function closeQuickEntryModal() {
   els.quickEntryModal.hidden = true;
+  hideSalesCatalogPage({ restoreFocus: false });
+  uiState.salesCatalogRow = null;
+  if (window.location.hash === "#sales-catalog") {
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
+  }
   updateTimeFiltersVisibility();
   els.quickEntryModal.classList.remove("sales-page-mode", "cash-quick-entry-mode");
   els.quickEntryForm.reset();
@@ -3579,7 +3606,6 @@ function closeQuickEntryModal() {
   uiState.salesOrderDiscountPercent = 0;
   uiState.salesOrderDiscountAmount = 0;
   closeOrderDiscountModal();
-  closeSalesCatalogModal();
   els.salesItems.innerHTML = "";
   els.purchaseItems.innerHTML = "";
   els.quickEntryFields.hidden = false;
@@ -3839,22 +3865,76 @@ function applySalesItemSuggestion(row) {
   row.dataset.originalPrice = String(salePrice);
 }
 
-function openSalesCatalogModal(row) {
+function openSalesCatalogPage(row, { fromHistory = false } = {}) {
   const store = getActiveStore();
-  if (!store || !row) return;
+  if (!store || !row || els.quickEntryModal.hidden) return;
 
   uiState.salesCatalogRow = row;
-  uiState.salesCatalogSearch = "";
-  uiState.salesCatalogFilter = "all";
-  els.salesCatalogSearch.value = "";
+  if (!fromHistory) {
+    uiState.salesCatalogSearch = "";
+    uiState.salesCatalogFilter = "all";
+    els.salesCatalogSearch.value = "";
+    if (window.location.hash !== "#sales-catalog") {
+      window.history.pushState({ ...window.history.state, salesCatalogPage: true }, "", "#sales-catalog");
+    }
+  }
   renderSalesCatalog();
-  els.salesCatalogModal.hidden = false;
-  els.salesCatalogSearch.focus();
+  els.salesCatalogPage.hidden = false;
+  els.salesCatalogPage.scrollTop = 0;
+  document.body.classList.add("sales-catalog-page-open");
+  els.appShell.inert = true;
+  els.appShell.setAttribute("aria-hidden", "true");
+  if (USE_MOBILE_APP_THEME) els.tabBar.inert = true;
+  els.quickEntryModal.inert = true;
+  els.quickEntryModal.setAttribute("aria-hidden", "true");
+  updateSalesCatalogViewport();
+  updateTimeFiltersVisibility();
+  els.closeSalesCatalog.focus({ preventScroll: true });
 }
 
-function closeSalesCatalogModal() {
-  els.salesCatalogModal.hidden = true;
-  uiState.salesCatalogRow = null;
+function closeSalesCatalogPage() {
+  if (window.location.hash === "#sales-catalog" && window.history.state?.salesCatalogPage) {
+    window.history.back();
+    return;
+  }
+  hideSalesCatalogPage();
+  if (window.location.hash === "#sales-catalog") {
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
+  }
+}
+
+function hideSalesCatalogPage({ restoreFocus = true } = {}) {
+  if (els.salesCatalogPage.hidden) return;
+  els.salesCatalogPage.hidden = true;
+  document.body.classList.remove("sales-catalog-page-open");
+  els.appShell.inert = !els.customersPage.hidden;
+  if (els.customersPage.hidden) els.appShell.removeAttribute("aria-hidden");
+  if (USE_MOBILE_APP_THEME) els.tabBar.inert = !els.customersPage.hidden;
+  els.quickEntryModal.inert = false;
+  els.quickEntryModal.removeAttribute("aria-hidden");
+  updateTimeFiltersVisibility();
+  if (restoreFocus && !els.quickEntryModal.hidden) {
+    uiState.salesCatalogRow?.querySelector("[data-open-sales-catalog]")?.focus({ preventScroll: true });
+  }
+}
+
+function updateSalesCatalogViewport() {
+  if (!USE_MOBILE_APP_THEME || els.salesCatalogPage.hidden) return;
+  const viewport = window.visualViewport;
+  els.salesCatalogPage.style.setProperty("--sales-catalog-visual-height", `${Math.round(viewport?.height || window.innerHeight)}px`);
+  els.salesCatalogPage.style.setProperty("--sales-catalog-visual-top", `${Math.round(viewport?.offsetTop || 0)}px`);
+  ensureSalesCatalogFocusVisible(document.activeElement);
+}
+
+function ensureSalesCatalogFocusVisible(target) {
+  if (els.salesCatalogPage.hidden || !els.salesCatalogPage.contains(target)) return;
+  const pageBounds = els.salesCatalogPage.getBoundingClientRect();
+  const targetBounds = target.getBoundingClientRect();
+  if (targetBounds.bottom > pageBounds.bottom - 18) {
+    els.salesCatalogPage.scrollTop += targetBounds.bottom - pageBounds.bottom + 18;
+  } else if (targetBounds.top < pageBounds.top + 18) {
+    els.salesCatalogPage.scrollTop -= pageBounds.top - targetBounds.top + 18;
+  }
 }
 
 function renderSalesCatalog() {
@@ -3874,6 +3954,9 @@ function renderSalesCatalog() {
     ).entries()
   ].sort((a, b) => a[1].localeCompare(b[1], "vi"));
   const validFilters = new Set(["all", ...groups.map(([key]) => `group:${key}`)]);
+  els.salesCatalogTotalCount.textContent = String(inventory.length);
+  els.salesCatalogAvailableCount.textContent = String(inventory.filter((item) => Number(item.quantity || 0) > 0).length);
+  els.salesCatalogGroupCount.textContent = String(groups.length);
 
   if (!validFilters.has(uiState.salesCatalogFilter)) {
     uiState.salesCatalogFilter = "all";
@@ -3903,10 +3986,10 @@ function renderSalesCatalog() {
       return aStarts - bStarts || aName.localeCompare(bName);
     });
 
-  els.salesCatalogCount.textContent = `${rows.length} hàng hóa`;
+  els.salesCatalogCount.textContent = `${rows.length} hàng hoá`;
 
   if (!rows.length) {
-    els.salesCatalogList.innerHTML = '<div class="empty-list">Không tìm thấy hàng hóa phù hợp</div>';
+    els.salesCatalogList.innerHTML = '<div class="sales-catalog-empty"><strong>Chưa tìm thấy hàng hoá</strong><span>Hãy thử tên khác hoặc chọn lại nhóm hàng.</span></div>';
     return;
   }
 
@@ -3916,18 +3999,21 @@ function renderSalesCatalog() {
       const disabled = quantity <= 0;
       return `
         <button
-          class="sales-catalog-item inventory-catalog-item ${disabled ? "is-disabled" : ""}"
+          class="sales-catalog-item goods-catalog-item ${disabled ? "is-disabled" : ""}"
           type="button"
           data-select-sales-catalog-item="${item.id}"
           ${disabled ? 'aria-disabled="true"' : ""}
         >
-          <span>
-            <strong>${escapeHtml(item.name || "")}</strong>
-            <small>${escapeHtml(item.groupName || "Chưa phân nhóm")}</small>
+          <span class="goods-catalog-main">
+            <span class="goods-catalog-mark" aria-hidden="true">▣</span>
+            <span class="goods-catalog-copy">
+              <strong>${escapeHtml(item.name || "")}</strong>
+              <small>${escapeHtml(item.groupName || "Chưa phân nhóm")}</small>
+            </span>
           </span>
-          <span class="sales-catalog-meta">
-            <strong>${formatCurrency(getInventorySalePrice(item))}</strong>
-            <small>Tồn: ${quantity.toLocaleString("vi-VN")}</small>
+          <span class="goods-catalog-bottom">
+            <span class="goods-catalog-price"><small>Giá bán</small><strong>${formatCurrency(getInventorySalePrice(item))}</strong></span>
+            <span class="goods-catalog-select">${disabled ? "Hết hàng" : `Còn ${quantity.toLocaleString("vi-VN")} · Chọn →`}</span>
           </span>
         </button>
       `;
@@ -3958,7 +4044,7 @@ function selectSalesCatalogItem(itemId) {
   if (price > 0) row.dataset.originalPrice = String(price);
 
   updateSalesOrderTotal();
-  closeSalesCatalogModal();
+  closeSalesCatalogPage();
 }
 
 function openSalesCustomerCatalogModal() {
@@ -6298,6 +6384,7 @@ function isMobileTimeFilterSuppressed() {
   if (!USE_MOBILE_APP_THEME) return false;
   return Boolean(
     (els.quickEntryModal && !els.quickEntryModal.hidden) ||
+    (els.salesCatalogPage && !els.salesCatalogPage.hidden) ||
     (els.customersPage && !els.customersPage.hidden) ||
     (els.aiChatModal && !els.aiChatModal.hidden)
   );

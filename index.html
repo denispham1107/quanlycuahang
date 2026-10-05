@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=62" />
+    <link rel="stylesheet" href="styles.css?v=63" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -918,28 +918,39 @@
       </div>
     </section>
 
-    <div class="modal-backdrop sales-catalog-backdrop" id="salesCatalogModal" hidden>
-      <section class="modal-card sales-catalog-card">
-        <div class="panel-heading">
-          <h2>Mục lục hàng hóa</h2>
-          <span id="salesCatalogCount">0 hàng hóa</span>
-        </div>
-        <div class="history-tools sales-catalog-tools">
-          <div class="history-search">
-            <label for="salesCatalogSearch">Tìm hàng hóa</label>
-            <input id="salesCatalogSearch" type="text" placeholder="Nhập tên hàng hóa..." autocomplete="off" />
+    <main class="sales-catalog-page" id="salesCatalogPage" aria-labelledby="salesCatalogTitle" hidden>
+      <div class="sales-catalog-page-shell">
+        <header class="sales-catalog-page-header">
+          <button class="sales-catalog-back" id="closeSalesCatalog" type="button"><span aria-hidden="true">←</span> Quay lại</button>
+          <span>Bán Hàng <span aria-hidden="true">/</span> Mục lục hàng hoá</span>
+        </header>
+        <section class="sales-catalog-page-content">
+          <div class="sales-catalog-hero">
+            <div class="sales-catalog-hero-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/><path d="m8 5.3 8 4.5"/></svg>
+            </div>
+            <div class="sales-catalog-hero-copy">
+              <p>CHỌN HÀNG CHO ĐƠN BÁN</p>
+              <h1 id="salesCatalogTitle">Mục lục hàng hoá</h1>
+              <span>Tìm đúng sản phẩm và thêm nhanh vào đơn hàng đang tạo.</span>
+            </div>
           </div>
-          <div class="history-filter">
-            <label for="salesCatalogFilter">Phân loại</label>
-            <select id="salesCatalogFilter"></select>
+          <div class="sales-catalog-summary" aria-label="Tổng quan kho hàng">
+            <div><span>Hàng hoá</span><strong id="salesCatalogTotalCount">0</strong></div>
+            <div><span>Còn hàng</span><strong id="salesCatalogAvailableCount">0</strong></div>
+            <div><span>Nhóm hàng</span><strong id="salesCatalogGroupCount">0</strong></div>
           </div>
-        </div>
-        <div class="sales-catalog-list" id="salesCatalogList"></div>
-        <div class="modal-actions">
-          <button class="ghost-button" id="closeSalesCatalog" type="button">Đóng</button>
-        </div>
-      </section>
-    </div>
+          <section class="sales-catalog-filter-card" aria-label="Tìm và lọc hàng hoá">
+            <div class="sales-catalog-filter-heading"><div><h2>Tìm hàng hoá</h2><p>Lọc theo tên hoặc nhóm để chọn nhanh.</p></div><span id="salesCatalogCount">0 hàng hóa</span></div>
+            <div class="sales-catalog-filter-grid">
+              <div class="field"><label for="salesCatalogSearch">Tên hàng hoá hoặc nhóm</label><input id="salesCatalogSearch" type="search" placeholder="Nhập tên hàng hoá..." autocomplete="off" /></div>
+              <div class="field"><label for="salesCatalogFilter">Nhóm hàng</label><select id="salesCatalogFilter"></select></div>
+            </div>
+          </section>
+          <div class="sales-catalog-list" id="salesCatalogList" aria-live="polite"></div>
+        </section>
+      </div>
+    </main>
 
     <div class="modal-backdrop sales-customer-catalog-backdrop" id="salesCustomerCatalogModal" hidden>
       <section class="modal-card sales-catalog-card">
@@ -1362,6 +1373,6 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=62"></script>
+    <script defer src="app.js?v=63"></script>
   </body>
 </html>
