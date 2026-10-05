@@ -268,7 +268,7 @@ const els = {
   salesCustomerCatalogList: document.querySelector("#salesCustomerCatalogList"),
   closeSalesCustomerCatalog: document.querySelector("#closeSalesCustomerCatalog"),
   openCustomers: document.querySelector("#openCustomers"),
-  customersModal: document.querySelector("#customersModal"),
+  customersPage: document.querySelector("#customersPage"),
   customersCard: document.querySelector(".customers-card"),
   customersCount: document.querySelector("#customersCount"),
   customersList: document.querySelector("#customersList"),
@@ -1306,10 +1306,10 @@ els.salesCustomerCatalogList.addEventListener("click", (event) => {
   selectSalesCustomer(customer.dataset.selectSalesCustomer);
 });
 
-els.openCustomers.addEventListener("click", openCustomersModal);
+els.openCustomers.addEventListener("click", () => openCustomersPage());
 
-els.closeCustomers.addEventListener("click", closeCustomersModal);
-els.closeCustomersTop.addEventListener("click", closeCustomersModal);
+els.closeCustomers.addEventListener("click", closeCustomersPage);
+els.closeCustomersTop.addEventListener("click", closeCustomersPage);
 
 window.visualViewport?.addEventListener("resize", updateCustomersViewport);
 window.visualViewport?.addEventListener("scroll", updateCustomersViewport);
@@ -1318,8 +1318,12 @@ els.customersCard.addEventListener("focusin", (event) => {
   [100, 350].forEach((delay) => window.setTimeout(() => ensureCustomerFocusVisible(event.target), delay));
 });
 
-els.customersModal.addEventListener("click", (event) => {
-  if (event.target === els.customersModal) closeCustomersModal();
+window.addEventListener("popstate", () => {
+  if (window.location.hash === "#customers" && els.authScreen.hidden && getActiveStore()) {
+    openCustomersPage({ fromHistory: true });
+  } else {
+    hideCustomersPage();
+  }
 });
 
 els.closeCustomerHistory.addEventListener("click", closeCustomerHistoryModal);
@@ -1946,6 +1950,7 @@ function showAuthenticatedApp(profile) {
   els.signedInUser.hidden = false;
   els.signedInUserName.textContent = profile.displayName || authState.user?.email || "Tài khoản";
   els.signedInUserRole.textContent = profile.role === "admin" ? "Admin" : "Nhân viên";
+  if (window.location.hash === "#customers" && getActiveStore()) openCustomersPage({ fromHistory: true });
 }
 
 function clearAuthStartupTimers() {
@@ -1956,7 +1961,9 @@ function clearAuthStartupTimers() {
 
 function showAuthLoading(message = "Đang kiểm tra tài khoản và quyền truy cập...") {
   document.body.classList.add("auth-pending");
+  hideCustomersPage({ restoreFocus: false });
   els.appShell.hidden = true;
+  updateTimeFiltersVisibility();
   els.authScreen.hidden = false;
   els.authTitle.textContent = "Đang mở ứng dụng";
   els.authDescription.textContent = "Đang khôi phục phiên đăng nhập của bạn.";
@@ -1968,7 +1975,9 @@ function showAuthLoading(message = "Đang kiểm tra tài khoản và quyền tr
 
 function showAuthProblem(message) {
   document.body.classList.add("auth-pending");
+  hideCustomersPage({ restoreFocus: false });
   els.appShell.hidden = true;
+  updateTimeFiltersVisibility();
   els.authTitle.textContent = "Chưa thể mở ứng dụng";
   els.authDescription.textContent = "Ứng dụng chưa xác định được trạng thái đăng nhập.";
   els.authStartupMessage.textContent = message;
@@ -1983,6 +1992,10 @@ function showLoginScreen(message = "") {
   document.body.classList.add("auth-pending");
   document.body.classList.remove("modal-open");
   document.body.classList.remove("sales-order-detail-open");
+  hideCustomersPage({ restoreFocus: false });
+  if (window.location.hash === "#customers") {
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
+  }
   if (els.salesOrderDetailModal) els.salesOrderDetailModal.hidden = true;
   if (els.employeeManagerModal) els.employeeManagerModal.hidden = true;
   els.appShell.hidden = true;
@@ -3205,6 +3218,10 @@ function render() {
   els.deleteStore.disabled = !store;
   applyRoleAccess();
   if (!store) {
+    if (!els.customersPage.hidden) hideCustomersPage({ restoreFocus: false });
+    if (window.location.hash === "#customers") {
+      window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
+    }
     els.activeStoreName.textContent = "Chưa chọn cửa hàng";
     els.overviewStoreName.textContent = "Chưa chọn cửa hàng";
     if (desktopUi) document.querySelector("#desktopOverviewStoreName").textContent = "Chưa chọn cửa hàng";
@@ -3241,7 +3258,7 @@ function render() {
   if (els.activityHistoryModal && !els.activityHistoryModal.hidden) {
     renderActivityHistory(store);
   }
-  if (!els.customersModal.hidden && !uiState.customerFormOpen) {
+  if (!els.customersPage.hidden && !uiState.customerFormOpen) {
     renderCustomers(store);
   }
   els.tabBar.dataset.pinTop = "";
@@ -3249,6 +3266,9 @@ function render() {
   updateQuickEntryButton();
   updatePinnedTabs();
   updateDesktopPageChrome();
+  if (window.location.hash === "#customers" && els.customersPage.hidden && authState.ready && els.authScreen.hidden) {
+    openCustomersPage({ fromHistory: true });
+  }
 }
 
 function renderHistoryFilters(store) {
@@ -4234,41 +4254,76 @@ function getStoreCustomers(store) {
   return [...customerMap.values()].sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
 }
 
-function openCustomersModal() {
+function openCustomersPage({ fromHistory = false } = {}) {
+  if (isEmployeeUser()) {
+    if (window.location.hash === "#customers") {
+      window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
+    }
+    return;
+  }
   const store = getActiveStore();
   if (!store) return;
+  if (getActiveTabName() !== "sales") activateTab("sales");
 
   closeCustomerForm();
   uiState.customerMemberFilter = "all";
   uiState.customerSearch = "";
   renderCustomers(store);
-  els.customersModal.hidden = false;
+  if (!fromHistory && window.location.hash !== "#customers") {
+    window.history.pushState({ ...window.history.state, customersPage: true }, "", "#customers");
+  }
+  els.customersPage.hidden = false;
+  els.customersPage.scrollTop = 0;
+  document.body.classList.add("customers-page-open");
+  els.appShell.inert = true;
+  els.appShell.setAttribute("aria-hidden", "true");
+  if (USE_MOBILE_APP_THEME) els.tabBar.inert = true;
   updateCustomersViewport();
   updateTimeFiltersVisibility();
+  els.closeCustomersTop.focus({ preventScroll: true });
 }
 
-function closeCustomersModal() {
-  els.customersModal.hidden = true;
+function closeCustomersPage() {
+  if (window.location.hash === "#customers" && window.history.state?.customersPage) {
+    window.history.back();
+    return;
+  }
+  hideCustomersPage();
+  if (window.location.hash === "#customers") {
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
+  }
+}
+
+function hideCustomersPage({ restoreFocus = true } = {}) {
+  if (els.customersPage.hidden) return;
+  els.customersPage.hidden = true;
+  document.body.classList.remove("customers-page-open");
+  els.appShell.inert = false;
+  els.appShell.removeAttribute("aria-hidden");
+  if (USE_MOBILE_APP_THEME) els.tabBar.inert = false;
+  closeCustomerHistoryModal();
+  closeMemberTierModal();
   updateTimeFiltersVisibility();
   closeCustomerForm();
+  if (restoreFocus) els.openCustomers.focus({ preventScroll: true });
 }
 
 function updateCustomersViewport() {
-  if (!USE_MOBILE_APP_THEME || els.customersModal.hidden) return;
+  if (!USE_MOBILE_APP_THEME || els.customersPage.hidden) return;
   const viewport = window.visualViewport;
-  els.customersModal.style.setProperty("--customers-visual-height", `${Math.round(viewport?.height || window.innerHeight)}px`);
-  els.customersModal.style.setProperty("--customers-visual-top", `${Math.round(viewport?.offsetTop || 0)}px`);
+  els.customersPage.style.setProperty("--customers-visual-height", `${Math.round(viewport?.height || window.innerHeight)}px`);
+  els.customersPage.style.setProperty("--customers-visual-top", `${Math.round(viewport?.offsetTop || 0)}px`);
   ensureCustomerFocusVisible(document.activeElement);
 }
 
 function ensureCustomerFocusVisible(target) {
-  if (els.customersModal.hidden || !els.customersCard.contains(target)) return;
-  const cardBounds = els.customersCard.getBoundingClientRect();
+  if (els.customersPage.hidden || !els.customersPage.contains(target)) return;
+  const cardBounds = els.customersPage.getBoundingClientRect();
   const targetBounds = target.getBoundingClientRect();
   if (targetBounds.bottom > cardBounds.bottom - 18) {
-    els.customersCard.scrollTop += targetBounds.bottom - cardBounds.bottom + 18;
+    els.customersPage.scrollTop += targetBounds.bottom - cardBounds.bottom + 18;
   } else if (targetBounds.top < cardBounds.top + 18) {
-    els.customersCard.scrollTop -= cardBounds.top - targetBounds.top + 18;
+    els.customersPage.scrollTop -= cardBounds.top - targetBounds.top + 18;
   }
 }
 
@@ -4276,7 +4331,7 @@ function openCustomerForm(customer = null) {
   uiState.customerFormOpen = true;
   els.customerForm.hidden = false;
   els.customersCard.classList.add("customer-form-open");
-  els.customersCard.scrollTop = 0;
+  els.customersPage.scrollTop = 0;
   els.customerForm.elements.customerId.value = customer?.id && !String(customer.id).startsWith("order-") ? customer.id : "";
   els.customerNameInput.value = customer?.name || "";
   els.customerPhoneInput.value = customer?.phone || "";
@@ -6174,7 +6229,7 @@ function isMobileTimeFilterSuppressed() {
   if (!USE_MOBILE_APP_THEME) return false;
   return Boolean(
     (els.quickEntryModal && !els.quickEntryModal.hidden) ||
-    (els.customersModal && !els.customersModal.hidden) ||
+    (els.customersPage && !els.customersPage.hidden) ||
     (els.aiChatModal && !els.aiChatModal.hidden)
   );
 }

@@ -9,13 +9,19 @@ const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const css = fs.readFileSync(path.join(root, "styles.css"), "utf8");
 const app = fs.readFileSync(path.join(root, "app.js"), "utf8");
 
-test("mobile customer manager has an accessible close control, search, filters and creation action", () => {
+test("customer manager is a full page with a back control, search, filters and creation action", () => {
   for (const id of ["closeCustomersTop", "customerSearchInput", "customerMemberChips", "toggleCustomerForm", "customerForm", "customersList"]) {
     assert.match(html, new RegExp(`id="${id}"`));
   }
-  assert.match(html, /role="dialog" aria-modal="true" aria-labelledby="customersTitle"/);
-  assert.match(app, /els\.closeCustomersTop\.addEventListener\("click", closeCustomersModal\)/);
+  assert.match(html, /<main class="customers-page" id="customersPage" aria-labelledby="customersTitle" hidden>/);
+  assert.match(html, /class="customers-page-header"/);
+  assert.doesNotMatch(html, /id="customersModal"/);
+  assert.match(app, /els\.closeCustomersTop\.addEventListener\("click", closeCustomersPage\)/);
   assert.match(app, /els\.customerMemberChips\.addEventListener\("click"/);
+  assert.match(css, /\.customers-page\s*\{\s*position: fixed;/);
+  assert.match(css, /\.customers-page\[hidden\]\s*\{\s*display: none;/);
+  assert.match(css, /\.customer-history-backdrop,\s*\.member-tier-backdrop\s*\{\s*z-index: 190;/);
+  assert.match(css, /body\.customers-page-open > #tabBar,/);
   assert.match(css, /html\.mobile-app-theme \.customers-card/);
   assert.match(css, /html\.mobile-app-theme \.customers-card \.customer-form\[hidden\] \{\s*display: none;/);
   assert.match(css, /html\.mobile-app-theme \.customer-mobile-history,/);
@@ -75,12 +81,88 @@ test("mobile chips filter real customers without losing search or customer actio
   assert.match(els.customersList.innerHTML, /An &lt;script&gt;/);
 });
 
-test("mobile customer form and keyboard viewport are handled without affecting desktop", () => {
+test("mobile customer form and keyboard viewport remain usable in the full page", () => {
   assert.match(app, /els\.customersCard\.classList\.add\("customer-form-open"\)/);
   assert.match(app, /els\.customersCard\.classList\.remove\("customer-form-open"\)/);
   assert.match(app, /window\.visualViewport\?\.addEventListener\("resize", updateCustomersViewport\)/);
+  assert.match(app, /els\.customersPage\.scrollTop \+= targetBounds\.bottom/);
   assert.match(app, /ensureCustomerFocusVisible\(event\.target\)/);
   assert.match(css, /html\.mobile-app-theme \.customers-card\.customer-form-open \.customers-list/);
   assert.match(css, /html\.mobile-app-theme \.customer-member-chip\.is-active/);
   assert.match(css, /html\.mobile-app-theme \.customer-mobile-edit \{[\s\S]*?background: #edf2ff;[\s\S]*?color: #172e75;/);
+});
+
+test("customer page has browser back navigation and cleans up on sign-out", () => {
+  assert.match(app, /window\.history\.pushState\(\{ \.\.\.window\.history\.state, customersPage: true \}, "", "#customers"\)/);
+  assert.match(app, /window\.addEventListener\("popstate"/);
+  assert.match(app, /window\.history\.back\(\)/);
+  assert.match(app, /function showLoginScreen[\s\S]*?hideCustomersPage\(\{ restoreFocus: false \}\)/);
+  assert.match(app, /function showAuthenticatedApp[\s\S]*?openCustomersPage\(\{ fromHistory: true \}\)/);
+  assert.match(app, /function openCustomersPage\([\s\S]*?if \(isEmployeeUser\(\)\)/);
+  assert.match(app, /els\.appShell\.inert = true;/);
+  assert.match(app, /els\.appShell\.inert = false;/);
+});
+
+test("opening and leaving the customer page preserves browser history and background focus", () => {
+  const start = app.indexOf("function openCustomersPage(");
+  const end = app.indexOf("function openCustomerForm(", start);
+  assert.ok(start >= 0 && end > start);
+  const classes = new Set();
+  const location = { hash: "", pathname: "/quanlycuahang/", search: "" };
+  let pushes = 0;
+  let backs = 0;
+  let focusReturned = 0;
+  let activeTab = "stores";
+  let employee = false;
+  const history = {
+    state: null,
+    pushState(state, _title, url) { this.state = state; location.hash = url; pushes += 1; },
+    replaceState(_state, _title, url) { location.hash = url.includes("#") ? url.slice(url.indexOf("#")) : ""; },
+    back() { backs += 1; }
+  };
+  const els = {
+    customersPage: { hidden: true, scrollTop: 0, style: { setProperty() {} }, contains: () => false },
+    appShell: { inert: false, setAttribute() {}, removeAttribute() {} },
+    tabBar: { inert: false },
+    closeCustomersTop: { focus() {} },
+    openCustomers: { focus() { focusReturned += 1; } }
+  };
+  const context = {
+    els, window: { location, history, innerHeight: 760, visualViewport: null },
+    document: { body: { classList: { add: (name) => classes.add(name), remove: (name) => classes.delete(name) } }, activeElement: null },
+    USE_MOBILE_APP_THEME: true,
+    uiState: {},
+    isEmployeeUser: () => employee,
+    getActiveTabName: () => activeTab,
+    activateTab: (tab) => { activeTab = tab; },
+    getActiveStore: () => ({ customers: [] }),
+    closeCustomerForm() {}, renderCustomers() {}, updateTimeFiltersVisibility() {},
+    closeCustomerHistoryModal() {}, closeMemberTierModal() {}
+  };
+  vm.createContext(context);
+  vm.runInContext(app.slice(start, end), context);
+  context.openCustomersPage();
+  assert.equal(pushes, 1);
+  assert.equal(activeTab, "sales");
+  assert.equal(location.hash, "#customers");
+  assert.equal(els.customersPage.hidden, false);
+  assert.equal(els.appShell.inert, true);
+  assert.equal(els.tabBar.inert, true);
+  assert.ok(classes.has("customers-page-open"));
+
+  context.closeCustomersPage();
+  assert.equal(backs, 1);
+  location.hash = "";
+  context.hideCustomersPage();
+  assert.equal(els.customersPage.hidden, true);
+  assert.equal(els.appShell.inert, false);
+  assert.equal(els.tabBar.inert, false);
+  assert.equal(focusReturned, 1);
+  assert.ok(!classes.has("customers-page-open"));
+
+  employee = true;
+  location.hash = "#customers";
+  context.openCustomersPage({ fromHistory: true });
+  assert.equal(els.customersPage.hidden, true);
+  assert.equal(location.hash, "");
 });

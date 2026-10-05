@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=56" />
+    <link rel="stylesheet" href="styles.css?v=57" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -960,12 +960,16 @@
       </section>
     </div>
 
-    <div class="modal-backdrop customers-backdrop" id="customersModal" hidden>
-      <section class="modal-card customers-card" role="dialog" aria-modal="true" aria-labelledby="customersTitle">
+    <main class="customers-page" id="customersPage" aria-labelledby="customersTitle" hidden>
+      <div class="customers-page-shell">
+        <header class="customers-page-header">
+          <button class="customer-close-top" id="closeCustomersTop" type="button" aria-label="Quay lại trang Bán Hàng"><span aria-hidden="true">←</span> Quay lại</button>
+          <span class="customers-page-context">Bán Hàng <span aria-hidden="true">/</span> Khách Hàng</span>
+        </header>
+      <section class="customers-card" aria-labelledby="customersTitle">
         <div class="panel-heading">
           <h2 id="customersTitle">Thông tin khách hàng</h2>
           <span id="customersCount">0 khách</span>
-          <button class="customer-close-top" id="closeCustomersTop" type="button" aria-label="Đóng thông tin khách hàng">×</button>
         </div>
         <div class="customer-filter-row">
           <div class="field">
@@ -1013,10 +1017,11 @@
         </form>
         <div class="customers-list" id="customersList"></div>
         <div class="modal-actions">
-          <button class="ghost-button" id="closeCustomers" type="button">Đóng</button>
+          <button class="ghost-button" id="closeCustomers" type="button">Quay lại Bán Hàng</button>
         </div>
       </section>
-    </div>
+      </div>
+    </main>
 
     <div class="modal-backdrop customer-history-backdrop" id="customerHistoryModal" hidden>
       <section class="modal-card customer-history-card">
@@ -1342,6 +1347,6 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=56"></script>
+    <script defer src="app.js?v=57"></script>
   </body>
 </html>

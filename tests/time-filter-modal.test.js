@@ -25,7 +25,7 @@ test("mobile time filter hides on entry sheets and overlays and returns after cl
   const els = {
     quickEntryModal: { hidden: true },
     quickEntryForm: { dataset: { type: "sales" } },
-    customersModal: { hidden: true },
+    customersPage: { hidden: true },
     aiChatModal: { hidden: true },
     timeFilters: { hidden: false, classList: makeClassList(), inert: false },
     timeFilterToggle: { hidden: false, classList: makeClassList(), setAttribute() {} },
@@ -69,9 +69,9 @@ test("mobile time filter hides on entry sheets and overlays and returns after cl
   }
   assert.equal(cancelledAutoCollapse, 1);
 
-  els.customersModal.hidden = false;
+  els.customersPage.hidden = false;
   check(true);
-  els.customersModal.hidden = true;
+  els.customersPage.hidden = true;
   check(false);
 
   els.aiChatModal.hidden = false;
@@ -96,10 +96,10 @@ test("mobile time filter hides on entry sheets and overlays and returns after cl
   assert.equal(els.timeFilters.hidden, false);
 });
 
-test("modal open and close handlers refresh the filter without changing desktop behavior", () => {
+test("entry overlays and customer page refresh the filter without changing desktop behavior", () => {
   for (const name of [
     "openSalesOrderModal", "openPurchaseOrderModal", "openBulkPurchaseModal",
-    "openCustomersModal", "closeCustomersModal", "openAIChat", "closeAIChat", "closeQuickEntryModal"
+    "openCustomersPage", "hideCustomersPage", "openAIChat", "closeAIChat", "closeQuickEntryModal"
   ]) {
     const start = app.indexOf(`function ${name}(`);
     const end = app.indexOf("\nfunction ", start + 1);
