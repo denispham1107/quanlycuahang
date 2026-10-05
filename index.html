@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=64" />
+    <link rel="stylesheet" href="styles.css?v=65" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -236,7 +236,7 @@
                   <span class="tab-label">Cửa Hàng</span>
                 </button>
                 <button class="tab-button" type="button" data-tab="overview" aria-selected="false">
-                  <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="4.5" y="5" width="23" height="22" rx="3.5"/><path d="M4.5 11h23M8.5 8h2m3 0h2M9 22v-5h3v5m3 0v-8h3v8"/><path class="icon-accent" d="m21 19 2-2 2 1m-4 4h4"/></svg></span>
+                  <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path class="overview-pie-side" d="M15 18v-10a10 10 0 1 0 10 10Z"/><path class="overview-pie-slice-side" d="M18 16V6a10 10 0 0 1 10 10Z"/><path class="overview-pie-main" d="M15 15V5a10 10 0 1 0 10 10Z"/><path class="icon-accent overview-pie-slice" d="M18 13V3a10 10 0 0 1 10 10Z"/></svg></span>
                   <span class="desktop-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 20h18M5 20v-8h4v8M10 20V5h4v15M15 20v-11h4v11"/></svg></span>
                   <span class="tab-label">Tổng quan</span>
                 </button>
@@ -1373,6 +1373,6 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=64"></script>
+    <script defer src="app.js?v=65"></script>
   </body>
 </html>

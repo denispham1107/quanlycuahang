@@ -9662,7 +9662,7 @@ body.sales-catalog-page-open > .quick-entry-fab { display: none !important; }
 
 /* Detailed, two-tone mobile navigation icons; desktop keeps its separate SVG set. */
 html.mobile-app-theme .tab-button[data-tab="stores"] { --mobile-nav-icon-ink: #3153a8; --mobile-nav-icon-accent: #8954de; --mobile-nav-icon-surface: #ede9ff; }
-html.mobile-app-theme .tab-button[data-tab="overview"] { --mobile-nav-icon-ink: #2d568f; --mobile-nav-icon-accent: #7656d9; --mobile-nav-icon-surface: #e9f1ff; }
+html.mobile-app-theme .tab-button[data-tab="overview"] { --mobile-nav-icon-ink: #2d568f; --mobile-nav-icon-accent: #7656d9; --mobile-nav-icon-surface: #e9f1ff; --mobile-nav-pie-top: #dce8ff; --mobile-nav-pie-side: #91aee5; --mobile-nav-pie-slice: #aa81ef; --mobile-nav-pie-slice-side: #7853bd; }
 html.mobile-app-theme .tab-button[data-tab="income"] { --mobile-nav-icon-ink: #365bc3; --mobile-nav-icon-accent: #7a4be2; --mobile-nav-icon-surface: #e9edff; }
 html.mobile-app-theme .tab-button[data-tab="expense"] { --mobile-nav-icon-ink: #94427f; --mobile-nav-icon-accent: #d3498a; --mobile-nav-icon-surface: #ffebf5; }
 
@@ -9689,6 +9689,13 @@ html.mobile-app-theme .tab-button:is([data-tab="stores"], [data-tab="overview"],
 html.mobile-app-theme .tab-button .tab-icon .icon-accent { stroke: var(--mobile-nav-icon-accent); stroke-width: 2.2; }
 html.mobile-app-theme .tab-button .tab-icon .icon-accent-fill { fill: var(--mobile-nav-icon-accent); stroke: none; }
 
+html.mobile-app-theme .tab-button[data-tab="overview"] .tab-icon svg { width: 25px; height: 25px; filter: drop-shadow(0 1px 1px rgba(36, 52, 122, 0.23)); }
+html.mobile-app-theme .tab-button[data-tab="overview"] .tab-icon svg path { stroke: var(--mobile-nav-icon-ink); stroke-width: 1.45; }
+html.mobile-app-theme .tab-button[data-tab="overview"] .overview-pie-side { fill: var(--mobile-nav-pie-side); }
+html.mobile-app-theme .tab-button[data-tab="overview"] .overview-pie-main { fill: var(--mobile-nav-pie-top); }
+html.mobile-app-theme .tab-button[data-tab="overview"] .overview-pie-slice-side { fill: var(--mobile-nav-pie-slice-side); }
+html.mobile-app-theme .tab-button[data-tab="overview"] .overview-pie-slice { fill: var(--mobile-nav-pie-slice); stroke: var(--mobile-nav-icon-accent); }
+
 html.mobile-app-theme .tab-button:is([data-tab="stores"], [data-tab="overview"], [data-tab="income"], [data-tab="expense"]).active {
   --mobile-nav-icon-ink: #fff;
   --mobile-nav-icon-accent: #fff;
@@ -9698,6 +9705,13 @@ html.mobile-app-theme .tab-button:is([data-tab="stores"], [data-tab="overview"],
 html.mobile-app-theme .tab-button:is([data-tab="stores"], [data-tab="overview"], [data-tab="income"], [data-tab="expense"]).active .tab-icon {
   border-color: rgba(255, 255, 255, 0.34);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+html.mobile-app-theme .tab-button[data-tab="overview"].active {
+  --mobile-nav-pie-top: rgba(255, 255, 255, 0.29);
+  --mobile-nav-pie-side: #a5c8ff;
+  --mobile-nav-pie-slice: #fff;
+  --mobile-nav-pie-slice-side: #d8c4ff;
 }
 
 @media (orientation: landscape) {
@@ -9711,5 +9725,10 @@ html.mobile-app-theme .tab-button:is([data-tab="stores"], [data-tab="overview"],
   html.mobile-app-theme .tab-button:is([data-tab="stores"], [data-tab="overview"], [data-tab="income"], [data-tab="expense"]) .tab-icon svg {
     width: 19px;
     height: 19px;
+  }
+
+  html.mobile-app-theme .tab-button[data-tab="overview"] .tab-icon svg {
+    width: 21px;
+    height: 21px;
   }
 }
