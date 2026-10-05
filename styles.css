@@ -8230,6 +8230,222 @@ html.mobile-app-theme .mobile-overview-result strong {
   overflow-wrap: anywhere;
 }
 
+.mobile-overview-charts {
+  display: none;
+}
+
+html.mobile-app-theme .mobile-overview-charts {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  margin-top: 4px;
+}
+
+html.mobile-app-theme .overview-chart-card {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  overflow: hidden;
+  border: 1.5px solid rgba(255, 255, 255, 0.94);
+  border-radius: 23px;
+  padding: clamp(16px, 4vw, 22px);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(234, 244, 255, 0.94));
+  box-shadow: var(--mobile-card-shadow);
+}
+
+html.mobile-app-theme .overview-chart-month.money-in {
+  background: linear-gradient(135deg, rgba(248, 245, 255, 0.97), rgba(226, 240, 255, 0.96));
+}
+
+html.mobile-app-theme .overview-chart-month.money-out {
+  background: linear-gradient(135deg, rgba(255, 248, 253, 0.98), rgba(255, 233, 244, 0.96));
+}
+
+html.mobile-app-theme .overview-chart-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  min-width: 0;
+}
+
+html.mobile-app-theme .overview-chart-heading > div {
+  min-width: 0;
+}
+
+html.mobile-app-theme .overview-chart-kicker {
+  color: #5b6d9a;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+html.mobile-app-theme .overview-chart-heading h3 {
+  margin: 3px 0 0;
+  color: #132e60;
+  font-size: clamp(18px, 5vw, 22px);
+  line-height: 1.2;
+  font-weight: 900;
+}
+
+html.mobile-app-theme .overview-chart-period {
+  max-width: 100%;
+  color: #52678d;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+html.mobile-app-theme .overview-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  color: #52678d;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+html.mobile-app-theme .overview-chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+html.mobile-app-theme .overview-chart-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  background: #3688ed;
+}
+
+html.mobile-app-theme .overview-chart-legend i.money-out {
+  background: #e363a3;
+}
+
+html.mobile-app-theme .overview-week-plot {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+  min-width: 0;
+  border-bottom: 1px solid rgba(114, 139, 189, 0.23);
+}
+
+html.mobile-app-theme .overview-week-day {
+  display: grid;
+  grid-template-rows: 126px auto;
+  gap: 7px;
+  min-width: 0;
+  text-align: center;
+}
+
+html.mobile-app-theme .overview-week-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  border-bottom: 1px solid rgba(114, 139, 189, 0.28);
+}
+
+html.mobile-app-theme .overview-week-bars > span {
+  display: block;
+  width: min(40%, 12px);
+  height: var(--bar-height);
+  min-height: 0;
+  border-radius: 5px 5px 0 0;
+  background: linear-gradient(180deg, #7956ee, #1b9cef);
+}
+
+html.mobile-app-theme .overview-week-bars > span.money-out {
+  background: linear-gradient(180deg, #f783bb, #da4e94);
+}
+
+html.mobile-app-theme .overview-week-day > span {
+  min-width: 0;
+  color: #5a6b8b;
+  font-size: clamp(9px, 2.6vw, 11px);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+html.mobile-app-theme .overview-month-plot {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+html.mobile-app-theme .overview-month-column {
+  display: grid;
+  grid-template-rows: minmax(30px, auto) 112px auto;
+  justify-items: center;
+  align-items: end;
+  gap: 7px;
+  min-width: 0;
+  text-align: center;
+}
+
+html.mobile-app-theme .overview-month-column strong {
+  max-width: 100%;
+  color: #234376;
+  font-size: clamp(11px, 3vw, 14px);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+html.mobile-app-theme .overview-month-track {
+  display: flex;
+  align-items: flex-end;
+  width: min(72px, 65%);
+  height: 112px;
+  overflow: hidden;
+  border-radius: 11px 11px 0 0;
+  background: rgba(77, 113, 189, 0.07);
+}
+
+html.mobile-app-theme .overview-month-track > span {
+  display: block;
+  width: 100%;
+  height: var(--bar-height);
+  border-radius: 10px 10px 0 0;
+  background: linear-gradient(180deg, #8370ee, #488bef);
+}
+
+html.mobile-app-theme .overview-month-column:last-child .overview-month-track > span {
+  background: linear-gradient(180deg, #24b7f4, #2978e6);
+}
+
+html.mobile-app-theme .overview-chart-month.money-out .overview-month-track > span {
+  background: linear-gradient(180deg, #f9a3ca, #e675ad);
+}
+
+html.mobile-app-theme .overview-chart-month.money-out .overview-month-column:last-child .overview-month-track > span {
+  background: linear-gradient(180deg, #ef76af, #d94f95);
+}
+
+html.mobile-app-theme .overview-month-column > span {
+  max-width: 100%;
+  color: #52678d;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+html.mobile-app-theme .overview-chart-empty {
+  margin: 0;
+  color: #6b7894;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+html.mobile-app-theme .overview-chart-empty[hidden] {
+  display: none;
+}
+
 /* Thu / Chi: compact mobile dashboard; full management and history remain on demand. */
 .mobile-cash-flow,
 .mobile-flow-history-overview,

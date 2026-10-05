@@ -6567,6 +6567,79 @@ function renderCategoryControls(store, type) {
       .join("") + toggleButton;
 }
 
+function getOverviewChartData(store, referenceDate = new Date()) {
+  const year = referenceDate.getFullYear();
+  const month = referenceDate.getMonth();
+  const day = referenceDate.getDate();
+  const days = Array.from({ length: 7 }, (_, index) => ({
+    date: toDateInputValue(new Date(year, month, day - 6 + index)),
+    income: 0,
+    expense: 0
+  }));
+  const dayByDate = new Map(days.map((item) => [item.date, item]));
+  const previousDate = new Date(year, month - 1, 1);
+  const months = [
+    { key: toDateInputValue(previousDate).slice(0, 7), income: 0, expense: 0 },
+    { key: toDateInputValue(referenceDate).slice(0, 7), income: 0, expense: 0 }
+  ];
+  const monthByKey = new Map(months.map((item) => [item.key, item]));
+  const addAmount = (date, type, value) => {
+    const amount = Number(value);
+    if (!Number.isFinite(amount)) return;
+    const daily = dayByDate.get(date);
+    if (daily) daily[type] += amount;
+    const monthly = monthByKey.get(String(date || "").slice(0, 7));
+    if (monthly) monthly[type] += amount;
+  };
+
+  (store.entries || []).forEach((entry) => {
+    if (isCancelledEntry(entry)) return;
+    if (entry.type === "income" && !entry.orderId) addAmount(entry.date, "income", entry.amount);
+    if (entry.type === "expense") addAmount(entry.date, "expense", entry.amount);
+  });
+  (store.orders || []).forEach((order) => {
+    if (!isCancelledEntry(order)) addAmount(order.date, "income", order.total);
+  });
+  return { days, months };
+}
+
+function renderOverviewCharts(store) {
+  const weekPlot = document.querySelector("#overviewWeekPlot");
+  if (!weekPlot) return;
+  const { days, months } = getOverviewChartData(store);
+  const weekMax = Math.max(0, ...days.flatMap((item) => [item.income, item.expense]));
+  const barHeight = (amount, maximum) => amount > 0 && maximum > 0 ? `${Math.max(2, amount / maximum * 100)}%` : "0%";
+  document.querySelector("#overviewWeekPeriod").textContent = `${formatDate(days[0].date)} – ${formatDate(days[6].date)}`;
+  weekPlot.setAttribute("aria-label", days.map((item) => `${formatDate(item.date)}: tiền vào ${formatCurrency(item.income)}, tiền ra ${formatCurrency(item.expense)}`).join("; "));
+  weekPlot.innerHTML = days.map((item) => `
+    <div class="overview-week-day">
+      <div class="overview-week-bars">
+        <span class="money-in" style="--bar-height: ${barHeight(item.income, weekMax)}" title="${formatDate(item.date)} · Tiền vào: ${formatCurrency(item.income)}"></span>
+        <span class="money-out" style="--bar-height: ${barHeight(item.expense, weekMax)}" title="${formatDate(item.date)} · Tiền ra: ${formatCurrency(item.expense)}"></span>
+      </div>
+      <span>${item.date.slice(8, 10)}/${item.date.slice(5, 7)}</span>
+    </div>
+  `).join("");
+  document.querySelector("#overviewWeekEmpty").hidden = weekMax > 0;
+
+  for (const [type, plotId, emptyId] of [
+    ["income", "overviewIncomeMonthPlot", "overviewIncomeMonthEmpty"],
+    ["expense", "overviewExpenseMonthPlot", "overviewExpenseMonthEmpty"]
+  ]) {
+    const plot = document.getElementById(plotId);
+    const maximum = Math.max(0, ...months.map((item) => item[type]));
+    plot.setAttribute("aria-label", `${type === "income" ? "Tiền vào" : "Tiền ra"}: tháng ${months[0].key.slice(5)}/${months[0].key.slice(0, 4)} ${formatCurrency(months[0][type])}, tháng ${months[1].key.slice(5)}/${months[1].key.slice(0, 4)} ${formatCurrency(months[1][type])}`);
+    plot.innerHTML = months.map((item) => `
+      <div class="overview-month-column">
+        <strong>${formatCurrency(item[type])}</strong>
+        <div class="overview-month-track"><span style="--bar-height: ${barHeight(item[type], maximum)}"></span></div>
+        <span>Tháng ${item.key.slice(5)}/${item.key.slice(0, 4)}</span>
+      </div>
+    `).join("");
+    document.getElementById(emptyId).hidden = maximum > 0;
+  }
+}
+
 function renderReports(store) {
   const range = getDateRange();
   const entries = store.entries
@@ -6622,6 +6695,7 @@ function renderReports(store) {
   els.mobileBalance.textContent = els.balance.textContent;
   els.salesHistoryDateLabel.textContent = range.label;
   renderDesktopOverviewBreakdown(range.label, { income: totalIncome, sales: totalSalesAmount, expense: totalExpense });
+  renderOverviewCharts(store);
   els.salesRangeLabel.innerHTML = `
     <span>Tổng</span>
     <span class="report-amount sales-range-total">${formatCurrency(totalSalesAmount)}</span>
