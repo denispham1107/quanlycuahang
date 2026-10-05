@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=65" />
+    <link rel="stylesheet" href="styles.css?v=66" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -231,7 +231,7 @@
             <div class="sticky-control-dock" id="stickyControlDock">
               <nav class="tab-bar" id="tabBar" aria-label="Nhóm chức năng">
                 <button class="tab-button active" type="button" data-tab="stores" aria-selected="true">
-                  <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M5 13.5 7 6h18l2 7.5v12H5v-12Z"/><path d="M5 13.5h22M10 25.5v-8h12v8M13 21h6"/><path class="icon-accent" d="M12 6.5 11 13m10-6.5 1 6.5M8 16h2m12 0h2"/></svg></span>
+                  <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path class="store-body" d="M7 13.5v13h18v-13Z"/><path class="icon-accent store-awning" d="M4.5 14 7 6h18l2.5 8H4.5Z"/><path class="store-door" d="M12.5 26.5v-8h7v8M4.5 14h23"/></svg></span>
                   <span class="desktop-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10H3V10Z"/><path d="M9 20v-7h6v7"/></svg></span>
                   <span class="tab-label">Cửa Hàng</span>
                 </button>
@@ -1373,6 +1373,6 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=65"></script>
+    <script defer src="app.js?v=66"></script>
   </body>
 </html>

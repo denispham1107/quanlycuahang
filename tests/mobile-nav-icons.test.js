@@ -43,3 +43,14 @@ test("overview mobile icon is an exploded 3D pie with separate top and side face
   assert.match(button, /overview-pie-slice" d="M18 13V3/);
   assert.match(css, /data-tab="overview"\]\.active \{\s*--mobile-nav-pie-top:/);
 });
+
+test("store mobile icon has a clear awning, front and door at compact sizes", () => {
+  const button = html.match(/<button class="tab-button active"[^>]*data-tab="stores"[\s\S]*?<\/button>/)?.[0];
+  assert.ok(button);
+  for (const part of ["store-awning", "store-body", "store-door"]) {
+    assert.match(button, new RegExp(`class="(?:icon-accent )?${part}"`));
+    assert.match(css, new RegExp(`\\.${part} \\{`));
+  }
+  assert.match(css, /data-tab="stores"\]\.active \{\s*--mobile-nav-store-front:/);
+  assert.match(css, /data-tab="stores"\] \.tab-icon svg \{\s*width: 21px;\s*height: 21px;/);
+});

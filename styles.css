@@ -9661,7 +9661,7 @@ body.sales-catalog-page-open > .quick-entry-fab { display: none !important; }
 }
 
 /* Detailed, two-tone mobile navigation icons; desktop keeps its separate SVG set. */
-html.mobile-app-theme .tab-button[data-tab="stores"] { --mobile-nav-icon-ink: #3153a8; --mobile-nav-icon-accent: #8954de; --mobile-nav-icon-surface: #ede9ff; }
+html.mobile-app-theme .tab-button[data-tab="stores"] { --mobile-nav-icon-ink: #3153a8; --mobile-nav-icon-accent: #8954de; --mobile-nav-icon-surface: #ede9ff; --mobile-nav-store-front: #fff; --mobile-nav-store-awning: #bca3f4; }
 html.mobile-app-theme .tab-button[data-tab="overview"] { --mobile-nav-icon-ink: #2d568f; --mobile-nav-icon-accent: #7656d9; --mobile-nav-icon-surface: #e9f1ff; --mobile-nav-pie-top: #dce8ff; --mobile-nav-pie-side: #91aee5; --mobile-nav-pie-slice: #aa81ef; --mobile-nav-pie-slice-side: #7853bd; }
 html.mobile-app-theme .tab-button[data-tab="income"] { --mobile-nav-icon-ink: #365bc3; --mobile-nav-icon-accent: #7a4be2; --mobile-nav-icon-surface: #e9edff; }
 html.mobile-app-theme .tab-button[data-tab="expense"] { --mobile-nav-icon-ink: #94427f; --mobile-nav-icon-accent: #d3498a; --mobile-nav-icon-surface: #ffebf5; }
@@ -9689,6 +9689,11 @@ html.mobile-app-theme .tab-button:is([data-tab="stores"], [data-tab="overview"],
 html.mobile-app-theme .tab-button .tab-icon .icon-accent { stroke: var(--mobile-nav-icon-accent); stroke-width: 2.2; }
 html.mobile-app-theme .tab-button .tab-icon .icon-accent-fill { fill: var(--mobile-nav-icon-accent); stroke: none; }
 
+html.mobile-app-theme .tab-button[data-tab="stores"] .tab-icon svg { width: 25px; height: 25px; }
+html.mobile-app-theme .tab-button[data-tab="stores"] .store-body { fill: var(--mobile-nav-store-front); stroke: var(--mobile-nav-icon-ink); stroke-width: 2; }
+html.mobile-app-theme .tab-button[data-tab="stores"] .store-awning { fill: var(--mobile-nav-store-awning); stroke: var(--mobile-nav-icon-accent); stroke-width: 2; }
+html.mobile-app-theme .tab-button[data-tab="stores"] .store-door { stroke: var(--mobile-nav-icon-ink); stroke-width: 2.1; }
+
 html.mobile-app-theme .tab-button[data-tab="overview"] .tab-icon svg { width: 25px; height: 25px; filter: drop-shadow(0 1px 1px rgba(36, 52, 122, 0.23)); }
 html.mobile-app-theme .tab-button[data-tab="overview"] .tab-icon svg path { stroke: var(--mobile-nav-icon-ink); stroke-width: 1.45; }
 html.mobile-app-theme .tab-button[data-tab="overview"] .overview-pie-side { fill: var(--mobile-nav-pie-side); }
@@ -9705,6 +9710,11 @@ html.mobile-app-theme .tab-button:is([data-tab="stores"], [data-tab="overview"],
 html.mobile-app-theme .tab-button:is([data-tab="stores"], [data-tab="overview"], [data-tab="income"], [data-tab="expense"]).active .tab-icon {
   border-color: rgba(255, 255, 255, 0.34);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+html.mobile-app-theme .tab-button[data-tab="stores"].active {
+  --mobile-nav-store-front: rgba(255, 255, 255, 0.12);
+  --mobile-nav-store-awning: rgba(255, 255, 255, 0.36);
 }
 
 html.mobile-app-theme .tab-button[data-tab="overview"].active {
@@ -9728,6 +9738,11 @@ html.mobile-app-theme .tab-button[data-tab="overview"].active {
   }
 
   html.mobile-app-theme .tab-button[data-tab="overview"] .tab-icon svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  html.mobile-app-theme .tab-button[data-tab="stores"] .tab-icon svg {
     width: 21px;
     height: 21px;
   }

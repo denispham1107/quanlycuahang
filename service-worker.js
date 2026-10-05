@@ -1,10 +1,10 @@
-const CACHE_VERSION = "quanlycuahang-pwa-v65";
+const CACHE_VERSION = "quanlycuahang-pwa-v66";
 const FIREBASE_SDK_PREFIX = "https://www.gstatic.com/firebasejs/10.12.5/";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=65",
-  "./app.js?v=65",
+  "./styles.css?v=66",
+  "./app.js?v=66",
   "./firebase-config.js",
   "./manifest.webmanifest",
   "./icons/icon.svg",
