@@ -283,6 +283,8 @@ const els = {
   customerSearchInput: document.querySelector("#customerSearchInput"),
   customerSearchSuggestions: document.querySelector("#customerSearchSuggestions"),
   customerCreatedAt: document.querySelector("#customerCreatedAt"),
+  customerCreatedDate: document.querySelector("#customerCreatedDate"),
+  customerCreatedTime: document.querySelector("#customerCreatedTime"),
   cancelCustomerForm: document.querySelector("#cancelCustomerForm"),
   closeCustomers: document.querySelector("#closeCustomers"),
   customerHistoryModal: document.querySelector("#customerHistoryModal"),
@@ -1344,8 +1346,20 @@ els.toggleCustomerForm.addEventListener("click", () => {
 
 els.cancelCustomerForm.addEventListener("click", closeCustomerForm);
 
+if (USE_MOBILE_APP_THEME) {
+  els.customerCreatedAt.required = false;
+  els.customerCreatedDate.required = true;
+  els.customerCreatedTime.required = true;
+}
+
+for (const input of [els.customerCreatedDate, els.customerCreatedTime]) {
+  input.addEventListener("input", syncCustomerCreatedAtFromMobile);
+  input.addEventListener("change", syncCustomerCreatedAtFromMobile);
+}
+
 els.customerForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (USE_MOBILE_APP_THEME) syncCustomerCreatedAtFromMobile();
   saveCustomerFromForm(new FormData(els.customerForm));
 });
 
@@ -4337,7 +4351,16 @@ function openCustomerForm(customer = null) {
   els.customerPhoneInput.value = customer?.phone || "";
   els.customerMemberTier.value = customer?.memberTier || "Thường";
   els.customerCreatedAt.value = toDateTimeLocalValue(customer?.createdAt || new Date().toISOString());
+  const [createdDate = "", createdTime = ""] = els.customerCreatedAt.value.split("T");
+  els.customerCreatedDate.value = createdDate;
+  els.customerCreatedTime.value = createdTime;
   els.customerNameInput.focus();
+}
+
+function syncCustomerCreatedAtFromMobile() {
+  const date = els.customerCreatedDate.value;
+  const time = els.customerCreatedTime.value;
+  els.customerCreatedAt.value = date && time ? `${date}T${time}` : "";
 }
 
 function closeCustomerForm() {

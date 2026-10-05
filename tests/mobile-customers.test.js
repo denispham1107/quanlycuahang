@@ -94,7 +94,63 @@ test("mobile customer form and keyboard viewport remain usable in the full page"
   assert.match(css, /html\.mobile-app-theme \.customer-add-icon \{[^}]*align-items: center;[^}]*line-height: 1;/);
   assert.match(css, /html\.mobile-app-theme \.customers-card \.customer-form \{[^}]*min-width: 0;[^}]*width: 100%;/);
   assert.match(css, /html\.mobile-app-theme \.customers-card\.customer-form-open \.customer-form \.field \{\s*min-width: 0;/);
-  assert.match(css, /html\.mobile-app-theme #customerCreatedAt \{[^}]*min-width: 0;[^}]*width: 100%;[^}]*max-width: 100%;/);
+  assert.match(html, /id="customerCreatedDate" type="date"/);
+  assert.match(html, /id="customerCreatedTime" type="time"/);
+  assert.match(html, /id="customerCreatedAt" name="createdAt" type="datetime-local" required/);
+  assert.match(css, /\.customer-created-mobile \{\s*display: none;/);
+  assert.match(css, /html\.mobile-app-theme label\[for="customerCreatedAt"\],[\s\S]*?html\.mobile-app-theme #customerCreatedAt \{\s*display: none;/);
+  assert.match(css, /html\.mobile-app-theme \.customer-created-mobile \{[^}]*display: grid;[^}]*width: 100%;[^}]*max-width: 100%;/);
+  assert.match(app, /els\.customerCreatedAt\.required = false;[\s\S]*?els\.customerCreatedDate\.required = true;[\s\S]*?els\.customerCreatedTime\.required = true;/);
+});
+
+test("mobile customer date and time keep the original timestamp through edits", () => {
+  const start = app.indexOf("function syncCustomerCreatedAtFromMobile() {");
+  const end = app.indexOf("function closeCustomerForm() {", start);
+  assert.ok(start >= 0 && end > start);
+  const els = {
+    customerCreatedAt: { value: "" },
+    customerCreatedDate: { value: "2026-08-29" },
+    customerCreatedTime: { value: "04:37" }
+  };
+  const context = { els };
+  vm.createContext(context);
+  vm.runInContext(app.slice(start, end), context);
+  context.syncCustomerCreatedAtFromMobile();
+  assert.equal(els.customerCreatedAt.value, "2026-08-29T04:37");
+  els.customerCreatedTime.value = "15:08";
+  context.syncCustomerCreatedAtFromMobile();
+  assert.equal(els.customerCreatedAt.value, "2026-08-29T15:08");
+  els.customerCreatedDate.value = "";
+  context.syncCustomerCreatedAtFromMobile();
+  assert.equal(els.customerCreatedAt.value, "");
+  assert.match(app, /els\.customerCreatedAt\.value = toDateTimeLocalValue\(customer\?\.createdAt \|\| new Date\(\)\.toISOString\(\)\);[\s\S]*?els\.customerCreatedDate\.value = createdDate;[\s\S]*?els\.customerCreatedTime\.value = createdTime;/);
+  assert.match(app, /if \(USE_MOBILE_APP_THEME\) syncCustomerCreatedAtFromMobile\(\);\s*saveCustomerFromForm\(new FormData\(els\.customerForm\)\)/);
+});
+
+test("opening an existing customer loads both compact date and time controls", () => {
+  const start = app.indexOf("function openCustomerForm(customer = null) {");
+  const end = app.indexOf("function syncCustomerCreatedAtFromMobile() {", start);
+  const classes = new Set();
+  const els = {
+    customerForm: { hidden: true, elements: { customerId: { value: "" } } },
+    customersCard: { classList: { add: (name) => classes.add(name) } },
+    customersPage: { scrollTop: 50 },
+    customerNameInput: { value: "", focus() {} },
+    customerPhoneInput: { value: "" },
+    customerMemberTier: { value: "" },
+    customerCreatedAt: { value: "" },
+    customerCreatedDate: { value: "" },
+    customerCreatedTime: { value: "" }
+  };
+  const context = { els, uiState: {}, toDateTimeLocalValue: () => "2026-08-29T04:37" };
+  vm.createContext(context);
+  vm.runInContext(app.slice(start, end), context);
+  context.openCustomerForm({ id: "customer-1", name: "An", phone: "0123", memberTier: "Thường", createdAt: "2026-08-28T21:37:00.000Z" });
+  assert.equal(els.customerForm.hidden, false);
+  assert.equal(els.customerCreatedDate.value, "2026-08-29");
+  assert.equal(els.customerCreatedTime.value, "04:37");
+  assert.equal(els.customerCreatedAt.value, "2026-08-29T04:37");
+  assert.ok(classes.has("customer-form-open"));
 });
 
 test("customer page has browser back navigation and cleans up on sign-out", () => {

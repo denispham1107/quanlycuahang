@@ -9319,16 +9319,30 @@ html.mobile-app-theme .customers-card.customer-form-open .customer-form .field {
   min-width: 0;
 }
 
+.customer-created-mobile {
+  display: none;
+}
+
+/* iOS gives datetime-local a wide native label even when its CSS width is 100%. */
+html.mobile-app-theme label[for="customerCreatedAt"],
 html.mobile-app-theme #customerCreatedAt {
-  display: block;
-  box-sizing: border-box;
+  display: none;
+}
+
+html.mobile-app-theme .customer-created-mobile {
+  display: grid;
+  gap: 10px;
   min-width: 0;
   width: 100%;
   max-width: 100%;
 }
 
-html.mobile-app-theme #customerCreatedAt::-webkit-date-and-time-value {
+html.mobile-app-theme .customer-created-mobile .field,
+html.mobile-app-theme #customerCreatedDate,
+html.mobile-app-theme #customerCreatedTime {
+  box-sizing: border-box;
   min-width: 0;
+  width: 100%;
   max-width: 100%;
 }
 

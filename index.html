@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=58" />
+    <link rel="stylesheet" href="styles.css?v=59" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -1008,6 +1008,16 @@
             <div class="field">
               <label for="customerCreatedAt">Ngày giờ khởi tạo</label>
               <input id="customerCreatedAt" name="createdAt" type="datetime-local" required />
+              <div class="customer-created-mobile" role="group" aria-label="Ngày giờ khởi tạo">
+                <div class="field">
+                  <label for="customerCreatedDate">Ngày khởi tạo</label>
+                  <input id="customerCreatedDate" type="date" />
+                </div>
+                <div class="field">
+                  <label for="customerCreatedTime">Giờ khởi tạo</label>
+                  <input id="customerCreatedTime" type="time" />
+                </div>
+              </div>
             </div>
           </div>
           <div class="modal-actions customer-form-actions">
@@ -1347,6 +1357,6 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=58"></script>
+    <script defer src="app.js?v=59"></script>
   </body>
 </html>
