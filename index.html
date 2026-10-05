@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=67" />
+    <link rel="manifest" href="manifest.webmanifest?v=68" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=67" />
+    <link rel="stylesheet" href="styles.css?v=68" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -232,32 +232,26 @@
               <nav class="tab-bar" id="tabBar" aria-label="Nhóm chức năng">
                 <button class="tab-button active" type="button" data-tab="stores" aria-selected="true">
                   <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path class="store-body" d="M7 13.5v13h18v-13Z"/><path class="icon-accent store-awning" d="M4.5 14 7 6h18l2.5 8H4.5Z"/><path class="store-door" d="M12.5 26.5v-8h7v8M4.5 14h23"/></svg></span>
-                  <span class="desktop-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10H3V10Z"/><path d="M9 20v-7h6v7"/></svg></span>
                   <span class="tab-label">Cửa Hàng</span>
                 </button>
                 <button class="tab-button" type="button" data-tab="overview" aria-selected="false">
                   <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path class="overview-pie-side" d="M15 18v-10a10 10 0 1 0 10 10Z"/><path class="overview-pie-slice-side" d="M18 16V6a10 10 0 0 1 10 10Z"/><path class="overview-pie-main" d="M15 15V5a10 10 0 1 0 10 10Z"/><path class="icon-accent overview-pie-slice" d="M18 13V3a10 10 0 0 1 10 10Z"/></svg></span>
-                  <span class="desktop-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 20h18M5 20v-8h4v8M10 20V5h4v15M15 20v-11h4v11"/></svg></span>
                   <span class="tab-label">Tổng quan</span>
                 </button>
                 <button class="tab-button" type="button" data-tab="income" aria-selected="false">
                   <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M5 20.5v4.5a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2v-4.5l-3.5-6H21M11 14.5H8.5l-3.5 6h22M5.5 20.5h7l1.5 2h4l1.5-2h7"/><path d="M8 24.5h3m10 0h3"/><path class="icon-accent" d="M16 4v12m-4-4 4 4 4-4"/></svg></span>
-                  <span class="desktop-tab-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M6.5 10V7.5a3 3 0 0 1 3-3H23"/><rect x="4.5" y="10" width="23" height="17" rx="4"/><path d="M20 16h7.5v5.5H20a2.75 2.75 0 0 1 0-5.5Z"/><circle class="icon-detail" cx="22.5" cy="18.75" r="1"/><path class="icon-accent" d="M11 21v-7m-2.7 2.7L11 14l2.7 2.7"/></svg></span>
                   <span class="tab-label">Thu</span>
                 </button>
                 <button class="tab-button" type="button" data-tab="purchase" aria-selected="false">
                   <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 7 8-4 8 4-8 4-8-4Z" /><path d="m4 7 8 4 8-4v10l-8 4-8-4V7Z" /><path d="M12 11v10" /></svg></span>
-                  <span class="desktop-tab-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M5.5 12.5 16 7l10.5 5.5v11L16 29 5.5 23.5v-11Z"/><path d="M5.5 12.5 16 18l10.5-5.5M16 18v11M10.7 9.8 21 15.2"/><path class="icon-accent" d="M16 2.5v9m-3-3 3 3 3-3"/></svg></span>
                   <span class="tab-label">Nhập hàng</span>
                 </button>
                 <button class="tab-button" type="button" data-tab="sales" aria-selected="false">
                   <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 5h2l2 10h10l3-7H7" /><circle cx="9" cy="19" r="1.5" /><circle cx="17" cy="19" r="1.5" /></svg></span>
-                  <span class="desktop-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M2 4h3l2 12h12l2-9H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg></span>
                   <span class="tab-label">Bán Hàng</span>
                 </button>
                 <button class="tab-button" type="button" data-tab="expense" aria-selected="false">
                   <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M5 9v16a2 2 0 0 0 2 2h19V10a2 2 0 0 0-2-2H8a3 3 0 0 1-3-3v4Z"/><path d="M5 9V6a2 2 0 0 1 2-2h16v4M21 16h6v6h-6a3 3 0 0 1 0-6Z"/><circle cx="23" cy="19" r=".7" class="icon-accent-fill"/><path class="icon-accent" d="M10 16h7m-3-3 3 3-3 3"/></svg></span>
-                  <span class="desktop-tab-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7.5 4.5h17v18l-3-2-3 2-3-2-3 2-3-2-2 1.3V4.5Z"/><path d="M11.5 9.5h9M11.5 13.5h7"/><path class="icon-accent" d="M17 26h10m-3.3-3.2L27 26l-3.3 3.2"/></svg></span>
                   <span class="tab-label">Chi</span>
                 </button>
                 <button
@@ -1373,6 +1367,6 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=67"></script>
+    <script defer src="app.js?v=68"></script>
   </body>
 </html>

@@ -17,19 +17,19 @@ test("four primary mobile tabs have distinct detailed two-tone SVGs", () => {
     assert.ok((icon.match(/<(?:path|rect|circle)\b/g) || []).length >= 3, `${tab} icon lacks detail`);
     assert.match(icon, /class="icon-accent(?:\s|")/);
     icons.add(icon);
-    assert.match(button, /class="desktop-tab-icon"/);
+    assert.doesNotMatch(button, /class="desktop-tab-icon"/);
   }
   assert.equal(icons.size, 4);
 });
 
-test("mobile icon colors have selected and compact landscape states without touching desktop", () => {
-  assert.match(css, /html\.mobile-app-theme \.tab-button\[data-tab="stores"\] \{ --mobile-nav-icon-ink:/);
-  assert.match(css, /html\.mobile-app-theme \.tab-button\[data-tab="expense"\] \{ --mobile-nav-icon-ink:/);
+test("shared icon colors stay legible when selected and mobile landscape stays compact", () => {
+  assert.match(css, /\.tab-button\[data-tab="stores"\] \{ --mobile-nav-icon-ink:/);
+  assert.match(css, /\.tab-button\[data-tab="expense"\] \{ --mobile-nav-icon-ink:/);
   assert.match(css, /\.tab-icon \.icon-accent \{ stroke: var\(--mobile-nav-icon-accent\)/);
   assert.match(css, /\.tab-icon \.icon-accent-fill \{ fill: var\(--mobile-nav-icon-accent\)/);
   assert.match(css, /\.active \{\s*--mobile-nav-icon-ink: #fff;\s*--mobile-nav-icon-accent: #fff;/);
   assert.match(css, /@media \(orientation: landscape\) \{[\s\S]*flex-basis: 23px;/);
-  assert.match(css, /html:not\(\.mobile-app-theme\) \.desktop-nav-host \.desktop-tab-icon/);
+  assert.match(css, /html:not\(\.mobile-app-theme\) \.desktop-nav-host \.tab-icon/);
 });
 
 test("overview mobile icon is an exploded 3D pie with separate top and side faces", () => {
