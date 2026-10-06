@@ -3952,12 +3952,8 @@ async function readBulkCashWithTimeout(read, timeoutMs) {
   }
 }
 
-async function readBulkCashFileText(file, timeoutMs = Math.min(30000, Math.max(4000, Math.ceil((file.size || 0) / 1048576) * 2000)), onAttempt) {
+async function readBulkCashFileText(file, timeoutMs = Math.min(15000, Math.max(5000, Math.ceil((file.size || 0) / 1048576) * 2000)), onAttempt) {
   const attempts = [];
-  if (typeof Response === "function") attempts.push(() => new Response(file).text());
-  if (typeof file.arrayBuffer === "function" && typeof TextDecoder === "function") {
-    attempts.push(async () => new TextDecoder("utf-8").decode(await file.arrayBuffer()));
-  }
   if (typeof FileReader === "function") {
     attempts.push(() => new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -3968,18 +3964,18 @@ async function readBulkCashFileText(file, timeoutMs = Math.min(30000, Math.max(4
     }));
   }
   if (typeof file.text === "function") attempts.push(() => file.text());
-  let lastError = new Error("No file reader available");
-  for (const [index, attempt] of attempts.entries()) {
-    try {
-      onAttempt?.(index + 1, attempts.length);
-      const content = await readBulkCashWithTimeout(attempt, timeoutMs);
+  if (typeof file.arrayBuffer === "function" && typeof TextDecoder === "function") {
+    attempts.push(async () => new TextDecoder("utf-8").decode(await file.arrayBuffer()));
+  }
+  if (!attempts.length) throw new Error("No file reader available");
+  // Read independently: one stalled browser API must not delay another working API.
+  return readBulkCashWithTimeout(() => Promise.any(attempts.map((attempt, index) => {
+    onAttempt?.(index + 1, attempts.length);
+    return Promise.resolve().then(attempt).then((content) => {
       if (typeof content !== "string" || (!content && file.size > 0)) throw new Error("File content is empty");
       return content;
-    } catch (error) {
-      lastError = error;
-    }
-  }
-  throw lastError;
+    });
+  })), timeoutMs);
 }
 
 function normalizeBulkCashFileText(content) {
@@ -4003,14 +3999,14 @@ async function importBulkCashFile() {
   els.bulkCashFileHint.dataset.state = "loading";
   let content;
   try {
-    content = await readBulkCashFileText(file, undefined, (index, total) => {
+    content = await readBulkCashFileText(file, undefined, (_index, total) => {
       if (els.bulkCashPage.hidden || requestId !== bulkCashFileRequestId) return;
-      els.bulkCashFileHint.textContent = `Đang đọc ${file.name} (cách ${index}/${total})...`;
+      els.bulkCashFileHint.textContent = `Đang đọc ${file.name} (${total} cách đọc đồng thời)...`;
     });
   } catch (error) {
     if (els.bulkCashPage.hidden || requestId !== bulkCashFileRequestId) return;
     console.error("Cannot read bulk cash file", error);
-    els.bulkCashFileHint.textContent = "Không đọc được file. Hãy thử lại với file .txt hoặc .md.";
+    els.bulkCashFileHint.textContent = "Không đọc được file. Hãy chọn lại tệp .txt/.md hoặc dán nội dung vào ô bên dưới.";
     els.bulkCashFileHint.dataset.state = "error";
     return;
   }
