@@ -1676,6 +1676,159 @@ html.mobile-app-theme .sales-page-mode .sales-item-row {
   }
 }
 
+/* Thu/Chi: one bulk entry page shared by mobile and desktop. */
+.bulk-cash-open {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 12px;
+  border: 1px solid rgba(93, 105, 231, .25);
+  border-radius: 15px;
+  background: rgba(239, 242, 255, .95);
+  color: #193873;
+  font-weight: 850;
+}
+.bulk-cash-open[hidden] { display: none !important; }
+.bulk-cash-open span { font-size: 20px; line-height: 1; }
+
+.bulk-cash-page {
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+  width: 100%;
+  height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(22px, env(safe-area-inset-bottom));
+  background: radial-gradient(circle at 4% 8%, #fbd5f3, transparent 36%),
+    radial-gradient(circle at 96% 70%, #bde8ff, transparent 43%),
+    linear-gradient(140deg, #f5eaff, #e6f7ff);
+}
+.bulk-cash-page[hidden] { display: none; }
+body.bulk-cash-page-open { overflow: hidden; }
+body.bulk-cash-page-open > #tabBar,
+body.bulk-cash-page-open > .mobile-time-filter-shell,
+body.bulk-cash-page-open > .quick-entry-fab { display: none !important; }
+.bulk-cash-shell { width: min(920px, 100%); min-width: 0; margin-inline: auto; }
+.bulk-cash-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 14px;
+  border: 1px solid rgba(255,255,255,.9);
+  border-radius: 18px;
+  padding: 9px 12px;
+  background: rgba(255,255,255,.85);
+  backdrop-filter: blur(16px);
+}
+.bulk-cash-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 44px;
+  border: 1px solid #ccd9f1;
+  border-radius: 13px;
+  padding: 8px 13px;
+  background: #eef3ff;
+  color: #162b61;
+  font-weight: 850;
+  white-space: nowrap;
+}
+.bulk-cash-back span { font-size: 22px; line-height: 1; }
+.bulk-cash-context { min-width: 0; color: #58698e; font-size: 13px; font-weight: 750; text-align: right; overflow-wrap: anywhere; }
+.bulk-cash-card {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: calc(100dvh - 105px);
+  margin: 0;
+  border: 1px solid rgba(255,255,255,.9);
+  border-radius: 27px;
+  padding: clamp(18px, 3vw, 30px);
+  background: linear-gradient(145deg, rgba(255,255,255,.94), rgba(248,245,255,.94) 55%, rgba(235,249,255,.94));
+  box-shadow: 0 18px 48px rgba(53,70,138,.12);
+}
+.bulk-cash-card[data-type="income"] { --bulk-accent: #426af0; --bulk-tint: #e9edff; --bulk-border: #b9c6fc; --bulk-gradient: linear-gradient(110deg,#448cf8,#7450ee); }
+.bulk-cash-card[data-type="expense"] { --bulk-accent: #bd3a91; --bulk-tint: #ffe8f4; --bulk-border: #efb7d8; --bulk-gradient: linear-gradient(110deg,#f363ac,#ae48de); }
+.bulk-cash-eyebrow { color: var(--bulk-accent); font-size: 12px; font-weight: 900; letter-spacing: .12em; }
+.bulk-cash-card h1 { margin: -8px 0 0; color: #10275b; font-size: clamp(25px, 4vw, 37px); line-height: 1.18; overflow-wrap: anywhere; }
+.bulk-cash-description { margin: 0; color: #5c6880; font-size: 14px; line-height: 1.5; }
+.bulk-cash-guide {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  border: 1px solid var(--bulk-border);
+  border-radius: 17px;
+  padding: 14px;
+  background: var(--bulk-tint);
+  color: #43516e;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.bulk-cash-guide strong { color: #213766; }
+.bulk-cash-guide code,
+.bulk-cash-example code { display: block; white-space: normal; overflow-wrap: anywhere; color: #183776; font-size: 13px; }
+.bulk-cash-input-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; min-width: 0; color: #263b67; font-weight: 850; }
+.bulk-cash-input-heading label { min-width: 0; }
+.bulk-cash-input-heading span { color: var(--bulk-accent); font-size: 13px; white-space: nowrap; }
+.bulk-cash-input-heading span.is-over-limit { color: #ba305f; }
+#bulkCashText {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 220px;
+  height: min(38vh, 360px);
+  border: 1.5px solid var(--bulk-border);
+  border-radius: 18px;
+  padding: 15px 16px;
+  background: rgba(255,255,255,.95);
+  color: #182b55;
+  font: 16px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace;
+  resize: vertical;
+  overflow-wrap: anywhere;
+}
+#bulkCashText:focus { outline: 3px solid color-mix(in srgb, var(--bulk-accent) 26%, transparent); outline-offset: 2px; }
+#bulkCashText[aria-invalid="true"] { border-color: #d84c79; }
+.bulk-cash-example { margin: -5px 0 0; color: #61708e; font-size: 12px; line-height: 1.5; }
+.bulk-cash-example code { display: inline; }
+.bulk-cash-errors { display: grid; gap: 5px; max-height: 220px; overflow-y: auto; border: 1px solid #f1b2c6; border-radius: 14px; padding: 12px; background: #fff2f5; color: #b3335e; font-size: 13px; font-weight: 750; }
+.bulk-cash-errors[hidden] { display: none; }
+.bulk-cash-errors p { margin: 0; overflow-wrap: anywhere; }
+.bulk-cash-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; min-width: 0; }
+.bulk-cash-actions button { width: 100%; min-width: 0; max-width: 100%; min-height: 52px; border-radius: 15px; font-weight: 850; }
+.bulk-cash-cancel { border: 1.5px solid var(--bulk-border); background: #fff; color: #253b69; }
+.bulk-cash-complete { border: 0; background: var(--bulk-gradient); color: #fff; box-shadow: 0 10px 23px rgba(79,91,237,.2); }
+
+@media (max-width: 700px) {
+  .bulk-cash-page {
+    top: var(--bulk-cash-visual-top, 0px);
+    height: var(--bulk-cash-visual-height, 100dvh);
+    padding: max(10px, env(safe-area-inset-top)) 10px max(18px, env(safe-area-inset-bottom));
+  }
+  .bulk-cash-header { padding: 8px; margin-bottom: 10px; }
+  .bulk-cash-context { font-size: 11px; }
+  .bulk-cash-card { min-height: calc(100dvh - 88px); border-radius: 22px; padding: 16px; gap: 14px; }
+  .bulk-cash-guide { padding: 12px; }
+  #bulkCashText { min-height: 190px; height: 32vh; }
+}
+
 /* Settings details are full pages, not dialogs. The page itself owns scrolling. */
 .settings-detail-page {
   position: fixed;

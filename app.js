@@ -230,6 +230,17 @@ const els = {
   quickEntryNote: document.querySelector("#quickEntryNote"),
   quickEntryAmount: document.querySelector("#quickEntryAmount"),
   quickEntrySuggestions: document.querySelector("#quickEntrySuggestions"),
+  openBulkCashPage: document.querySelector("#openBulkCashPage"),
+  bulkCashPage: document.querySelector("#bulkCashPage"),
+  bulkCashCard: document.querySelector("#bulkCashCard"),
+  bulkCashTitle: document.querySelector("#bulkCashTitle"),
+  bulkCashContext: document.querySelector("#bulkCashContext"),
+  bulkCashText: document.querySelector("#bulkCashText"),
+  bulkCashCount: document.querySelector("#bulkCashCount"),
+  bulkCashErrors: document.querySelector("#bulkCashErrors"),
+  closeBulkCashPage: document.querySelector("#closeBulkCashPage"),
+  cancelBulkCashPage: document.querySelector("#cancelBulkCashPage"),
+  completeBulkCashPage: document.querySelector("#completeBulkCashPage"),
   salesOrderFields: document.querySelector("#salesOrderFields"),
   salesCustomerName: document.querySelector("#salesCustomerName"),
   salesCustomerPhone: document.querySelector("#salesCustomerPhone"),
@@ -1090,6 +1101,17 @@ els.quickEntryModal.addEventListener("click", (event) => {
 });
 
 els.quickEntryClose.addEventListener("click", closeQuickEntryModal);
+els.openBulkCashPage.addEventListener("click", () => openBulkCashPage());
+els.closeBulkCashPage.addEventListener("click", closeBulkCashPage);
+els.cancelBulkCashPage.addEventListener("click", closeBulkCashPage);
+els.completeBulkCashPage.addEventListener("click", completeBulkCashPage);
+els.bulkCashText.addEventListener("input", updateBulkCashCount);
+els.bulkCashPage.addEventListener("focusin", (event) => {
+  if (!event.target.matches("textarea, input")) return;
+  [100, 350].forEach((delay) => window.setTimeout(() => ensureBulkCashFocusVisible(event.target), delay));
+});
+window.visualViewport?.addEventListener("resize", updateBulkCashViewport);
+window.visualViewport?.addEventListener("scroll", updateBulkCashViewport);
 
 els.quickEntryForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -1334,6 +1356,11 @@ els.customersCard.addEventListener("focusin", (event) => {
 
 window.addEventListener("popstate", () => {
   const detailHash = window.location.hash;
+  if (["#bulk-income", "#bulk-expense"].includes(detailHash) && els.authScreen.hidden && isAdminUser() && getActiveStore() && !els.quickEntryModal.hidden) {
+    openBulkCashPage({ fromHistory: true });
+  } else {
+    hideBulkCashPage({ restoreFocus: !els.quickEntryModal.hidden });
+  }
   if (detailHash === "#employees" && els.authScreen.hidden && isAdminUser()) {
     openEmployeeManagerPage({ fromHistory: true });
   } else {
@@ -1640,6 +1667,10 @@ document.addEventListener("click", (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") return;
+  if (!els.bulkCashPage.hidden) {
+    closeBulkCashPage();
+    return;
+  }
   if (!els.salesOrderDetailModal?.hidden) {
     closeSalesOrderDetailModal();
     return;
@@ -2054,12 +2085,17 @@ function showLoginScreen(message = "") {
   document.body.classList.remove("sales-order-detail-open");
   hideSalesCatalogPage({ restoreFocus: false });
   hideCustomersPage({ restoreFocus: false });
+  hideBulkCashPage({ restoreFocus: false });
   hideEmployeeManagerPage({ restoreFocus: false });
   hideActivityHistoryPage({ restoreFocus: false });
-  if (["#customers", "#sales-catalog", "#employees", "#activity-history"].includes(window.location.hash)) {
+  if (["#customers", "#sales-catalog", "#employees", "#activity-history", "#bulk-income", "#bulk-expense"].includes(window.location.hash)) {
     window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
   }
   if (els.salesOrderDetailModal) els.salesOrderDetailModal.hidden = true;
+  els.quickEntryModal.hidden = true;
+  els.bulkCashText.value = "";
+  els.bulkCashPage.dataset.type = "";
+  els.bulkCashPage.dataset.storeId = "";
   els.appShell.hidden = true;
   if (USE_MOBILE_APP_THEME && els.tabBar) els.tabBar.hidden = true;
   if (mobileTimeFilterShell) mobileTimeFilterShell.hidden = true;
@@ -3362,8 +3398,10 @@ function render() {
     hideSalesCatalogPage({ restoreFocus: false });
     uiState.salesCatalogRow = null;
     if (!els.customersPage.hidden) hideCustomersPage({ restoreFocus: false });
+    hideBulkCashPage({ restoreFocus: false });
+    if (["#bulk-income", "#bulk-expense"].includes(window.location.hash)) els.quickEntryModal.hidden = true;
     hideActivityHistoryPage({ restoreFocus: false });
-    if (["#customers", "#sales-catalog", "#activity-history"].includes(window.location.hash)) {
+    if (["#customers", "#sales-catalog", "#activity-history", "#bulk-income", "#bulk-expense"].includes(window.location.hash)) {
       window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
     }
     els.activeStoreName.textContent = "Chưa chọn cửa hàng";
@@ -3662,6 +3700,7 @@ function openQuickEntryModal(type) {
   if (!store || !["income", "expense", "sales", "purchase"].includes(type)) return;
 
   els.quickEntryForm.dataset.type = type;
+  els.openBulkCashPage.hidden = !isAdminUser() || (type !== "income" && type !== "expense");
 
   if (type === "sales") {
     openSalesOrderModal(store);
@@ -3698,6 +3737,12 @@ function openQuickEntryModal(type) {
 }
 
 function closeQuickEntryModal() {
+  hideBulkCashPage({ restoreFocus: false });
+  clearBulkCashHash();
+  els.bulkCashText.value = "";
+  els.bulkCashPage.dataset.type = "";
+  els.bulkCashPage.dataset.storeId = "";
+  updateBulkCashCount();
   els.quickEntryModal.hidden = true;
   hideSalesCatalogPage({ restoreFocus: false });
   uiState.salesCatalogRow = null;
@@ -3721,10 +3766,262 @@ function closeQuickEntryModal() {
   els.bulkPurchaseText.value = "";
   updateBulkPurchaseSummary();
   els.quickEntrySubmit.disabled = false;
+  els.openBulkCashPage.hidden = true;
   els.openOrderDiscount.hidden = true;
   els.saveSalesDraft.hidden = true;
   els.deleteSalesDraft.hidden = true;
   els.quickEntrySubmit.textContent = "Lưu";
+}
+
+function parseBulkCashColumns(line) {
+  const normalizedLine = line.replace(/[“”]/g, '"');
+  const fields = [];
+  let value = "";
+  let quoted = false;
+  let afterQuote = false;
+  for (let index = 0; index < normalizedLine.length; index += 1) {
+    const char = normalizedLine[index];
+    if (quoted) {
+      if (char === '"' && normalizedLine[index + 1] === '"') {
+        value += '"';
+        index += 1;
+      } else if (char === '"') {
+        quoted = false;
+        afterQuote = true;
+      } else {
+        value += char;
+      }
+    } else if (afterQuote) {
+      if (char === ",") {
+        fields.push(value.trim());
+        value = "";
+        afterQuote = false;
+      } else if (!/\s/.test(char)) {
+        return { error: "Có ký tự thừa sau dấu ngoặc kép." };
+      }
+    } else if (char === ",") {
+      fields.push(value.trim());
+      value = "";
+    } else if (char === '"') {
+      if (value.trim()) return { error: "Dấu ngoặc kép phải nằm ở đầu ô." };
+      value = "";
+      quoted = true;
+    } else {
+      value += char;
+    }
+  }
+  if (quoted) return { error: "Chưa đóng dấu ngoặc kép." };
+  fields.push(value.trim());
+  return { fields };
+}
+
+function parseBulkCashDate(value, defaultDate) {
+  const raw = String(value || "").trim();
+  if (!raw) return defaultDate;
+  const dayFirst = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  const normalized = dayFirst
+    ? `${dayFirst[3]}-${dayFirst[2].padStart(2, "0")}-${dayFirst[1].padStart(2, "0")}`
+    : raw;
+  return isValidDateInput(normalized) ? normalized : null;
+}
+
+function parseBulkCashRows(text, defaultDate = toDateInputValue(new Date())) {
+  const rows = [];
+  const errors = [];
+  const lines = String(text || "").replace(/^\uFEFF/, "").split(/\r\n|\n|\r/);
+  const nonempty = lines.map((value, index) => ({ value: value.trim(), number: index + 1 }))
+    .filter((line) => line.value);
+  if (!nonempty.length) errors.push("Hãy nhập ít nhất một khoản.");
+  if (nonempty.length > 200) errors.push(`Tối đa 200 dòng; hiện có ${nonempty.length} dòng.`);
+
+  nonempty.forEach(({ value, number }) => {
+    const parsed = parseBulkCashColumns(value);
+    if (parsed.error) {
+      errors.push(`Dòng ${number}: ${parsed.error}`);
+      return;
+    }
+    const fields = parsed.fields;
+    if (fields.length < 3 || fields.length > 4) {
+      errors.push(`Dòng ${number}: Cần 3 hoặc 4 ô: tên, số tiền, mục, ngày (tùy chọn).`);
+      return;
+    }
+    const [note, amountText, categoryName, dateText = ""] = fields;
+    if (!note || note.length > 200) {
+      errors.push(`Dòng ${number}: Tên khoản phải có từ 1 đến 200 ký tự.`);
+      return;
+    }
+    const compactAmount = amountText.replace(/\s/g, "");
+    if (!/^(?:\d+|\d{1,3}(?:\.\d{3})+)$/.test(compactAmount)) {
+      errors.push(`Dòng ${number}: Số tiền phải là số nguyên, có thể dùng dấu chấm phân tách nghìn.`);
+      return;
+    }
+    const amount = Number(compactAmount.replaceAll(".", ""));
+    if (!Number.isSafeInteger(amount) || amount <= 0) {
+      errors.push(`Dòng ${number}: Số tiền phải lớn hơn 0 và nằm trong giới hạn hợp lệ.`);
+      return;
+    }
+    if (!categoryName || categoryName.length > 80) {
+      errors.push(`Dòng ${number}: Mục phải có từ 1 đến 80 ký tự.`);
+      return;
+    }
+    const date = parseBulkCashDate(dateText, defaultDate);
+    if (!date) {
+      errors.push(`Dòng ${number}: Ngày không hợp lệ. Dùng DD/MM/YYYY hoặc YYYY-MM-DD.`);
+      return;
+    }
+    rows.push({ note, amount, categoryName, date });
+  });
+  return { rows, errors, lineCount: nonempty.length };
+}
+
+function updateBulkCashCount() {
+  const count = els.bulkCashText.value.split(/\r\n|\n|\r/).filter((line) => line.trim()).length;
+  els.bulkCashCount.textContent = `${count} / 200 dòng`;
+  els.bulkCashCount.classList.toggle("is-over-limit", count > 200);
+  els.bulkCashErrors.hidden = true;
+  els.bulkCashErrors.replaceChildren();
+  els.bulkCashText.removeAttribute("aria-invalid");
+}
+
+function showBulkCashErrors(errors) {
+  els.bulkCashErrors.replaceChildren();
+  errors.slice(0, 20).forEach((message) => {
+    const line = document.createElement("p");
+    line.textContent = message;
+    els.bulkCashErrors.append(line);
+  });
+  if (errors.length > 20) {
+    const more = document.createElement("p");
+    more.textContent = `Còn ${errors.length - 20} lỗi khác.`;
+    els.bulkCashErrors.append(more);
+  }
+  els.bulkCashErrors.hidden = false;
+  els.bulkCashText.setAttribute("aria-invalid", "true");
+  els.bulkCashErrors.scrollIntoView({ block: "nearest" });
+}
+
+function openBulkCashPage({ fromHistory = false } = {}) {
+  const type = fromHistory
+    ? (window.location.hash === "#bulk-expense" ? "expense" : "income")
+    : els.quickEntryForm.dataset.type;
+  const store = getActiveStore();
+  if (!isAdminUser() || !store || !["income", "expense"].includes(type) || els.quickEntryModal.hidden) return;
+  if (els.bulkCashPage.dataset.type !== type || els.bulkCashPage.dataset.storeId !== store.id) {
+    els.bulkCashText.value = "";
+    updateBulkCashCount();
+  }
+  els.bulkCashPage.dataset.type = type;
+  els.bulkCashPage.dataset.storeId = store.id;
+  els.bulkCashCard.dataset.type = type;
+  els.bulkCashTitle.textContent = type === "income" ? "Thêm khoản thu từ danh sách" : "Thêm khoản chi từ danh sách";
+  els.bulkCashContext.textContent = type === "income" ? "Thu / Nhập danh sách" : "Chi / Nhập danh sách";
+  if (!fromHistory && !["#bulk-income", "#bulk-expense"].includes(window.location.hash)) {
+    window.history.pushState({ ...window.history.state, bulkCashPage: true }, "", `#bulk-${type}`);
+  }
+  els.bulkCashPage.hidden = false;
+  els.bulkCashPage.scrollTop = 0;
+  document.body.classList.add("bulk-cash-page-open");
+  els.appShell.inert = true;
+  els.appShell.setAttribute("aria-hidden", "true");
+  els.quickEntryModal.inert = true;
+  els.quickEntryModal.setAttribute("aria-hidden", "true");
+  if (USE_MOBILE_APP_THEME) els.tabBar.inert = true;
+  updateBulkCashViewport();
+  updateTimeFiltersVisibility();
+  els.closeBulkCashPage.focus({ preventScroll: true });
+}
+
+function closeBulkCashPage() {
+  if (["#bulk-income", "#bulk-expense"].includes(window.location.hash) && window.history.state?.bulkCashPage) {
+    window.history.back();
+    return;
+  }
+  hideBulkCashPage();
+  clearBulkCashHash();
+}
+
+function hideBulkCashPage({ restoreFocus = true } = {}) {
+  if (els.bulkCashPage.hidden) return;
+  els.bulkCashPage.hidden = true;
+  document.body.classList.remove("bulk-cash-page-open");
+  els.quickEntryModal.inert = false;
+  els.quickEntryModal.removeAttribute("aria-hidden");
+  els.appShell.inert = false;
+  els.appShell.removeAttribute("aria-hidden");
+  if (USE_MOBILE_APP_THEME) els.tabBar.inert = false;
+  updateTimeFiltersVisibility();
+  if (restoreFocus && !els.quickEntryModal.hidden) els.openBulkCashPage.focus({ preventScroll: true });
+}
+
+function clearBulkCashHash() {
+  if (["#bulk-income", "#bulk-expense"].includes(window.location.hash)) {
+    window.history.replaceState({ ...window.history.state, bulkCashPage: false }, "", `${window.location.pathname}${window.location.search}`);
+  }
+}
+
+function updateBulkCashViewport() {
+  if (!USE_MOBILE_APP_THEME || els.bulkCashPage.hidden) return;
+  const viewport = window.visualViewport;
+  els.bulkCashPage.style.setProperty("--bulk-cash-visual-height", `${Math.round(viewport?.height || window.innerHeight)}px`);
+  els.bulkCashPage.style.setProperty("--bulk-cash-visual-top", `${Math.round(viewport?.offsetTop || 0)}px`);
+  ensureBulkCashFocusVisible(document.activeElement);
+}
+
+function ensureBulkCashFocusVisible(target) {
+  if (els.bulkCashPage.hidden || !els.bulkCashPage.contains(target)) return;
+  const bounds = els.bulkCashPage.getBoundingClientRect();
+  const field = target.getBoundingClientRect();
+  if (field.height > bounds.height - 36) {
+    els.bulkCashPage.scrollTop += field.top - bounds.top - 18;
+    return;
+  }
+  if (field.bottom > bounds.bottom - 18) els.bulkCashPage.scrollTop += field.bottom - bounds.bottom + 18;
+  else if (field.top < bounds.top + 18) els.bulkCashPage.scrollTop -= bounds.top - field.top + 18;
+}
+
+function completeBulkCashPage() {
+  if (els.bulkCashPage.hidden) return;
+  const type = els.bulkCashPage.dataset.type;
+  const store = getActiveStore();
+  if (!isAdminUser() || !store || store.id !== els.bulkCashPage.dataset.storeId || !["income", "expense"].includes(type)) {
+    showBulkCashErrors(["Cửa hàng hoặc quyền truy cập đã thay đổi. Hãy quay lại và mở lại trang nhập danh sách."]);
+    return;
+  }
+  const { rows, errors } = parseBulkCashRows(els.bulkCashText.value, toDateInputValue(new Date()));
+  if (errors.length) {
+    showBulkCashErrors(errors);
+    return;
+  }
+  const categories = store.categories[type];
+  const byName = new Map(categories.map((category) => [category.name.toLocaleLowerCase("vi"), category]));
+  const area = type === "income" ? "Thu" : "Chi";
+  rows.forEach((row) => {
+    const key = row.categoryName.toLocaleLowerCase("vi");
+    let category = byName.get(key);
+    if (!category) {
+      category = { id: createId(), name: row.categoryName };
+      categories.push(category);
+      byName.set(key, category);
+      recordActivity(store, "create", area, `Tạo mục "${category.name}".`, {
+        tab: type, targetType: "category", targetId: category.id
+      });
+    }
+    const createdAt = new Date().toISOString();
+    const entry = {
+      id: createId(), type, categoryId: category.id, date: row.date,
+      amount: row.amount, note: row.note, createdAt
+    };
+    store.entries.push(entry);
+    recordActivity(store, "create", area,
+      `Tạo ${type === "income" ? "khoản thu" : "khoản chi"} "${row.note}" - ${formatCurrency(row.amount)}.`,
+      { createdAt, tab: type, targetType: "entry", targetId: entry.id, targetDate: row.date });
+  });
+  saveAndRender();
+  els.bulkCashText.value = "";
+  hideBulkCashPage({ restoreFocus: false });
+  clearBulkCashHash();
+  closeQuickEntryModal();
+  showActivityNavigationNotice(`Đã thêm ${rows.length} khoản ${type === "income" ? "thu" : "chi"}.`);
 }
 
 function applyQuickEntrySuggestion() {
@@ -6492,6 +6789,7 @@ function isMobileTimeFilterSuppressed() {
     (els.quickEntryModal && !els.quickEntryModal.hidden) ||
     (els.salesCatalogPage && !els.salesCatalogPage.hidden) ||
     (els.customersPage && !els.customersPage.hidden) ||
+    (els.bulkCashPage && !els.bulkCashPage.hidden) ||
     (els.employeeManagerPage && !els.employeeManagerPage.hidden) ||
     (els.activityHistoryPage && !els.activityHistoryPage.hidden) ||
     (els.aiChatModal && !els.aiChatModal.hidden)
