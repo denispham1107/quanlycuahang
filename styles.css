@@ -1676,6 +1676,142 @@ html.mobile-app-theme .sales-page-mode .sales-item-row {
   }
 }
 
+/* Settings details are full pages, not dialogs. The page itself owns scrolling. */
+.settings-detail-page {
+  position: fixed;
+  inset: 0;
+  z-index: 180;
+  width: 100%;
+  height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(22px, env(safe-area-inset-bottom));
+  background: radial-gradient(circle at 3% 7%, #fbd8f8, transparent 37%),
+    radial-gradient(circle at 95% 70%, #bce9ff, transparent 45%),
+    linear-gradient(140deg, #f4edff, #e9f8ff);
+}
+
+.settings-detail-page[hidden] { display: none; }
+body.settings-detail-page-open { overflow: hidden; }
+body.settings-detail-page-open > #tabBar,
+body.settings-detail-page-open > .mobile-time-filter-shell,
+body.settings-detail-page-open > .quick-entry-fab { display: none !important; }
+
+.settings-detail-shell {
+  width: min(1080px, 100%);
+  min-width: 0;
+  margin: 0 auto;
+}
+
+.settings-detail-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 255, 255, .88);
+  border-radius: 18px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, .83);
+  backdrop-filter: blur(16px);
+}
+
+.settings-page-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 44px;
+  border: 1px solid #cfdbf2;
+  border-radius: 13px;
+  padding: 8px 13px;
+  background: #eef3ff;
+  color: #162b61;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.settings-page-back span { font-size: 22px; line-height: 1; }
+.settings-detail-context { min-width: 0; color: #58698e; font-size: 13px; font-weight: 750; text-align: right; overflow-wrap: anywhere; }
+
+.settings-detail-card.employee-manager-card,
+.settings-detail-card.activity-history-card {
+  display: grid;
+  grid-template-rows: none;
+  align-content: start;
+  gap: 16px;
+  position: static;
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  min-height: calc(100dvh - 110px);
+  overflow: visible;
+  margin: 0;
+  border: 1px solid rgba(255,255,255,.9);
+  border-radius: 27px;
+  padding: clamp(16px, 3vw, 30px);
+  background: linear-gradient(145deg, rgba(255,255,255,.92), rgba(246,244,255,.94) 54%, rgba(234,249,255,.94));
+  box-shadow: 0 18px 48px rgba(53,70,138,.12);
+}
+
+.settings-detail-card .employee-manager-heading,
+.settings-detail-card .activity-history-heading { padding-right: 0; }
+.settings-detail-card .employee-manager-content,
+.settings-detail-card .activity-history-list { overflow: visible; max-height: none; padding-right: 0; scrollbar-gutter: auto; }
+.settings-detail-card .activity-history-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.settings-detail-card .activity-history-custom-range { grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.settings-detail-card .activity-history-result-count { grid-column: 1 / -1; padding: 0; text-align: left; white-space: normal; }
+.settings-detail-card .field,
+.settings-detail-card .employee-create-form,
+.settings-detail-card .employee-account-card,
+.settings-detail-card .employee-permissions,
+.settings-detail-card .activity-history-filters,
+.settings-detail-card .activity-history-item { min-width: 0; max-width: 100%; }
+.settings-detail-card input:not([type="checkbox"]),
+.settings-detail-card select,
+.settings-detail-card button { max-width: 100%; box-sizing: border-box; }
+.settings-detail-card input:not([type="checkbox"]),
+.settings-detail-card select { width: 100%; min-width: 0; }
+.settings-detail-card .employee-permissions { grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr)); }
+.settings-detail-card .employee-permissions label { overflow-wrap: anywhere; }
+.settings-detail-card .employee-create-submit { justify-self: start; }
+
+@media (max-width: 700px) {
+  .settings-detail-page {
+    top: var(--settings-detail-visual-top, 0px);
+    height: var(--settings-detail-visual-height, 100dvh);
+    padding: max(10px, env(safe-area-inset-top)) 10px max(18px, env(safe-area-inset-bottom));
+  }
+  .settings-detail-header { padding: 8px; margin-bottom: 10px; }
+  .settings-detail-context { font-size: 11px; }
+  .settings-detail-card.employee-manager-card,
+  .settings-detail-card.activity-history-card { min-height: calc(100dvh - 88px); border-radius: 22px; padding: 16px; }
+  .settings-detail-card .employee-form-grid,
+  .settings-detail-card .employee-permissions,
+  .settings-detail-card .activity-history-filters,
+  .settings-detail-card .activity-history-custom-range { grid-template-columns: minmax(0, 1fr); }
+  .settings-detail-card .activity-history-range-field,
+  .settings-detail-card .activity-history-area-field,
+  .settings-detail-card .activity-history-actor-field,
+  .settings-detail-card .activity-history-custom-range,
+  .settings-detail-card .activity-history-result-count { grid-column: 1; }
+  .settings-detail-card .activity-history-item { grid-template-columns: minmax(0, 1fr); }
+  .settings-detail-card .activity-history-area,
+  .settings-detail-card .activity-history-content { grid-column: 1; }
+  .settings-detail-card .employee-account-heading,
+  .settings-detail-card .employee-card-actions { flex-direction: column; align-items: stretch; }
+  .settings-detail-card .employee-active-toggle { align-self: flex-start; white-space: normal; }
+  .settings-detail-card .employee-create-submit,
+  .settings-detail-card .employee-card-actions button { width: 100%; }
+}
+
 * {
   box-sizing: border-box;
 }

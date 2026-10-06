@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=76" />
+    <link rel="manifest" href="manifest.webmanifest?v=77" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=76" />
+    <link rel="stylesheet" href="styles.css?v=77" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -1271,14 +1271,18 @@
       </form>
     </div>
 
-    <div class="modal-backdrop employee-manager-backdrop" id="employeeManagerModal" hidden>
-      <section class="modal-card employee-manager-card" role="dialog" aria-modal="true" aria-labelledby="employeeManagerTitle">
+    <main class="settings-detail-page" id="employeeManagerPage" aria-labelledby="employeeManagerTitle" hidden>
+      <div class="settings-detail-shell">
+        <header class="settings-detail-header">
+          <button class="settings-page-back" id="closeEmployeeManager" type="button"><span aria-hidden="true">←</span> Quay lại</button>
+          <span class="settings-detail-context">Cài đặt / Nhân viên</span>
+        </header>
+      <section class="settings-detail-card employee-manager-card" aria-labelledby="employeeManagerTitle">
         <div class="panel-heading employee-manager-heading">
           <div>
             <h2 id="employeeManagerTitle">Quản lý nhân viên</h2>
             <span>Tạo tài khoản và phân quyền</span>
           </div>
-          <button class="icon-button employee-manager-close" id="closeEmployeeManager" type="button" aria-label="Đóng quản lý nhân viên">×</button>
         </div>
         <div class="employee-manager-content">
           <p class="employee-manager-note">Mật khẩu chỉ dùng để tạo tài khoản và không được lưu trong dữ liệu cửa hàng.</p>
@@ -1321,16 +1325,21 @@
           <div class="employee-account-list" id="employeeAccountList"></div>
         </div>
       </section>
-    </div>
+      </div>
+    </main>
 
-    <div class="modal-backdrop" id="activityHistoryModal" hidden>
-      <section class="modal-card activity-history-card" role="dialog" aria-modal="true" aria-labelledby="activityHistoryTitle">
+    <main class="settings-detail-page" id="activityHistoryPage" aria-labelledby="activityHistoryTitle" hidden>
+      <div class="settings-detail-shell">
+        <header class="settings-detail-header">
+          <button class="settings-page-back" id="closeActivityHistory" type="button"><span aria-hidden="true">←</span> Quay lại</button>
+          <span class="settings-detail-context">Cài đặt / Lịch sử</span>
+        </header>
+      <section class="settings-detail-card activity-history-card" aria-labelledby="activityHistoryTitle">
         <div class="panel-heading activity-history-heading">
           <div>
             <h2 id="activityHistoryTitle">Lịch sử hoạt động</h2>
             <span id="activityHistoryStoreName">Cửa hàng</span>
           </div>
-          <button class="icon-button activity-history-close" id="closeActivityHistory" type="button" aria-label="Đóng lịch sử">×</button>
         </div>
         <p class="activity-history-note">Nhật ký bắt đầu ghi từ phiên bản hỗ trợ Lịch sử.</p>
         <div class="activity-history-filters" aria-label="Bộ lọc lịch sử hoạt động">
@@ -1371,12 +1380,13 @@
         </div>
         <div class="activity-history-list" id="activityHistoryList"></div>
       </section>
-    </div>
+      </div>
+    </main>
 
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=76"></script>
+    <script defer src="app.js?v=77"></script>
   </body>
 </html>

@@ -176,7 +176,7 @@ const els = {
   settingsToggle: document.querySelector("#settingsToggle"),
   settingsActions: document.querySelector("#settingsActions"),
   openEmployeeManager: document.querySelector("#openEmployeeManager"),
-  employeeManagerModal: document.querySelector("#employeeManagerModal"),
+  employeeManagerPage: document.querySelector("#employeeManagerPage"),
   closeEmployeeManager: document.querySelector("#closeEmployeeManager"),
   employeeCreateForm: document.querySelector("#employeeCreateForm"),
   employeeStore: document.querySelector("#employeeStore"),
@@ -184,7 +184,7 @@ const els = {
   employeeAccountList: document.querySelector("#employeeAccountList"),
   employeeCount: document.querySelector("#employeeCount"),
   openActivityHistory: document.querySelector("#openActivityHistory"),
-  activityHistoryModal: document.querySelector("#activityHistoryModal"),
+  activityHistoryPage: document.querySelector("#activityHistoryPage"),
   activityHistoryStoreName: document.querySelector("#activityHistoryStoreName"),
   activityHistoryList: document.querySelector("#activityHistoryList"),
   activityHistoryRangeMode: document.querySelector("#activityHistoryRangeMode"),
@@ -1333,6 +1333,17 @@ els.customersCard.addEventListener("focusin", (event) => {
 });
 
 window.addEventListener("popstate", () => {
+  const detailHash = window.location.hash;
+  if (detailHash === "#employees" && els.authScreen.hidden && isAdminUser()) {
+    openEmployeeManagerPage({ fromHistory: true });
+  } else {
+    hideEmployeeManagerPage({ restoreFocus: false });
+  }
+  if (detailHash === "#activity-history" && els.authScreen.hidden && getActiveStore() && (!isEmployeeUser() || employeeCan("history", "viewOwn"))) {
+    openActivityHistoryPage({ fromHistory: true });
+  } else {
+    hideActivityHistoryPage({ restoreFocus: false });
+  }
   if (window.location.hash === "#sales-catalog" && els.authScreen.hidden && getActiveStore() && uiState.salesCatalogRow?.isConnected && !els.quickEntryModal.hidden) {
     openSalesCatalogPage(uiState.salesCatalogRow, { fromHistory: true });
   } else {
@@ -1633,12 +1644,12 @@ document.addEventListener("keydown", (event) => {
     closeSalesOrderDetailModal();
     return;
   }
-  if (!els.employeeManagerModal?.hidden) {
-    closeEmployeeManagerModal();
+  if (!els.employeeManagerPage?.hidden) {
+    closeEmployeeManagerPage();
     return;
   }
-  if (!els.activityHistoryModal?.hidden) {
-    closeActivityHistoryModal();
+  if (!els.activityHistoryPage?.hidden) {
+    closeActivityHistoryPage();
     return;
   }
   if (!els.settingsActions?.hidden) {
@@ -1647,11 +1658,8 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-els.openEmployeeManager?.addEventListener("click", openEmployeeManagerModal);
-els.closeEmployeeManager?.addEventListener("click", closeEmployeeManagerModal);
-els.employeeManagerModal?.addEventListener("click", (event) => {
-  if (event.target === els.employeeManagerModal) closeEmployeeManagerModal();
-});
+els.openEmployeeManager?.addEventListener("click", () => openEmployeeManagerPage());
+els.closeEmployeeManager?.addEventListener("click", closeEmployeeManagerPage);
 els.employeeCreateForm?.addEventListener("change", (event) => {
   enforceEmployeePermissionDependencies(els.employeeCreateForm, event.target);
 });
@@ -1664,11 +1672,14 @@ els.employeeAccountList?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-save-employee]");
   if (button) updateEmployeeAccount(button.closest("[data-employee-uid]"));
 });
-els.openActivityHistory?.addEventListener("click", openActivityHistoryModal);
-els.closeActivityHistory?.addEventListener("click", closeActivityHistoryModal);
-els.activityHistoryModal?.addEventListener("click", (event) => {
-  if (event.target === els.activityHistoryModal) closeActivityHistoryModal();
-});
+els.openActivityHistory?.addEventListener("click", () => openActivityHistoryPage());
+els.closeActivityHistory?.addEventListener("click", closeActivityHistoryPage);
+window.visualViewport?.addEventListener("resize", updateSettingsDetailViewport);
+window.visualViewport?.addEventListener("scroll", updateSettingsDetailViewport);
+[els.employeeManagerPage, els.activityHistoryPage].forEach((page) => page?.addEventListener("focusin", (event) => {
+  if (!event.target.matches("input, select, textarea")) return;
+  [100, 350].forEach((delay) => window.setTimeout(() => ensureSettingsDetailFocusVisible(event.target), delay));
+}));
 els.activityHistoryList?.addEventListener("click", (event) => {
   const row = event.target.closest("[data-activity-id]");
   if (row) navigateToActivity(row.dataset.activityId);
@@ -2043,11 +2054,12 @@ function showLoginScreen(message = "") {
   document.body.classList.remove("sales-order-detail-open");
   hideSalesCatalogPage({ restoreFocus: false });
   hideCustomersPage({ restoreFocus: false });
-  if (["#customers", "#sales-catalog"].includes(window.location.hash)) {
+  hideEmployeeManagerPage({ restoreFocus: false });
+  hideActivityHistoryPage({ restoreFocus: false });
+  if (["#customers", "#sales-catalog", "#employees", "#activity-history"].includes(window.location.hash)) {
     window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
   }
   if (els.salesOrderDetailModal) els.salesOrderDetailModal.hidden = true;
-  if (els.employeeManagerModal) els.employeeManagerModal.hidden = true;
   els.appShell.hidden = true;
   if (USE_MOBILE_APP_THEME && els.tabBar) els.tabBar.hidden = true;
   if (mobileTimeFilterShell) mobileTimeFilterShell.hidden = true;
@@ -2469,21 +2481,39 @@ async function loadEmployeeAccounts() {
   }
 }
 
-function openEmployeeManagerModal() {
-  if (!isAdminUser() || !els.employeeManagerModal) return;
+function openEmployeeManagerPage({ fromHistory = false } = {}) {
+  if (!isAdminUser() || !els.employeeManagerPage) return;
   setSettingsMenuOpen(false);
-  els.employeeManagerModal.hidden = false;
-  document.body.classList.add("modal-open");
+  if (!fromHistory && window.location.hash !== "#employees") {
+    window.history.pushState({ ...window.history.state, employeeManagerPage: true }, "", "#employees");
+  }
+  els.employeeManagerPage.hidden = false;
+  els.employeeManagerPage.scrollTop = 0;
+  document.body.classList.add("settings-detail-page-open");
+  els.appShell.inert = true;
+  els.appShell.setAttribute("aria-hidden", "true");
+  if (USE_MOBILE_APP_THEME) els.tabBar.inert = true;
+  updateSettingsDetailViewport();
+  updateTimeFiltersVisibility();
   loadEmployeeAccounts();
-  window.setTimeout(() => els.employeeCreateForm?.elements.displayName?.focus({ preventScroll: true }), 80);
+  els.closeEmployeeManager.focus({ preventScroll: true });
 }
 
-function closeEmployeeManagerModal() {
-  if (!els.employeeManagerModal) return;
-  els.employeeManagerModal.hidden = true;
-  document.body.classList.remove("modal-open");
+function closeEmployeeManagerPage() {
+  if (window.location.hash === "#employees" && window.history.state?.employeeManagerPage) {
+    window.history.back();
+    return;
+  }
+  hideEmployeeManagerPage();
+  clearSettingsDetailHash("#employees");
+}
+
+function hideEmployeeManagerPage({ restoreFocus = true } = {}) {
+  if (!els.employeeManagerPage || els.employeeManagerPage.hidden) return;
+  els.employeeManagerPage.hidden = true;
   setEmployeeManagerStatus();
-  els.openEmployeeManager?.focus({ preventScroll: true });
+  finishSettingsDetailPageClose();
+  if (restoreFocus) els.settingsToggle?.focus({ preventScroll: true });
 }
 
 async function createEmployeeAccount(event) {
@@ -2866,7 +2896,8 @@ function resolveActivityTarget(store, activity) {
   return { ...resolved, tab: resolved.tab || (area === "Cửa hàng" ? "stores" : "") };
 }
 
-function openActivityHistoryModal() {
+function openActivityHistoryPage({ fromHistory = false } = {}) {
+  if (isEmployeeUser() && !employeeCan("history", "viewOwn")) return;
   const store = getActiveStore();
   setSettingsMenuOpen(false);
   if (!store) {
@@ -2878,14 +2909,73 @@ function openActivityHistoryModal() {
   if (!els.activityHistoryToDate.value) els.activityHistoryToDate.value = today;
   updateActivityHistoryFilterVisibility();
   renderActivityHistory(store);
-  els.activityHistoryModal.hidden = false;
+  if (!fromHistory && window.location.hash !== "#activity-history") {
+    window.history.pushState({ ...window.history.state, activityHistoryPage: true }, "", "#activity-history");
+  }
+  els.activityHistoryPage.hidden = false;
+  els.activityHistoryPage.scrollTop = 0;
+  document.body.classList.add("settings-detail-page-open");
+  els.appShell.inert = true;
+  els.appShell.setAttribute("aria-hidden", "true");
+  if (USE_MOBILE_APP_THEME) els.tabBar.inert = true;
+  updateSettingsDetailViewport();
+  updateTimeFiltersVisibility();
   els.closeActivityHistory?.focus({ preventScroll: true });
 }
 
-function closeActivityHistoryModal() {
-  if (!els.activityHistoryModal) return;
-  els.activityHistoryModal.hidden = true;
-  els.settingsToggle?.focus({ preventScroll: true });
+function closeActivityHistoryPage() {
+  if (window.location.hash === "#activity-history" && window.history.state?.activityHistoryPage) {
+    window.history.back();
+    return;
+  }
+  hideActivityHistoryPage();
+  clearSettingsDetailHash("#activity-history");
+}
+
+function hideActivityHistoryPage({ restoreFocus = true } = {}) {
+  if (!els.activityHistoryPage || els.activityHistoryPage.hidden) return;
+  els.activityHistoryPage.hidden = true;
+  finishSettingsDetailPageClose();
+  if (restoreFocus) els.settingsToggle?.focus({ preventScroll: true });
+}
+
+function finishSettingsDetailPageClose() {
+  const anotherPageOpen = !els.employeeManagerPage.hidden || !els.activityHistoryPage.hidden;
+  document.body.classList.toggle("settings-detail-page-open", anotherPageOpen);
+  els.appShell.inert = anotherPageOpen;
+  if (anotherPageOpen) els.appShell.setAttribute("aria-hidden", "true");
+  else els.appShell.removeAttribute("aria-hidden");
+  if (USE_MOBILE_APP_THEME) els.tabBar.inert = anotherPageOpen;
+  updateTimeFiltersVisibility();
+}
+
+function clearSettingsDetailHash(hash) {
+  if (window.location.hash === hash) {
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
+  }
+}
+
+function updateSettingsDetailViewport() {
+  if (!USE_MOBILE_APP_THEME) return;
+  const page = !els.employeeManagerPage.hidden ? els.employeeManagerPage :
+    !els.activityHistoryPage.hidden ? els.activityHistoryPage : null;
+  if (!page) return;
+  const viewport = window.visualViewport;
+  page.style.setProperty("--settings-detail-visual-height", `${Math.round(viewport?.height || window.innerHeight)}px`);
+  page.style.setProperty("--settings-detail-visual-top", `${Math.round(viewport?.offsetTop || 0)}px`);
+  ensureSettingsDetailFocusVisible(document.activeElement);
+}
+
+function ensureSettingsDetailFocusVisible(target) {
+  const page = target?.closest?.(".settings-detail-page");
+  if (!page || page.hidden) return;
+  const pageBounds = page.getBoundingClientRect();
+  const targetBounds = target.getBoundingClientRect();
+  if (targetBounds.bottom > pageBounds.bottom - 18) {
+    page.scrollTop += targetBounds.bottom - pageBounds.bottom + 18;
+  } else if (targetBounds.top < pageBounds.top + 18) {
+    page.scrollTop -= pageBounds.top - targetBounds.top + 18;
+  }
 }
 
 function findActivityTargetRow(target) {
@@ -2940,7 +3030,8 @@ function navigateToActivity(activityId) {
     uiState.inventoryLogSearch = "";
   }
 
-  closeActivityHistoryModal();
+  hideActivityHistoryPage({ restoreFocus: false });
+  clearSettingsDetailHash("#activity-history");
   activateTab(target.tab || "stores");
   render();
 
@@ -3271,7 +3362,8 @@ function render() {
     hideSalesCatalogPage({ restoreFocus: false });
     uiState.salesCatalogRow = null;
     if (!els.customersPage.hidden) hideCustomersPage({ restoreFocus: false });
-    if (["#customers", "#sales-catalog"].includes(window.location.hash)) {
+    hideActivityHistoryPage({ restoreFocus: false });
+    if (["#customers", "#sales-catalog", "#activity-history"].includes(window.location.hash)) {
       window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
     }
     els.activeStoreName.textContent = "Chưa chọn cửa hàng";
@@ -3286,6 +3378,9 @@ function render() {
     updateQuickEntryButton();
     updatePinnedTabs();
     updateDesktopPageChrome();
+    if (window.location.hash === "#employees" && els.employeeManagerPage.hidden && authState.ready && els.authScreen.hidden && isAdminUser()) {
+      openEmployeeManagerPage({ fromHistory: true });
+    }
     return;
   }
 
@@ -3307,7 +3402,7 @@ function render() {
   renderInventoryLogs(store);
   renderDesktopInsights(store);
   updateDesktopCategoryFilter();
-  if (els.activityHistoryModal && !els.activityHistoryModal.hidden) {
+  if (els.activityHistoryPage && !els.activityHistoryPage.hidden) {
     renderActivityHistory(store);
   }
   if (!els.customersPage.hidden && !uiState.customerFormOpen) {
@@ -3321,6 +3416,12 @@ function render() {
   updateDesktopPageChrome();
   if (window.location.hash === "#customers" && els.customersPage.hidden && authState.ready && els.authScreen.hidden) {
     openCustomersPage({ fromHistory: true });
+  }
+  if (window.location.hash === "#employees" && els.employeeManagerPage.hidden && authState.ready && els.authScreen.hidden && isAdminUser()) {
+    openEmployeeManagerPage({ fromHistory: true });
+  }
+  if (window.location.hash === "#activity-history" && els.activityHistoryPage.hidden && authState.ready && els.authScreen.hidden) {
+    openActivityHistoryPage({ fromHistory: true });
   }
 }
 
@@ -6391,6 +6492,8 @@ function isMobileTimeFilterSuppressed() {
     (els.quickEntryModal && !els.quickEntryModal.hidden) ||
     (els.salesCatalogPage && !els.salesCatalogPage.hidden) ||
     (els.customersPage && !els.customersPage.hidden) ||
+    (els.employeeManagerPage && !els.employeeManagerPage.hidden) ||
+    (els.activityHistoryPage && !els.activityHistoryPage.hidden) ||
     (els.aiChatModal && !els.aiChatModal.hidden)
   );
 }
