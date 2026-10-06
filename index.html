@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=90" />
+    <link rel="manifest" href="manifest.webmanifest?v=91" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=90" />
+    <link rel="stylesheet" href="styles.css?v=91" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -898,13 +898,11 @@
             <input id="bulkCashFile" class="bulk-cash-file-input" type="file" accept=".txt,.md,text/plain,text/markdown" aria-label="Chọn file danh sách khoản thu hoặc chi" tabindex="-1" />
           </div>
           <h1 id="bulkCashTitle">Thêm khoản thu từ danh sách</h1>
-          <p class="bulk-cash-description">Mỗi dòng tạo một khoản. Nhập trực tiếp tối đa 200 dòng; file .txt hoặc .md không giới hạn 200 dòng. Toàn bộ danh sách phải hợp lệ trước khi lưu.</p>
           <p class="bulk-cash-file-hint" id="bulkCashFileHint" role="status" aria-live="polite">Chọn biểu tượng tài liệu để nhập từ file .txt hoặc .md.</p>
           <div class="bulk-cash-guide">
             <strong>Cú pháp mỗi dòng</strong>
             <code>"Tên khoản",Số tiền,Mục,Ngày hoặc "Tên khoản",Số tiền,Ngày,Mục</code>
-            <span>Ngày nhận DDMMYYYY (ví dụ 01092026), DD/MM/YYYY hoặc YYYY-MM-DD; có thể bỏ trống để lấy ngày hiện tại lúc bấm Hoàn thành. Mục chưa có sẽ được tạo tự động.</span>
-            <span>Số tiền dùng chữ số hoặc dấu chấm phân tách hàng nghìn. Nếu tên/mục chứa dấu phẩy, hãy đặt trong dấu ngoặc kép. File có thể dùng dấu - đầu dòng như danh sách Markdown.</span>
+            <span>Ngày nhận DDMMYYYY (ví dụ 01092026), DD/MM/YYYY hoặc YYYY-MM-DD; có thể bỏ trống để lấy ngày hiện tại lúc bấm Hoàn thành.</span>
           </div>
           <div class="bulk-cash-input-heading">
             <label for="bulkCashText">Danh sách khoản</label>
@@ -1433,6 +1431,6 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=90"></script>
+    <script defer src="app.js?v=91"></script>
   </body>
 </html>
