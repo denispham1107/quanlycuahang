@@ -10450,6 +10450,105 @@ body.sales-catalog-page-open > .quick-entry-fab { display: none !important; }
   }
 }
 
+/* Daily closing book: all layout rules are scoped to this dedicated page. */
+.closing-book-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 56px; height: 56px; min-width: 56px; padding: 6px; border: 1px solid #d4d8fa; border-radius: 17px; background: linear-gradient(135deg,#fff9ff,#e6f0ff); box-shadow: 0 7px 18px #7356b521; }
+.closing-book-icon[hidden] { display: none !important; }
+.closing-book-icon svg { width: 43px; height: 43px; filter: drop-shadow(0 3px 2px #333c6430); }
+#openClosingBookDesktop { width: 56px; min-width: 56px; padding: 6px; border: 1px solid #d4d8fa; background: linear-gradient(135deg,#fff9ff,#e6f0ff); box-shadow: 0 7px 18px #7356b521; }
+#openClosingBookDesktop svg { flex: 0 0 43px; }
+#openClosingBookMobile { display: none; }
+html.mobile-app-theme #openClosingBookMobile { display: inline-flex; width: 44px; height: 44px; min-width: 44px; border-radius: 13px; padding: 4px; }
+html.mobile-app-theme #openClosingBookMobile svg { width: 36px; height: 36px; }
+html.mobile-app-theme .mobile-overview-heading { flex-wrap: wrap; gap: 10px; }
+html.mobile-app-theme .mobile-overview-heading > div { flex: 1 1 55%; min-width: 0; }
+body.closing-book-open { overflow: hidden; }
+body.closing-book-open > .mobile-time-filter-shell,
+body.closing-book-open > .quick-entry-fab,
+body.closing-book-open .tab-bar { display: none !important; }
+.closing-book-page { position: fixed; inset: var(--book-top,0px) 0 auto; height: var(--book-height,100dvh); z-index: 180; overflow: auto; scroll-padding-top: 88px; padding: 20px; background: radial-gradient(circle at 0 0,#ffd5f5,transparent 50%),linear-gradient(135deg,#f3e9ff,#d1f0ff); color: #192e5e; }
+.closing-book-page[hidden] { display: none; }
+.closing-book-page * { box-sizing: border-box; min-width: 0; }
+.closing-book-shell { width: 100%; max-width: 1180px; margin: 0 auto; display: grid; gap: 16px; }
+.closing-book-nav { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: 12px; border-radius: 20px; background: #ffffffed; padding: 12px 16px; backdrop-filter: blur(15px); }
+.closing-book-nav span { font-size: 13px; font-weight: 700; text-align: right; }
+.closing-book-nav button { width: auto; flex: 0 0 auto; }
+.closing-book-page button { min-height: 44px; margin: 0; padding: 10px 16px; font-weight: 750; border-radius: 13px; line-height: 1.35; }
+.closing-book-page .ghost-button { background: #f2f5ff; border: 1px solid #cdd9f7; color: #243f7b; box-shadow: none; }
+.closing-book-card { border: 1px solid #fff; border-radius: 27px; background: #ffffffc4; padding: 26px; display: grid; gap: 20px; }
+.closing-book-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.closing-book-heading p { font-size: 12px; font-weight: 850; letter-spacing: .12em; color: #6953b7; margin: 0 0 8px; }
+.closing-book-heading h1 { font-size: 32px; margin: 0 0 5px; }
+.closing-book-emblem svg { width: 70px; height: 70px; }
+.closing-book-controls { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.3fr) minmax(0,.7fr); gap: 14px; align-items: end; }
+.closing-book-page label { display: grid; gap: 7px; font-size: 13px; font-weight: 700; color: #586c8d; }
+.closing-book-page input,.closing-book-page select,.closing-book-page textarea { display: block; width: 100%; max-width: 100%; min-height: 46px; padding: 11px 12px; border: 1px solid #d4def1; border-radius: 12px; background: #fff; color: #203b71; font-size: 16px; line-height: 1.4; font-family: inherit; }
+.closing-book-page textarea { resize: vertical; }
+.closing-book-page input:focus,.closing-book-page select:focus,.closing-book-page textarea:focus { outline: 3px solid #9172ef33; border-color: #9172ef; }
+#closingBookCreateMonth { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: end; }
+#closingBookMessage { margin: 0; color: #2f6582; font-size: 13px; overflow-wrap: anywhere; }
+#closingBookMessage:empty { display: none; }
+#closingBookMessage.is-error { color: #b62151; background: #ffe9f1; padding: 12px; border-radius: 12px; }
+#closingBookSync { margin: 0; color: #456b94; font-size: 12px; }
+#closingBookSync:empty { display: none; }
+#closingBookSync.is-error { color: #b62151; }
+#closingBookEditor,#closingBookForm { display: grid; gap: 18px; }
+#closingBookEditor[hidden] { display: none; }
+.closing-book-shift-bar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+.closing-book-shift-bar label { flex: 1 1 220px; }
+#closingBookSaved { font-size: 12px; color: #6c7d99; }
+.closing-book-section { background: #ffffffd9; border: 1px solid #dde5f4; padding: 20px; border-radius: 20px; }
+.closing-book-section h2 { font-size: 19px; margin: 0 0 16px; }
+.closing-book-fields { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 15px; }
+.closing-book-payments { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; }
+.closing-book-payments article { border: 1px solid #d9e3f5; border-radius: 14px; padding: 14px; background: #f5f8ff; }
+.closing-book-payments h3 { margin: 0 0 12px; color: #4659b0; font-size: 16px; }
+.closing-book-payments p { display: grid; gap: 4px; font-size: 12px; margin: 12px 0 0; }
+.closing-book-payments strong { font-size: 15px; overflow-wrap: anywhere; }
+.closing-book-entry-groups { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+.closing-book-group-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
+.closing-book-group-heading h2 { margin: 0; }
+.closing-book-page [data-book-add] { width: 44px; padding: 5px; background: #edf0ff; color: #6150bd; border: 1px solid #d9d6fa; box-shadow: none; font-size: 22px; }
+.book-income { background: #f1f9ffe0; }
+.book-expense { background: #fff4f9e0; }
+.closing-book-rows { display: grid; gap: 12px; }
+.closing-book-row { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(0,1fr) 36px; gap: 8px; align-items: end; }
+.closing-book-page [data-book-remove] { min-height: 46px; width: 36px; padding: 0; color: #b3345c; background: #ffe4ed; border: 1px solid #f4bdd0; box-shadow: none; font-size: 22px; }
+.closing-book-group-total { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; border-top: 1px solid #dce5f6; padding-top: 14px; margin: 16px 0 0; font-size: 13px; }
+.closing-book-group-total strong { overflow-wrap: anywhere; }
+.closing-book-totals { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; }
+.closing-book-totals > div { display: grid; gap: 10px; border: 1px solid #dbe3fa; border-radius: 14px; padding: 15px; background: #f1f4ff; }
+.closing-book-totals span { font-size: 13px; }
+.closing-book-totals strong { font-size: 20px; color: #1664c4; overflow-wrap: anywhere; }
+.closing-book-page .book-mismatch { color: #b32854; }
+.closing-book-notes { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; margin-top: 18px; }
+.closing-book-save { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
+.closing-book-save span { font-size: 12px; color: #6a7b96; }
+.closing-book-save button { min-width: 170px; }
+#closingBookCreateMonth button, #closingBookForm button[type="submit"] { background: var(--accent-gradient); color: #fff; border: 0; box-shadow: 0 8px 20px #5c74c72b; }
+@media(max-width:800px) {
+  .closing-book-controls { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .closing-book-payments,.closing-book-totals { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .closing-book-fields { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .closing-book-entry-groups { grid-template-columns: minmax(0,1fr); }
+}
+@media(max-width:520px) {
+  .closing-book-page { padding: max(10px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom)); }
+  .closing-book-card { padding: 18px 14px; border-radius: 22px; gap: 16px; }
+  .closing-book-nav { padding: 10px; gap: 8px; }
+  .closing-book-nav span { font-size: 11px; }
+  .closing-book-nav button { font-size: 13px; padding: 9px 11px; }
+  .closing-book-heading h1 { font-size: 27px; }
+  .closing-book-heading p { font-size: 10px; }
+  .closing-book-emblem svg { width: 52px; height: 52px; }
+  .closing-book-controls,.closing-book-fields,.closing-book-notes { grid-template-columns: minmax(0,1fr); }
+  .closing-book-section { padding: 15px 12px; }
+  .closing-book-payments { grid-template-columns: minmax(0,1fr); }
+  .closing-book-row { grid-template-columns: minmax(0,1fr) 36px; padding-bottom: 12px; border-bottom: 1px solid #dde5f4; }
+  .closing-book-row > label:first-child { grid-column: 1 / -1; }
+  .closing-book-save button { width: 100%; }
+  .closing-book-totals strong { font-size: 17px; }
+}
+
 /* Inventory uses the catalog presentation while keeping its existing controls. */
 #inventoryModal {
   z-index: 130;

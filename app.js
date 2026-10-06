@@ -232,6 +232,7 @@ const els = {
   quickEntrySuggestions: document.querySelector("#quickEntrySuggestions"),
   openBulkCashPage: document.querySelector("#openBulkCashPage"),
   bulkCashPage: document.querySelector("#bulkCashPage"),
+  closingBookPage: document.querySelector("#closingBookPage"),
   bulkCashCard: document.querySelector("#bulkCashCard"),
   bulkCashTitle: document.querySelector("#bulkCashTitle"),
   bulkCashContext: document.querySelector("#bulkCashContext"),
@@ -1997,6 +1998,7 @@ function normalizeState(data) {
       purchaseOrders: store.purchaseOrders || [],
       inventoryLogs: store.inventoryLogs || [],
       activityHistory: Array.isArray(store.activityHistory) ? store.activityHistory : [],
+      closingMonths: Array.isArray(store.closingMonths) ? store.closingMonths : [],
       exportReasons: normalizeExportReasons(store),
       inventory: (store.inventory || []).map((item) => ({
         ...item,
@@ -2063,6 +2065,7 @@ function clearAuthStartupTimers() {
 }
 
 function showAuthLoading(message = "Đang kiểm tra tài khoản và quyền truy cập...") {
+  window.hideClosingBookPage?.({ force: true });
   document.body.classList.add("auth-pending");
   hideSalesCatalogPage({ restoreFocus: false });
   hideCustomersPage({ restoreFocus: false });
@@ -2078,6 +2081,7 @@ function showAuthLoading(message = "Đang kiểm tra tài khoản và quyền tr
 }
 
 function showAuthProblem(message) {
+  window.hideClosingBookPage?.({ force: true });
   document.body.classList.add("auth-pending");
   hideSalesCatalogPage({ restoreFocus: false });
   hideCustomersPage({ restoreFocus: false });
@@ -2093,6 +2097,7 @@ function showAuthProblem(message) {
 }
 
 function showLoginScreen(message = "") {
+  window.hideClosingBookPage?.({ force: true });
   clearAuthStartupTimers();
   document.body.classList.add("auth-pending");
   document.body.classList.remove("employee-session");
@@ -2704,6 +2709,7 @@ function updateSyncStatus(message, status) {
   if (!els.syncStatus) return;
   els.syncStatus.textContent = message;
   els.syncStatus.dataset.status = status;
+  window.refreshClosingBookSync?.(message, status);
 }
 
 function getActiveStore() {
@@ -3407,6 +3413,7 @@ function selectCategory(type, categoryId) {
 }
 
 function render() {
+  window.refreshClosingBookAccess?.();
   const store = getActiveStore();
   els.storeCount.textContent = state.stores.length;
   els.storeHeroTotalCount.textContent = state.stores.length;
@@ -6824,6 +6831,7 @@ function activateTab(tabName) {
   updateDesktopCategoryFilter();
   updateDesktopPageChrome(tabName);
   renderDesktopInsights(getActiveStore());
+  window.refreshClosingBookAccess?.();
 }
 
 function getActiveTabName() {
@@ -6952,6 +6960,7 @@ function isMobileTimeFilterSuppressed() {
     (els.bulkCashPage && !els.bulkCashPage.hidden) ||
     (els.employeeManagerPage && !els.employeeManagerPage.hidden) ||
     (els.activityHistoryPage && !els.activityHistoryPage.hidden) ||
+    (els.closingBookPage && !els.closingBookPage.hidden) ||
     (els.aiChatModal && !els.aiChatModal.hidden)
   );
 }

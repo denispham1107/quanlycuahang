@@ -26,6 +26,7 @@ test("mobile time filter hides on entry sheets and overlays and returns after cl
     quickEntryModal: { hidden: true },
     quickEntryForm: { dataset: { type: "sales" } },
     customersPage: { hidden: true },
+    closingBookPage: { hidden: true },
     aiChatModal: { hidden: true },
     timeFilters: { hidden: false, classList: makeClassList(), inert: false },
     timeFilterToggle: { hidden: false, classList: makeClassList(), setAttribute() {} },
@@ -59,6 +60,10 @@ test("mobile time filter hides on entry sheets and overlays and returns after cl
     assert.equal(els.timeFilters.hidden, shouldHide);
   };
 
+  check(false);
+  els.closingBookPage.hidden = false;
+  check(true);
+  els.closingBookPage.hidden = true;
   check(false);
   for (const type of ["sales", "purchase", "purchase-bulk"]) {
     els.quickEntryForm.dataset.type = type;

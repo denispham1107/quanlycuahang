@@ -109,6 +109,7 @@ test("employee can open blank tabs without redirection but still cannot open ung
     getFirstEmployeeTab: () => "purchase",
     USE_MOBILE_APP_THEME: true,
     document: { body },
+    window: {},
     uiState: {},
     els: { tabButtons: tabs, tabPanels: panels },
     clearTimeFiltersAutoCollapse() {}, updateTimeFiltersVisibility() {},

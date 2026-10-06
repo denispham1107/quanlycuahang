@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=92" />
+    <link rel="manifest" href="manifest.webmanifest?v=93" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=92" />
+    <link rel="stylesheet" href="styles.css?v=93" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -188,6 +188,7 @@
                 <p id="desktopPageSubtitle">Theo dõi hoạt động của cửa hàng</p>
               </div>
               <button id="desktopPrimaryAction" type="button" hidden><span aria-hidden="true">＋</span><span id="desktopPrimaryActionLabel">Thêm</span></button>
+              <button class="closing-book-icon" id="openClosingBookDesktop" type="button" aria-label="Chốt sổ" title="Chốt sổ" hidden></button>
             </section>
             <div class="desktop-insights" id="desktopInsights" aria-label="Thống kê nhanh" hidden></div>
 
@@ -305,6 +306,7 @@
                     <h2 id="mobileOverviewStoreName">Cửa hàng</h2>
                   </div>
                   <span id="mobileOverviewRangeLabel">Hôm nay</span>
+                  <button class="closing-book-icon" id="openClosingBookMobile" type="button" aria-label="Chốt sổ" title="Chốt sổ" hidden></button>
                 </header>
 
                 <div class="mobile-overview-steps">
@@ -1443,6 +1445,34 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=92"></script>
+    <section id="closingBookPage" class="closing-book-page" aria-labelledby="closingBookTitle" hidden>
+      <div class="closing-book-shell">
+        <header class="closing-book-nav"><button id="closeClosingBook" type="button" class="ghost-button">← Quay lại</button><span>Tổng quan / Chốt sổ</span></header>
+        <article class="closing-book-card">
+          <header class="closing-book-heading"><div><p>SỔ ĐỐI CHIẾU CUỐI CA</p><h1 id="closingBookTitle">Chốt sổ</h1><span id="closingBookStore"></span></div><span class="closing-book-emblem" aria-hidden="true"></span></header>
+          <div class="closing-book-controls">
+            <label>Tháng đã tạo<select id="closingBookMonth"></select></label>
+            <form id="closingBookCreateMonth"><label>Tháng / Năm<input id="closingBookNewMonth" type="text" inputmode="numeric" placeholder="09/2026" maxlength="7" required /></label><button type="submit">Tạo tháng</button></form>
+            <label>Ngày chốt sổ<select id="closingBookDay"></select></label>
+          </div>
+          <p id="closingBookSync" role="status"></p>
+          <p id="closingBookMessage" role="status"></p>
+          <div id="closingBookEmpty" class="empty-list">Tạo một tháng để bắt đầu nhập sổ từng ngày.</div>
+          <div id="closingBookEditor" hidden>
+            <div class="closing-book-shift-bar"><label>Ca<select id="closingBookShift"></select></label><button id="closingBookAddShift" type="button" class="ghost-button">＋ Thêm ca</button><span id="closingBookSaved"></span></div>
+            <form id="closingBookForm" novalidate>
+              <section class="closing-book-section"><h2>Thông tin ca</h2><div id="closingBookFields" class="closing-book-fields"></div></section>
+              <section class="closing-book-section"><h2>Đối chiếu thanh toán</h2><div id="closingBookPayments" class="closing-book-payments"></div></section>
+              <div id="closingBookEntries" class="closing-book-entry-groups"></div>
+              <section class="closing-book-section"><h2>Chốt két</h2><div id="closingBookTotals" class="closing-book-totals" aria-live="polite"></div><div class="closing-book-notes"><label>Kết quả chốt két<textarea name="result" rows="3" maxlength="2000"></textarea></label><label>Kiểm lại<textarea name="recheck" rows="3" maxlength="2000"></textarea></label></div></section>
+              <div class="closing-book-save"><span>Chỉ lưu vào sổ chốt ca, không tạo lại khoản Thu/Chi.</span><button type="submit">Lưu chốt sổ</button></div>
+            </form>
+          </div>
+        </article>
+      </div>
+    </section>
+    <script defer src="app.js?v=93"></script>
+    <script defer src="closing-book-core.js?v=93"></script>
+    <script defer src="closing-book.js?v=93"></script>
   </body>
 </html>
