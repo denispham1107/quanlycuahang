@@ -89,6 +89,49 @@ test("file import accepts .txt/.md, fills the same textarea, and unlocks its len
   }
 });
 
+test("file import does not silently discard a read when FileList returns a new File wrapper", async () => {
+  const text = "Tiền điện,350000,Sinh hoạt,06/10/2026";
+  const fileInput = {
+    get files() { return [{ name: "khoanchi.txt", text: async () => text }]; }
+  };
+  const els = {
+    bulkCashPage: { hidden: false, dataset: { type: "expense", storeId: "store-1", source: "manual" } },
+    bulkCashFile: fileInput,
+    bulkCashFileHint: { textContent: "", dataset: {} },
+    bulkCashText: { value: "", maxLength: 70000, focus() {}, removeAttribute() {} },
+    bulkCashCount: { textContent: "", classList: { toggle() {} } },
+    bulkCashErrors: { hidden: true, replaceChildren() {} }
+  };
+  const context = setup({ els });
+  await context.importBulkCashFile();
+  assert.equal(els.bulkCashText.value, text);
+  assert.equal(els.bulkCashCount.textContent, "1 dòng từ file");
+  assert.equal(els.bulkCashFileHint.dataset.state, "success");
+});
+
+test("a slower earlier file cannot replace a more recently selected file", async () => {
+  let finishFirst;
+  const first = { name: "first.txt", text: () => new Promise((resolve) => { finishFirst = resolve; }) };
+  const second = { name: "second.md", text: async () => "Khoản mới,2000,Mục" };
+  const fileInput = { files: [first] };
+  const els = {
+    bulkCashPage: { hidden: false, dataset: { type: "income", storeId: "store-1", source: "manual" } },
+    bulkCashFile: fileInput,
+    bulkCashFileHint: { textContent: "", dataset: {} },
+    bulkCashText: { value: "", maxLength: 70000, focus() {}, removeAttribute() {} },
+    bulkCashCount: { textContent: "", classList: { toggle() {} } },
+    bulkCashErrors: { hidden: true, replaceChildren() {} }
+  };
+  const context = setup({ els });
+  const pending = context.importBulkCashFile();
+  fileInput.files = [second];
+  await context.importBulkCashFile();
+  finishFirst("Khoản cũ,1000,Mục");
+  await pending;
+  assert.equal(els.bulkCashText.value, "Khoản mới,2000,Mục");
+  assert.match(els.bulkCashFileHint.textContent, /second\.md/);
+});
+
 test("FileReader imports the supplied UTF-8 list format for both Thu and Chi", async () => {
   const sample = [
     '- Ecom.EW26090143116372.VED.0909463601.CashIn.203e582234a4,391560,"Chưa xác định",01/09/2026',

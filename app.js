@@ -1116,6 +1116,7 @@ els.cancelBulkCashPage.addEventListener("click", closeBulkCashPage);
 els.completeBulkCashPage.addEventListener("click", completeBulkCashPage);
 els.bulkCashText.addEventListener("input", updateBulkCashCount);
 els.bulkCashFileButton.addEventListener("click", () => {
+  bulkCashFileRequestId += 1;
   els.bulkCashFile.value = "";
   els.bulkCashFile.click();
 });
@@ -3924,7 +3925,10 @@ function updateBulkCashCount() {
   els.bulkCashText.removeAttribute("aria-invalid");
 }
 
+let bulkCashFileRequestId = 0;
+
 function resetBulkCashFileImport() {
+  bulkCashFileRequestId += 1;
   els.bulkCashPage.dataset.source = "manual";
   els.bulkCashText.maxLength = 70000;
   if (els.bulkCashFile) els.bulkCashFile.value = "";
@@ -3960,6 +3964,7 @@ function normalizeBulkCashFileText(content) {
 }
 
 async function importBulkCashFile() {
+  const requestId = ++bulkCashFileRequestId;
   const file = els.bulkCashFile.files?.[0];
   if (!file || els.bulkCashPage.hidden) return;
   if (!/\.(?:txt|md)$/i.test(file.name)) {
@@ -3969,17 +3974,19 @@ async function importBulkCashFile() {
   }
   const type = els.bulkCashPage.dataset.type;
   const storeId = els.bulkCashPage.dataset.storeId;
+  els.bulkCashFileHint.textContent = `Đang đọc ${file.name}...`;
+  els.bulkCashFileHint.dataset.state = "loading";
   let content;
   try {
     content = await readBulkCashFileText(file);
   } catch (error) {
-    if (els.bulkCashPage.hidden || els.bulkCashFile.files?.[0] !== file) return;
+    if (els.bulkCashPage.hidden || requestId !== bulkCashFileRequestId) return;
     console.error("Cannot read bulk cash file", error);
     els.bulkCashFileHint.textContent = "Không đọc được file. Hãy thử lại với file .txt hoặc .md.";
     els.bulkCashFileHint.dataset.state = "error";
     return;
   }
-  if (els.bulkCashPage.hidden || els.bulkCashPage.dataset.type !== type || els.bulkCashPage.dataset.storeId !== storeId || els.bulkCashFile.files?.[0] !== file) return;
+  if (els.bulkCashPage.hidden || requestId !== bulkCashFileRequestId || els.bulkCashPage.dataset.type !== type || els.bulkCashPage.dataset.storeId !== storeId) return;
   const normalized = normalizeBulkCashFileText(content);
   if (!normalized.trim()) {
     els.bulkCashFileHint.textContent = "File không có dòng khoản nào. Hãy chọn file khác.";
