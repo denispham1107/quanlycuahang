@@ -8253,6 +8253,59 @@ html.mobile-app-theme .overview-chart-card {
   box-shadow: var(--mobile-card-shadow);
 }
 
+html.mobile-app-theme .overview-chart-card [data-overview-bar] {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  padding: 0;
+  min-width: 0;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+html.mobile-app-theme .overview-chart-card [data-overview-bar]:focus-visible {
+  outline: 2px solid #476bd9;
+  outline-offset: 2px;
+}
+
+html.mobile-app-theme .overview-chart-card [data-overview-bar].is-selected {
+  background-color: rgba(101, 104, 220, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(94, 105, 207, 0.32);
+}
+
+html.mobile-app-theme .overview-chart-selection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  min-width: 0;
+  border: 1px solid rgba(111, 120, 210, 0.21);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.87);
+}
+
+html.mobile-app-theme .overview-chart-selection[hidden] {
+  display: none;
+}
+
+html.mobile-app-theme .overview-chart-selection-label {
+  min-width: 0;
+  color: #4b5f86;
+  font-size: 12px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+html.mobile-app-theme .overview-chart-selection-value {
+  color: #273d78;
+  font-size: 15px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
 html.mobile-app-theme .overview-chart-month.money-in {
   background: linear-gradient(135deg, rgba(248, 245, 255, 0.97), rgba(226, 240, 255, 0.96));
 }
@@ -8418,7 +8471,17 @@ html.mobile-app-theme .overview-category-day-bars {
   border-bottom: 1px solid rgba(114, 139, 189, 0.27);
 }
 
-html.mobile-app-theme .overview-category-day-bars > span {
+html.mobile-app-theme .overview-category-day-bars > button {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 18px;
+  height: 100%;
+  border-radius: 7px 7px 0 0;
+  background: transparent;
+}
+
+html.mobile-app-theme .overview-category-day-bars > button > span {
   display: block;
   width: 14px;
   height: var(--bar-height);
@@ -8426,8 +8489,19 @@ html.mobile-app-theme .overview-category-day-bars > span {
   background: linear-gradient(180deg, #9c81f0, #6156dd);
 }
 
-html.mobile-app-theme .overview-category-day-bars > span.category-p {
+html.mobile-app-theme .overview-category-day-bars > button.category-p > span {
   background: linear-gradient(180deg, #f79ac5, #de5c9b);
+}
+
+html.mobile-app-theme .overview-category-day-bars > button.is-selected,
+html.mobile-app-theme .overview-week-bars > button.is-selected {
+  background: transparent;
+  box-shadow: inset 0 -3px 0 rgba(96, 94, 216, 0.58);
+}
+
+html.mobile-app-theme .overview-category-day-bars > button.is-selected > span,
+html.mobile-app-theme .overview-week-bars > button.is-selected > span {
+  filter: drop-shadow(0 0 3px rgba(71, 76, 195, 0.55));
 }
 
 html.mobile-app-theme .overview-category-day > span {
@@ -8487,16 +8561,25 @@ html.mobile-app-theme .overview-week-bars {
   border-bottom: 1px solid rgba(114, 139, 189, 0.28);
 }
 
-html.mobile-app-theme .overview-week-bars > span {
+html.mobile-app-theme .overview-week-bars > button {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: min(44%, 18px);
+  height: 100%;
+  border-radius: 7px 7px 0 0;
+  background: transparent;
+}
+
+html.mobile-app-theme .overview-week-bars > button > span {
   display: block;
-  width: min(40%, 12px);
+  width: min(100%, 12px);
   height: var(--bar-height);
-  min-height: 0;
   border-radius: 5px 5px 0 0;
   background: linear-gradient(180deg, #7956ee, #1b9cef);
 }
 
-html.mobile-app-theme .overview-week-bars > span.money-out {
+html.mobile-app-theme .overview-week-bars > button.money-out > span {
   background: linear-gradient(180deg, #f783bb, #da4e94);
 }
 

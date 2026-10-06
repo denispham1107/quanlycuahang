@@ -909,6 +909,11 @@ els.tabButtons.forEach((button) => {
   });
 });
 
+document.querySelector(".mobile-overview-charts")?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-overview-bar]");
+  if (button) showOverviewBarValue(button);
+});
+
 els.timeFilterToggle?.addEventListener("click", () => {
   clearTimeFiltersAutoCollapse();
   uiState.timeFiltersExpanded = !uiState.timeFiltersExpanded;
@@ -6611,14 +6616,15 @@ function renderOverviewExpenseCategories(store) {
     document.getElementById(`overviewCategory${prefix}Count`).textContent = `${totals[type].count.toLocaleString("vi-VN")} khoản`;
   }
   plot.innerHTML = days.map((item) => `
-    <div class="overview-category-day" role="img" aria-label="Ngày ${formatDate(item.date)}: Chi tiêu Q ${formatCurrency(item.q)}, Chi tiêu P ${formatCurrency(item.p)}">
+    <div class="overview-category-day">
       <div class="overview-category-day-bars">
-        <span class="category-q" style="--bar-height: ${barHeight(item.q)}" title="Chi tiêu Q: ${formatCurrency(item.q)}"></span>
-        <span class="category-p" style="--bar-height: ${barHeight(item.p)}" title="Chi tiêu P: ${formatCurrency(item.p)}"></span>
+        <button class="category-q" type="button" data-overview-bar data-chart-label="Ngày ${formatDate(item.date)} · Chi tiêu Q" data-chart-amount="${item.q}" aria-label="Ngày ${formatDate(item.date)}, Chi tiêu Q: ${formatCurrency(item.q)}"><span style="--bar-height: ${barHeight(item.q)}"></span></button>
+        <button class="category-p" type="button" data-overview-bar data-chart-label="Ngày ${formatDate(item.date)} · Chi tiêu P" data-chart-amount="${item.p}" aria-label="Ngày ${formatDate(item.date)}, Chi tiêu P: ${formatCurrency(item.p)}"><span style="--bar-height: ${barHeight(item.p)}"></span></button>
       </div>
       <span>${item.date.slice(8, 10)}</span>
     </div>
   `).join("");
+  resetOverviewChartSelection(plot);
   const empty = document.querySelector("#overviewCategoryEmpty");
   empty.hidden = maximum > 0 && missing.length === 0;
   empty.textContent = missing.length
@@ -6673,12 +6679,13 @@ function renderOverviewCharts(store) {
   weekPlot.innerHTML = days.map((item) => `
     <div class="overview-week-day">
       <div class="overview-week-bars">
-        <span class="money-in" style="--bar-height: ${barHeight(item.income, weekMax)}" title="${formatDate(item.date)} · Tiền vào: ${formatCurrency(item.income)}"></span>
-        <span class="money-out" style="--bar-height: ${barHeight(item.expense, weekMax)}" title="${formatDate(item.date)} · Tiền ra: ${formatCurrency(item.expense)}"></span>
+        <button class="money-in" type="button" data-overview-bar data-chart-label="Ngày ${formatDate(item.date)} · Tiền vào" data-chart-amount="${item.income}" aria-label="Ngày ${formatDate(item.date)}, tiền vào: ${formatCurrency(item.income)}"><span style="--bar-height: ${barHeight(item.income, weekMax)}"></span></button>
+        <button class="money-out" type="button" data-overview-bar data-chart-label="Ngày ${formatDate(item.date)} · Tiền ra" data-chart-amount="${item.expense}" aria-label="Ngày ${formatDate(item.date)}, tiền ra: ${formatCurrency(item.expense)}"><span style="--bar-height: ${barHeight(item.expense, weekMax)}"></span></button>
       </div>
       <span>${item.date.slice(8, 10)}/${item.date.slice(5, 7)}</span>
     </div>
   `).join("");
+  resetOverviewChartSelection(weekPlot);
   document.querySelector("#overviewWeekEmpty").hidden = weekMax > 0;
 
   for (const [type, plotId, emptyId] of [
@@ -6691,12 +6698,31 @@ function renderOverviewCharts(store) {
     plot.innerHTML = months.map((item) => `
       <div class="overview-month-column">
         <strong>${formatCurrency(item[type])}</strong>
-        <div class="overview-month-track"><span style="--bar-height: ${barHeight(item[type], maximum)}"></span></div>
+        <button class="overview-month-track" type="button" data-overview-bar data-chart-label="Tháng ${item.key.slice(5)}/${item.key.slice(0, 4)} · ${type === "income" ? "Tiền vào" : "Tiền ra"}" data-chart-amount="${item[type]}" aria-label="Tháng ${item.key.slice(5)}/${item.key.slice(0, 4)}, ${type === "income" ? "tiền vào" : "tiền ra"}: ${formatCurrency(item[type])}"><span style="--bar-height: ${barHeight(item[type], maximum)}"></span></button>
         <span>Tháng ${item.key.slice(5)}/${item.key.slice(0, 4)}</span>
       </div>
     `).join("");
+    resetOverviewChartSelection(plot);
     document.getElementById(emptyId).hidden = maximum > 0;
   }
+}
+
+function resetOverviewChartSelection(plot) {
+  const detail = plot.closest(".overview-chart-card")?.querySelector(".overview-chart-selection");
+  if (detail) detail.hidden = true;
+}
+
+function showOverviewBarValue(button) {
+  const card = button.closest(".overview-chart-card");
+  if (!card) return;
+  card.querySelectorAll("[data-overview-bar]").forEach((bar) => {
+    bar.classList.toggle("is-selected", bar === button);
+    bar.setAttribute("aria-pressed", String(bar === button));
+  });
+  const detail = card.querySelector(".overview-chart-selection");
+  detail.querySelector(".overview-chart-selection-label").textContent = button.dataset.chartLabel;
+  detail.querySelector(".overview-chart-selection-value").textContent = formatCurrency(Number(button.dataset.chartAmount) || 0);
+  detail.hidden = false;
 }
 
 function renderReports(store) {
