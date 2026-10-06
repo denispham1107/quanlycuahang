@@ -54,6 +54,8 @@ test("all four overview charts are shared by mobile and desktop in the same orde
 test("current-month daily and comparison charts sum active cash flow across a year boundary", () => {
   const data = chartData({
     entries: [
+      { type: "income", date: "2025-11-30", amount: 42 },
+      { type: "expense", date: "2025-11-02", amount: 3 },
       { type: "income", date: "2025-12-05", amount: 100 },
       { type: "income", date: "2025-12-27", amount: 10 },
       { type: "expense", date: "2025-12-31", amount: 5 },
@@ -76,6 +78,7 @@ test("current-month daily and comparison charts sum active cash flow across a ye
   assert.deepEqual(data.days.find((item) => item.date === "2026-01-01"), { date: "2026-01-01", income: 60, expense: 0 });
   assert.deepEqual(data.days.find((item) => item.date === "2026-01-02"), { date: "2026-01-02", income: 0, expense: 7 });
   assert.deepEqual(data.months, [
+    { key: "2025-11", income: 42, expense: 3 },
     { key: "2025-12", income: 140, expense: 5 },
     { key: "2026-01", income: 60, expense: 7 }
   ]);
@@ -90,6 +93,7 @@ test("charts show zero values for an empty store without borrowing another store
   assert.ok(data.days.every((item) => item.income === 0 && item.expense === 0));
   assert.deepEqual(data.totals, { income: { amount: 0, count: 0 }, expense: { amount: 0, count: 0 } });
   assert.deepEqual(data.months, [
+    { key: "2026-08", income: 0, expense: 0 },
     { key: "2026-09", income: 0, expense: 0 },
     { key: "2026-10", income: 0, expense: 0 }
   ]);
@@ -108,12 +112,18 @@ test("cash-flow chart spans all days of a leap-year February and exposes scrolla
   assert.deepEqual(data.days[0], { date: "2028-02-01", income: 120, expense: 0 });
   assert.deepEqual(data.days[28], { date: "2028-02-29", income: 80, expense: 35 });
   assert.deepEqual(data.totals, { income: { amount: 200, count: 2 }, expense: { amount: 35, count: 1 } });
+  assert.deepEqual(data.months, [
+    { key: "2027-12", income: 0, expense: 0 },
+    { key: "2028-01", income: 500, expense: 0 },
+    { key: "2028-02", income: 200, expense: 35 }
+  ]);
   for (const id of ["overviewIncomeTotal", "overviewIncomeCount", "overviewExpenseTotal", "overviewExpenseCount", "overviewFlowScroll"]) {
     assert.match(html, new RegExp(`id="${id}"`));
   }
   assert.match(html, /Biểu đồ tiền vào và tiền ra theo từng ngày; cuộn ngang để xem cả tháng/);
   assert.match(css, /\.overview-week-plot\s*\{[^}]*grid-auto-flow: column;/);
   assert.match(css, /\.overview-category-scroll\s*\{[^}]*overflow-x: auto;/);
+  assert.match(css, /\.overview-month-plot\s*\{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
 });
 
 test("monthly Chi tiêu Q/P chart follows the balance, exposes totals and scrolls all calendar days", () => {

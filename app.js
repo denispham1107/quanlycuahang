@@ -6642,11 +6642,11 @@ function getOverviewChartData(store, referenceDate = new Date()) {
     expense: 0
   }));
   const dayByDate = new Map(days.map((item) => [item.date, item]));
-  const previousDate = new Date(year, month - 1, 1);
-  const months = [
-    { key: toDateInputValue(previousDate).slice(0, 7), income: 0, expense: 0 },
-    { key: toDateInputValue(referenceDate).slice(0, 7), income: 0, expense: 0 }
-  ];
+  const months = [-2, -1, 0].map((offset) => ({
+    key: toDateInputValue(new Date(year, month + offset, 1)).slice(0, 7),
+    income: 0,
+    expense: 0
+  }));
   const monthByKey = new Map(months.map((item) => [item.key, item]));
   const totals = { income: { amount: 0, count: 0 }, expense: { amount: 0, count: 0 } };
   const addAmount = (date, type, value) => {
@@ -6679,7 +6679,7 @@ function renderOverviewCharts(store) {
   const { days, months, totals } = getOverviewChartData(store);
   const weekMax = Math.max(0, ...days.flatMap((item) => [item.income, item.expense]));
   const barHeight = (amount, maximum) => amount > 0 && maximum > 0 ? `${Math.max(2, amount / maximum * 100)}%` : "0%";
-  document.querySelector("#overviewWeekPeriod").textContent = `Tháng ${months[1].key.slice(5)}/${months[1].key.slice(0, 4)}`;
+  document.querySelector("#overviewWeekPeriod").textContent = `Tháng ${months[2].key.slice(5)}/${months[2].key.slice(0, 4)}`;
   for (const type of ["income", "expense"]) {
     const prefix = type === "income" ? "Income" : "Expense";
     document.getElementById(`overview${prefix}Total`).textContent = formatCurrency(totals[type].amount);
@@ -6704,7 +6704,7 @@ function renderOverviewCharts(store) {
   ]) {
     const plot = document.getElementById(plotId);
     const maximum = Math.max(0, ...months.map((item) => item[type]));
-    plot.setAttribute("aria-label", `${type === "income" ? "Tiền vào" : "Tiền ra"}: tháng ${months[0].key.slice(5)}/${months[0].key.slice(0, 4)} ${formatCurrency(months[0][type])}, tháng ${months[1].key.slice(5)}/${months[1].key.slice(0, 4)} ${formatCurrency(months[1][type])}`);
+    plot.setAttribute("aria-label", `${type === "income" ? "Tiền vào" : "Tiền ra"}: ${months.map((item) => `tháng ${item.key.slice(5)}/${item.key.slice(0, 4)} ${formatCurrency(item[type])}`).join(", ")}`);
     plot.innerHTML = months.map((item) => `
       <div class="overview-month-column">
         <strong>${formatCurrency(item[type])}</strong>

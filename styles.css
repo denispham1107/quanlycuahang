@@ -8574,8 +8574,8 @@ html.mobile-app-theme .mobile-overview-result strong {
 
 .overview-month-plot {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
   min-width: 0;
 }
 
@@ -8590,9 +8590,11 @@ html.mobile-app-theme .mobile-overview-result strong {
 }
 
 .overview-month-column strong {
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
   color: #234376;
-  font-size: clamp(11px, 3vw, 14px);
+  font-size: clamp(10px, 2.8vw, 14px);
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   line-height: 1.15;
@@ -8614,6 +8616,10 @@ html.mobile-app-theme .mobile-overview-result strong {
   width: 100%;
   height: var(--bar-height);
   border-radius: 10px 10px 0 0;
+  background: linear-gradient(180deg, #a5a5e9, #7689dc);
+}
+
+.overview-month-column:nth-child(2) .overview-month-track > span {
   background: linear-gradient(180deg, #8370ee, #488bef);
 }
 
@@ -8622,6 +8628,10 @@ html.mobile-app-theme .mobile-overview-result strong {
 }
 
 .overview-chart-month.money-out .overview-month-track > span {
+  background: linear-gradient(180deg, #f9bdd8, #e998bc);
+}
+
+.overview-chart-month.money-out .overview-month-column:nth-child(2) .overview-month-track > span {
   background: linear-gradient(180deg, #f9a3ca, #e675ad);
 }
 
@@ -8630,11 +8640,27 @@ html.mobile-app-theme .mobile-overview-result strong {
 }
 
 .overview-month-column > span {
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
   color: #52678d;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
-  white-space: nowrap;
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: normal;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .overview-month-column strong {
+    max-width: min(100%, 25vw);
+    font-size: clamp(9px, 2.7vw, 12px);
+  }
+
+  .overview-month-column > span {
+    max-width: 64px;
+  }
 }
 
 .overview-chart-empty {

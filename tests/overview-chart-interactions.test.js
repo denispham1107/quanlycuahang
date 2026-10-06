@@ -54,7 +54,7 @@ test("tapping one column reveals only that column's amount and rerender clears s
   };
 
   const week = makeCard([["Ngày 01/10 · Tiền vào", 100], ["Ngày 01/10 · Tiền ra", 25]]);
-  const month = makeCard([["Tháng 09 · Tiền vào", 500], ["Tháng 10 · Tiền vào", 750]]);
+  const month = makeCard([["Tháng 08 · Tiền vào", 250], ["Tháng 09 · Tiền vào", 500], ["Tháng 10 · Tiền vào", 750]]);
   context.showOverviewBarValue(week.buttons[0]);
   assert.equal(week.fields[".overview-chart-selection-value"].textContent, "100 đ");
   assert.equal(week.fields[".overview-chart-selection-label"].textContent, "Ngày 01/10 · Tiền vào");
@@ -62,7 +62,11 @@ test("tapping one column reveals only that column's amount and rerender clears s
   context.showOverviewBarValue(week.buttons[1]);
   assert.equal(week.fields[".overview-chart-selection-value"].textContent, "25 đ");
   assert.equal(week.buttons[0].attributes["aria-pressed"], "false");
+  context.showOverviewBarValue(month.buttons[0]);
+  assert.equal(month.fields[".overview-chart-selection-value"].textContent, "250 đ");
   context.showOverviewBarValue(month.buttons[1]);
+  assert.equal(month.fields[".overview-chart-selection-value"].textContent, "500 đ");
+  context.showOverviewBarValue(month.buttons[2]);
   assert.equal(month.fields[".overview-chart-selection-value"].textContent, "750 đ");
   assert.equal(week.fields[".overview-chart-selection-value"].textContent, "25 đ");
   context.resetOverviewChartSelection({ closest: () => week.card });
