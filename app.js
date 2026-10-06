@@ -3997,33 +3997,29 @@ async function importBulkCashFile() {
   const storeId = els.bulkCashPage.dataset.storeId;
   els.bulkCashFileHint.textContent = `Đang đọc ${file.name}...`;
   els.bulkCashFileHint.dataset.state = "loading";
-  let content;
   try {
-    content = await readBulkCashFileText(file, undefined, (_index, total) => {
-      if (els.bulkCashPage.hidden || requestId !== bulkCashFileRequestId) return;
-      els.bulkCashFileHint.textContent = `Đang đọc ${file.name} (${total} cách đọc đồng thời)...`;
-    });
+    const content = await readBulkCashFileText(file);
+    if (els.bulkCashPage.hidden || requestId !== bulkCashFileRequestId || els.bulkCashPage.dataset.type !== type || els.bulkCashPage.dataset.storeId !== storeId) return;
+    const normalized = normalizeBulkCashFileText(content);
+    if (!normalized.trim()) {
+      els.bulkCashFileHint.textContent = "File không có dòng khoản nào. Hãy chọn file khác.";
+      els.bulkCashFileHint.dataset.state = "error";
+      return;
+    }
+    // The DOM maxLength setter rejects negative values. Remove the attribute to unlock file imports.
+    els.bulkCashText.removeAttribute("maxlength");
+    els.bulkCashText.value = normalized;
+    els.bulkCashPage.dataset.source = "file";
+    updateBulkCashCount();
+    els.bulkCashFileHint.textContent = `Đã tải ${file.name}. Kiểm tra các dòng rồi bấm Hoàn thành.`;
+    els.bulkCashFileHint.dataset.state = "success";
+    els.bulkCashText.focus({ preventScroll: true });
   } catch (error) {
     if (els.bulkCashPage.hidden || requestId !== bulkCashFileRequestId) return;
     console.error("Cannot read bulk cash file", error);
     els.bulkCashFileHint.textContent = "Không đọc được file. Hãy chọn lại tệp .txt/.md hoặc dán nội dung vào ô bên dưới.";
     els.bulkCashFileHint.dataset.state = "error";
-    return;
   }
-  if (els.bulkCashPage.hidden || requestId !== bulkCashFileRequestId || els.bulkCashPage.dataset.type !== type || els.bulkCashPage.dataset.storeId !== storeId) return;
-  const normalized = normalizeBulkCashFileText(content);
-  if (!normalized.trim()) {
-    els.bulkCashFileHint.textContent = "File không có dòng khoản nào. Hãy chọn file khác.";
-    els.bulkCashFileHint.dataset.state = "error";
-    return;
-  }
-  els.bulkCashText.maxLength = -1;
-  els.bulkCashText.value = normalized;
-  els.bulkCashPage.dataset.source = "file";
-  updateBulkCashCount();
-  els.bulkCashFileHint.textContent = `Đã tải ${file.name}. Kiểm tra các dòng rồi bấm Hoàn thành.`;
-  els.bulkCashFileHint.dataset.state = "success";
-  els.bulkCashText.focus({ preventScroll: true });
 }
 
 function showBulkCashErrors(errors) {

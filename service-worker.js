@@ -1,12 +1,12 @@
-const CACHE_VERSION = "quanlycuahang-pwa-v88";
+const CACHE_VERSION = "quanlycuahang-pwa-v89";
 const FIREBASE_SDK_PREFIX = "https://www.gstatic.com/firebasejs/10.12.5/";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=88",
-  "./app.js?v=88",
+  "./styles.css?v=89",
+  "./app.js?v=89",
   "./firebase-config.js",
-  "./manifest.webmanifest?v=88",
+  "./manifest.webmanifest?v=89",
   "./icons/settings-flat-v1.webp",
   "./icons/icon-v3.svg",
   "./icons/icon-v3-192.png",

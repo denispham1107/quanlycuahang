@@ -72,18 +72,23 @@ test("file import accepts .txt/.md, fills the same textarea, and unlocks its len
   for (const name of ["danh-sach.txt", "danh-sach.MD"]) {
     const text = Array.from({ length: 201 }, (_, index) => `Khoản ${index + 1},1000,Mục`).join("\n");
     const file = { name, text: async () => text };
+    let limitRemoved = false;
     const els = {
       bulkCashPage: { hidden: false, dataset: { type: "income", storeId: "store-1", source: "manual" } },
       bulkCashFile: { files: [file] },
       bulkCashFileHint: { textContent: "", dataset: {} },
-      bulkCashText: { value: "", maxLength: 70000, focus() {}, removeAttribute() {} },
+      bulkCashText: {
+        value: "", focus() {},
+        set maxLength(value) { if (value < 0) throw new RangeError("DOM rejects a negative maxLength"); },
+        removeAttribute(name) { if (name === "maxlength") limitRemoved = true; }
+      },
       bulkCashCount: { textContent: "", classList: { toggle() {} } },
       bulkCashErrors: { hidden: true, replaceChildren() {} }
     };
     const context = setup({ els });
     await context.importBulkCashFile();
     assert.equal(els.bulkCashText.value, text);
-    assert.equal(els.bulkCashText.maxLength, -1);
+    assert.equal(limitRemoved, true);
     assert.equal(els.bulkCashPage.dataset.source, "file");
     assert.equal(els.bulkCashCount.textContent, "201 dòng từ file");
     assert.equal(els.bulkCashFileHint.dataset.state, "success");
