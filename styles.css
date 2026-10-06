@@ -2197,6 +2197,52 @@ body.auth-pending {
   display: none !important;
 }
 
+body.employee-session .tab-panel[data-employee-empty="true"] > * {
+  display: none !important;
+}
+
+body.employee-session .signed-in-user-name {
+  display: block;
+  max-width: 120px;
+}
+
+html:not(.mobile-app-theme) body.employee-session .layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+html:not(.mobile-app-theme) body.employee-session .sidebar {
+  display: none;
+}
+
+html.mobile-app-theme body.employee-session .active-store-hero {
+  display: none !important;
+}
+
+html.mobile-app-theme body.employee-session:not(.mobile-secondary-tab) .topbar {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+html.mobile-app-theme body.employee-session:not(.mobile-secondary-tab) .topbar-actions {
+  grid-column: 1;
+  width: 100%;
+  justify-content: space-between;
+}
+
+html.mobile-app-theme body.employee-session .topbar-actions .signed-in-user {
+  flex: 1 1 auto;
+  max-width: calc(100% - 44px);
+}
+
+html.mobile-app-theme body.employee-session .topbar-actions .signed-in-user-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
+}
+
+html.mobile-app-theme body.employee-session .topbar-actions .signed-in-user small {
+  display: none;
+}
+
 button,
 input,
 select {

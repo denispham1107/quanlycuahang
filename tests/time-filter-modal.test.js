@@ -45,6 +45,7 @@ test("mobile time filter hides on entry sheets and overlays and returns after cl
     desktopUi: null,
     getActiveStore: () => ({}),
     getActiveTabName: () => "sales",
+    isEmployeeEmptyTab: () => false,
     getMobileTimeFilterLabel: () => "Hôm nay",
     clearTimeFiltersAutoCollapse: () => { cancelledAutoCollapse += 1; }
   };
@@ -86,6 +87,10 @@ test("mobile time filter hides on entry sheets and overlays and returns after cl
     els.quickEntryModal.hidden = true;
     check(false, type);
   }
+
+  context.isEmployeeEmptyTab = (tab) => tab === "overview";
+  check(true, "overview");
+  context.isEmployeeEmptyTab = () => false;
 
   context.USE_MOBILE_APP_THEME = false;
   context.desktopUi = {};

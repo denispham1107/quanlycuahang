@@ -563,6 +563,12 @@ function employeeCan(area, action) {
   return normalizeEmployeePermissions(authState.profile)?.[area]?.[action] === true;
 }
 
+const EMPLOYEE_EMPTY_TABS = new Set(["stores", "overview", "income", "expense"]);
+
+function isEmployeeEmptyTab(tabName) {
+  return isEmployeeUser() && EMPLOYEE_EMPTY_TABS.has(tabName);
+}
+
 function getFirstEmployeeTab() {
   if (employeeCan("purchase", "view")) return "purchase";
   if (employeeCan("sales", "view")) return "sales";
@@ -2081,6 +2087,7 @@ function showAuthProblem(message) {
 function showLoginScreen(message = "") {
   clearAuthStartupTimers();
   document.body.classList.add("auth-pending");
+  document.body.classList.remove("employee-session");
   document.body.classList.remove("modal-open");
   document.body.classList.remove("sales-order-detail-open");
   hideSalesCatalogPage({ restoreFocus: false });
@@ -2134,13 +2141,20 @@ function applyRoleAccess() {
   document.querySelectorAll("[data-admin-only]").forEach((element) => {
     element.dataset.roleHidden = employee ? "true" : "false";
   });
+  document.body.classList.toggle("employee-session", employee);
   document.querySelectorAll("[data-tab]").forEach((button) => {
     const allowed =
       !employee ||
+      EMPLOYEE_EMPTY_TABS.has(button.dataset.tab) ||
       (button.dataset.tab === "purchase" && purchaseView) ||
       (button.dataset.tab === "sales" && salesView);
     button.dataset.roleHidden = allowed ? "false" : "true";
     button.disabled = !allowed;
+  });
+  document.querySelectorAll("[data-tab-panel]").forEach((panel) => {
+    const empty = isEmployeeEmptyTab(panel.dataset.tabPanel);
+    panel.dataset.employeeEmpty = String(empty);
+    panel.inert = empty;
   });
   els.activeStorePanel.dataset.roleHidden = employee ? "true" : "false";
   document.querySelector(".sidebar")?.setAttribute("data-role-hidden", employee && USE_MOBILE_APP_THEME ? "true" : "false");
@@ -6596,7 +6610,7 @@ function updateQuickEntryButton() {
   const store = getActiveStore();
   const tabName = getActiveTabName();
   if (els.aiButton) {
-    els.aiButton.hidden = !(store && tabName === "overview");
+    els.aiButton.hidden = !(store && tabName === "overview" && !isEmployeeEmptyTab(tabName));
   }
   const type =
     tabName === "income"
@@ -6652,6 +6666,7 @@ function renderHistoryFilter(select, categories, includeCancelled = false) {
 function activateTab(tabName) {
   if (
     isEmployeeUser() &&
+    !EMPLOYEE_EMPTY_TABS.has(tabName) &&
     !(
       (tabName === "purchase" && employeeCan("purchase", "view")) ||
       (tabName === "sales" && employeeCan("sales", "view"))
@@ -6709,6 +6724,7 @@ function updateDesktopCategoryFilter() {
 
 function updateDesktopPageChrome(tabName = getActiveTabName()) {
   if (!desktopUi) return;
+  const employeeEmpty = isEmployeeEmptyTab(tabName);
   const pages = {
     stores: ["Cửa hàng", "Chọn và quản lý cửa hàng của bạn", ""],
     overview: ["Tổng quan", "Theo dõi hoạt động của cửa hàng", ""],
@@ -6723,9 +6739,9 @@ function updateDesktopPageChrome(tabName = getActiveTabName()) {
   desktopUi.subtitle.textContent = subtitle;
   desktopUi.primaryActionLabel.textContent = action;
   desktopUi.primaryAction.hidden = !action || els.quickEntryButton.hidden;
-  desktopUi.filterRail.hidden = tabName === "stores" || !getActiveStore();
-  desktopUi.heading.hidden = tabName === "stores";
-  desktopUi.insights.hidden = !["income", "expense", "sales", "purchase"].includes(tabName);
+  desktopUi.filterRail.hidden = employeeEmpty || tabName === "stores" || !getActiveStore();
+  desktopUi.heading.hidden = employeeEmpty || tabName === "stores";
+  desktopUi.insights.hidden = employeeEmpty || !["income", "expense", "sales", "purchase"].includes(tabName);
 }
 
 function renderDesktopOverviewBreakdown(rangeLabel, amounts) {
@@ -6821,7 +6837,7 @@ function updateTimeFiltersVisibility(tabName = getActiveTabName()) {
     clearTimeFiltersAutoCollapse();
     uiState.timeFiltersExpanded = false;
   }
-  const filtersAvailable = Boolean(store) && visibleTabs.has(tabName) && !suppressed;
+  const filtersAvailable = Boolean(store) && visibleTabs.has(tabName) && !suppressed && !isEmployeeEmptyTab(tabName);
   const filtersExpanded = filtersAvailable && (desktopUi ? true : uiState.timeFiltersExpanded);
 
   if (USE_MOBILE_APP_THEME && filtersAvailable) {
