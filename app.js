@@ -6635,9 +6635,9 @@ function renderOverviewExpenseCategories(store) {
 function getOverviewChartData(store, referenceDate = new Date()) {
   const year = referenceDate.getFullYear();
   const month = referenceDate.getMonth();
-  const day = referenceDate.getDate();
-  const days = Array.from({ length: 7 }, (_, index) => ({
-    date: toDateInputValue(new Date(year, month, day - 6 + index)),
+  const dayCount = new Date(year, month + 1, 0).getDate();
+  const days = Array.from({ length: dayCount }, (_, index) => ({
+    date: toDateInputValue(new Date(year, month, index + 1)),
     income: 0,
     expense: 0
   }));
@@ -6648,11 +6648,16 @@ function getOverviewChartData(store, referenceDate = new Date()) {
     { key: toDateInputValue(referenceDate).slice(0, 7), income: 0, expense: 0 }
   ];
   const monthByKey = new Map(months.map((item) => [item.key, item]));
+  const totals = { income: { amount: 0, count: 0 }, expense: { amount: 0, count: 0 } };
   const addAmount = (date, type, value) => {
     const amount = Number(value);
     if (!Number.isFinite(amount)) return;
     const daily = dayByDate.get(date);
-    if (daily) daily[type] += amount;
+    if (daily) {
+      daily[type] += amount;
+      totals[type].amount += amount;
+      totals[type].count += 1;
+    }
     const monthly = monthByKey.get(String(date || "").slice(0, 7));
     if (monthly) monthly[type] += amount;
   };
@@ -6665,16 +6670,21 @@ function getOverviewChartData(store, referenceDate = new Date()) {
   (store.orders || []).forEach((order) => {
     if (!isCancelledEntry(order)) addAmount(order.date, "income", order.total);
   });
-  return { days, months };
+  return { days, months, totals };
 }
 
 function renderOverviewCharts(store) {
   const weekPlot = document.querySelector("#overviewWeekPlot");
   if (!weekPlot) return;
-  const { days, months } = getOverviewChartData(store);
+  const { days, months, totals } = getOverviewChartData(store);
   const weekMax = Math.max(0, ...days.flatMap((item) => [item.income, item.expense]));
   const barHeight = (amount, maximum) => amount > 0 && maximum > 0 ? `${Math.max(2, amount / maximum * 100)}%` : "0%";
-  document.querySelector("#overviewWeekPeriod").textContent = `${formatDate(days[0].date)} – ${formatDate(days[6].date)}`;
+  document.querySelector("#overviewWeekPeriod").textContent = `Tháng ${months[1].key.slice(5)}/${months[1].key.slice(0, 4)}`;
+  for (const type of ["income", "expense"]) {
+    const prefix = type === "income" ? "Income" : "Expense";
+    document.getElementById(`overview${prefix}Total`).textContent = formatCurrency(totals[type].amount);
+    document.getElementById(`overview${prefix}Count`).textContent = `${totals[type].count.toLocaleString("vi-VN")} khoản`;
+  }
   weekPlot.setAttribute("aria-label", days.map((item) => `${formatDate(item.date)}: tiền vào ${formatCurrency(item.income)}, tiền ra ${formatCurrency(item.expense)}`).join("; "));
   weekPlot.innerHTML = days.map((item) => `
     <div class="overview-week-day">
@@ -6682,7 +6692,7 @@ function renderOverviewCharts(store) {
         <button class="money-in" type="button" data-overview-bar data-chart-label="Ngày ${formatDate(item.date)} · Tiền vào" data-chart-amount="${item.income}" aria-label="Ngày ${formatDate(item.date)}, tiền vào: ${formatCurrency(item.income)}"><span style="--bar-height: ${barHeight(item.income, weekMax)}"></span></button>
         <button class="money-out" type="button" data-overview-bar data-chart-label="Ngày ${formatDate(item.date)} · Tiền ra" data-chart-amount="${item.expense}" aria-label="Ngày ${formatDate(item.date)}, tiền ra: ${formatCurrency(item.expense)}"><span style="--bar-height: ${barHeight(item.expense, weekMax)}"></span></button>
       </div>
-      <span>${item.date.slice(8, 10)}/${item.date.slice(5, 7)}</span>
+      <span>${item.date.slice(8, 10)}</span>
     </div>
   `).join("");
   resetOverviewChartSelection(weekPlot);
