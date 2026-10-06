@@ -8230,18 +8230,15 @@ html.mobile-app-theme .mobile-overview-result strong {
   overflow-wrap: anywhere;
 }
 
-.mobile-overview-charts {
-  display: none;
-}
-
-html.mobile-app-theme .mobile-overview-charts {
+.overview-charts {
   display: grid;
+  width: 100%;
   gap: 14px;
   min-width: 0;
   margin-top: 4px;
 }
 
-html.mobile-app-theme .overview-chart-card {
+.overview-chart-card {
   display: grid;
   gap: 14px;
   min-width: 0;
@@ -8250,10 +8247,10 @@ html.mobile-app-theme .overview-chart-card {
   border-radius: 23px;
   padding: clamp(16px, 4vw, 22px);
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(234, 244, 255, 0.94));
-  box-shadow: var(--mobile-card-shadow);
+  box-shadow: var(--mobile-card-shadow, 0 16px 32px rgba(33, 61, 131, 0.12));
 }
 
-html.mobile-app-theme .overview-chart-card [data-overview-bar] {
+.overview-chart-card [data-overview-bar] {
   appearance: none;
   -webkit-appearance: none;
   border: 0;
@@ -8263,17 +8260,17 @@ html.mobile-app-theme .overview-chart-card [data-overview-bar] {
   cursor: pointer;
 }
 
-html.mobile-app-theme .overview-chart-card [data-overview-bar]:focus-visible {
+.overview-chart-card [data-overview-bar]:focus-visible {
   outline: 2px solid #476bd9;
   outline-offset: 2px;
 }
 
-html.mobile-app-theme .overview-chart-card [data-overview-bar].is-selected {
+.overview-chart-card [data-overview-bar].is-selected {
   background-color: rgba(101, 104, 220, 0.14);
   box-shadow: inset 0 0 0 1px rgba(94, 105, 207, 0.32);
 }
 
-html.mobile-app-theme .overview-chart-selection {
+.overview-chart-selection {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -8286,11 +8283,11 @@ html.mobile-app-theme .overview-chart-selection {
   background: rgba(255, 255, 255, 0.87);
 }
 
-html.mobile-app-theme .overview-chart-selection[hidden] {
+.overview-chart-selection[hidden] {
   display: none;
 }
 
-html.mobile-app-theme .overview-chart-selection-label {
+.overview-chart-selection-label {
   min-width: 0;
   color: #4b5f86;
   font-size: 12px;
@@ -8298,7 +8295,7 @@ html.mobile-app-theme .overview-chart-selection-label {
   overflow-wrap: anywhere;
 }
 
-html.mobile-app-theme .overview-chart-selection-value {
+.overview-chart-selection-value {
   color: #273d78;
   font-size: 15px;
   font-weight: 900;
@@ -8306,15 +8303,15 @@ html.mobile-app-theme .overview-chart-selection-value {
   overflow-wrap: anywhere;
 }
 
-html.mobile-app-theme .overview-chart-month.money-in {
+.overview-chart-month.money-in {
   background: linear-gradient(135deg, rgba(248, 245, 255, 0.97), rgba(226, 240, 255, 0.96));
 }
 
-html.mobile-app-theme .overview-chart-month.money-out {
+.overview-chart-month.money-out {
   background: linear-gradient(135deg, rgba(255, 248, 253, 0.98), rgba(255, 233, 244, 0.96));
 }
 
-html.mobile-app-theme .overview-chart-heading {
+.overview-chart-heading {
   display: flex;
   justify-content: space-between;
   align-items: end;
@@ -8323,11 +8320,11 @@ html.mobile-app-theme .overview-chart-heading {
   min-width: 0;
 }
 
-html.mobile-app-theme .overview-chart-heading > div {
+.overview-chart-heading > div {
   min-width: 0;
 }
 
-html.mobile-app-theme .overview-chart-kicker {
+.overview-chart-kicker {
   color: #5b6d9a;
   font-size: 10px;
   font-weight: 900;
@@ -8335,7 +8332,7 @@ html.mobile-app-theme .overview-chart-kicker {
   text-transform: uppercase;
 }
 
-html.mobile-app-theme .overview-chart-heading h3 {
+.overview-chart-heading h3 {
   margin: 3px 0 0;
   color: #132e60;
   font-size: clamp(18px, 5vw, 22px);
@@ -8343,7 +8340,7 @@ html.mobile-app-theme .overview-chart-heading h3 {
   font-weight: 900;
 }
 
-html.mobile-app-theme .overview-chart-period {
+.overview-chart-period {
   max-width: 100%;
   color: #52678d;
   font-size: 11px;
@@ -8351,18 +8348,18 @@ html.mobile-app-theme .overview-chart-period {
   white-space: nowrap;
 }
 
-html.mobile-app-theme .overview-chart-categories {
+.overview-chart-categories {
   background: linear-gradient(135deg, rgba(251, 248, 255, 0.98), rgba(235, 241, 255, 0.97));
 }
 
-html.mobile-app-theme .overview-category-totals {
+.overview-category-totals {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   min-width: 0;
 }
 
-html.mobile-app-theme .overview-category-total {
+.overview-category-total {
   display: grid;
   align-content: start;
   gap: 3px;
@@ -8373,7 +8370,7 @@ html.mobile-app-theme .overview-category-total {
   background: rgba(255, 255, 255, 0.86);
 }
 
-html.mobile-app-theme .overview-category-total > span {
+.overview-category-total > span {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -8382,7 +8379,7 @@ html.mobile-app-theme .overview-category-total > span {
   font-weight: 850;
 }
 
-html.mobile-app-theme .overview-category-total > span::before {
+.overview-category-total > span::before {
   content: "";
   flex: 0 0 8px;
   width: 8px;
@@ -8391,11 +8388,11 @@ html.mobile-app-theme .overview-category-total > span::before {
   background: #6658df;
 }
 
-html.mobile-app-theme .overview-category-total.category-p > span::before {
+.overview-category-total.category-p > span::before {
   background: #e963a0;
 }
 
-html.mobile-app-theme .overview-category-total strong {
+.overview-category-total strong {
   min-width: 0;
   color: #233f79;
   font-size: clamp(12px, 3.5vw, 16px);
@@ -8405,13 +8402,13 @@ html.mobile-app-theme .overview-category-total strong {
   overflow-wrap: anywhere;
 }
 
-html.mobile-app-theme .overview-category-total small {
+.overview-category-total small {
   color: #687a9b;
   font-size: 10px;
   font-weight: 750;
 }
 
-html.mobile-app-theme .overview-category-hint {
+.overview-category-hint {
   display: flex;
   justify-content: space-between;
   gap: 8px;
@@ -8421,13 +8418,13 @@ html.mobile-app-theme .overview-category-hint {
   font-weight: 750;
 }
 
-html.mobile-app-theme .overview-category-hint span {
+.overview-category-hint span {
   color: #735ddc;
   font-size: 17px;
   line-height: 0.8;
 }
 
-html.mobile-app-theme .overview-category-scroll {
+.overview-category-scroll {
   max-width: 100%;
   min-width: 0;
   overflow-x: auto;
@@ -8438,13 +8435,13 @@ html.mobile-app-theme .overview-category-scroll {
   scrollbar-color: #b6b4df transparent;
 }
 
-html.mobile-app-theme .overview-category-scroll:focus-visible {
+.overview-category-scroll:focus-visible {
   outline: 2px solid #6479e5;
   outline-offset: 2px;
   border-radius: 6px;
 }
 
-html.mobile-app-theme .overview-category-plot {
+.overview-category-plot {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 48px;
@@ -8454,7 +8451,7 @@ html.mobile-app-theme .overview-category-plot {
   border-bottom: 1px solid rgba(114, 139, 189, 0.25);
 }
 
-html.mobile-app-theme .overview-category-day {
+.overview-category-day {
   display: grid;
   grid-template-rows: 124px auto;
   gap: 6px;
@@ -8462,7 +8459,7 @@ html.mobile-app-theme .overview-category-day {
   text-align: center;
 }
 
-html.mobile-app-theme .overview-category-day-bars {
+.overview-category-day-bars {
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -8471,7 +8468,7 @@ html.mobile-app-theme .overview-category-day-bars {
   border-bottom: 1px solid rgba(114, 139, 189, 0.27);
 }
 
-html.mobile-app-theme .overview-category-day-bars > button {
+.overview-category-day-bars > button {
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -8481,7 +8478,7 @@ html.mobile-app-theme .overview-category-day-bars > button {
   background: transparent;
 }
 
-html.mobile-app-theme .overview-category-day-bars > button > span {
+.overview-category-day-bars > button > span {
   display: block;
   width: 14px;
   height: var(--bar-height);
@@ -8489,28 +8486,28 @@ html.mobile-app-theme .overview-category-day-bars > button > span {
   background: linear-gradient(180deg, #9c81f0, #6156dd);
 }
 
-html.mobile-app-theme .overview-category-day-bars > button.category-p > span {
+.overview-category-day-bars > button.category-p > span {
   background: linear-gradient(180deg, #f79ac5, #de5c9b);
 }
 
-html.mobile-app-theme .overview-category-day-bars > button.is-selected,
-html.mobile-app-theme .overview-week-bars > button.is-selected {
+.overview-category-day-bars > button.is-selected,
+.overview-week-bars > button.is-selected {
   background: transparent;
   box-shadow: inset 0 -3px 0 rgba(96, 94, 216, 0.58);
 }
 
-html.mobile-app-theme .overview-category-day-bars > button.is-selected > span,
-html.mobile-app-theme .overview-week-bars > button.is-selected > span {
+.overview-category-day-bars > button.is-selected > span,
+.overview-week-bars > button.is-selected > span {
   filter: drop-shadow(0 0 3px rgba(71, 76, 195, 0.55));
 }
 
-html.mobile-app-theme .overview-category-day > span {
+.overview-category-day > span {
   color: #607093;
   font-size: 10px;
   font-weight: 850;
 }
 
-html.mobile-app-theme .overview-chart-legend {
+.overview-chart-legend {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 18px;
@@ -8519,24 +8516,24 @@ html.mobile-app-theme .overview-chart-legend {
   font-weight: 800;
 }
 
-html.mobile-app-theme .overview-chart-legend span {
+.overview-chart-legend span {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
-html.mobile-app-theme .overview-chart-legend i {
+.overview-chart-legend i {
   width: 9px;
   height: 9px;
   border-radius: 3px;
   background: #3688ed;
 }
 
-html.mobile-app-theme .overview-chart-legend i.money-out {
+.overview-chart-legend i.money-out {
   background: #e363a3;
 }
 
-html.mobile-app-theme .overview-week-plot {
+.overview-week-plot {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 3px;
@@ -8544,7 +8541,7 @@ html.mobile-app-theme .overview-week-plot {
   border-bottom: 1px solid rgba(114, 139, 189, 0.23);
 }
 
-html.mobile-app-theme .overview-week-day {
+.overview-week-day {
   display: grid;
   grid-template-rows: 126px auto;
   gap: 7px;
@@ -8552,7 +8549,7 @@ html.mobile-app-theme .overview-week-day {
   text-align: center;
 }
 
-html.mobile-app-theme .overview-week-bars {
+.overview-week-bars {
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -8561,7 +8558,7 @@ html.mobile-app-theme .overview-week-bars {
   border-bottom: 1px solid rgba(114, 139, 189, 0.28);
 }
 
-html.mobile-app-theme .overview-week-bars > button {
+.overview-week-bars > button {
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -8571,7 +8568,7 @@ html.mobile-app-theme .overview-week-bars > button {
   background: transparent;
 }
 
-html.mobile-app-theme .overview-week-bars > button > span {
+.overview-week-bars > button > span {
   display: block;
   width: min(100%, 12px);
   height: var(--bar-height);
@@ -8579,11 +8576,11 @@ html.mobile-app-theme .overview-week-bars > button > span {
   background: linear-gradient(180deg, #7956ee, #1b9cef);
 }
 
-html.mobile-app-theme .overview-week-bars > button.money-out > span {
+.overview-week-bars > button.money-out > span {
   background: linear-gradient(180deg, #f783bb, #da4e94);
 }
 
-html.mobile-app-theme .overview-week-day > span {
+.overview-week-day > span {
   min-width: 0;
   color: #5a6b8b;
   font-size: clamp(9px, 2.6vw, 11px);
@@ -8591,14 +8588,14 @@ html.mobile-app-theme .overview-week-day > span {
   white-space: nowrap;
 }
 
-html.mobile-app-theme .overview-month-plot {
+.overview-month-plot {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   min-width: 0;
 }
 
-html.mobile-app-theme .overview-month-column {
+.overview-month-column {
   display: grid;
   grid-template-rows: minmax(30px, auto) 112px auto;
   justify-items: center;
@@ -8608,7 +8605,7 @@ html.mobile-app-theme .overview-month-column {
   text-align: center;
 }
 
-html.mobile-app-theme .overview-month-column strong {
+.overview-month-column strong {
   max-width: 100%;
   color: #234376;
   font-size: clamp(11px, 3vw, 14px);
@@ -8618,7 +8615,7 @@ html.mobile-app-theme .overview-month-column strong {
   overflow-wrap: anywhere;
 }
 
-html.mobile-app-theme .overview-month-track {
+.overview-month-track {
   display: flex;
   align-items: flex-end;
   width: min(72px, 65%);
@@ -8628,7 +8625,7 @@ html.mobile-app-theme .overview-month-track {
   background: rgba(77, 113, 189, 0.07);
 }
 
-html.mobile-app-theme .overview-month-track > span {
+.overview-month-track > span {
   display: block;
   width: 100%;
   height: var(--bar-height);
@@ -8636,19 +8633,19 @@ html.mobile-app-theme .overview-month-track > span {
   background: linear-gradient(180deg, #8370ee, #488bef);
 }
 
-html.mobile-app-theme .overview-month-column:last-child .overview-month-track > span {
+.overview-month-column:last-child .overview-month-track > span {
   background: linear-gradient(180deg, #24b7f4, #2978e6);
 }
 
-html.mobile-app-theme .overview-chart-month.money-out .overview-month-track > span {
+.overview-chart-month.money-out .overview-month-track > span {
   background: linear-gradient(180deg, #f9a3ca, #e675ad);
 }
 
-html.mobile-app-theme .overview-chart-month.money-out .overview-month-column:last-child .overview-month-track > span {
+.overview-chart-month.money-out .overview-month-column:last-child .overview-month-track > span {
   background: linear-gradient(180deg, #ef76af, #d94f95);
 }
 
-html.mobile-app-theme .overview-month-column > span {
+.overview-month-column > span {
   max-width: 100%;
   color: #52678d;
   font-size: 11px;
@@ -8656,14 +8653,14 @@ html.mobile-app-theme .overview-month-column > span {
   white-space: nowrap;
 }
 
-html.mobile-app-theme .overview-chart-empty {
+.overview-chart-empty {
   margin: 0;
   color: #6b7894;
   font-size: 12px;
   line-height: 1.35;
 }
 
-html.mobile-app-theme .overview-chart-empty[hidden] {
+.overview-chart-empty[hidden] {
   display: none;
 }
 

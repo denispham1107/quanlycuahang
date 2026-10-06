@@ -33,17 +33,21 @@ function categoryChartData(store, date) {
   return JSON.parse(JSON.stringify(context.getMonthlyExpenseCategoryData(store, date)));
 }
 
-test("three overview column charts follow the balance on mobile only", () => {
+test("all four overview charts are shared by mobile and desktop in the same order", () => {
   assert.ok(start >= 0 && end > start);
   const balance = html.indexOf('id="mobileBalance"');
-  const charts = html.indexOf('class="mobile-overview-charts"');
-  const desktopRange = html.indexOf('class="selected-range-card"', charts);
-  assert.ok(balance < charts && charts < desktopRange);
-  for (const id of ["overviewWeekPlot", "overviewIncomeMonthPlot", "overviewExpenseMonthPlot"]) {
-    assert.match(html, new RegExp(`id="${id}"`));
-  }
-  assert.match(css, /\.mobile-overview-charts\s*\{\s*display: none;/);
-  assert.match(css, /html\.mobile-app-theme \.mobile-overview-charts\s*\{\s*display: grid;/);
+  const summary = html.indexOf('class="summary-grid"', balance);
+  const charts = html.indexOf('class="overview-charts"', summary);
+  const breakdown = html.indexOf('class="desktop-overview-breakdown"', charts);
+  assert.ok(balance < summary && summary < charts && charts < breakdown);
+  const chartIds = ["overviewCategoryPlot", "overviewWeekPlot", "overviewIncomeMonthPlot", "overviewExpenseMonthPlot"];
+  const chartPositions = chartIds.map((id) => html.indexOf(`id="${id}"`, charts));
+  assert.ok(chartPositions.every((position) => position > charts && position < breakdown));
+  assert.deepEqual(chartPositions, [...chartPositions].sort((a, b) => a - b));
+  assert.match(css, /\.overview-charts\s*\{\s*display: grid;/);
+  assert.doesNotMatch(css, /\.overview-charts\s*\{\s*display: none;/);
+  assert.match(css, /\.overview-chart-card\s*\{\s*display: grid;/);
+  assert.match(app, /document\.querySelector\("\.overview-charts"\)\?\.addEventListener\("click"/);
   assert.match(app, /renderDesktopOverviewBreakdown\([^;]+;\s*renderOverviewExpenseCategories\(store\);\s*renderOverviewCharts\(store\);/);
 });
 
@@ -97,8 +101,8 @@ test("monthly Chi tiêu Q/P chart follows the balance, exposes totals and scroll
   for (const id of ["overviewCategoryQTotal", "overviewCategoryPTotal", "overviewCategoryQCount", "overviewCategoryPCount", "overviewCategoryScroll"]) {
     assert.match(html, new RegExp(`id="${id}"`));
   }
-  assert.match(css, /html\.mobile-app-theme \.overview-category-scroll\s*\{[^}]*overflow-x: auto;/);
-  assert.match(css, /html\.mobile-app-theme \.overview-category-plot\s*\{[^}]*grid-auto-flow: column;/);
+  assert.match(css, /\.overview-category-scroll\s*\{[^}]*overflow-x: auto;/);
+  assert.match(css, /\.overview-category-plot\s*\{[^}]*grid-auto-flow: column;/);
   assert.match(app, /renderDesktopOverviewBreakdown\([^;]+;\s*renderOverviewExpenseCategories\(store\);\s*renderOverviewCharts\(store\);/);
 });
 

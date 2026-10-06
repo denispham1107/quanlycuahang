@@ -14,7 +14,7 @@ test("all four overview charts provide accessible tappable columns and their own
   for (const id of ["overviewCategoryPlot", "overviewWeekPlot", "overviewIncomeMonthPlot", "overviewExpenseMonthPlot"]) {
     assert.match(html, new RegExp(`id="${id}"`));
   }
-  assert.match(app, /\.mobile-overview-charts"\)\?\.addEventListener\("click", \(event\) => \{[\s\S]*?showOverviewBarValue\(button\)/);
+  assert.match(app, /\.overview-charts"\)\?\.addEventListener\("click", \(event\) => \{[\s\S]*?showOverviewBarValue\(button\)/);
   assert.match(app, /<button class="category-q" type="button" data-overview-bar data-chart-label=/);
   assert.match(app, /<button class="category-p" type="button" data-overview-bar data-chart-label=/);
   assert.match(app, /<button class="money-in" type="button" data-overview-bar data-chart-label=/);

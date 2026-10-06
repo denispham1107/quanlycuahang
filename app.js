@@ -909,7 +909,7 @@ els.tabButtons.forEach((button) => {
   });
 });
 
-document.querySelector(".mobile-overview-charts")?.addEventListener("click", (event) => {
+document.querySelector(".overview-charts")?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-overview-bar]");
   if (button) showOverviewBarValue(button);
 });
