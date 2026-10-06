@@ -1766,6 +1766,41 @@ body.bulk-cash-page-open > .quick-entry-fab { display: none !important; }
 }
 .bulk-cash-card[data-type="income"] { --bulk-accent: #426af0; --bulk-tint: #e9edff; --bulk-border: #b9c6fc; --bulk-gradient: linear-gradient(110deg,#448cf8,#7450ee); }
 .bulk-cash-card[data-type="expense"] { --bulk-accent: #bd3a91; --bulk-tint: #ffe8f4; --bulk-border: #efb7d8; --bulk-gradient: linear-gradient(110deg,#f363ac,#ae48de); }
+.bulk-cash-title-row { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+.bulk-cash-title-row .bulk-cash-eyebrow { min-width: 0; overflow-wrap: anywhere; }
+.bulk-cash-file-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 58px;
+  width: 58px;
+  min-width: 58px;
+  height: 58px;
+  min-height: 58px;
+  margin: 0;
+  border: 1px solid rgba(255,255,255,.9);
+  border-radius: 18px;
+  padding: 7px;
+  background: linear-gradient(145deg, #f7faff, #dce9ff 55%, #e9ddff);
+  box-shadow: 0 9px 19px rgba(66,106,240,.16), inset 0 1px 0 #fff;
+  color: #3047c7;
+  cursor: pointer;
+}
+.bulk-cash-card[data-type="expense"] .bulk-cash-file-button { background: linear-gradient(145deg, #fff9fd, #ffe0ef 55%, #eadbff); color: #a72f82; box-shadow: 0 9px 19px rgba(189,58,145,.16), inset 0 1px 0 #fff; }
+.bulk-cash-file-button::before { content: ""; position: absolute; inset: 4px; border: 1px solid rgba(255,255,255,.8); border-radius: 14px; pointer-events: none; }
+.bulk-cash-file-button:hover { transform: translateY(-2px); box-shadow: 0 12px 23px rgba(66,106,240,.22), inset 0 1px 0 #fff; }
+.bulk-cash-file-button:focus-visible { outline: 3px solid var(--bulk-accent); outline-offset: 3px; }
+.bulk-cash-file-button svg { position: relative; width: 42px; height: 42px; overflow: visible; }
+.bulk-cash-file-button .file-shadow { fill: #9eafe5; opacity: .55; }
+.bulk-cash-file-button .file-paper { fill: #fff; stroke: currentColor; stroke-width: 1.7; }
+.bulk-cash-file-button .file-fold { fill: #d5e9ff; stroke: currentColor; stroke-linejoin: round; stroke-width: 1.7; }
+.bulk-cash-file-button .file-line { stroke: #8ba1d8; stroke-linecap: round; stroke-width: 2; }
+.bulk-cash-file-button .file-arrow { stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.8; }
+.bulk-cash-file-button .file-tray { stroke: currentColor; stroke-linecap: round; stroke-width: 2; }
+.bulk-cash-file-input { position: absolute; width: 1px; height: 1px; padding: 0; opacity: 0; overflow: hidden; clip-path: inset(50%); pointer-events: none; }
+.bulk-cash-file-hint { margin: -8px 0 0; color: #596c92; font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
+.bulk-cash-file-hint[data-state="error"] { color: #b3335e; font-weight: 750; }
+.bulk-cash-file-hint[data-state="success"] { color: #2a6279; font-weight: 750; }
 .bulk-cash-eyebrow { color: var(--bulk-accent); font-size: 12px; font-weight: 900; letter-spacing: .12em; }
 .bulk-cash-card h1 { margin: -8px 0 0; color: #10275b; font-size: clamp(25px, 4vw, 37px); line-height: 1.18; overflow-wrap: anywhere; }
 .bulk-cash-description { margin: 0; color: #5c6880; font-size: 14px; line-height: 1.5; }

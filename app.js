@@ -237,6 +237,9 @@ const els = {
   bulkCashContext: document.querySelector("#bulkCashContext"),
   bulkCashText: document.querySelector("#bulkCashText"),
   bulkCashCount: document.querySelector("#bulkCashCount"),
+  bulkCashFileButton: document.querySelector("#bulkCashFileButton"),
+  bulkCashFile: document.querySelector("#bulkCashFile"),
+  bulkCashFileHint: document.querySelector("#bulkCashFileHint"),
   bulkCashErrors: document.querySelector("#bulkCashErrors"),
   closeBulkCashPage: document.querySelector("#closeBulkCashPage"),
   cancelBulkCashPage: document.querySelector("#cancelBulkCashPage"),
@@ -1112,6 +1115,11 @@ els.closeBulkCashPage.addEventListener("click", closeBulkCashPage);
 els.cancelBulkCashPage.addEventListener("click", closeBulkCashPage);
 els.completeBulkCashPage.addEventListener("click", completeBulkCashPage);
 els.bulkCashText.addEventListener("input", updateBulkCashCount);
+els.bulkCashFileButton.addEventListener("click", () => {
+  els.bulkCashFile.value = "";
+  els.bulkCashFile.click();
+});
+els.bulkCashFile.addEventListener("change", importBulkCashFile);
 els.bulkCashPage.addEventListener("focusin", (event) => {
   if (!event.target.matches("textarea, input")) return;
   [100, 350].forEach((delay) => window.setTimeout(() => ensureBulkCashFocusVisible(event.target), delay));
@@ -2103,6 +2111,7 @@ function showLoginScreen(message = "") {
   els.bulkCashText.value = "";
   els.bulkCashPage.dataset.type = "";
   els.bulkCashPage.dataset.storeId = "";
+  resetBulkCashFileImport();
   els.appShell.hidden = true;
   if (USE_MOBILE_APP_THEME && els.tabBar) els.tabBar.hidden = true;
   if (mobileTimeFilterShell) mobileTimeFilterShell.hidden = true;
@@ -3756,6 +3765,7 @@ function closeQuickEntryModal() {
   els.bulkCashText.value = "";
   els.bulkCashPage.dataset.type = "";
   els.bulkCashPage.dataset.storeId = "";
+  resetBulkCashFileImport();
   updateBulkCashCount();
   els.quickEntryModal.hidden = true;
   hideSalesCatalogPage({ restoreFocus: false });
@@ -3847,14 +3857,14 @@ function looksLikeBulkCashDate(value) {
   return /^(?:\d{8}|\d{1,2}[\/-]\d{1,2}[\/-]\d{4}|\d{4}-\d{1,2}-\d{1,2})$/.test(raw);
 }
 
-function parseBulkCashRows(text, defaultDate = toDateInputValue(new Date())) {
+function parseBulkCashRows(text, defaultDate = toDateInputValue(new Date()), { maxRows = 200 } = {}) {
   const rows = [];
   const errors = [];
   const lines = String(text || "").replace(/^\uFEFF/, "").split(/\r\n|\n|\r/);
   const nonempty = lines.map((value, index) => ({ value: value.trim(), number: index + 1 }))
     .filter((line) => line.value);
   if (!nonempty.length) errors.push("Hãy nhập ít nhất một khoản.");
-  if (nonempty.length > 200) errors.push(`Tối đa 200 dòng; hiện có ${nonempty.length} dòng.`);
+  if (maxRows !== null && nonempty.length > maxRows) errors.push(`Tối đa ${maxRows} dòng; hiện có ${nonempty.length} dòng.`);
 
   nonempty.forEach(({ value, number }) => {
     const parsed = parseBulkCashColumns(value);
@@ -3906,11 +3916,53 @@ function parseBulkCashRows(text, defaultDate = toDateInputValue(new Date())) {
 
 function updateBulkCashCount() {
   const count = els.bulkCashText.value.split(/\r\n|\n|\r/).filter((line) => line.trim()).length;
-  els.bulkCashCount.textContent = `${count} / 200 dòng`;
-  els.bulkCashCount.classList.toggle("is-over-limit", count > 200);
+  const fromFile = els.bulkCashPage.dataset.source === "file";
+  els.bulkCashCount.textContent = fromFile ? `${count} dòng từ file` : `${count} / 200 dòng`;
+  els.bulkCashCount.classList.toggle("is-over-limit", !fromFile && count > 200);
   els.bulkCashErrors.hidden = true;
   els.bulkCashErrors.replaceChildren();
   els.bulkCashText.removeAttribute("aria-invalid");
+}
+
+function resetBulkCashFileImport() {
+  els.bulkCashPage.dataset.source = "manual";
+  els.bulkCashText.maxLength = 70000;
+  if (els.bulkCashFile) els.bulkCashFile.value = "";
+  if (els.bulkCashFileHint) {
+    els.bulkCashFileHint.textContent = "Chọn biểu tượng tài liệu để nhập từ file .txt hoặc .md.";
+    delete els.bulkCashFileHint.dataset.state;
+  }
+}
+
+async function importBulkCashFile() {
+  const file = els.bulkCashFile.files?.[0];
+  if (!file || els.bulkCashPage.hidden) return;
+  if (!/\.(?:txt|md)$/i.test(file.name)) {
+    els.bulkCashFileHint.textContent = "Chỉ nhận file .txt hoặc .md.";
+    els.bulkCashFileHint.dataset.state = "error";
+    return;
+  }
+  const type = els.bulkCashPage.dataset.type;
+  const storeId = els.bulkCashPage.dataset.storeId;
+  try {
+    const content = await file.text();
+    if (els.bulkCashPage.hidden || els.bulkCashPage.dataset.type !== type || els.bulkCashPage.dataset.storeId !== storeId || els.bulkCashFile.files?.[0] !== file) return;
+    if (!content.trim()) {
+      els.bulkCashFileHint.textContent = "File không có dòng khoản nào. Hãy chọn file khác.";
+      els.bulkCashFileHint.dataset.state = "error";
+      return;
+    }
+    els.bulkCashText.maxLength = -1;
+    els.bulkCashText.value = content;
+    els.bulkCashPage.dataset.source = "file";
+    updateBulkCashCount();
+    els.bulkCashFileHint.textContent = `Đã tải ${file.name}. Kiểm tra các dòng rồi bấm Hoàn thành.`;
+    els.bulkCashFileHint.dataset.state = "success";
+    els.bulkCashText.focus({ preventScroll: true });
+  } catch {
+    els.bulkCashFileHint.textContent = "Không đọc được file. Hãy thử lại với file .txt hoặc .md.";
+    els.bulkCashFileHint.dataset.state = "error";
+  }
 }
 
 function showBulkCashErrors(errors) {
@@ -3938,6 +3990,7 @@ function openBulkCashPage({ fromHistory = false } = {}) {
   if (!isAdminUser() || !store || !["income", "expense"].includes(type) || els.quickEntryModal.hidden) return;
   if (els.bulkCashPage.dataset.type !== type || els.bulkCashPage.dataset.storeId !== store.id) {
     els.bulkCashText.value = "";
+    resetBulkCashFileImport();
     updateBulkCashCount();
   }
   els.bulkCashPage.dataset.type = type;
@@ -4017,7 +4070,8 @@ function completeBulkCashPage() {
     showBulkCashErrors(["Cửa hàng hoặc quyền truy cập đã thay đổi. Hãy quay lại và mở lại trang nhập danh sách."]);
     return;
   }
-  const { rows, errors } = parseBulkCashRows(els.bulkCashText.value, toDateInputValue(new Date()));
+  const maxRows = els.bulkCashPage.dataset.source === "file" ? null : 200;
+  const { rows, errors } = parseBulkCashRows(els.bulkCashText.value, toDateInputValue(new Date()), { maxRows });
   if (errors.length) {
     showBulkCashErrors(errors);
     return;

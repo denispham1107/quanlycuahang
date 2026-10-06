@@ -40,6 +40,9 @@ test("Thu and Chi have a full bulk page launched above Hủy/Lưu", () => {
   assert.match(css, /\.bulk-cash-page\[hidden\] \{ display: none; \}/);
   assert.match(css, /\.bulk-cash-shell \{ width: min\(920px, 100%\); min-width: 0; margin-inline: auto; \}/);
   assert.match(css, /\.bulk-cash-card\s*\{[\s\S]*?width: 100%;[\s\S]*?max-width: 100%;/);
+  assert.match(html, /id="bulkCashFileButton"[^>]*aria-label="Nhập từ file \.txt hoặc \.md"/);
+  assert.match(html, /id="bulkCashFile"[^>]*type="file"[^>]*accept="\.txt,\.md/);
+  assert.match(css, /\.bulk-cash-file-button:focus-visible/);
 });
 
 test("CSV-like rows accept quoted commas, optional dates and 200 entries", () => {
@@ -58,6 +61,50 @@ test("CSV-like rows accept quoted commas, optional dates and 200 entries", () =>
   const twoHundred = Array.from({ length: 200 }, (_, index) => `Khoản ${index + 1},1000,Mục`).join("\n");
   assert.equal(context.parseBulkCashRows(twoHundred, "2026-10-06").errors.length, 0);
   assert.match(context.parseBulkCashRows(`${twoHundred}\nKhoản 201,1000,Mục`, "2026-10-06").errors[0], /Tối đa 200 dòng/);
+  const fromFile = context.parseBulkCashRows(`${twoHundred}\nKhoản 201,1000,Mục`, "2026-10-06", { maxRows: null });
+  assert.equal(fromFile.errors.length, 0);
+  assert.equal(fromFile.rows.length, 201);
+});
+
+test("file import accepts .txt/.md, fills the same textarea, and unlocks its length", async () => {
+  for (const name of ["danh-sach.txt", "danh-sach.MD"]) {
+    const text = Array.from({ length: 201 }, (_, index) => `Khoản ${index + 1},1000,Mục`).join("\n");
+    const file = { name, text: async () => text };
+    const els = {
+      bulkCashPage: { hidden: false, dataset: { type: "income", storeId: "store-1", source: "manual" } },
+      bulkCashFile: { files: [file] },
+      bulkCashFileHint: { textContent: "", dataset: {} },
+      bulkCashText: { value: "", maxLength: 70000, focus() {}, removeAttribute() {} },
+      bulkCashCount: { textContent: "", classList: { toggle() {} } },
+      bulkCashErrors: { hidden: true, replaceChildren() {} }
+    };
+    const context = setup({ els });
+    await context.importBulkCashFile();
+    assert.equal(els.bulkCashText.value, text);
+    assert.equal(els.bulkCashText.maxLength, -1);
+    assert.equal(els.bulkCashPage.dataset.source, "file");
+    assert.equal(els.bulkCashCount.textContent, "201 dòng từ file");
+    assert.equal(els.bulkCashFileHint.dataset.state, "success");
+    assert.equal(context.parseBulkCashRows(els.bulkCashText.value, "2026-10-06", { maxRows: null }).errors.length, 0);
+  }
+});
+
+test("file import rejects unsupported or empty files without replacing manual input", async () => {
+  const fileInput = { files: [{ name: "data.csv", text: async () => "Khoản,1000,Mục" }] };
+  const els = {
+    bulkCashPage: { hidden: false, dataset: { type: "expense", storeId: "store-1", source: "manual" } },
+    bulkCashFile: fileInput,
+    bulkCashFileHint: { textContent: "", dataset: {} },
+    bulkCashText: { value: "Bản nháp", maxLength: 70000 }
+  };
+  const context = setup({ els });
+  await context.importBulkCashFile();
+  assert.equal(els.bulkCashText.value, "Bản nháp");
+  assert.equal(els.bulkCashFileHint.dataset.state, "error");
+  fileInput.files = [{ name: "empty.md", text: async () => "  \n  " }];
+  await context.importBulkCashFile();
+  assert.equal(els.bulkCashText.value, "Bản nháp");
+  assert.equal(els.bulkCashPage.dataset.source, "manual");
 });
 
 test("Thu and Chi share compact DDMMYYYY dates and either date/category order", () => {
@@ -181,4 +228,31 @@ test("Thu also creates its missing category and defaults an empty date", () => {
   assert.equal(store.entries.length, 1);
   assert.equal(store.entries[0].type, "income");
   assert.match(store.entries[0].date, /^\d{4}-\d{2}-\d{2}$/);
+});
+
+test("Hoàn thành saves more than 200 imported rows for both Thu and Chi", () => {
+  for (const type of ["income", "expense"]) {
+    const store = { id: `store-${type}`, categories: { [type]: [] }, entries: [] };
+    const els = {
+      bulkCashPage: { hidden: false, dataset: { type, storeId: store.id, source: "file" } },
+      bulkCashText: { value: Array.from({ length: 201 }, (_, index) => `Khoản ${index + 1},1000,Mục mới`).join("\n") }
+    };
+    let saves = 0;
+    let sequence = 0;
+    const context = setup({
+      els, isAdminUser: () => true, getActiveStore: () => store,
+      createId: () => `id-${++sequence}`, recordActivity() {},
+      formatCurrency: (amount) => `${amount} đ`,
+      saveAndRender: () => { saves += 1; },
+      closeQuickEntryModal() {}, showActivityNavigationNotice() {}
+    });
+    context.showBulkCashErrors = (errors) => assert.fail(`Unexpected errors: ${errors.join(", ")}`);
+    context.hideBulkCashPage = () => { els.bulkCashPage.hidden = true; };
+    context.clearBulkCashHash = () => {};
+    context.completeBulkCashPage();
+    assert.equal(saves, 1);
+    assert.equal(store.entries.length, 201);
+    assert.equal(store.categories[type].length, 1);
+    assert.ok(store.entries.every((entry) => entry.type === type));
+  }
 });
