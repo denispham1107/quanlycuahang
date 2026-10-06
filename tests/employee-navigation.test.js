@@ -31,11 +31,15 @@ test("all four informational tabs and the employee account controls remain avail
   }
   assert.match(html, /id="signedInUserName"/);
   assert.match(html, /id="signOutButton"[^>]*>Đăng xuất/);
+  assert.match(html, /id="activeStoreHero"[\s\S]*?id="heroStoreName"/);
   assert.match(app, /els\.signedInUserName\.textContent = profile\.displayName/);
+  assert.match(app, /els\.heroStoreName\.textContent = store\.name/);
   assert.match(css, /body\.employee-session \.tab-panel\[data-employee-empty="true"\] > \*\s*\{\s*display: none !important;/);
   assert.match(css, /body\.employee-session \.signed-in-user-name\s*\{\s*display: block;/);
-  assert.match(css, /body\.employee-session:not\(\.mobile-secondary-tab\) \.topbar/);
-  assert.match(css, /body\.employee-session \.active-store-hero\s*\{\s*display: none !important;/);
+  assert.match(css, /html\.mobile-app-theme \.topbar\s*\{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) auto;/);
+  assert.doesNotMatch(css, /body\.employee-session:not\(\.mobile-secondary-tab\) \.topbar\s*\{\s*grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(css, /body\.employee-session \.active-store-hero \.store-dashboard-stats/);
+  assert.match(css, /body\.employee-session \[data-tab-panel="stores"\]\[data-employee-empty="true"\] > \.desktop-store-layout/);
 });
 
 test("employee tabs stay clickable while their panels are empty and inert", () => {
@@ -82,7 +86,7 @@ test("employee tabs stay clickable while their panels are empty and inert", () =
   assert.equal(tabs[5].dataset.roleHidden, "true");
   for (const panel of panels.slice(0, 4)) {
     assert.equal(panel.dataset.employeeEmpty, "true", panel.dataset.tabPanel);
-    assert.equal(panel.inert, true, panel.dataset.tabPanel);
+    assert.equal(panel.inert, panel.dataset.tabPanel !== "stores", panel.dataset.tabPanel);
   }
   assert.equal(panels[4].inert, false);
   assert.equal(adminOnly[0].dataset.roleHidden, "true");

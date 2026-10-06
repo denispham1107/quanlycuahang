@@ -2214,29 +2214,28 @@ html:not(.mobile-app-theme) body.employee-session:is([data-active-tab="overview"
   display: none;
 }
 
-html.mobile-app-theme body.employee-session .active-store-hero {
-  display: none !important;
-}
-
-html.mobile-app-theme body.employee-session:not(.mobile-secondary-tab) .topbar {
+html:not(.mobile-app-theme) body.employee-session [data-tab-panel="stores"][data-employee-empty="true"] > .desktop-store-layout {
+  display: grid !important;
   grid-template-columns: minmax(0, 1fr);
 }
 
-html.mobile-app-theme body.employee-session:not(.mobile-secondary-tab) .topbar-actions {
-  grid-column: 1;
-  width: 100%;
-  justify-content: space-between;
+html:not(.mobile-app-theme) body.employee-session .desktop-store-layout > .panel,
+html:not(.mobile-app-theme) body.employee-session .desktop-store-details > .toolbar {
+  display: none !important;
 }
 
-html.mobile-app-theme body.employee-session .topbar-actions .signed-in-user {
-  flex: 1 1 auto;
-  max-width: calc(100% - 44px);
+body.employee-session .active-store-hero .store-dashboard-stats,
+body.employee-session .active-store-hero .desktop-store-hero-description {
+  display: none !important;
+}
+
+html.mobile-app-theme body.employee-session .topbar-actions {
+  min-width: 0;
 }
 
 html.mobile-app-theme body.employee-session .topbar-actions .signed-in-user-name {
-  flex: 1 1 auto;
   min-width: 0;
-  max-width: none;
+  max-width: clamp(45px, 17vw, 80px);
 }
 
 html.mobile-app-theme body.employee-session .topbar-actions .signed-in-user small {

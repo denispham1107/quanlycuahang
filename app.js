@@ -2154,7 +2154,7 @@ function applyRoleAccess() {
   document.querySelectorAll("[data-tab-panel]").forEach((panel) => {
     const empty = isEmployeeEmptyTab(panel.dataset.tabPanel);
     panel.dataset.employeeEmpty = String(empty);
-    panel.inert = empty;
+    panel.inert = empty && panel.dataset.tabPanel !== "stores";
   });
   els.activeStorePanel.dataset.roleHidden = employee ? "true" : "false";
   document.querySelector(".sidebar")?.setAttribute("data-role-hidden", employee && USE_MOBILE_APP_THEME ? "true" : "false");
