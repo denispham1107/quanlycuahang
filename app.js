@@ -7866,23 +7866,26 @@ function renderInventory(store) {
               ? `data-edit-inventory="${escapeHtml(item.id || "")}" role="button" tabindex="0"`
               : ""
           }>
-            <div class="inventory-main">
-              <span class="inventory-group-row">
+            <div class="inventory-product-heading">
+              <span class="goods-catalog-mark" aria-hidden="true">▣</span>
+              <div class="inventory-main">
+                <strong>${escapeHtml(item.name || "")}</strong>
                 <span class="inventory-group">${escapeHtml(item.groupName || "Chưa phân nhóm")}</span>
-                ${
-                  canManageInventory
-                    ? `<button class="inventory-export-button" type="button" data-export-inventory="${escapeHtml(item.id || "")}" ${quantity <= 0 ? "disabled" : ""}>Xuất</button>`
-                    : ""
-                }
-              </span>
-              <strong>${escapeHtml(item.name || "")}</strong>
-              <span class="inventory-date">Cập nhật: ${formatDate(String(item.updatedAt || item.createdAt || today).slice(0, 10))}</span>
+              </div>
             </div>
             <div class="inventory-meta">
-              <span>SL: ${quantity.toLocaleString("vi-VN")}</span>
-              <span>Giá vốn: ${formatCurrency(item.lastPrice || 0)}</span>
-              <span>Giá bán: ${formatCurrency(getInventorySalePrice(item))}</span>
-              <span>Tổng: ${formatCurrency(item.totalCost || 0)}</span>
+              <div><span>Số lượng</span><strong>${quantity.toLocaleString("vi-VN")}</strong></div>
+              <div><span>Giá vốn</span><strong>${formatCurrency(item.lastPrice || 0)}</strong></div>
+              <div><span>Giá bán</span><strong>${formatCurrency(getInventorySalePrice(item))}</strong></div>
+              <div><span>Tổng giá trị</span><strong>${formatCurrency(item.totalCost || 0)}</strong></div>
+            </div>
+            <div class="inventory-product-footer">
+              <span class="inventory-date">Cập nhật: ${formatDate(String(item.updatedAt || item.createdAt || today).slice(0, 10))}</span>
+              ${
+                canManageInventory
+                  ? `<button class="inventory-export-button" type="button" data-export-inventory="${escapeHtml(item.id || "")}" ${quantity <= 0 ? "disabled" : ""}>Xuất <span aria-hidden="true">→</span></button>`
+                  : ""
+              }
             </div>
           </div>
         `;

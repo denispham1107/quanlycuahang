@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=91" />
+    <link rel="manifest" href="manifest.webmanifest?v=92" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=91" />
+    <link rel="stylesheet" href="styles.css?v=92" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -1124,30 +1124,42 @@
     </div>
 
     <div class="modal-backdrop inventory-backdrop" id="inventoryModal" hidden>
-      <section class="modal-card inventory-card">
-        <div class="panel-heading">
-          <h2>Kho hàng</h2>
-          <div class="inventory-heading-actions">
-            <span id="inventoryModalCount">0 mặt hàng</span>
-            <button class="ghost-button compact-button" id="openInventoryHistory" type="button">Lịch sử Kho</button>
+      <div class="inventory-catalog-shell sales-catalog-page-shell">
+        <header class="sales-catalog-page-header">
+          <button class="sales-catalog-back" id="closeInventory" type="button"><span aria-hidden="true">←</span> Quay lại</button>
+          <span>Nhập hàng <span aria-hidden="true">/</span> Kho hàng</span>
+        </header>
+      <section class="modal-card inventory-card inventory-catalog sales-catalog-page-content" aria-labelledby="inventoryTitle">
+        <div class="sales-catalog-hero">
+          <div class="sales-catalog-hero-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/><path d="m8 5.3 8 4.5"/></svg>
+          </div>
+          <div class="sales-catalog-hero-copy">
+            <p>THEO DÕI HÀNG TRONG KHO</p>
+            <h1 id="inventoryTitle">Kho hàng</h1>
+            <span>Tra cứu hàng hóa, tồn kho và giá trị hàng đang có.</span>
           </div>
         </div>
-        <div class="history-tools inventory-tools">
-          <div class="history-search">
+        <div class="inventory-catalog-toolbar">
+          <div class="inventory-summary" id="inventorySummary"></div>
+          <button class="ghost-button compact-button" id="openInventoryHistory" type="button">Lịch sử Kho <span aria-hidden="true">→</span></button>
+        </div>
+        <section class="sales-catalog-filter-card" aria-label="Tìm và lọc hàng hóa trong kho">
+          <div class="sales-catalog-filter-heading"><div><h2>Tìm hàng hóa</h2><p>Lọc theo tên hoặc nhóm hàng.</p></div><span class="inventory-catalog-count" id="inventoryModalCount">0 mặt hàng</span></div>
+        <div class="history-tools inventory-tools sales-catalog-filter-grid">
+          <div class="history-search field">
             <label for="inventorySearch">Tìm hàng hóa</label>
             <input id="inventorySearch" type="text" placeholder="Nhập tên hàng hóa..." autocomplete="off" />
           </div>
-          <div class="history-filter">
+          <div class="history-filter field">
             <label for="inventoryFilter">Phân Loại</label>
             <select id="inventoryFilter"></select>
           </div>
         </div>
-        <div class="inventory-summary" id="inventorySummary"></div>
+        </section>
         <div class="report-list inventory-list" id="inventoryList"></div>
-        <div class="modal-actions">
-          <button class="ghost-button" id="closeInventory" type="button">Đóng</button>
-        </div>
       </section>
+      </div>
     </div>
 
     <div class="modal-backdrop inventory-history-backdrop" id="inventoryHistoryModal" hidden>
@@ -1431,6 +1443,6 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=91"></script>
+    <script defer src="app.js?v=92"></script>
   </body>
 </html>
