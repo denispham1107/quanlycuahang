@@ -89,6 +89,57 @@ test("file import accepts .txt/.md, fills the same textarea, and unlocks its len
   }
 });
 
+test("FileReader imports the supplied UTF-8 list format for both Thu and Chi", async () => {
+  const sample = [
+    '- Ecom.EW26090143116372.VED.0909463601.CashIn.203e582234a4,391560,"Chưa xác định",01/09/2026',
+    '- Ecom.EW26090143120234.VED.0909463601.CashIn.c6c396412f73,102960,"Chưa xác định",01/09/2026',
+    '- Ecom.EW26090144148126.VED.0909463601.CashIn.45d818844098,65000,"Chưa xác định",01/09/2026',
+    '- Mua sữa tươi cho quán ăn,156000,"Chưa xác định",01/09/2026',
+    '- Chuyển tiền cho NGUYEN THI KIEU OANH,27500000,"Chưa xác định",01/09/2026',
+    '- Yen ứng lương,1500000,"Chưa xác định",01/09/2026'
+  ].join("\n");
+  class MockFileReader {
+    readAsText(file, encoding) {
+      assert.equal(encoding, "UTF-8");
+      this.result = file.content;
+      queueMicrotask(() => this.onload());
+    }
+  }
+  for (const type of ["expense", "income"]) {
+    for (const extension of ["txt", "md"]) {
+      const file = { name: `khoanchi.${extension}`, content: sample }; // No File.text() method.
+      const els = {
+        bulkCashPage: { hidden: false, dataset: { type, storeId: "store-1", source: "manual" } },
+        bulkCashFile: { files: [file] },
+        bulkCashFileHint: { textContent: "", dataset: {} },
+        bulkCashText: { value: "", maxLength: 70000, focus() {}, removeAttribute() {} },
+        bulkCashCount: { textContent: "", classList: { toggle() {} } },
+        bulkCashErrors: { hidden: true, replaceChildren() {} }
+      };
+      const context = setup({ els, FileReader: MockFileReader });
+      await context.importBulkCashFile();
+      assert.equal(els.bulkCashPage.dataset.source, "file");
+      assert.equal(els.bulkCashCount.textContent, "6 dòng từ file");
+      assert.equal(els.bulkCashFileHint.dataset.state, "success");
+      const parsed = context.parseBulkCashRows(els.bulkCashText.value, "2026-10-06", { maxRows: null });
+      assert.equal(parsed.errors.length, 0);
+      assert.equal(parsed.rows.length, 6);
+      assert.equal(parsed.rows[0].note, "Ecom.EW26090143116372.VED.0909463601.CashIn.203e582234a4");
+      assert.equal(parsed.rows[0].amount, 391560);
+      assert.equal(parsed.rows[0].date, "2026-09-01");
+      assert.equal(parsed.rows[5].note, "Yen ứng lương");
+    }
+  }
+});
+
+test("file.text remains a fallback if FileReader cannot read the selected file", async () => {
+  class BrokenFileReader {
+    readAsText() { throw new Error("Reader unavailable"); }
+  }
+  const context = setup({ FileReader: BrokenFileReader });
+  assert.equal(await context.readBulkCashFileText({ text: async () => "Khoản,1000,Mục" }), "Khoản,1000,Mục");
+});
+
 test("file import rejects unsupported or empty files without replacing manual input", async () => {
   const fileInput = { files: [{ name: "data.csv", text: async () => "Khoản,1000,Mục" }] };
   const els = {

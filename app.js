@@ -3934,6 +3934,31 @@ function resetBulkCashFileImport() {
   }
 }
 
+async function readBulkCashFileText(file) {
+  let readerError;
+  if (typeof FileReader === "function") {
+    try {
+      return await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result ?? ""));
+        reader.onerror = () => reject(reader.error || new Error("FileReader failed"));
+        reader.onabort = () => reject(new Error("FileReader was cancelled"));
+        reader.readAsText(file, "UTF-8");
+      });
+    } catch (error) {
+      readerError = error;
+    }
+  }
+  if (typeof file.text === "function") return file.text();
+  throw readerError || new Error("No file reader available");
+}
+
+function normalizeBulkCashFileText(content) {
+  return String(content || "").replace(/^\uFEFF/, "").split(/\r\n|\n|\r/)
+    .map((line) => line.replace(/^\s*[-*]\s+(?=\S)/, ""))
+    .join("\n");
+}
+
 async function importBulkCashFile() {
   const file = els.bulkCashFile.files?.[0];
   if (!file || els.bulkCashPage.hidden) return;
@@ -3944,25 +3969,30 @@ async function importBulkCashFile() {
   }
   const type = els.bulkCashPage.dataset.type;
   const storeId = els.bulkCashPage.dataset.storeId;
+  let content;
   try {
-    const content = await file.text();
-    if (els.bulkCashPage.hidden || els.bulkCashPage.dataset.type !== type || els.bulkCashPage.dataset.storeId !== storeId || els.bulkCashFile.files?.[0] !== file) return;
-    if (!content.trim()) {
-      els.bulkCashFileHint.textContent = "File không có dòng khoản nào. Hãy chọn file khác.";
-      els.bulkCashFileHint.dataset.state = "error";
-      return;
-    }
-    els.bulkCashText.maxLength = -1;
-    els.bulkCashText.value = content;
-    els.bulkCashPage.dataset.source = "file";
-    updateBulkCashCount();
-    els.bulkCashFileHint.textContent = `Đã tải ${file.name}. Kiểm tra các dòng rồi bấm Hoàn thành.`;
-    els.bulkCashFileHint.dataset.state = "success";
-    els.bulkCashText.focus({ preventScroll: true });
-  } catch {
+    content = await readBulkCashFileText(file);
+  } catch (error) {
+    if (els.bulkCashPage.hidden || els.bulkCashFile.files?.[0] !== file) return;
+    console.error("Cannot read bulk cash file", error);
     els.bulkCashFileHint.textContent = "Không đọc được file. Hãy thử lại với file .txt hoặc .md.";
     els.bulkCashFileHint.dataset.state = "error";
+    return;
   }
+  if (els.bulkCashPage.hidden || els.bulkCashPage.dataset.type !== type || els.bulkCashPage.dataset.storeId !== storeId || els.bulkCashFile.files?.[0] !== file) return;
+  const normalized = normalizeBulkCashFileText(content);
+  if (!normalized.trim()) {
+    els.bulkCashFileHint.textContent = "File không có dòng khoản nào. Hãy chọn file khác.";
+    els.bulkCashFileHint.dataset.state = "error";
+    return;
+  }
+  els.bulkCashText.maxLength = -1;
+  els.bulkCashText.value = normalized;
+  els.bulkCashPage.dataset.source = "file";
+  updateBulkCashCount();
+  els.bulkCashFileHint.textContent = `Đã tải ${file.name}. Kiểm tra các dòng rồi bấm Hoàn thành.`;
+  els.bulkCashFileHint.dataset.state = "success";
+  els.bulkCashText.focus({ preventScroll: true });
 }
 
 function showBulkCashErrors(errors) {
