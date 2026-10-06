@@ -28,8 +28,8 @@ test("desktop, Android and iOS installation icons use the approved store-chart s
   assert.deepEqual(pngSize("apple-touch-icon-v3.png"), [180, 180]);
   assert.match(html, /rel="apple-touch-icon" sizes="180x180" href="icons\/apple-touch-icon-v3\.png"/);
   assert.match(html, /rel="icon" type="image\/svg\+xml" href="icons\/icon-v3\.svg"/);
-  assert.match(html, /rel="manifest" href="manifest\.webmanifest\?v=86"/);
-  assert.match(worker, /\.\/manifest\.webmanifest\?v=86/);
+  assert.match(html, /rel="manifest" href="manifest\.webmanifest\?v=87"/);
+  assert.match(worker, /\.\/manifest\.webmanifest\?v=87/);
   assert.match(worker, /\.\/icons\/icon-v3\.svg/);
   assert.ok(!fs.readFileSync(path.join(root, "icons", "icon-v3-512.png"))
     .equals(fs.readFileSync(path.join(root, "icons", "icon-v3-maskable-512.png"))));

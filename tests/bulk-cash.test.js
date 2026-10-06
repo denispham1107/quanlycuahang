@@ -15,6 +15,8 @@ const bulkFunctions = app.slice(start, end);
 
 function setup(extra = {}) {
   const context = vm.createContext({
+    setTimeout,
+    clearTimeout,
     toDateInputValue: (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`,
     isValidDateInput: (value) => {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -181,6 +183,98 @@ test("file.text remains a fallback if FileReader cannot read the selected file",
   }
   const context = setup({ FileReader: BrokenFileReader });
   assert.equal(await context.readBulkCashFileText({ text: async () => "Khoản,1000,Mục" }), "Khoản,1000,Mục");
+});
+
+test("a stalled file reader tries another local reader and never waits forever", async () => {
+  class StalledResponse {
+    text() { return new Promise(() => {}); }
+  }
+  class WorkingFileReader {
+    readAsText(file) {
+      this.result = file.content;
+      queueMicrotask(() => this.onload());
+    }
+  }
+  const context = setup({ Response: StalledResponse, FileReader: WorkingFileReader });
+  const content = await context.readBulkCashFileText({ size: 509, content: "Khoản,1000,Mục" }, 10);
+  assert.equal(content, "Khoản,1000,Mục");
+});
+
+test("arrayBuffer can recover UTF-8 content when Response stalls", async () => {
+  class StalledResponse {
+    text() { return new Promise(() => {}); }
+  }
+  const bytes = new TextEncoder().encode("Sữa tươi,156000,Chưa xác định");
+  const file = { size: bytes.length, arrayBuffer: async () => bytes.buffer };
+  const attempts = [];
+  const context = setup({ Response: StalledResponse, TextDecoder });
+  const content = await context.readBulkCashFileText(file, 10, (index, total) => attempts.push([index, total]));
+  assert.equal(content, "Sữa tươi,156000,Chưa xác định");
+  assert.deepEqual(attempts, [[1, 2], [2, 2]]);
+});
+
+test("a stalled first reader still fills Danh sách khoản from the selected file", async () => {
+  class StalledResponse {
+    text() { return new Promise(() => {}); }
+  }
+  const text = "Mua sữa tươi cho quán ăn,156000,Chưa xác định,01/09/2026";
+  const bytes = new TextEncoder().encode(text);
+  const file = { name: "khoanchi.txt", size: bytes.length, arrayBuffer: async () => bytes.buffer };
+  const els = {
+    bulkCashPage: { hidden: false, dataset: { type: "expense", storeId: "store-1", source: "manual" } },
+    bulkCashFile: { files: [file] },
+    bulkCashFileHint: { textContent: "", dataset: {} },
+    bulkCashText: { value: "", maxLength: 70000, focus() {}, removeAttribute() {} },
+    bulkCashCount: { textContent: "", classList: { toggle() {} } },
+    bulkCashErrors: { hidden: true, replaceChildren() {} }
+  };
+  const context = setup({
+    els, Response: StalledResponse, TextDecoder,
+    setTimeout: (callback) => setTimeout(callback, 2), clearTimeout
+  });
+  await context.importBulkCashFile();
+  assert.equal(els.bulkCashText.value, text);
+  assert.equal(els.bulkCashCount.textContent, "1 dòng từ file");
+  assert.equal(els.bulkCashFileHint.dataset.state, "success");
+});
+
+test("all stalled readers report an error instead of leaving Đang đọc indefinitely", async () => {
+  class StalledResponse {
+    text() { return new Promise(() => {}); }
+  }
+  class StalledFileReader {
+    readAsText() {}
+  }
+  const context = setup({ Response: StalledResponse, FileReader: StalledFileReader });
+  await assert.rejects(
+    context.readBulkCashFileText({ size: 509, text: () => new Promise(() => {}) }, 10),
+    /File read timed out/
+  );
+});
+
+test("an import with stalled readers leaves loading state and preserves the draft", async () => {
+  class StalledResponse {
+    text() { return new Promise(() => {}); }
+  }
+  class StalledFileReader {
+    readAsText() {}
+  }
+  const file = { name: "khoanchi.md", size: 509, text: () => new Promise(() => {}) };
+  const els = {
+    bulkCashPage: { hidden: false, dataset: { type: "expense", storeId: "store-1", source: "manual" } },
+    bulkCashFile: { files: [file] },
+    bulkCashFileHint: { textContent: "", dataset: {} },
+    bulkCashText: { value: "Bản nháp", maxLength: 70000 }
+  };
+  const context = setup({
+    els, Response: StalledResponse, FileReader: StalledFileReader,
+    setTimeout: (callback) => setTimeout(callback, 2), clearTimeout,
+    console: { error() {} }
+  });
+  await context.importBulkCashFile();
+  assert.equal(els.bulkCashFileHint.dataset.state, "error");
+  assert.equal(els.bulkCashText.value, "Bản nháp");
+  assert.equal(els.bulkCashPage.dataset.source, "manual");
 });
 
 test("file import rejects unsupported or empty files without replacing manual input", async () => {

@@ -3938,23 +3938,48 @@ function resetBulkCashFileImport() {
   }
 }
 
-async function readBulkCashFileText(file) {
-  let readerError;
+async function readBulkCashWithTimeout(read, timeoutMs) {
+  let timer;
+  try {
+    return await Promise.race([
+      Promise.resolve().then(read),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error("File read timed out")), timeoutMs);
+      })
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function readBulkCashFileText(file, timeoutMs = Math.min(30000, Math.max(4000, Math.ceil((file.size || 0) / 1048576) * 2000)), onAttempt) {
+  const attempts = [];
+  if (typeof Response === "function") attempts.push(() => new Response(file).text());
+  if (typeof file.arrayBuffer === "function" && typeof TextDecoder === "function") {
+    attempts.push(async () => new TextDecoder("utf-8").decode(await file.arrayBuffer()));
+  }
   if (typeof FileReader === "function") {
+    attempts.push(() => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result ?? ""));
+      reader.onerror = () => reject(reader.error || new Error("FileReader failed"));
+      reader.onabort = () => reject(new Error("FileReader was cancelled"));
+      reader.readAsText(file, "UTF-8");
+    }));
+  }
+  if (typeof file.text === "function") attempts.push(() => file.text());
+  let lastError = new Error("No file reader available");
+  for (const [index, attempt] of attempts.entries()) {
     try {
-      return await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result ?? ""));
-        reader.onerror = () => reject(reader.error || new Error("FileReader failed"));
-        reader.onabort = () => reject(new Error("FileReader was cancelled"));
-        reader.readAsText(file, "UTF-8");
-      });
+      onAttempt?.(index + 1, attempts.length);
+      const content = await readBulkCashWithTimeout(attempt, timeoutMs);
+      if (typeof content !== "string" || (!content && file.size > 0)) throw new Error("File content is empty");
+      return content;
     } catch (error) {
-      readerError = error;
+      lastError = error;
     }
   }
-  if (typeof file.text === "function") return file.text();
-  throw readerError || new Error("No file reader available");
+  throw lastError;
 }
 
 function normalizeBulkCashFileText(content) {
@@ -3978,7 +4003,10 @@ async function importBulkCashFile() {
   els.bulkCashFileHint.dataset.state = "loading";
   let content;
   try {
-    content = await readBulkCashFileText(file);
+    content = await readBulkCashFileText(file, undefined, (index, total) => {
+      if (els.bulkCashPage.hidden || requestId !== bulkCashFileRequestId) return;
+      els.bulkCashFileHint.textContent = `Đang đọc ${file.name} (cách ${index}/${total})...`;
+    });
   } catch (error) {
     if (els.bulkCashPage.hidden || requestId !== bulkCashFileRequestId) return;
     console.error("Cannot read bulk cash file", error);
