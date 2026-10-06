@@ -3819,10 +3819,18 @@ function parseBulkCashDate(value, defaultDate) {
   const raw = String(value || "").trim();
   if (!raw) return defaultDate;
   const dayFirst = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
-  const normalized = dayFirst
+  const compactDayFirst = raw.match(/^(\d{2})(\d{2})(\d{4})$/);
+  const normalized = compactDayFirst
+    ? `${compactDayFirst[3]}-${compactDayFirst[2]}-${compactDayFirst[1]}`
+    : dayFirst
     ? `${dayFirst[3]}-${dayFirst[2].padStart(2, "0")}-${dayFirst[1].padStart(2, "0")}`
     : raw;
   return isValidDateInput(normalized) ? normalized : null;
+}
+
+function looksLikeBulkCashDate(value) {
+  const raw = String(value || "").trim();
+  return /^(?:\d{8}|\d{1,2}[\/-]\d{1,2}[\/-]\d{4}|\d{4}-\d{1,2}-\d{1,2})$/.test(raw);
 }
 
 function parseBulkCashRows(text, defaultDate = toDateInputValue(new Date())) {
@@ -3845,7 +3853,7 @@ function parseBulkCashRows(text, defaultDate = toDateInputValue(new Date())) {
       errors.push(`Dòng ${number}: Cần 3 hoặc 4 ô: tên, số tiền, mục, ngày (tùy chọn).`);
       return;
     }
-    const [note, amountText, categoryName, dateText = ""] = fields;
+    const [note, amountText, thirdField, fourthField = ""] = fields;
     if (!note || note.length > 200) {
       errors.push(`Dòng ${number}: Tên khoản phải có từ 1 đến 200 ký tự.`);
       return;
@@ -3860,13 +3868,21 @@ function parseBulkCashRows(text, defaultDate = toDateInputValue(new Date())) {
       errors.push(`Dòng ${number}: Số tiền phải lớn hơn 0 và nằm trong giới hạn hợp lệ.`);
       return;
     }
+    const thirdIsDate = looksLikeBulkCashDate(thirdField);
+    const fourthIsDate = looksLikeBulkCashDate(fourthField);
+    if (thirdIsDate && fourthIsDate) {
+      errors.push(`Dòng ${number}: Chỉ nhập một ngày và một mục.`);
+      return;
+    }
+    const categoryName = thirdIsDate ? fourthField : thirdField;
+    const dateText = thirdIsDate ? thirdField : fourthField;
     if (!categoryName || categoryName.length > 80) {
       errors.push(`Dòng ${number}: Mục phải có từ 1 đến 80 ký tự.`);
       return;
     }
     const date = parseBulkCashDate(dateText, defaultDate);
     if (!date) {
-      errors.push(`Dòng ${number}: Ngày không hợp lệ. Dùng DD/MM/YYYY hoặc YYYY-MM-DD.`);
+      errors.push(`Dòng ${number}: Ngày không hợp lệ. Dùng DDMMYYYY, DD/MM/YYYY hoặc YYYY-MM-DD.`);
       return;
     }
     rows.push({ note, amount, categoryName, date });

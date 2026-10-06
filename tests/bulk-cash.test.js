@@ -60,6 +60,44 @@ test("CSV-like rows accept quoted commas, optional dates and 200 entries", () =>
   assert.match(context.parseBulkCashRows(`${twoHundred}\nKhoản 201,1000,Mục`, "2026-10-06").errors[0], /Tối đa 200 dòng/);
 });
 
+test("Thu and Chi share compact DDMMYYYY dates and either date/category order", () => {
+  const context = setup();
+  const result = context.parseBulkCashRows([
+    '"Tiền điện",350000,Sinh hoạt,06/10/2026',
+    '"Tiền điện",350000,06/10/2026,Sinh hoạt',
+    '"Tiền điện",350000,Sinh hoạt,01092026',
+    '"Tiền điện",350000,01092026,Sinh hoạt',
+    '"Tiền điện",350000,2026-09-01,Sinh hoạt'
+  ].join("\n"), "2026-10-06");
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.rows.length, 5);
+  for (const row of result.rows) {
+    assert.equal(row.categoryName, "Sinh hoạt");
+    assert.equal(row.amount, 350000);
+  }
+  assert.deepEqual(Array.from(result.rows, (row) => row.date), [
+    "2026-10-06", "2026-10-06", "2026-09-01", "2026-09-01", "2026-09-01"
+  ]);
+  assert.match(html, /Ngày nhận DDMMYYYY/);
+  assert.match(html, /Số tiền,Ngày,Mục/);
+});
+
+test("invalid compact dates and ambiguous date/category positions reject the whole line", () => {
+  const context = setup();
+  const result = context.parseBulkCashRows([
+    "Sai,1000,31022026,Sinh hoạt",
+    "Sai,1000,Sinh hoạt,31022026",
+    "Sai,1000,01092026,06102026",
+    "Sai,1000,01092026"
+  ].join("\n"), "2026-10-06");
+  assert.equal(result.rows.length, 0);
+  assert.equal(result.errors.length, 4);
+  assert.match(result.errors[0], /Dòng 1: Ngày không hợp lệ/);
+  assert.match(result.errors[1], /Dòng 2: Ngày không hợp lệ/);
+  assert.match(result.errors[2], /Dòng 3: Chỉ nhập một ngày và một mục/);
+  assert.match(result.errors[3], /Dòng 4: Mục phải có/);
+});
+
 test("invalid amounts, dates and malformed quotes report exact lines", () => {
   const context = setup();
   const result = context.parseBulkCashRows('Tốt,1000,Mục\nSai,abc,Mục\nNgày,1000,Mục,31/02/2026\n"Chưa đóng,1000,Mục', "2026-10-06");
