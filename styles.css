@@ -2148,26 +2148,28 @@ button {
   flex: 0 0 48px;
   width: 48px;
   height: 48px;
-  background-image: url("icons/settings-glass-v1.webp");
+  background-image: url("icons/settings-flat-v1.webp");
   background-repeat: no-repeat;
   background-size: 128px auto;
+  mix-blend-mode: multiply;
+  clip-path: inset(5px 0 6px);
   transition: transform 160ms ease;
 }
 
 .import-data-icon {
-  background-position: -21px 1px;
+  background-position: -12px 2px;
 }
 
 .export-data-icon {
-  background-position: -70px 3px;
+  background-position: -68px 3px;
 }
 
 .activity-history-icon {
-  background-position: -69px -39px;
+  background-position: -68px -37px;
 }
 
 .employee-manager-icon {
-  background-position: -7px -38px;
+  background-position: -13px -37px;
 }
 
 .settings-action:hover .settings-action-icon,
