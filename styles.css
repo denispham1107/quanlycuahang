@@ -2105,7 +2105,7 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.86);
   border-radius: 18px;
   padding: 8px;
-  background: rgba(255, 255, 255, 0.96);
+  background: #fff;
   box-shadow: 0 18px 38px rgba(57, 76, 120, 0.22);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -2121,12 +2121,12 @@ button {
   display: flex;
   align-items: center;
   width: 100%;
-  min-height: 46px;
+  min-height: 62px;
   gap: 10px;
   overflow: hidden;
   border: 1px solid transparent;
   border-radius: 13px;
-  padding: 9px 12px;
+  padding: 7px 10px;
   background: transparent;
   color: var(--text);
   font-size: 14px;
@@ -2144,91 +2144,36 @@ button {
 }
 
 .settings-action-icon {
-  display: inline-grid;
-  flex: 0 0 36px;
-  width: 36px;
-  height: 36px;
-  place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.78);
-  border-radius: 12px;
-  transition: transform 160ms ease, box-shadow 160ms ease;
-}
-
-.settings-action-icon svg {
-  width: 25px;
-  height: 25px;
-  overflow: visible;
-  fill: none;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  display: inline-block;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  background-image: url("icons/settings-glass-v1.webp");
+  background-repeat: no-repeat;
+  background-size: 128px auto;
+  transition: transform 160ms ease;
 }
 
 .import-data-icon {
-  background: linear-gradient(135deg, rgba(0, 183, 255, 0.18), rgba(123, 77, 255, 0.17));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86), 0 7px 16px rgba(49, 117, 226, 0.14);
-}
-
-.import-data-icon svg {
-  stroke: url(#importIconGradient);
+  background-position: -21px 1px;
 }
 
 .export-data-icon {
-  background: linear-gradient(135deg, rgba(156, 77, 255, 0.17), rgba(239, 95, 167, 0.16), rgba(255, 138, 76, 0.18));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86), 0 7px 16px rgba(217, 83, 155, 0.14);
-}
-
-.export-data-icon svg {
-  stroke: url(#exportIconGradient);
+  background-position: -70px 3px;
 }
 
 .activity-history-icon {
-  background: linear-gradient(135deg, rgba(0, 188, 166, 0.18), rgba(12, 130, 244, 0.17), rgba(156, 77, 255, 0.16));
-  color: #0878d9;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86), 0 7px 16px rgba(32, 132, 184, 0.14);
-}
-
-.activity-history-icon svg {
-  stroke: currentColor;
-  stroke-width: 1.9;
+  background-position: -69px -39px;
 }
 
 .employee-manager-icon {
-  background: linear-gradient(135deg, rgba(123, 77, 255, 0.18), rgba(8, 120, 247, 0.17), rgba(0, 188, 166, 0.16));
-  color: #6748e8;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86), 0 7px 16px rgba(85, 78, 205, 0.15);
-}
-
-.employee-manager-icon svg {
-  stroke: currentColor;
-  stroke-width: 1.9;
-}
-
-.data-icon-database {
-  opacity: 0.76;
-}
-
-.data-icon-arrow {
-  stroke-width: 2.35;
-  transition: transform 160ms ease;
-  transform-box: fill-box;
-  transform-origin: center;
+  background-position: -7px -38px;
 }
 
 .settings-action:hover .settings-action-icon,
 .settings-action:focus-visible .settings-action-icon,
 .settings-action:focus-within .settings-action-icon {
   transform: scale(1.04);
-}
-
-.settings-action:hover .import-data-icon .data-icon-arrow,
-.settings-action:focus-within .import-data-icon .data-icon-arrow {
-  transform: translateY(1.5px);
-}
-
-.settings-action:hover .export-data-icon .data-icon-arrow,
-.settings-action:focus-visible .export-data-icon .data-icon-arrow {
-  transform: translateY(-1.5px);
 }
 
 .panel {

@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=74" />
+    <link rel="manifest" href="manifest.webmanifest?v=75" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=74" />
+    <link rel="stylesheet" href="styles.css?v=75" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -98,56 +98,20 @@
             </button>
             <div class="settings-actions" id="settingsActions" hidden>
               <label class="settings-action file-import" title="Nhập dữ liệu" data-admin-only>
-                <span class="settings-action-icon import-data-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <defs>
-                      <linearGradient id="importIconGradient" x1="3" y1="3" x2="21" y2="21">
-                        <stop offset="0" stop-color="#00a7f5" />
-                        <stop offset="1" stop-color="#7b4dff" />
-                      </linearGradient>
-                    </defs>
-                    <path class="data-icon-database" d="M5 9c0-1.7 3.1-3 7-3s7 1.3 7 3v7c0 1.7-3.1 3-7 3s-7-1.3-7-3V9Z" />
-                    <path class="data-icon-database" d="M5 9c0 1.7 3.1 3 7 3s7-1.3 7-3M5 13c0 1.7 3.1 3 7 3s7-1.3 7-3" />
-                    <path class="data-icon-arrow" d="M12 2v8m-3-3 3 3 3-3" />
-                  </svg>
-                </span>
+                <span class="settings-action-icon import-data-icon" aria-hidden="true"></span>
                 <span>Nhập dữ liệu</span>
                 <input id="importData" type="file" accept="application/json" />
               </label>
               <button class="settings-action" id="exportData" type="button" title="Xuất dữ liệu" data-admin-only>
-                <span class="settings-action-icon export-data-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <defs>
-                      <linearGradient id="exportIconGradient" x1="3" y1="21" x2="21" y2="3">
-                        <stop offset="0" stop-color="#9c4dff" />
-                        <stop offset="0.55" stop-color="#ef5fa7" />
-                        <stop offset="1" stop-color="#ff8a4c" />
-                      </linearGradient>
-                    </defs>
-                    <path class="data-icon-database" d="M5 10c0-1.7 3.1-3 7-3s7 1.3 7 3v7c0 1.7-3.1 3-7 3s-7-1.3-7-3v-7Z" />
-                    <path class="data-icon-database" d="M5 10c0 1.7 3.1 3 7 3s7-1.3 7-3M5 14c0 1.7 3.1 3 7 3s7-1.3 7-3" />
-                    <path class="data-icon-arrow" d="M12 11V3m-3 3 3-3 3 3" />
-                  </svg>
-                </span>
+                <span class="settings-action-icon export-data-icon" aria-hidden="true"></span>
                 <span>Xuất dữ liệu</span>
               </button>
               <button class="settings-action" id="openEmployeeManager" type="button" title="Quản lý nhân viên" data-admin-only>
-                <span class="settings-action-icon employee-manager-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M9.2 11.3a3.7 3.7 0 1 0 0-7.4 3.7 3.7 0 0 0 0 7.4Z" />
-                    <path d="M2.8 20c.7-4 3-6 6.4-6 2 0 3.6.7 4.7 2" />
-                    <path d="M17.5 11.8v7.4M13.8 15.5h7.4" />
-                  </svg>
-                </span>
+                <span class="settings-action-icon employee-manager-icon" aria-hidden="true"></span>
                 <span>Nhân viên</span>
               </button>
               <button class="settings-action" id="openActivityHistory" type="button" title="Lịch sử hoạt động">
-                <span class="settings-action-icon activity-history-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9" />
-                    <path d="M4.5 4.8V9h4.2M12 7.5V12l3 2" />
-                  </svg>
-                </span>
+                <span class="settings-action-icon activity-history-icon" aria-hidden="true"></span>
                 <span>Lịch sử</span>
               </button>
             </div>
@@ -1413,6 +1377,6 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=74"></script>
+    <script defer src="app.js?v=75"></script>
   </body>
 </html>
