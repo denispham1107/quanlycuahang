@@ -6567,6 +6567,65 @@ function renderCategoryControls(store, type) {
       .join("") + toggleButton;
 }
 
+function getMonthlyExpenseCategoryData(store, referenceDate = new Date()) {
+  const monthStart = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
+  const monthKey = toDateInputValue(monthStart).slice(0, 7);
+  const dayCount = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0).getDate();
+  const days = Array.from({ length: dayCount }, (_, index) => ({
+    date: toDateInputValue(new Date(referenceDate.getFullYear(), referenceDate.getMonth(), index + 1)),
+    q: 0,
+    p: 0
+  }));
+  const dayByDate = new Map(days.map((item) => [item.date, item]));
+  const normalizeName = (name) => String(name || "").normalize("NFC").trim().replace(/\s+/g, " ").toLocaleLowerCase("vi-VN");
+  const categoryIds = {
+    q: new Set((store.categories?.expense || []).filter((item) => normalizeName(item.name) === "chi tiêu q").map((item) => item.id)),
+    p: new Set((store.categories?.expense || []).filter((item) => normalizeName(item.name) === "chi tiêu p").map((item) => item.id))
+  };
+  const totals = { q: { amount: 0, count: 0 }, p: { amount: 0, count: 0 } };
+
+  (store.entries || []).forEach((entry) => {
+    if (entry.type !== "expense" || isCancelledEntry(entry)) return;
+    const day = dayByDate.get(entry.date);
+    if (!day) return;
+    const type = categoryIds.q.has(entry.categoryId) ? "q" : categoryIds.p.has(entry.categoryId) ? "p" : null;
+    const amount = Number(entry.amount);
+    if (!type || !Number.isFinite(amount)) return;
+    day[type] += amount;
+    totals[type].amount += amount;
+    totals[type].count += 1;
+  });
+  return { monthKey, days, totals, missing: ["q", "p"].filter((type) => categoryIds[type].size === 0) };
+}
+
+function renderOverviewExpenseCategories(store) {
+  const plot = document.querySelector("#overviewCategoryPlot");
+  if (!plot) return;
+  const { monthKey, days, totals, missing } = getMonthlyExpenseCategoryData(store);
+  const maximum = Math.max(0, ...days.flatMap((item) => [item.q, item.p]));
+  const barHeight = (amount) => amount > 0 && maximum > 0 ? `${Math.max(2, amount / maximum * 100)}%` : "0%";
+  document.querySelector("#overviewCategoryMonth").textContent = `Tháng ${monthKey.slice(5)}/${monthKey.slice(0, 4)}`;
+  for (const type of ["q", "p"]) {
+    const prefix = type.toUpperCase();
+    document.getElementById(`overviewCategory${prefix}Total`).textContent = formatCurrency(totals[type].amount);
+    document.getElementById(`overviewCategory${prefix}Count`).textContent = `${totals[type].count.toLocaleString("vi-VN")} khoản`;
+  }
+  plot.innerHTML = days.map((item) => `
+    <div class="overview-category-day" role="img" aria-label="Ngày ${formatDate(item.date)}: Chi tiêu Q ${formatCurrency(item.q)}, Chi tiêu P ${formatCurrency(item.p)}">
+      <div class="overview-category-day-bars">
+        <span class="category-q" style="--bar-height: ${barHeight(item.q)}" title="Chi tiêu Q: ${formatCurrency(item.q)}"></span>
+        <span class="category-p" style="--bar-height: ${barHeight(item.p)}" title="Chi tiêu P: ${formatCurrency(item.p)}"></span>
+      </div>
+      <span>${item.date.slice(8, 10)}</span>
+    </div>
+  `).join("");
+  const empty = document.querySelector("#overviewCategoryEmpty");
+  empty.hidden = maximum > 0 && missing.length === 0;
+  empty.textContent = missing.length
+    ? `Chưa có danh mục ${missing.map((type) => `Chi tiêu ${type.toUpperCase()}`).join(" và ")}. Có thể thêm trong tab Chi.`
+    : "Chưa có khoản Chi tiêu Q hoặc Chi tiêu P trong tháng này.";
+}
+
 function getOverviewChartData(store, referenceDate = new Date()) {
   const year = referenceDate.getFullYear();
   const month = referenceDate.getMonth();
@@ -6695,6 +6754,7 @@ function renderReports(store) {
   els.mobileBalance.textContent = els.balance.textContent;
   els.salesHistoryDateLabel.textContent = range.label;
   renderDesktopOverviewBreakdown(range.label, { income: totalIncome, sales: totalSalesAmount, expense: totalExpense });
+  renderOverviewExpenseCategories(store);
   renderOverviewCharts(store);
   els.salesRangeLabel.innerHTML = `
     <span>Tổng</span>

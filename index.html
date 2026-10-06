@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=69" />
+    <link rel="manifest" href="manifest.webmanifest?v=70" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=69" />
+    <link rel="stylesheet" href="styles.css?v=70" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -381,6 +381,21 @@
                 </div>
 
                 <section class="mobile-overview-charts" aria-label="Biểu đồ dòng tiền">
+                  <article class="overview-chart-card overview-chart-categories">
+                    <div class="overview-chart-heading">
+                      <div><span class="overview-chart-kicker">Chi theo danh mục</span><h3>Chi tiêu Q &amp; Chi tiêu P</h3></div>
+                      <span class="overview-chart-period" id="overviewCategoryMonth">Tháng này</span>
+                    </div>
+                    <div class="overview-category-totals" aria-label="Tổng chi trong tháng">
+                      <div class="overview-category-total category-q"><span>Chi tiêu Q</span><strong id="overviewCategoryQTotal">0 đ</strong><small id="overviewCategoryQCount">0 khoản</small></div>
+                      <div class="overview-category-total category-p"><span>Chi tiêu P</span><strong id="overviewCategoryPTotal">0 đ</strong><small id="overviewCategoryPCount">0 khoản</small></div>
+                    </div>
+                    <p class="overview-category-hint">Vuốt ngang để xem đủ các ngày trong tháng <span aria-hidden="true">↔</span></p>
+                    <div class="overview-category-scroll" id="overviewCategoryScroll" tabindex="0" role="group" aria-label="Biểu đồ Chi tiêu Q và Chi tiêu P theo từng ngày; cuộn ngang để xem cả tháng">
+                      <div class="overview-category-plot" id="overviewCategoryPlot"></div>
+                    </div>
+                    <p class="overview-chart-empty" id="overviewCategoryEmpty" hidden></p>
+                  </article>
                   <article class="overview-chart-card overview-chart-week">
                     <div class="overview-chart-heading">
                       <div><span class="overview-chart-kicker">7 ngày gần đây</span><h3>Tiền vào &amp; tiền ra</h3></div>
@@ -1389,6 +1404,6 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="app.js?v=69"></script>
+    <script defer src="app.js?v=70"></script>
   </body>
 </html>
