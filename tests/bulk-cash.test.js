@@ -296,6 +296,63 @@ test("file import rejects unsupported or empty files without replacing manual in
   assert.equal(els.bulkCashPage.dataset.source, "manual");
 });
 
+test("closing during a read cancels the result and restores editable controls", async () => {
+  let finish;
+  const file = { name: "slow.txt", text: () => new Promise(resolve => { finish = resolve; }) };
+  const els = {
+    bulkCashPage: { hidden: false, dataset: { type: "expense", storeId: "test" } },
+    bulkCashFile: { files: [file] },
+    bulkCashFileHint: { dataset: {} },
+    bulkCashText: { value: "Bản nháp" },
+    completeBulkCashPage: { disabled: false },
+    quickEntryModal: { hidden: true, removeAttribute() {} },
+    appShell: { removeAttribute() {} }
+  };
+  const context = setup({ els, USE_MOBILE_APP_THEME: false,
+    document: { body: { classList: { remove() {} } } }, updateTimeFiltersVisibility() {} });
+  const pending = context.importBulkCashFile();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(els.bulkCashText.disabled, true);
+  assert.equal(els.completeBulkCashPage.disabled, true);
+  context.hideBulkCashPage({ restoreFocus: false });
+  finish("Khoản,1000,Mục");
+  await pending;
+  assert.equal(els.bulkCashText.value, "Bản nháp");
+  assert.equal(els.bulkCashText.disabled, false);
+  assert.equal(els.completeBulkCashPage.disabled, false);
+  assert.equal(els.bulkCashFileHint.dataset.state, "cancelled");
+});
+
+test("Hoàn thành cannot save an old draft while a file is still loading", () => {
+  const context = setup({
+    els: { bulkCashPage: { hidden: false, dataset: { reading: "true" } } },
+    getActiveStore: () => assert.fail("Loading import must not enter the save flow")
+  });
+  context.completeBulkCashPage();
+});
+
+test("cancelling a second file selection does not invalidate the current read", async () => {
+  let finish;
+  const fileInput = { files: [{ name: "slow.txt", text: () => new Promise(resolve => { finish = resolve; }) }] };
+  const els = {
+    bulkCashPage: { hidden: false, dataset: { type: "income", storeId: "test" } },
+    bulkCashFile: fileInput, bulkCashFileHint: { dataset: {} },
+    bulkCashText: { value: "", removeAttribute() {}, focus() {} },
+    bulkCashCount: { classList: { toggle() {} } },
+    bulkCashErrors: { replaceChildren() {} }
+  };
+  const context = setup({ els });
+  const pending = context.importBulkCashFile();
+  await new Promise(resolve => setImmediate(resolve));
+  fileInput.files = [];
+  await context.importBulkCashFile();
+  finish("Khoản,1000,Mục");
+  await pending;
+  assert.equal(els.bulkCashText.value, "Khoản,1000,Mục");
+  assert.equal(els.bulkCashFileHint.dataset.state, "success");
+  assert.equal(els.bulkCashText.disabled, false);
+});
+
 test("Thu and Chi share compact DDMMYYYY dates and either date/category order", () => {
   const context = setup();
   const result = context.parseBulkCashRows([

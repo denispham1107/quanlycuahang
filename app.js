@@ -1116,7 +1116,6 @@ els.cancelBulkCashPage.addEventListener("click", closeBulkCashPage);
 els.completeBulkCashPage.addEventListener("click", completeBulkCashPage);
 els.bulkCashText.addEventListener("input", updateBulkCashCount);
 els.bulkCashFileButton.addEventListener("click", () => {
-  bulkCashFileRequestId += 1;
   els.bulkCashFile.value = "";
   els.bulkCashFile.click();
 });
@@ -3927,8 +3926,15 @@ function updateBulkCashCount() {
 
 let bulkCashFileRequestId = 0;
 
+function setBulkCashFileLoading(loading) {
+  els.bulkCashPage.dataset.reading = loading ? "true" : "false";
+  els.bulkCashText.disabled = loading;
+  if (els.completeBulkCashPage) els.completeBulkCashPage.disabled = loading;
+}
+
 function resetBulkCashFileImport() {
   bulkCashFileRequestId += 1;
+  setBulkCashFileLoading(false);
   els.bulkCashPage.dataset.source = "manual";
   els.bulkCashText.maxLength = 70000;
   if (els.bulkCashFile) els.bulkCashFile.value = "";
@@ -3985,9 +3991,10 @@ function normalizeBulkCashFileText(content) {
 }
 
 async function importBulkCashFile() {
-  const requestId = ++bulkCashFileRequestId;
   const file = els.bulkCashFile.files?.[0];
   if (!file || els.bulkCashPage.hidden) return;
+  const requestId = ++bulkCashFileRequestId;
+  setBulkCashFileLoading(false);
   if (!/\.(?:txt|md)$/i.test(file.name)) {
     els.bulkCashFileHint.textContent = "Chỉ nhận file .txt hoặc .md.";
     els.bulkCashFileHint.dataset.state = "error";
@@ -3997,6 +4004,7 @@ async function importBulkCashFile() {
   const storeId = els.bulkCashPage.dataset.storeId;
   els.bulkCashFileHint.textContent = `Đang đọc ${file.name}...`;
   els.bulkCashFileHint.dataset.state = "loading";
+  setBulkCashFileLoading(true);
   try {
     const content = await readBulkCashFileText(file);
     if (els.bulkCashPage.hidden || requestId !== bulkCashFileRequestId || els.bulkCashPage.dataset.type !== type || els.bulkCashPage.dataset.storeId !== storeId) return;
@@ -4013,12 +4021,15 @@ async function importBulkCashFile() {
     updateBulkCashCount();
     els.bulkCashFileHint.textContent = `Đã tải ${file.name}. Kiểm tra các dòng rồi bấm Hoàn thành.`;
     els.bulkCashFileHint.dataset.state = "success";
+    setBulkCashFileLoading(false);
     els.bulkCashText.focus({ preventScroll: true });
   } catch (error) {
     if (els.bulkCashPage.hidden || requestId !== bulkCashFileRequestId) return;
     console.error("Cannot read bulk cash file", error);
     els.bulkCashFileHint.textContent = "Không đọc được file. Hãy chọn lại tệp .txt/.md hoặc dán nội dung vào ô bên dưới.";
     els.bulkCashFileHint.dataset.state = "error";
+  } finally {
+    if (requestId === bulkCashFileRequestId) setBulkCashFileLoading(false);
   }
 }
 
@@ -4082,6 +4093,12 @@ function closeBulkCashPage() {
 
 function hideBulkCashPage({ restoreFocus = true } = {}) {
   if (els.bulkCashPage.hidden) return;
+  if (els.bulkCashPage.dataset.reading === "true") {
+    bulkCashFileRequestId += 1;
+    els.bulkCashFileHint.textContent = "Đã hủy đọc file. Chọn lại file để tiếp tục.";
+    els.bulkCashFileHint.dataset.state = "cancelled";
+  }
+  setBulkCashFileLoading(false);
   els.bulkCashPage.hidden = true;
   document.body.classList.remove("bulk-cash-page-open");
   els.quickEntryModal.inert = false;
@@ -4120,7 +4137,7 @@ function ensureBulkCashFocusVisible(target) {
 }
 
 function completeBulkCashPage() {
-  if (els.bulkCashPage.hidden) return;
+  if (els.bulkCashPage.hidden || els.bulkCashPage.dataset.reading === "true") return;
   const type = els.bulkCashPage.dataset.type;
   const store = getActiveStore();
   if (!isAdminUser() || !store || store.id !== els.bulkCashPage.dataset.storeId || !["income", "expense"].includes(type)) {
