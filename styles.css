@@ -2206,11 +2206,11 @@ body.employee-session .signed-in-user-name {
   max-width: 120px;
 }
 
-html:not(.mobile-app-theme) body.employee-session .layout {
+html:not(.mobile-app-theme) body.employee-session:is([data-active-tab="overview"], [data-active-tab="income"], [data-active-tab="expense"]) .layout {
   grid-template-columns: minmax(0, 1fr);
 }
 
-html:not(.mobile-app-theme) body.employee-session .sidebar {
+html:not(.mobile-app-theme) body.employee-session:is([data-active-tab="overview"], [data-active-tab="income"], [data-active-tab="expense"]) .sidebar {
   display: none;
 }
 

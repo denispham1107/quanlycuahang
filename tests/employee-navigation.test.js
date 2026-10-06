@@ -133,3 +133,31 @@ test("protected empty tabs do not expose time filters or desktop summary chrome"
   assert.match(app, /desktopUi\.insights\.hidden = employeeEmpty/);
   assert.match(app, /els\.aiButton\.hidden = !\(store && tabName === "overview" && !isEmployeeEmptyTab\(tabName\)\)/);
 });
+
+test("desktop employees retain the admin-style filter rail on permitted purchase and sales tabs", () => {
+  assert.match(css, /body\.employee-session:is\(\[data-active-tab="overview"\], \[data-active-tab="income"\], \[data-active-tab="expense"\]\) \.sidebar\s*\{\s*display: none;/);
+  assert.doesNotMatch(css, /body\.employee-session \.sidebar\s*\{\s*display: none;/);
+  const body = { dataset: {} };
+  const desktopUi = {
+    title: { textContent: "" }, subtitle: { textContent: "" },
+    primaryActionLabel: { textContent: "" }, primaryAction: { hidden: true },
+    filterRail: { hidden: true }, heading: { hidden: true }, insights: { hidden: true }
+  };
+  const context = vm.createContext({
+    desktopUi,
+    document: { body },
+    isEmployeeEmptyTab: (tab) => ["stores", "overview", "income", "expense"].includes(tab),
+    getActiveStore: () => ({ id: "store-1" }),
+    els: { quickEntryButton: { hidden: false } }
+  });
+  vm.runInContext(section("function updateDesktopPageChrome(", "function renderDesktopOverviewBreakdown("), context);
+  for (const tab of ["purchase", "sales"]) {
+    context.updateDesktopPageChrome(tab);
+    assert.equal(body.dataset.activeTab, tab);
+    assert.equal(desktopUi.filterRail.hidden, false, tab);
+    assert.equal(desktopUi.heading.hidden, false, tab);
+    assert.equal(desktopUi.insights.hidden, false, tab);
+  }
+  context.updateDesktopPageChrome("income");
+  assert.equal(desktopUi.filterRail.hidden, true);
+});
