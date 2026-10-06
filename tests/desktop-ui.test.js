@@ -11,11 +11,11 @@ const app = fs.readFileSync(path.join(root, "app.js"), "utf8");
 const worker = fs.readFileSync(path.join(root, "service-worker.js"), "utf8");
 
 test("desktop assets use one cache version and mobile-specific navigation remains separate", () => {
-  assert.match(html, /styles\.css\?v=77/);
-  assert.match(html, /app\.js\?v=77/);
-  assert.match(worker, /quanlycuahang-pwa-v77/);
-  assert.match(worker, /styles\.css\?v=77/);
-  assert.match(worker, /app\.js\?v=77/);
+  assert.match(html, /styles\.css\?v=78/);
+  assert.match(html, /app\.js\?v=78/);
+  assert.match(worker, /quanlycuahang-pwa-v78/);
+  assert.match(worker, /styles\.css\?v=78/);
+  assert.match(worker, /app\.js\?v=78/);
   assert.match(app, /if \(USE_MOBILE_APP_THEME && els\.tabBar\)/);
   assert.match(app, /if \(desktopUi\) \{\s*document\.querySelector\("#desktopNavHost"\)/);
   assert.match(css, /html\.mobile-app-theme \.desktop-filter-rail/);

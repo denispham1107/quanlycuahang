@@ -37,4 +37,5 @@ test("mobile page layout has bounded fields and one-column filters", () => {
   assert.match(css, /\.settings-detail-card \.activity-history-custom-range\s*\{ grid-column: 1 \/ -1; grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); \}/);
   assert.match(css, /@media \(max-width: 700px\)\s*\{[\s\S]*?\.settings-detail-card \.activity-history-custom-range\s*\{ grid-template-columns: minmax\(0, 1fr\); \}/);
   assert.match(css, /body\.settings-detail-page-open > #tabBar,/);
+  assert.match(css, /html\.mobile-app-theme \.settings-detail-card\.employee-manager-card,\s*html\.mobile-app-theme \.settings-detail-card\.activity-history-card\s*\{\s*max-width: 100%;/);
 });

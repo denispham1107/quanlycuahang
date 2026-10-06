@@ -1761,6 +1761,12 @@ body.settings-detail-page-open > .quick-entry-fab { display: none !important; }
   box-shadow: 0 18px 48px rgba(53,70,138,.12);
 }
 
+/* The old mobile modal max-width subtracts 40px; pages must fill their centered shell. */
+html.mobile-app-theme .settings-detail-card.employee-manager-card,
+html.mobile-app-theme .settings-detail-card.activity-history-card {
+  max-width: 100%;
+}
+
 .settings-detail-card .employee-manager-heading,
 .settings-detail-card .activity-history-heading { padding-right: 0; }
 .settings-detail-card .employee-manager-content,
