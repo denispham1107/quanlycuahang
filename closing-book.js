@@ -319,9 +319,9 @@ function renderClosingBookDetails() {
   document.querySelector('#closingBookDetailList').innerHTML=rows.length?rows.map((row,index)=> {
     const done=transferred(row), category=categories.find(item=>item.id===row.categoryId);
     return `<article class="book-detail-row ${done?'is-transferred':''}" data-detail-id="${escapeHtml(row.id)}">
-      <div class="book-detail-row-top"><button type="button" class="book-detail-row-title" data-detail-edit aria-expanded="false" ${done?'disabled':''}><span class="book-detail-number">${String(index+1).padStart(2,'0')}</span><span><strong>${escapeHtml(row.note)}</strong><small>${category?escapeHtml(category.name):'Chưa chọn Mục'} · ${done?'Đã chuyển':'Chọn để phân loại'}</small></span></button><div class="book-detail-row-action"><strong>${formatCurrency(row.amount)}</strong><button type="button" data-detail-transfer ${done?'disabled':''}>${done?'✓ Đã chuyển':'Chuyển →'}</button></div></div>
+      <div class="book-detail-row-top"><button type="button" class="book-detail-row-title" data-detail-edit aria-expanded="false"><span class="book-detail-number">${String(index+1).padStart(2,'0')}</span><span><strong>${escapeHtml(row.note)}</strong><small>${category?escapeHtml(category.name):'Chưa chọn Mục'} · ${done?'Đã chuyển':'Chọn để phân loại'}</small></span></button><div class="book-detail-row-action"><strong>${formatCurrency(row.amount)}</strong><button type="button" data-detail-transfer ${done?'disabled':''}>${done?'✓ Đã chuyển':'Chuyển →'}</button></div></div>
       <p class="book-detail-time">Ngày sổ: ${formatDate(closingBook.dayKey)} · ${row.timeSource==='saved'?'Giờ lưu sổ cũ (không có giờ tạo riêng)':'Tạo lúc'}: ${formatActivityDateTime(row.createdAt)}</p>
-      <div class="book-detail-editor" hidden><label>Mục ${label.toLowerCase()}<select data-detail-category><option value="">Chọn Mục</option>${categories.map(item=>`<option value="${escapeHtml(item.id)}" ${item.id===row.categoryId?'selected':''}>${escapeHtml(item.name)}</option>`).join('')}</select></label><div class="book-detail-new-category"><label>Tạo Mục mới<input type="text" data-detail-new-name maxlength="100" placeholder="Tên Mục mới" /></label><button type="button" class="ghost-button" data-detail-create>＋ Tạo Mục</button></div></div>
+      <div class="book-detail-editor" hidden><label>Mục ${label.toLowerCase()}<select data-detail-category ${done?'disabled':''}><option value="">Chọn Mục</option>${categories.map(item=>`<option value="${escapeHtml(item.id)}" ${item.id===row.categoryId?'selected':''}>${escapeHtml(item.name)}</option>`).join('')}</select></label><div class="book-detail-new-category" ${done?'hidden':''}><label>Tạo Mục mới<input type="text" data-detail-new-name maxlength="100" placeholder="Tên Mục mới" /></label><button type="button" class="ghost-button" data-detail-create>＋ Tạo Mục</button></div></div>
     </article>`;
   }).join(''):'<div class="book-detail-empty"><span aria-hidden="true">▤</span><h2>Chưa có khoản '+label.toLowerCase()+'</h2><p>Quay lại Chốt sổ để nhập khoản trước.</p></div>';
 }
@@ -331,6 +331,14 @@ function closingBookDetailRow(target) {
   const row=closingBook.draft[closingBook.detailType].find(item=>item.id===card?.dataset.detailId);
   if (!row) throw new Error('Khoản không còn tồn tại.');
   return {card,row,type:closingBook.detailType};
+}
+function openClosingBookDetailEditor(card) {
+  closingBookDetailRow(card);
+  const editor=card.querySelector('.book-detail-editor');
+  editor.hidden=false;
+  card.querySelector('[data-detail-edit]').setAttribute('aria-expanded','true');
+  const select=card.querySelector('[data-detail-category]');
+  if (!select.disabled) select.focus();
 }
 document.querySelector('#closingBookDetailList').addEventListener('change',event=> {
   if (!event.target.matches('[data-detail-category]')) return;
@@ -344,15 +352,19 @@ document.querySelector('#closingBookDetailList').addEventListener('change',event
 });
 document.querySelector('#closingBookDetailList').addEventListener('click',event=> {
   const target=event.target.closest('[data-detail-edit],[data-detail-create],[data-detail-transfer]');
-  if (!target || target.disabled) return;
+  if (target?.disabled) return;
   let row,previous;
   try {
+    if (!target) {
+      const card=event.target.closest('[data-detail-id]');
+      // Form controls and action buttons keep their own behavior; the rest of the row opens classification.
+      if (card && !event.target.closest('input,select,textarea,button,a,label,.book-detail-editor')) openClosingBookDetailEditor(card);
+      return;
+    }
     const context=closingBookDetailRow(target); row=context.row;
     const {card,type}=context, store=getActiveStore();
     if (target.matches('[data-detail-edit]')) {
-      const editor=card.querySelector('.book-detail-editor'); editor.hidden=!editor.hidden;
-      target.setAttribute('aria-expanded',String(!editor.hidden));
-      if (!editor.hidden) card.querySelector('select').focus();
+      openClosingBookDetailEditor(card);
       return;
     }
     if (row.transferredEntryId) throw new Error('Khoản này đã được chuyển.');

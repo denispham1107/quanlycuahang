@@ -10569,7 +10569,10 @@ body.closing-book-open .tab-bar { display: none !important; }
 #closingBookDetailMessage.is-error { background: #ffedf3; color: #ad2851; }
 .book-detail-list { display: grid; gap: 14px; }
 .book-row-transfer-note { grid-column: 1 / -1; font-size: 11px; color: #28765e; }
-.book-detail-row { border: 1px solid #dce4f4; border-radius: 20px; background: #fff; box-shadow: 0 8px 22px #526aa309; padding: 18px; overflow-wrap: anywhere; }
+.book-detail-row { border: 1px solid #dce4f4; border-radius: 20px; background: #fff; box-shadow: 0 8px 22px #526aa309; padding: 18px; overflow-wrap: anywhere; cursor: pointer; }
+.book-detail-row:focus-within { border-color: #bba9ef; }
+.book-detail-editor { cursor: default; }
+.book-detail-new-category[hidden] { display: none !important; }
 .book-detail-row.is-transferred { border-color: #bce5d8; }
 .book-detail-row-top { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start; gap: 18px; }
 .closing-book-page .book-detail-row-title { display: flex; align-items: center; gap: 12px; width: 100%; background: transparent; color: #213866; border: 0; box-shadow: none; padding: 0; text-align: left; }

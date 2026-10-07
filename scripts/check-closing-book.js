@@ -122,8 +122,20 @@ async function main() {
       assert.equal(await page.locator('#closingBookDetailPage').isVisible(),true);
       assert.equal(await page.locator('#closingBookMain').isVisible(),false);
       assert.equal(await page.locator('.book-detail-row').count(),2);
+      for(const selector of ['.book-detail-row-action > strong','.book-detail-time','.book-detail-number']) {
+        await page.evaluate(()=>renderClosingBookDetails());
+        await page.locator(selector).first().click();
+        assert.equal(await page.locator('.book-detail-editor').first().isVisible(),true,`Click ${selector} opens ${type} classification`);
+        await page.locator(selector).first().click();
+        assert.equal(await page.locator('.book-detail-editor').first().isVisible(),true,'Repeated row clicks keep classification open');
+      }
+      await page.evaluate(()=>renderClosingBookDetails());
+      await page.locator('.book-detail-row').first().click({position:{x:8,y:8}});
+      assert.equal(await page.locator('.book-detail-editor').first().isVisible(),true,'Blank row padding opens classification');
+      await page.evaluate(()=>renderClosingBookDetails());
       await page.locator('[data-detail-transfer]').first().click();
       assert.match(await page.locator('#closingBookDetailMessage').innerText(),/chọn Mục/);
+      assert.equal(await page.locator('.book-detail-editor').first().isVisible(),false,'Transfer is not intercepted by the whole-row click');
       assert.equal(await page.evaluate(()=>getActiveStore().entries.length),type==='income'?0:1);
       await page.locator('[data-detail-edit]').first().click();
       await page.locator('[data-detail-new-name]').first().fill('Mục '+type);
@@ -154,6 +166,9 @@ async function main() {
       const original=await page.evaluate(type=>({...closingBook.draft[type][0]}),type);
       await page.locator('[data-detail-transfer]').first().click();
       assert.equal(await page.locator('[data-detail-transfer]').first().isDisabled(),true);
+      await page.locator('.book-detail-time').first().click();
+      assert.equal(await page.locator('.book-detail-editor').first().isVisible(),true,'Transferred row can still display its category');
+      assert.equal(await page.locator('[data-detail-category]').first().isDisabled(),true);
       const entry=await page.evaluate(type=>getActiveStore().entries.find(entry=>entry.type===type),type);
       assert.equal(entry.createdAt,original.createdAt);assert.equal(entry.date,'2026-09-03');assert.equal(entry.amount,original.amount);assert.equal(entry.note,original.note);
       await page.evaluate(type=>openClosingBookDetails(type,{fromHistory:true}),type);

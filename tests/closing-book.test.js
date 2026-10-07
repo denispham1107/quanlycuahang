@@ -2,6 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
+const vm=require('node:vm');
 const core=require('../closing-book-core');
 const root=path.join(__dirname,'..');
 test('closing book preserves every source formula and does not subtract cancelled bills twice',()=> {
@@ -104,4 +105,21 @@ test('closing book uses bill labels and puts cancelled-bill notes before the clo
   assert.match(html,/<h2>Kiểm tiền trong Két<\/h2>/);
   const notes=html.match(/<div class="closing-book-notes">([^]*?)<\/div>/)[1];
   assert.ok(notes.indexOf('name="recheck"')<notes.indexOf('name="result"'));
+});
+
+test('whole detail-row surface opens classification without intercepting controls',()=> {
+  const ui=fs.readFileSync(path.join(root,'closing-book.js'),'utf8');
+  const start=ui.indexOf("document.querySelector('#closingBookDetailList').addEventListener('click'");
+  const end=ui.indexOf("document.querySelector('#closingBookCreateMonth')",start);
+  let handler,opened=0;
+  const card={};
+  const context={document:{querySelector:()=>({addEventListener:(_,fn)=>handler=fn})},
+    openClosingBookDetailEditor:element=>{assert.equal(element,card);opened++;},closingBookDetailNotice:message=>{throw new Error(message);}};
+  vm.runInNewContext(ui.slice(start,end),context);
+  handler({target:{closest:selector=>selector==='[data-detail-id]'?card:null}});
+  assert.equal(opened,1);
+  handler({target:{closest:selector=>selector==='[data-detail-id]'?card:(selector.includes('input,select')?{}:null)}});
+  assert.equal(opened,1,'Inputs are not intercepted');
+  handler({target:{closest:()=>null}});
+  assert.equal(opened,1,'Click outside a row has no effect');
 });
