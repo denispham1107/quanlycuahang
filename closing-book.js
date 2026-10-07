@@ -1,4 +1,4 @@
-/* Separate daily cash reconciliation; never creates income/expense entries. */
+/* Daily cash reconciliation; only an explicit detail-page transfer creates entries. */
 const closingBook = {
   page: document.querySelector('#closingBookPage'),
   form: document.querySelector('#closingBookForm'),
@@ -7,7 +7,7 @@ const closingBook = {
   shift: document.querySelector('#closingBookShift'),
   message: document.querySelector('#closingBookMessage'),
   storeId: null, draft: null, dirty: false, monthKey: '', dayKey: '', shiftIndex: 0,
-  shifts: [], saving: false
+  shifts: [], saving: false, detailType: null, mainScroll: 0
 };
 const closingBookIcon = `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="bookCover" x2="1" y2="1"><stop stop-color="#8e49ee"/><stop offset="1" stop-color="#176bd2"/></linearGradient></defs><path d="M15 8h33c4 0 6 3 6 6v39H20c-7 0-10-4-10-9V15c0-4 2-7 5-7Z" fill="#254283"/><path d="M19 6h30c3 0 5 2 5 5v35H20c-4 0-7 2-7 5V13c0-4 2-7 6-7Z" fill="url(#bookCover)"/><path d="M21 6v39" stroke="#c3bcff" stroke-width="2"/><path d="M21 46h31v9H21c-6 0-8-2-8-5s3-4 8-4Z" fill="#fff5de"/><path d="M24 49h25M23 52h25" stroke="#baa6cc" stroke-width="1.4"/><path d="M29 17h16M29 22h12M29 27h16" stroke="#eee7ff" stroke-width="2.2" stroke-linecap="round"/><path d="M43 35v22l-5-4-5 4V35Z" fill="#ffbd60"/><path d="m35 35 3 3 5-6" fill="none" stroke="#653488" stroke-width="2.3" stroke-linecap="round"/><path d="M15 16h3M15 23h3M15 30h3M15 37h3" stroke="#ded5ff" stroke-width="1.5"/><path d="M24 9h23" stroke="#c3b4ff" stroke-linecap="round" opacity=".55"/></svg>`;
 // SVG gradient IDs are unique per displayed button.
@@ -30,7 +30,7 @@ function refreshClosingBookAccess() {
   document.querySelector('#openClosingBookDesktop').hidden=!allowed || getActiveTabName()!=='overview';
   document.querySelector('#openClosingBookMobile').hidden=!allowed;
   if (!closingBook.page.hidden && (!allowed || closingBook.storeId!==getActiveStore()?.id)) hideClosingBookPage({force:true});
-  if (allowed && closingBook.page.hidden && window.location.hash==='#closing-book') openClosingBookPage({fromHistory:true});
+  if (allowed && closingBook.page.hidden && window.location.hash.startsWith('#closing-book')) openClosingBookPage({fromHistory:true});
 }
 function openClosingBookPage({fromHistory=false}={}) {
   if (!closingBookAllowed()) return;
@@ -47,6 +47,18 @@ function openClosingBookPage({fromHistory=false}={}) {
   const now=new Date();
   document.querySelector('#closingBookNewMonth').value=`${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
   renderClosingBookMonths();
+  const context=window.history.state?.closingBookDetail;
+  if (fromHistory && context && window.location.hash===`#closing-book-detail-${context.type}`) {
+    if (ClosingBookCore.groups.includes(context.type) && Array.from(closingBook.month.options).some(option=>option.value===context.month)) {
+      closingBook.month.value=context.month; loadClosingBookMonth();
+      if (Array.from(closingBook.day.options).some(option=>option.value===context.date)) {
+        closingBook.day.value=context.date; loadClosingBookDay();
+        closingBook.shiftIndex=Number.isInteger(context.shift)?Math.max(0,Math.min(context.shift,closingBook.shifts.length-1)):0;
+        renderClosingBookShiftOptions(); renderClosingBookShift();
+        openClosingBookDetails(context.type,{fromHistory:true});
+      }
+    }
+  }
   updateTimeFiltersVisibility();
   closingBook.page.scrollTop=0;
   document.querySelector('#closeClosingBook').focus({preventScroll:true});
@@ -55,6 +67,7 @@ function hideClosingBookPage({force=false}={}) {
   if (closingBook.page.hidden) return true;
   if (!force && !closingBookDiscard()) return false;
   closingBook.page.hidden=true;
+  closeClosingBookDetails();
   closingBook.dirty=false;
   closingBook.draft=null;
   closingBook.shifts=[];
@@ -62,7 +75,7 @@ function hideClosingBookPage({force=false}={}) {
   els.appShell.inert=false;
   els.appShell.removeAttribute('aria-hidden');
   els.tabBar.inert=false;
-  if (window.location.hash==='#closing-book') window.history.replaceState(window.history.state,'',`${window.location.pathname}${window.location.search}`);
+  if (window.location.hash.startsWith('#closing-book')) window.history.replaceState(window.history.state,'',`${window.location.pathname}${window.location.search}`);
   updateTimeFiltersVisibility();
   return true;
 }
@@ -80,7 +93,11 @@ document.querySelector('#closeClosingBook').addEventListener('click',()=> {
   else hideClosingBookPage();
 });
 window.addEventListener('popstate',()=> {
-  if (window.location.hash==='#closing-book' && closingBookAllowed()) openClosingBookPage({fromHistory:true});
+  if (window.location.hash==='#closing-book' && closingBookAllowed()) { closeClosingBookDetails(); openClosingBookPage({fromHistory:true}); }
+  else if (window.location.hash.startsWith('#closing-book-detail-') && closingBookAllowed()) {
+    if (closingBook.page.hidden) openClosingBookPage({fromHistory:true});
+    else openClosingBookDetails(window.location.hash.endsWith('income')?'income':'expense',{fromHistory:true});
+  }
   else if (!hideClosingBookPage()) window.history.pushState({closingBookPage:true},'','#closing-book');
 });
 window.addEventListener('beforeunload',event=> {
@@ -113,6 +130,7 @@ function loadClosingBookDay() {
   closingBook.dayKey=closingBook.day.value;
   const saved=closingBookMonthData().days?.find(day=>day.date===closingBook.dayKey);
   closingBook.shifts=JSON.parse(JSON.stringify(saved?.shifts?.length?saved.shifts:[ClosingBookCore.emptyShift()])).map(ClosingBookCore.normalizeShift);
+  closingBook.shifts.forEach(shift=>stampClosingBookRows(shift,saved?.updatedAt));
   closingBook.shiftIndex=0;
   document.querySelector('#closingBookSaved').textContent=saved?`Đã lưu ${formatActivityDateTime(saved.updatedAt)}`:'Ngày chưa lưu';
   renderClosingBookShiftOptions();
@@ -142,6 +160,18 @@ function renderClosingBookEntries() {
     const label=index===0?'Thu':'Chi';
     return `<section class="closing-book-section ${index===0?'book-income':'book-expense'}" data-book-group="${key}"><div class="closing-book-group-heading"><h2>Khoản ${label}</h2><button type="button" data-book-add="${key}" aria-label="Thêm khoản ${label.toLowerCase()}" ${rows.length>=ClosingBookCore.maxRows?'disabled':''}>＋</button></div><div class="closing-book-rows">${rows.map((row,i)=>`<div class="closing-book-row"><label>Nội dung<input data-book-note="${key}" data-row="${i}" type="text" maxlength="1000" value="${escapeHtml(row.note||'')}" /></label><label>Số tiền<input data-book-amount="${key}" data-row="${i}" type="text" inputmode="numeric" value="${escapeHtml(String(row.amount??''))}" placeholder="0" /></label><button type="button" data-book-remove="${key}" data-row="${i}" aria-label="Xóa dòng ${i+1}">×</button></div>`).join('')}</div><p class="closing-book-group-total">Tổng ${label.toLowerCase()} <strong data-book-total="${key}"></strong></p></section>`;
   }).join('');
+  document.querySelectorAll('#closingBookEntries [data-book-group]').forEach(section=> {
+    const key=section.dataset.bookGroup;
+    const label=key==='income'?'Thu':'Chi';
+    section.insertAdjacentHTML('beforeend',`<button type="button" class="book-detail-link" data-book-details="${key}">Chi tiết ${label} <span aria-hidden="true">→</span></button>`);
+    closingBook.draft[key].forEach((row,index)=> {
+      if (!row.transferredEntryId) return;
+      section.querySelector(`[data-book-note][data-row="${index}"]`).readOnly=true;
+      section.querySelector(`[data-book-amount][data-row="${index}"]`).readOnly=true;
+      section.querySelector(`[data-book-remove][data-row="${index}"]`).disabled=true;
+      section.querySelector(`[data-book-remove][data-row="${index}"]`).parentElement.insertAdjacentHTML('beforeend','<small class="book-row-transfer-note">✓ Đã chuyển · Sửa khoản trong tab Thu/Chi</small>');
+    });
+  });
 }
 function updateClosingBookCalculations() {
   try {
@@ -169,10 +199,13 @@ closingBook.form.addEventListener('input',event=> {
   if (target.dataset.bookNote) closingBook.draft[target.dataset.bookNote][Number(target.dataset.row)].note=target.value;
   else if (target.dataset.bookAmount) closingBook.draft[target.dataset.bookAmount][Number(target.dataset.row)].amount=target.value;
   else if (target.name) closingBook.draft[target.name]=target.value;
+  stampClosingBookRows(closingBook.draft);
   closingBook.dirty=true;
   updateClosingBookCalculations();
 });
 closingBook.form.addEventListener('click',event=> {
+  const detail=event.target.closest('[data-book-details]');
+  if (detail) { openClosingBookDetails(detail.dataset.bookDetails); return; }
   const add=event.target.closest('[data-book-add]');
   const remove=event.target.closest('[data-book-remove]');
   if (!add&&!remove) return;
@@ -199,15 +232,150 @@ document.querySelector('#closingBookAddShift').addEventListener('click',()=> {
   closingBook.shiftIndex=closingBook.shifts.length-1;
   closingBook.dirty=true; renderClosingBookShiftOptions(); renderClosingBookShift();
 });
-function commitClosingBookMonths(months,activity) {
+function commitClosingBookMonths(months,activity,changes={},details={}) {
   const store=getActiveStore();
   if (!closingBookAllowed() || store.id!==closingBook.storeId) throw new Error('Không còn quyền chốt sổ cho cửa hàng này.');
-  const candidate={...state,stores:state.stores.map(item=>item.id===store.id?{...item,closingMonths:months}:item)};
+  const candidate={...state,stores:state.stores.map(item=>item.id===store.id?{...item,...changes,closingMonths:months}:item)};
   if (new TextEncoder().encode(JSON.stringify(candidate)).length>900000) throw new Error('Dữ liệu cửa hàng gần giới hạn đồng bộ. Chưa lưu thay đổi; hãy sao lưu và giảm dữ liệu trước.');
-  store.closingMonths=months;
-  recordActivity(store,'update','Chốt sổ',activity,{tab:'overview',targetDate:closingBook.dayKey});
+  Object.assign(store,changes,{closingMonths:months});
+  recordActivity(store,'update','Chốt sổ',activity,{tab:'overview',targetDate:closingBook.dayKey,...details});
   saveAndRender();
 }
+
+function stampClosingBookRows(shift,savedAt) {
+  ClosingBookCore.groups.forEach(type=>shift[type].forEach(row=> {
+    if (!String(row.note||'').trim() && !String(row.amount??'').trim()) return;
+    if (!row.id) row.id=createId();
+    if (!row.createdAt) {
+      row.createdAt=savedAt || new Date().toISOString();
+      if (savedAt) row.timeSource='saved';
+    }
+  }));
+}
+function persistClosingBookDraft(changes={},activity='',details={}) {
+  if (!closingBookAllowed() || getActiveStore().id!==closingBook.storeId) throw new Error('Không còn quyền truy cập cửa hàng này.');
+  closingBook.shifts.forEach(shift=>stampClosingBookRows(shift));
+  const shifts=closingBook.shifts.map(ClosingBookCore.validateShift);
+  shifts.forEach(ClosingBookCore.calculate);
+  if (!closingBook.dayKey.startsWith(closingBook.monthKey+'-')) throw new Error('Ngày không thuộc tháng đang chọn.');
+  const months=JSON.parse(JSON.stringify(getActiveStore().closingMonths||[]));
+  const month=months.find(item=>item.month===closingBook.monthKey);
+  if (!month) throw new Error('Tháng không còn tồn tại.');
+  const day={date:closingBook.dayKey,shifts,updatedAt:new Date().toISOString()};
+  month.days=(month.days||[]).filter(item=>item.date!==day.date); month.days.push(day);
+  commitClosingBookMonths(months,activity||`Lưu chốt sổ ngày ${formatDate(day.date)} (${shifts.length} ca)`,changes,details);
+  closingBook.shifts=shifts;
+  closingBook.draft=shifts[closingBook.shiftIndex];
+  closingBook.dirty=false;
+  document.querySelector('#closingBookSaved').textContent=`Đã lưu ${formatActivityDateTime(day.updatedAt)}`;
+  const option=closingBook.day.selectedOptions[0]; if (option&&!option.textContent.includes('Đã lưu')) option.textContent+=' · Đã lưu';
+  renderClosingBookShiftOptions(); renderClosingBookShift();
+}
+function closingBookDetailNotice(message,error=false) {
+  const element=document.querySelector('#closingBookDetailMessage');
+  element.textContent=message; element.classList.toggle('is-error',error);
+}
+function openClosingBookDetails(type,{fromHistory=false}={}) {
+  try {
+    if (!ClosingBookCore.groups.includes(type) || !closingBookAllowed() || !closingBook.draft || getActiveStore().id!==closingBook.storeId) return;
+    // Persist the complete draft and stable row IDs before a row can create a cash entry.
+    if (!fromHistory) persistClosingBookDraft();
+    closingBook.mainScroll=closingBook.page.scrollTop;
+    closingBook.detailType=type;
+    document.querySelector('#closingBookMain').hidden=true;
+    document.querySelector('#closingBookDetailPage').hidden=false;
+    closingBook.page.setAttribute('aria-labelledby','closingBookDetailTitle');
+    if (!fromHistory) window.history.pushState({closingBookPage:true,closingBookDetail:{type,month:closingBook.monthKey,date:closingBook.dayKey,shift:closingBook.shiftIndex}},'',`#closing-book-detail-${type}`);
+    renderClosingBookDetails(); closingBookDetailNotice('');
+    closingBook.page.scrollTop=0;
+    document.querySelector('#closeClosingBookDetail').focus({preventScroll:true});
+  } catch(error) { closingBookNotice(error.message,true); }
+}
+function closeClosingBookDetails() {
+  if (!closingBook.detailType) return;
+  closingBook.detailType=null;
+  document.querySelector('#closingBookDetailPage').hidden=true;
+  document.querySelector('#closingBookMain').hidden=false;
+  closingBook.page.setAttribute('aria-labelledby','closingBookTitle');
+  closingBook.page.scrollTop=closingBook.mainScroll;
+  renderClosingBookEntries();
+}
+document.querySelector('#closeClosingBookDetail').addEventListener('click',()=> {
+  if (window.history.state?.closingBookDetail) window.history.back();
+  else { closeClosingBookDetails(); window.history.replaceState({closingBookPage:true},'','#closing-book'); }
+});
+function renderClosingBookDetails() {
+  const type=closingBook.detailType;
+  if (!type) return;
+  const store=getActiveStore(), rows=closingBook.draft[type], categories=store.categories[type];
+  const label=type==='income'?'Thu':'Chi';
+  document.querySelector('#closingBookDetailPage').dataset.type=type;
+  document.querySelector('#closingBookDetailTitle').textContent=`Chi tiết ${label}`;
+  document.querySelector('#closingBookDetailStore').textContent=store.name;
+  document.querySelector('#closingBookDetailContext').textContent=`${formatDate(closingBook.dayKey)} · Ca ${closingBook.shiftIndex+1}`;
+  document.querySelector('.book-detail-symbol').textContent=type==='income'?'↙':'↗';
+  const transferred=row=>Boolean(row.transferredEntryId || store.entries.some(entry=>entry.closingBookRowId===row.id));
+  document.querySelector('#closingBookDetailSummary').innerHTML=[['Tổng '+label.toLowerCase(),formatCurrency(rows.reduce((sum,row)=>sum+ClosingBookCore.parseMoney(row.amount),0))],['Số khoản',rows.length],['Đã chuyển',rows.filter(transferred).length]].map(([title,value])=>`<div><span>${title}</span><strong>${value}</strong></div>`).join('');
+  document.querySelector('#closingBookDetailList').innerHTML=rows.length?rows.map((row,index)=> {
+    const done=transferred(row), category=categories.find(item=>item.id===row.categoryId);
+    return `<article class="book-detail-row ${done?'is-transferred':''}" data-detail-id="${escapeHtml(row.id)}">
+      <div class="book-detail-row-top"><button type="button" class="book-detail-row-title" data-detail-edit aria-expanded="false" ${done?'disabled':''}><span class="book-detail-number">${String(index+1).padStart(2,'0')}</span><span><strong>${escapeHtml(row.note)}</strong><small>${category?escapeHtml(category.name):'Chưa chọn Mục'} · ${done?'Đã chuyển':'Chọn để phân loại'}</small></span></button><div class="book-detail-row-action"><strong>${formatCurrency(row.amount)}</strong><button type="button" data-detail-transfer ${done?'disabled':''}>${done?'✓ Đã chuyển':'Chuyển →'}</button></div></div>
+      <p class="book-detail-time">Ngày sổ: ${formatDate(closingBook.dayKey)} · ${row.timeSource==='saved'?'Giờ lưu sổ cũ (không có giờ tạo riêng)':'Tạo lúc'}: ${formatActivityDateTime(row.createdAt)}</p>
+      <div class="book-detail-editor" hidden><label>Mục ${label.toLowerCase()}<select data-detail-category><option value="">Chọn Mục</option>${categories.map(item=>`<option value="${escapeHtml(item.id)}" ${item.id===row.categoryId?'selected':''}>${escapeHtml(item.name)}</option>`).join('')}</select></label><div class="book-detail-new-category"><label>Tạo Mục mới<input type="text" data-detail-new-name maxlength="100" placeholder="Tên Mục mới" /></label><button type="button" class="ghost-button" data-detail-create>＋ Tạo Mục</button></div></div>
+    </article>`;
+  }).join(''):'<div class="book-detail-empty"><span aria-hidden="true">▤</span><h2>Chưa có khoản '+label.toLowerCase()+'</h2><p>Quay lại Chốt sổ để nhập khoản trước.</p></div>';
+}
+function closingBookDetailRow(target) {
+  if (!closingBookAllowed() || getActiveStore().id!==closingBook.storeId || !closingBook.detailType) throw new Error('Không còn quyền truy cập cửa hàng này.');
+  const card=target.closest('[data-detail-id]');
+  const row=closingBook.draft[closingBook.detailType].find(item=>item.id===card?.dataset.detailId);
+  if (!row) throw new Error('Khoản không còn tồn tại.');
+  return {card,row,type:closingBook.detailType};
+}
+document.querySelector('#closingBookDetailList').addEventListener('change',event=> {
+  if (!event.target.matches('[data-detail-category]')) return;
+  let row,previous;
+  try {
+    ({row}=closingBookDetailRow(event.target)); previous=row.categoryId;
+    if (row.transferredEntryId) throw new Error('Khoản đã chuyển không thể đổi Mục tại Chốt sổ.');
+    row.categoryId=event.target.value;
+    persistClosingBookDraft(); renderClosingBookDetails(); closingBookDetailNotice('Đã lưu Mục cho khoản.');
+  } catch(error) { if(row) row.categoryId=previous; closingBookDetailNotice(error.message,true); }
+});
+document.querySelector('#closingBookDetailList').addEventListener('click',event=> {
+  const target=event.target.closest('[data-detail-edit],[data-detail-create],[data-detail-transfer]');
+  if (!target || target.disabled) return;
+  let row,previous;
+  try {
+    const context=closingBookDetailRow(target); row=context.row;
+    const {card,type}=context, store=getActiveStore();
+    if (target.matches('[data-detail-edit]')) {
+      const editor=card.querySelector('.book-detail-editor'); editor.hidden=!editor.hidden;
+      target.setAttribute('aria-expanded',String(!editor.hidden));
+      if (!editor.hidden) card.querySelector('select').focus();
+      return;
+    }
+    if (row.transferredEntryId) throw new Error('Khoản này đã được chuyển.');
+    previous={categoryId:row.categoryId,transferredEntryId:row.transferredEntryId};
+    if (target.matches('[data-detail-create]')) {
+      const name=card.querySelector('[data-detail-new-name]').value.trim();
+      if (!name || name.length>100) throw new Error('Nhập tên Mục mới (tối đa 100 ký tự).');
+      const existing=store.categories[type].find(item=>item.name.toLocaleLowerCase('vi')===name.toLocaleLowerCase('vi'));
+      const category=existing||{id:createId(),name}; row.categoryId=category.id;
+      const categories={...store.categories,[type]:existing?store.categories[type]:[...store.categories[type],category]};
+      persistClosingBookDraft({categories},`Gán mục "${name}" cho khoản Chốt sổ "${row.note}".`);
+      renderClosingBookDetails(); closingBookDetailNotice(existing?'Đã chọn Mục có sẵn.':'Đã tạo và chọn Mục mới.');
+    } else {
+      const entry=ClosingBookCore.transferEntry(row,{type,date:closingBook.dayKey,categories:store.categories[type],entries:store.entries,entryId:createId()});
+      row.transferredEntryId=entry.id;
+      persistClosingBookDraft({entries:[...store.entries,entry]},`Chuyển khoản ${type==='income'?'Thu':'Chi'} "${row.note}" từ Chốt sổ.`,{tab:type,targetType:'entry',targetId:entry.id});
+      renderClosingBookDetails(); closingBookDetailNotice('Đã chuyển sang tab '+(type==='income'?'Thu':'Chi')+'.');
+    }
+  } catch(error) {
+    if(row&&previous) { row.categoryId=previous.categoryId; row.transferredEntryId=previous.transferredEntryId; }
+    closingBookDetailNotice(error.message,true);
+  }
+});
 document.querySelector('#closingBookCreateMonth').addEventListener('submit',event=> {
   event.preventDefault();
   const wasDirty=closingBook.dirty;
@@ -228,31 +396,27 @@ closingBook.form.addEventListener('submit',async event=> {
   event.preventDefault();
   if (closingBook.saving) return;
   try {
-    const shifts=closingBook.shifts.map(shift=>ClosingBookCore.validateShift(shift));
-    shifts.forEach(shift=>ClosingBookCore.calculate(shift));
-    if (!closingBook.dayKey.startsWith(closingBook.monthKey+'-')) throw new Error('Ngày không thuộc tháng đang chọn.');
-    const months=JSON.parse(JSON.stringify(getActiveStore().closingMonths||[]));
-    const month=months.find(item=>item.month===closingBook.monthKey);
-    if (!month) throw new Error('Tháng không còn tồn tại.');
-    const day={date:closingBook.dayKey,shifts,updatedAt:new Date().toISOString()};
-    month.days=(month.days||[]).filter(item=>item.date!==day.date); month.days.push(day);
     closingBook.saving=true;
-    commitClosingBookMonths(months,`Lưu chốt sổ ngày ${formatDate(day.date)} (${shifts.length} ca)`);
-    closingBook.dirty=false;
-    document.querySelector('#closingBookSaved').textContent=`Đã lưu ${formatActivityDateTime(day.updatedAt)}`;
-    const option=closingBook.day.selectedOptions[0]; if (option&&!option.textContent.includes('Đã lưu')) option.textContent+=' · Đã lưu';
+    persistClosingBookDraft();
     closingBookNotice('Đã lưu trên thiết bị. '+(els.syncStatus?.textContent||''));
   } catch(error) { closingBookNotice(error.message,true); }
   finally { closingBook.saving=false; }
 });
 closingBook.page.addEventListener('focusin',event=> {
-  if (event.target.matches('input,select,textarea')) [100,350].forEach(delay=>setTimeout(()=>event.target.isConnected&&event.target.scrollIntoView({block:'nearest',behavior:'smooth'}),delay));
+  if (event.target.matches('input,select,textarea')) [100,350].forEach(delay=>setTimeout(()=> {
+    if (!event.target.isConnected) return;
+    const target=event.target.matches('[data-detail-new-name]')?event.target.closest('.book-detail-new-category'):event.target;
+    target.scrollIntoView({block:'nearest',behavior:'smooth'});
+  },delay));
 });
 function updateClosingBookViewport() {
   const viewport=window.visualViewport;
   closingBook.page.style.setProperty('--book-height',`${viewport?.height||window.innerHeight}px`);
   closingBook.page.style.setProperty('--book-top',`${viewport?.offsetTop||0}px`);
-  if (!closingBook.page.hidden && closingBook.page.contains(document.activeElement)) document.activeElement.scrollIntoView({block:'nearest'});
+  if (!closingBook.page.hidden && closingBook.page.contains(document.activeElement)) {
+    const target=document.activeElement.matches('[data-detail-new-name]')?document.activeElement.closest('.book-detail-new-category'):document.activeElement;
+    target.scrollIntoView({block:'nearest'});
+  }
 }
 window.visualViewport?.addEventListener('resize',updateClosingBookViewport);
 window.visualViewport?.addEventListener('scroll',updateClosingBookViewport);

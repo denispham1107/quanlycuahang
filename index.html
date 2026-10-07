@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=95" />
+    <link rel="manifest" href="manifest.webmanifest?v=96" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=95" />
+    <link rel="stylesheet" href="styles.css?v=96" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -1446,7 +1446,7 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script defer src="firebase-config.js"></script>
     <section id="closingBookPage" class="closing-book-page" aria-labelledby="closingBookTitle" hidden>
-      <div class="closing-book-shell">
+      <div id="closingBookMain" class="closing-book-shell">
         <header class="closing-book-nav"><button id="closeClosingBook" type="button" class="ghost-button">← Quay lại</button><span>Tổng quan / Chốt sổ</span></header>
         <article class="closing-book-card">
           <header class="closing-book-heading"><div><p>SỔ ĐỐI CHIẾU CUỐI CA</p><h1 id="closingBookTitle">Chốt sổ</h1><span id="closingBookStore"></span></div><span class="closing-book-emblem" aria-hidden="true"></span></header>
@@ -1470,9 +1470,19 @@
           </div>
         </article>
       </div>
+      <section id="closingBookDetailPage" class="closing-book-shell" aria-labelledby="closingBookDetailTitle" hidden>
+        <header class="closing-book-nav"><button id="closeClosingBookDetail" type="button" class="ghost-button">← Chốt sổ</button><span id="closingBookDetailContext"></span></header>
+        <article class="closing-book-card book-detail-card">
+          <header class="book-detail-hero"><span class="book-detail-symbol" aria-hidden="true">↗</span><div><p>PHÂN LOẠI & CHUYỂN KHOẢN</p><h1 id="closingBookDetailTitle">Chi tiết Thu</h1><span id="closingBookDetailStore"></span></div></header>
+          <div id="closingBookDetailSummary" class="book-detail-summary"></div>
+          <p class="book-detail-hint">Chọn một khoản để gán Mục. Nút Chuyển sẽ tạo khoản trong tab tương ứng một lần duy nhất.</p>
+          <p id="closingBookDetailMessage" role="status"></p>
+          <div id="closingBookDetailList" class="book-detail-list"></div>
+        </article>
+      </section>
     </section>
-    <script defer src="app.js?v=95"></script>
-    <script defer src="closing-book-core.js?v=95"></script>
-    <script defer src="closing-book.js?v=95"></script>
+    <script defer src="app.js?v=96"></script>
+    <script defer src="closing-book-core.js?v=96"></script>
+    <script defer src="closing-book.js?v=96"></script>
   </body>
 </html>

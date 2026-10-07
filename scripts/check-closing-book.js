@@ -16,7 +16,7 @@ async function main() {
     page.on('dialog',dialog=>dialog.dismiss());
     await page.route('http://closing.test/**',route=>route.fulfill({contentType:'text/html; charset=utf-8',body:`<!doctype html><meta charset="utf-8"><style>${fs.readFileSync(path.join(root,'styles.css'),'utf8').replace(/^\uFEFF/,'')}</style><div id="appShell"></div><nav id="tabBar"></nav><div id="authScreen" hidden></div><span id="syncStatus">Đã lưu cloud</span><button id="openClosingBookDesktop" class="closing-book-icon" hidden></button><button id="openClosingBookMobile" class="closing-book-icon" hidden></button>${html.slice(start,end)}`}));
     await page.goto('http://closing.test/');
-    await page.addScriptTag({content:`let admin=true; let saves=0; let state={activeStoreId:'a',stores:[{id:'a',name:'Cửa hàng thử nghiệm',closingMonths:[],entries:[]},{id:'b',name:'Cửa hàng 2',closingMonths:[],entries:[]}]}; const els=Object.fromEntries(Array.from(document.querySelectorAll('[id]'),el=>[el.id,el])); function isAdminUser(){return admin;} function getActiveStore(){return state.stores.find(s=>s.id===state.activeStoreId);} function getActiveTabName(){return 'overview';} function updateTimeFiltersVisibility(){} function recordActivity(){} function saveAndRender(){saves++;window.refreshClosingBookAccess?.();} ${['formatCurrency','formatDate','formatActivityDateTime','escapeHtml'].map(helper).join('\n')}`});
+    await page.addScriptTag({content:`let admin=true; let saves=0; let state={activeStoreId:'a',stores:[{id:'a',name:'Cửa hàng thử nghiệm',closingMonths:[],entries:[],categories:{income:[],expense:[]}},{id:'b',name:'Cửa hàng 2',closingMonths:[],entries:[],categories:{income:[],expense:[]}}]}; const els=Object.fromEntries(Array.from(document.querySelectorAll('[id]'),el=>[el.id,el])); function isAdminUser(){return admin;} function getActiveStore(){return state.stores.find(s=>s.id===state.activeStoreId);} function getActiveTabName(){return 'overview';} function updateTimeFiltersVisibility(){} function recordActivity(){} function saveAndRender(){saves++;window.refreshClosingBookAccess?.();} ${['formatCurrency','formatDate','formatActivityDateTime','escapeHtml','createId'].map(helper).join('\n')}`});
     await page.addScriptTag({content:fs.readFileSync(path.join(root,'closing-book-core.js'),'utf8')});
     await page.addScriptTag({content:fs.readFileSync(path.join(root,'closing-book.js'),'utf8')});
     await page.locator('#openClosingBookDesktop').click();
@@ -113,12 +113,68 @@ async function main() {
     await page.locator('[name="result"]').focus();
     await page.waitForTimeout(450);
     const focusBounds=await page.locator('[name="result"]').boundingBox();
-    const navBounds=await page.locator('.closing-book-nav').boundingBox();
+    const navBounds=await page.locator('#closingBookMain .closing-book-nav').boundingBox();
     assert.ok(focusBounds.y>=navBounds.y+navBounds.height-1&&focusBounds.y+focusBounds.height<=401,'Focused note remains visible above the keyboard');
+    await page.setViewportSize({width:1440,height:900});
+    await page.evaluate(()=>document.documentElement.classList.remove('mobile-app-theme'));
+    for(const type of ['income','expense']) {
+      await page.locator(`[data-book-details="${type}"]`).click();
+      assert.equal(await page.locator('#closingBookDetailPage').isVisible(),true);
+      assert.equal(await page.locator('#closingBookMain').isVisible(),false);
+      assert.equal(await page.locator('.book-detail-row').count(),2);
+      await page.locator('[data-detail-transfer]').first().click();
+      assert.match(await page.locator('#closingBookDetailMessage').innerText(),/chọn Mục/);
+      assert.equal(await page.evaluate(()=>getActiveStore().entries.length),type==='income'?0:1);
+      await page.locator('[data-detail-edit]').first().click();
+      await page.locator('[data-detail-new-name]').first().fill('Mục '+type);
+      await page.locator('[data-detail-create]').first().click();
+      assert.equal(await page.evaluate(type=>getActiveStore().categories[type].length,type),1);
+      await page.locator('[data-detail-edit]').first().click();
+      for(const [width,height] of [[320,700],[375,900],[430,900],[667,375],[375,400],[800,900],[1024,900],[1440,900]]) {
+        await page.setViewportSize({width,height});
+        await page.evaluate(width=>document.documentElement.classList.toggle('mobile-app-theme',width<700),width);
+        const bad=await page.locator('#closingBookDetailPage input,#closingBookDetailPage select,#closingBookDetailPage button,#closingBookDetailPage strong').evaluateAll(els=>els.filter(el=>{const r=el.getBoundingClientRect();return r.width>0&&(r.left<-1||r.right>innerWidth+1);}).map(el=>el.outerHTML));
+        assert.deepEqual(bad,[],`Details ${type} ${width}x${height}`);
+        const overlap=await page.locator('#closingBookDetailPage input,#closingBookDetailPage select,#closingBookDetailPage button').evaluateAll(els=> {
+          const boxes=els.map(el=>el.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);
+          return boxes.some((a,i)=>boxes.slice(i+1).some(b=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>2&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>2));
+        });
+        assert.equal(overlap,false,`Details controls ${width}x${height}`);
+        if(width===375&&height===400) {
+          await page.locator('[data-detail-new-name]').first().focus();
+          await page.waitForTimeout(450);
+          const field=await page.locator('[data-detail-new-name]').first().boundingBox();
+          const button=await page.locator('[data-detail-create]').first().boundingBox();
+          const nav=await page.locator('#closingBookDetailPage .closing-book-nav').boundingBox();
+          assert.ok(field.y>=nav.y+nav.height-1 && button.y+button.height<=401,'New category field and button remain visible with keyboard');
+          await page.evaluate(()=>document.activeElement.blur());
+        }
+        if(process.env.INVENTORY_TEST_SHOTS&&[375,1440].includes(width)&&height===900) {await page.evaluate(()=>closingBook.page.scrollTop=0);await page.screenshot({path:path.join(process.env.INVENTORY_TEST_SHOTS,`closing-book-details-${type}-${width}.png`)});}
+      }
+      const original=await page.evaluate(type=>({...closingBook.draft[type][0]}),type);
+      await page.locator('[data-detail-transfer]').first().click();
+      assert.equal(await page.locator('[data-detail-transfer]').first().isDisabled(),true);
+      const entry=await page.evaluate(type=>getActiveStore().entries.find(entry=>entry.type===type),type);
+      assert.equal(entry.createdAt,original.createdAt);assert.equal(entry.date,'2026-09-03');assert.equal(entry.amount,original.amount);assert.equal(entry.note,original.note);
+      await page.evaluate(type=>openClosingBookDetails(type,{fromHistory:true}),type);
+      assert.equal(await page.locator('[data-detail-transfer]').first().isDisabled(),true);
+      await page.locator('[data-detail-edit]').nth(1).click();
+      await page.locator('[data-detail-category]').nth(1).selectOption(entry.categoryId);
+      assert.equal(await page.evaluate(type=>closingBook.draft[type][1].categoryId,type),entry.categoryId);
+      await page.locator('#closeClosingBookDetail').click();
+      await page.waitForFunction(()=>closingBook.detailType===null);
+      assert.equal(await page.locator('#closingBookMain').isVisible(),true);
+      assert.equal(await page.locator(`[data-book-note="${type}"]`).first().getAttribute('readonly'),'');
+    }
     await page.evaluate(()=>{state.activeStoreId='b';refreshClosingBookAccess();});
     assert.equal(await page.locator('#closingBookPage').isVisible(),false);
     await page.evaluate(()=>openClosingBookPage());
     assert.equal(await page.locator('#closingBookEditor').isVisible(),false);
+    await page.locator('#closingBookNewMonth').fill('10/2026');
+    await page.locator('#closingBookCreateMonth button').click();
+    await page.locator('[data-book-details="income"]').click();
+    assert.equal(await page.locator('.book-detail-empty').isVisible(),true);
+    assert.equal(await page.evaluate(()=>getActiveStore().entries.length),0);
     await page.evaluate(()=>{admin=false;refreshClosingBookAccess();});
     assert.equal(await page.locator('#closingBookPage').isVisible(),false);
     assert.equal(await page.locator('#openClosingBookDesktop').isVisible(),false);
@@ -159,6 +215,26 @@ async function main() {
     assert.equal(await full.locator('#closingBookPage').isVisible(),true);
     await full.locator('#closingBookDay').selectOption('2024-02-29');
     assert.equal(await full.locator('[name="opening"]').inputValue(),'123000');
+    await full.locator('[data-book-add="expense"]').click();
+    await full.locator('[data-book-note="expense"]').fill('Khoản chuyển thực tế');
+    await full.locator('[data-book-amount="expense"]').fill('45000');
+    await full.locator('[data-book-details="expense"]').click();
+    await full.locator('[data-detail-edit]').click();
+    await full.locator('[data-detail-new-name]').fill('Sinh hoạt');
+    await full.locator('[data-detail-create]').click();
+    const sourceTime=await full.evaluate(()=>closingBook.draft.expense[0].createdAt);
+    await full.locator('[data-detail-transfer]').click();
+    const cached=await full.evaluate(()=>JSON.parse(localStorage.getItem(STORAGE_KEY)).stores[0]);
+    assert.equal(cached.entries.length,1);assert.equal(cached.entries[0].date,'2024-02-29');assert.equal(cached.entries[0].createdAt,sourceTime);assert.equal(cached.entries[0].categoryId,cached.categories.expense[0].id);
+    assert.equal(cached.closingMonths[0].days[0].shifts[0].expense[0].transferredEntryId,cached.entries[0].id);
+    await full.reload();
+    await full.evaluate(()=> {
+      authState.role='admin';authState.ready=true;authState.profile={role:'admin',displayName:'Admin'};
+      els.authScreen.hidden=true;els.appShell.hidden=false;document.body.classList.remove('auth-pending');activateTab('overview');render();
+    });
+    assert.equal(await full.locator('#closingBookDetailPage').isVisible(),true);
+    assert.equal(await full.locator('[data-detail-transfer]').isDisabled(),true);
+    assert.equal(await full.evaluate(()=>getActiveStore().entries.length),1);
     await full.evaluate(()=>hideClosingBookPage({force:true}));
     const desktopIcon=await full.locator('#openClosingBookDesktop svg').boundingBox();
     assert.ok(desktopIcon.width>=36&&desktopIcon.height>=36,'Detailed desktop book icon is not collapsed by the heading action-button style');

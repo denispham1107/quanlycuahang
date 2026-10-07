@@ -44,10 +44,25 @@
         const note = String(row.note||'').trim();
         if (!note || note.length>1000) throw new Error('Mỗi khoản thu/chi cần nội dung (tối đa 1.000 ký tự).');
         if (!String(row.amount??'').trim()) throw new Error(`Khoản "${note}" chưa có số tiền.`);
-        return {note,amount:parseMoney(row.amount)};
+        const result = {note,amount:parseMoney(row.amount)};
+        ['id','createdAt','categoryId','transferredEntryId'].forEach(key=> {
+          if (typeof row[key] === 'string' && row[key]) result[key] = row[key];
+        });
+        if (row.timeSource === 'saved') result.timeSource = 'saved';
+        return result;
       });
     });
     return shift;
+  }
+  function transferEntry(row, {type,date,categories,entries,entryId}) {
+    if (!groups.includes(type)) throw new Error('Loại khoản không hợp lệ.');
+    if (row.transferredEntryId || entries.some(entry=>entry.closingBookRowId===row.id)) throw new Error('Khoản này đã được chuyển, không tạo trùng.');
+    if (!categories.some(category=>category.id===row.categoryId)) throw new Error('Vui lòng chọn Mục cho khoản '+(type==='income'?'Thu.':'Chi.'));
+    const amount=parseMoney(row.amount);
+    if (amount<=0) throw new Error('Số tiền chuyển phải lớn hơn 0.');
+    if (!row.id || !row.createdAt || !Number.isFinite(Date.parse(row.createdAt))) throw new Error('Khoản chưa có thời điểm tạo. Hãy lưu chốt sổ trước.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Ngày chốt sổ không hợp lệ.');
+    return {id:entryId,type,categoryId:row.categoryId,date,amount,note:row.note,createdAt:row.createdAt,closingBookRowId:row.id};
   }
   function calculate(shift) {
     shift = normalizeShift(shift);
@@ -64,7 +79,7 @@
     if (Object.values(result).some(value=>!Number.isSafeInteger(value))) throw new Error('Tổng tiền vượt giới hạn an toàn.');
     return result;
   }
-  const api={moneyKeys,groups,maxRows,normalizeShift,parseMoney,validMonth,monthDays,emptyShift,validateShift,calculate};
+  const api={moneyKeys,groups,maxRows,normalizeShift,parseMoney,validMonth,monthDays,emptyShift,validateShift,calculate,transferEntry};
   if (typeof module !== 'undefined' && module.exports) module.exports=api;
   else root.ClosingBookCore=api;
 })(typeof window === 'undefined' ? globalThis : window);

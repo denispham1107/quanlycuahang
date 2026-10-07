@@ -10549,6 +10549,64 @@ body.closing-book-open .tab-bar { display: none !important; }
   .closing-book-totals strong { font-size: 17px; }
 }
 
+/* Dedicated Thu/Chi classification and explicit transfer view. */
+#closingBookMain[hidden], #closingBookDetailPage[hidden], .book-detail-editor[hidden] { display: none !important; }
+.closing-book-page .book-detail-link { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 14px; padding: 10px 0; color: #315db4; background: transparent; border: 0; box-shadow: none; text-align: left; }
+.book-expense .book-detail-link { color: #ae3975; }
+.book-detail-hero { display: flex; gap: 18px; align-items: center; padding: 25px; border-radius: 22px; background: linear-gradient(120deg,#e8dcff,#d6efff); }
+[data-type="expense"] .book-detail-hero { background: linear-gradient(120deg,#ffdfef,#e7e0ff); }
+.book-detail-symbol { flex: 0 0 58px; display: grid; place-items: center; height: 58px; border-radius: 18px; background: linear-gradient(135deg,#9b43f5,#087fea); color: white; font-size: 34px; box-shadow: 0 8px 22px #5e61ad30; }
+.book-detail-hero p { font-size: 11px; font-weight: 800; letter-spacing: .12em; margin: 0 0 7px; color: #6258a4; }
+.book-detail-hero h1 { margin: 0 0 6px; font-size: 30px; }
+.book-detail-hero span:not(.book-detail-symbol) { font-size: 14px; overflow-wrap: anywhere; }
+.book-detail-summary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+.book-detail-summary > div { display: grid; gap: 8px; border: 1px solid #dde4f4; border-radius: 17px; background: #ffffffd9; padding: 17px; }
+.book-detail-summary span { font-size: 12px; color: #677792; }
+.book-detail-summary strong { font-size: 23px; color: #2663bd; overflow-wrap: anywhere; }
+.book-detail-hint { margin: 0; font-size: 13px; color: #6c7991; line-height: 1.6; }
+#closingBookDetailMessage { margin: 0; border-radius: 12px; background: #e5f5f0; padding: 12px 15px; color: #186a55; font-size: 13px; }
+#closingBookDetailMessage:empty { display: none; }
+#closingBookDetailMessage.is-error { background: #ffedf3; color: #ad2851; }
+.book-detail-list { display: grid; gap: 14px; }
+.book-row-transfer-note { grid-column: 1 / -1; font-size: 11px; color: #28765e; }
+.book-detail-row { border: 1px solid #dce4f4; border-radius: 20px; background: #fff; box-shadow: 0 8px 22px #526aa309; padding: 18px; overflow-wrap: anywhere; }
+.book-detail-row.is-transferred { border-color: #bce5d8; }
+.book-detail-row-top { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start; gap: 18px; }
+.closing-book-page .book-detail-row-title { display: flex; align-items: center; gap: 12px; width: 100%; background: transparent; color: #213866; border: 0; box-shadow: none; padding: 0; text-align: left; }
+.book-detail-row-title > span:last-child { display: grid; gap: 7px; }
+.book-detail-row-title strong { font-size: 17px; line-height: 1.5; }
+.book-detail-row-title small { color: #7986a0; font-size: 12px; }
+.book-detail-number { flex: 0 0 40px; display: grid; place-items: center; height: 40px; border-radius: 12px; color: #6950b4; background: #efebff; font-size: 13px; }
+[data-type="expense"] .book-detail-number { color: #b33671; background: #ffe9f2; }
+.book-detail-row-action { display: grid; justify-items: end; gap: 10px; }
+.book-detail-row-action > strong { color: #246ac3; font-size: 20px; }
+.closing-book-page [data-detail-transfer] { width: auto; background: linear-gradient(120deg,#8650e9,#128ddc); color: #fff; border: 0; }
+.closing-book-page [data-detail-transfer]:disabled { opacity: 1; color: #28765e; background: #e6f5ed; box-shadow: none; }
+.closing-book-page .book-detail-row-title:disabled { opacity: 1; cursor: default; }
+.book-detail-time { font-size: 11px; line-height: 1.7; margin: 14px 0 0; color: #7d89a1; }
+.book-detail-editor { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.3fr); align-items: end; gap: 15px; padding-top: 16px; margin-top: 14px; border-top: 1px solid #edf0f7; }
+.book-detail-new-category { display: grid; grid-template-columns: minmax(0,1fr) max-content; gap: 8px; align-items: end; }
+.closing-book-page [data-detail-create] { width: auto; min-height: 46px; }
+.book-detail-empty { text-align: center; border: 1px dashed #cdd6ef; border-radius: 22px; padding: 30px 15px; color: #72809a; }
+.book-detail-empty > span { color: #8b71d5; font-size: 45px; }
+.book-detail-empty h2 { font-size: 20px; color: #324775; }
+@media(max-width:800px) { .book-detail-editor { grid-template-columns: minmax(0,1fr); } }
+@media(max-width:520px) {
+  .book-detail-hero { padding: 20px 15px; gap: 12px; }
+  .book-detail-hero h1 { font-size: 25px; }
+  .book-detail-hero p { font-size: 9px; }
+  .book-detail-symbol { flex-basis: 48px; height: 48px; font-size: 28px; }
+  .book-detail-summary { gap: 7px; }
+  .book-detail-summary > div { padding: 12px 9px; border-radius: 13px; }
+  .book-detail-summary strong { font-size: 16px; }
+  .book-detail-summary span { font-size: 10px; }
+  .book-detail-row { padding: 15px 12px; }
+  .book-detail-row-top { grid-template-columns: minmax(0,1fr); gap: 14px; }
+  .book-detail-row-action { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; border-top: 1px solid #edf0f7; padding-top: 12px; }
+  .book-detail-row-action > strong { font-size: 18px; }
+  .book-detail-new-category { grid-template-columns: minmax(0,1fr); }
+  .closing-book-page [data-detail-create] { justify-self: start; }
+}
 /* Inventory uses the catalog presentation while keeping its existing controls. */
 #inventoryModal {
   z-index: 130;

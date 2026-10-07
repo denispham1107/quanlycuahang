@@ -65,6 +65,7 @@ test('closing book page is admin-only, isolated by store, protected on logout an
   assert.match(ui,/beforeunload/);
   assert.match(ui,/closingBookDiscard/);
   assert.doesNotMatch(ui,/store\.entries\s*=|entries\.push\(|orders\.push\(/);
+  assert.match(ui,/ClosingBookCore\.transferEntry/);
   assert.match(html,/id="openClosingBookDesktop"[^>]*aria-label="Chốt sổ"/);
   assert.match(html,/id="openClosingBookMobile"[^>]*aria-label="Chốt sổ"/);
   assert.match(worker,/closing-book-core\.js/);
@@ -72,6 +73,26 @@ test('closing book page is admin-only, isolated by store, protected on logout an
   assert.doesNotMatch(ui,/name="cancelled"|'cash','cancelled'/);
   assert.match(html,/Các bill đã hủy<textarea name="recheck"/);
   assert.doesNotMatch(ui,/· Nhóm|Tổng nhóm/);
+});
+
+test('closing row metadata survives validation and migration',()=> {
+  const row={note:'Tiền điện',amount:'350000',id:'row-a',createdAt:'2026-09-01T08:12:34.000Z',categoryId:'cat-a',transferredEntryId:'entry-a',timeSource:'saved'};
+  assert.deepEqual(core.validateShift({...core.emptyShift(),expense:[row]}).expense[0],{...row,amount:350000});
+});
+
+test('explicit Thu/Chi transfers require categories and preserve book date and original creation time',()=> {
+  for(const type of core.groups) {
+    const row={id:'r-'+type,note:'Khoản thử',amount:200000,createdAt:'2026-10-07T08:12:34.000Z',categoryId:'category'};
+    const options={type,date:'2026-09-01',categories:[{id:'category',name:'Mục thử'}],entries:[],entryId:'entry-'+type};
+    const entry=core.transferEntry(row,options);
+    assert.deepEqual(entry,{id:'entry-'+type,type,categoryId:'category',date:'2026-09-01',amount:200000,note:'Khoản thử',createdAt:row.createdAt,closingBookRowId:row.id});
+    assert.throws(()=>core.transferEntry({...row,categoryId:''},options),/chọn Mục/);
+    assert.throws(()=>core.transferEntry(row,{...options,categories:[]}),/chọn Mục/);
+    assert.throws(()=>core.transferEntry({...row,transferredEntryId:entry.id},options),/đã được chuyển/);
+    assert.throws(()=>core.transferEntry(row,{...options,entries:[entry]}),/đã được chuyển/);
+    assert.throws(()=>core.transferEntry({...row,amount:0},options),/lớn hơn 0/);
+    assert.throws(()=>core.transferEntry({...row,createdAt:''},options),/thời điểm tạo/);
+  }
 });
 
 test('closing book uses bill labels and puts cancelled-bill notes before the closing result',()=> {
