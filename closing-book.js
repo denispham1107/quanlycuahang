@@ -112,7 +112,7 @@ function loadClosingBookMonth() {
 function loadClosingBookDay() {
   closingBook.dayKey=closingBook.day.value;
   const saved=closingBookMonthData().days?.find(day=>day.date===closingBook.dayKey);
-  closingBook.shifts=JSON.parse(JSON.stringify(saved?.shifts?.length?saved.shifts:[ClosingBookCore.emptyShift()]));
+  closingBook.shifts=JSON.parse(JSON.stringify(saved?.shifts?.length?saved.shifts:[ClosingBookCore.emptyShift()])).map(ClosingBookCore.normalizeShift);
   closingBook.shiftIndex=0;
   document.querySelector('#closingBookSaved').textContent=saved?`Đã lưu ${formatActivityDateTime(saved.updatedAt)}`:'Ngày chưa lưu';
   renderClosingBookShiftOptions();
@@ -124,12 +124,12 @@ function renderClosingBookShiftOptions() {
   closingBook.shift.value=String(closingBook.shiftIndex);
   document.querySelector('#closingBookAddShift').disabled=closingBook.shifts.length>=4;
 }
-const closingBookLabels={opening:'Tiền trong két đếm đầu ca',pos:'POS · Tổng tất cả bill',vcb:'VCB trong sổ',momo:'Momo trong sổ',zalop:'Zalop trong sổ',cash:'Tiền mặt',actualVcb:'VCB thực tế',actualMomo:'Momo thực tế',actualZalop:'Zalop thực tế',cancelled:'Các bill hủy',ending:'Tiền trong két đếm cuối ca'};
+const closingBookLabels={opening:'Tiền trong két đếm đầu ca',pos:'POS · Tổng tất cả bill',vcb:'VCB trong sổ',momo:'Momo trong sổ',zalop:'Zalop trong sổ',cash:'Tiền mặt',actualVcb:'VCB thực tế',actualMomo:'Momo thực tế',actualZalop:'Zalop thực tế',ending:'Tiền trong két đếm cuối ca'};
 function closingBookMoneyField(key,value) { return `<label>${closingBookLabels[key]}<input name="${key}" type="text" inputmode="numeric" autocomplete="off" value="${escapeHtml(String(value??''))}" placeholder="0" /></label>`; }
 function renderClosingBookShift() {
   closingBook.draft=closingBook.shifts[closingBook.shiftIndex];
   const shift=closingBook.draft;
-  document.querySelector('#closingBookFields').innerHTML=`<label>Tên / Người chốt ca<input name="name" type="text" maxlength="2000" value="${escapeHtml(shift.name||'')}" /></label>`+['opening','pos','vcb','momo','zalop','cash','cancelled','ending'].map(key=>closingBookMoneyField(key,shift[key])).join('');
+  document.querySelector('#closingBookFields').innerHTML=`<label>Tên / Người chốt ca<input name="name" type="text" maxlength="2000" value="${escapeHtml(shift.name||'')}" /></label>`+['opening','pos','vcb','momo','zalop','cash','ending'].map(key=>closingBookMoneyField(key,shift[key])).join('');
   document.querySelector('#closingBookPayments').innerHTML=['POS','VCB','Momo','Zalop'].map((label,index)=>`<article><h3>${label}</h3><p>Trong sổ <strong data-book-payment="${index}"></strong></p>${index===0?'<p>Thực tế <strong id="closingBookActualPos"></strong></p>':closingBookMoneyField(['','actualVcb','actualMomo','actualZalop'][index],shift[['','actualVcb','actualMomo','actualZalop'][index]])}<p>Chênh lệch <strong data-payment-difference="${index}"></strong></p></article>`).join('');
   closingBook.form.elements.result.value=shift.result||'';
   closingBook.form.elements.recheck.value=shift.recheck||'';
@@ -139,7 +139,8 @@ function renderClosingBookShift() {
 function renderClosingBookEntries() {
   document.querySelector('#closingBookEntries').innerHTML=ClosingBookCore.groups.map((key,index)=> {
     const rows=closingBook.draft[key];
-    return `<section class="closing-book-section ${index<2?'book-income':'book-expense'}" data-book-group="${key}"><div class="closing-book-group-heading"><h2>Khoản ${index<2?'thu':'chi'} · Nhóm ${index%2+1}</h2><button type="button" data-book-add="${key}" aria-label="Thêm khoản ${index<2?'thu':'chi'} nhóm ${index%2+1}" ${rows.length>=21?'disabled':''}>＋</button></div><div class="closing-book-rows">${rows.map((row,i)=>`<div class="closing-book-row"><label>Nội dung<input data-book-note="${key}" data-row="${i}" type="text" maxlength="1000" value="${escapeHtml(row.note||'')}" /></label><label>Số tiền<input data-book-amount="${key}" data-row="${i}" type="text" inputmode="numeric" value="${escapeHtml(String(row.amount??''))}" placeholder="0" /></label><button type="button" data-book-remove="${key}" data-row="${i}" aria-label="Xóa dòng ${i+1}">×</button></div>`).join('')}</div><p class="closing-book-group-total">Tổng nhóm <strong data-book-total="${key}"></strong></p></section>`;
+    const label=index===0?'Thu':'Chi';
+    return `<section class="closing-book-section ${index===0?'book-income':'book-expense'}" data-book-group="${key}"><div class="closing-book-group-heading"><h2>Khoản ${label}</h2><button type="button" data-book-add="${key}" aria-label="Thêm khoản ${label.toLowerCase()}" ${rows.length>=ClosingBookCore.maxRows?'disabled':''}>＋</button></div><div class="closing-book-rows">${rows.map((row,i)=>`<div class="closing-book-row"><label>Nội dung<input data-book-note="${key}" data-row="${i}" type="text" maxlength="1000" value="${escapeHtml(row.note||'')}" /></label><label>Số tiền<input data-book-amount="${key}" data-row="${i}" type="text" inputmode="numeric" value="${escapeHtml(String(row.amount??''))}" placeholder="0" /></label><button type="button" data-book-remove="${key}" data-row="${i}" aria-label="Xóa dòng ${i+1}">×</button></div>`).join('')}</div><p class="closing-book-group-total">Tổng ${label.toLowerCase()} <strong data-book-total="${key}"></strong></p></section>`;
   }).join('');
 }
 function updateClosingBookCalculations() {
@@ -176,7 +177,7 @@ closingBook.form.addEventListener('click',event=> {
   const remove=event.target.closest('[data-book-remove]');
   if (!add&&!remove) return;
   const key=add?.dataset.bookAdd||remove.dataset.bookRemove;
-  if (add && closingBook.draft[key].length<21) closingBook.draft[key].push({note:'',amount:''});
+  if (add && closingBook.draft[key].length<ClosingBookCore.maxRows) closingBook.draft[key].push({note:'',amount:''});
   if (remove) closingBook.draft[key].splice(Number(remove.dataset.row),1);
   closingBook.dirty=true;
   renderClosingBookEntries(); updateClosingBookCalculations();

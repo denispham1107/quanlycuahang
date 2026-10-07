@@ -27,8 +27,8 @@ async function main() {
     await page.locator('[name="opening"]').fill('500000');
     await page.locator('[name="cash"]').fill('200000');
     await page.locator('[name="ending"]').fill('600000');
-    await page.locator('[data-book-note="expense1"]').fill('Khoản thử');
-    await page.locator('[data-book-amount="expense1"]').fill('100000');
+    await page.locator('[data-book-note="expense"]').fill('Khoản thử');
+    await page.locator('[data-book-amount="expense"]').fill('100000');
     assert.match(await page.locator('#closingBookTotals').innerText(),/600\.000/);
     await page.locator('#closingBookForm button[type="submit"]').click();
     const saved=await page.evaluate(()=>getActiveStore().closingMonths[0].days[0]);
@@ -51,6 +51,27 @@ async function main() {
     await page.locator('#closingBookForm button[type="submit"]').click();
     assert.equal(await page.evaluate(()=>getActiveStore().closingMonths[0].days[0].shifts.length),2);
     await page.locator('#closingBookShift').selectOption('0');
+    // Opening an old saved day merges both former groups without persisting until Save.
+    await page.evaluate(()=>getActiveStore().closingMonths[0].days.push({date:'2026-09-03',updatedAt:new Date().toISOString(),shifts:[{
+      opening:500000,cash:200000,ending:600000,cancelled:7,recheck:'Bill cũ đã hủy',
+      income1:[{note:'Thu A',amount:100000}],income2:[{note:'Thu B',amount:200000}],
+      expense1:[{note:'Chi A',amount:100000}],expense2:[{note:'Chi B',amount:200000}]
+    }]}));
+    await page.locator('#closingBookDay').selectOption('2026-09-03');
+    assert.equal(await page.locator('[data-book-group]').count(),2);
+    assert.equal(await page.locator('[name="cancelled"]').count(),0);
+    assert.equal(await page.locator('[name="recheck"]').inputValue(),'Bill cũ đã hủy');
+    assert.match(await page.locator('[name="recheck"]').locator('..').innerText(),/Các bill đã hủy/);
+    for(const key of ['income','expense']) {
+      assert.equal(await page.locator(`[data-book-note="${key}"]`).count(),2);
+      assert.match(await page.locator(`[data-book-total="${key}"]`).innerText(),/300\.000/);
+    }
+    assert.equal(await page.evaluate(()=>getActiveStore().closingMonths[0].days[1].shifts[0].income),undefined);
+    await page.locator('#closingBookForm button[type="submit"]').click();
+    await page.locator('#closingBookDay').selectOption('2026-09-01');
+    await page.locator('#closingBookDay').selectOption('2026-09-03');
+    assert.equal(await page.locator('[data-book-note="income"]').count(),2);
+    assert.equal(await page.evaluate(()=>getActiveStore().closingMonths[0].days.find(d=>d.date==='2026-09-03').shifts[0].cancelled),7);
     await page.evaluate(()=>document.activeElement.blur());
     for(const [width,height] of [[320,700],[375,900],[430,900],[667,375],[375,400],[800,900],[1024,900],[1440,900]]) {
       await page.setViewportSize({width,height});
@@ -63,9 +84,17 @@ async function main() {
       });
       assert.deepEqual(overlaps,[],`Overlapping controls at ${width}x${height}`);
       assert.equal(await page.evaluate(()=>closingBook.page.scrollWidth<=closingBook.page.clientWidth),true);
+      const incomeBounds=await page.locator('[data-book-group="income"]').boundingBox();
+      const expenseBounds=await page.locator('[data-book-group="expense"]').boundingBox();
+      if(width>800) assert.ok(incomeBounds.x<expenseBounds.x&&Math.abs(incomeBounds.y-expenseBounds.y)<1,'Thu left, Chi right');
+      else assert.ok(incomeBounds.y<expenseBounds.y,'Thu above Chi on narrow screens');
       const buttonStyle=await page.locator('#closingBookCreateMonth button').evaluate(el=>({background:getComputedStyle(el).backgroundImage,color:getComputedStyle(el).color,variable:getComputedStyle(el).getPropertyValue('--accent-gradient')}));
       assert.notEqual(buttonStyle.background,'none',JSON.stringify(buttonStyle));
       if(process.env.INVENTORY_TEST_SHOTS&&[375,1440].includes(width)&&height===900) await page.screenshot({path:path.join(process.env.INVENTORY_TEST_SHOTS,`closing-book-${width}.png`)});
+      if(process.env.INVENTORY_TEST_SHOTS&&[375,1440].includes(width)&&height===900) {
+        await page.locator('#closingBookEntries').scrollIntoViewIfNeeded();
+        await page.screenshot({path:path.join(process.env.INVENTORY_TEST_SHOTS,`closing-book-columns-${width}.png`)});
+      }
     }
     await page.setViewportSize({width:375,height:400});
     await page.locator('[name="result"]').focus();
