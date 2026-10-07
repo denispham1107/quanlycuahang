@@ -10392,8 +10392,9 @@ body.sales-catalog-page-open > .quick-entry-fab { display: none !important; }
 /* The same navigation SVG and palette render on mobile and desktop. */
 .tab-button[data-tab="stores"] { --mobile-nav-icon-ink: #3153a8; --mobile-nav-icon-accent: #8954de; --mobile-nav-icon-surface: #ede9ff; --mobile-nav-store-front: #fff; --mobile-nav-store-awning: #bca3f4; }
 .tab-button[data-tab="overview"] { --mobile-nav-icon-ink: #2d568f; --mobile-nav-icon-accent: #7656d9; --mobile-nav-icon-surface: #e9f1ff; --mobile-nav-pie-top: #dce8ff; --mobile-nav-pie-side: #91aee5; --mobile-nav-pie-slice: #aa81ef; --mobile-nav-pie-slice-side: #7853bd; }
-.tab-button[data-tab="income"] { --mobile-nav-icon-ink: #365bc3; --mobile-nav-icon-accent: #7a4be2; --mobile-nav-icon-surface: #e9edff; }
-.tab-button[data-tab="expense"] { --mobile-nav-icon-ink: #94427f; --mobile-nav-icon-accent: #d3498a; --mobile-nav-icon-surface: #ffebf5; }
+.tab-button[data-tab="income"] { --mobile-nav-icon-ink: #6345da; --mobile-nav-icon-accent: #138dcf; --mobile-nav-icon-surface: #ece9ff; }
+.tab-button[data-tab="expense"] { --mobile-nav-icon-ink: #b62d83; --mobile-nav-icon-accent: #ee5679; --mobile-nav-icon-surface: #ffebf4; }
+.tab-button[data-tab="purchase"] { --mobile-nav-icon-ink: #285dba; --mobile-nav-icon-accent: #149eae; --mobile-nav-icon-surface: #e4f1ff; }
 
 .tab-button:is([data-tab="stores"], [data-tab="overview"], [data-tab="income"], [data-tab="expense"]) .tab-icon {
   display: grid;
@@ -10475,6 +10476,33 @@ body.sales-catalog-page-open > .quick-entry-fab { display: none !important; }
     width: 21px;
     height: 21px;
   }
+}
+
+/* Approved Wallet & Package set: a single detailed SVG shared by both layouts. */
+.tab-button:is([data-tab="income"], [data-tab="expense"], [data-tab="purchase"]) .tab-icon {
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(120, 139, 204, 0.22);
+  border-radius: 24%;
+  background: var(--mobile-nav-icon-surface);
+  color: var(--mobile-nav-icon-ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+.tab-button:is([data-tab="income"], [data-tab="expense"], [data-tab="purchase"]) .tab-icon svg { width: 100%; height: 100%; }
+.tab-button .cash-stock-main { stroke: var(--mobile-nav-icon-ink); stroke-width: 1.7; }
+.tab-button .cash-stock-badge { fill: var(--mobile-nav-icon-badge, #fcfbff); stroke: none; }
+.tab-button .cash-stock-direction { stroke: var(--mobile-nav-icon-accent); stroke-width: 2.2; }
+.tab-button:is([data-tab="income"], [data-tab="expense"], [data-tab="purchase"]).active {
+  --mobile-nav-icon-ink: #fff;
+  --mobile-nav-icon-accent: #fff;
+  --mobile-nav-icon-surface: rgba(255, 255, 255, 0.17);
+  --mobile-nav-icon-badge: #6550da;
+}
+.tab-button:is([data-tab="income"], [data-tab="expense"], [data-tab="purchase"]).active .tab-icon { border-color: rgba(255, 255, 255, 0.34); }
+html:not(.mobile-app-theme) .desktop-nav-host .tab-button:is([data-tab="income"], [data-tab="expense"], [data-tab="purchase"]) .tab-icon { flex-basis: 32px; width: 32px; height: 32px; }
+html.mobile-app-theme .tab-button:is([data-tab="income"], [data-tab="expense"], [data-tab="purchase"]) .tab-icon { flex-basis: 25px; width: 25px; height: 25px; }
+@media (orientation: landscape) {
+  html.mobile-app-theme .tab-button:is([data-tab="income"], [data-tab="expense"], [data-tab="purchase"]) .tab-icon { flex-basis: 23px; width: 23px; height: 23px; }
 }
 
 /* Daily closing book: all layout rules are scoped to this dedicated page. */

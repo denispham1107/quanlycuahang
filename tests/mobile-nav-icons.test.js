@@ -12,7 +12,7 @@ test("four primary mobile tabs have distinct detailed two-tone SVGs", () => {
   for (const tab of ["stores", "overview", "income", "expense"]) {
     const button = html.match(new RegExp(`<button class="tab-button[^\"]*"[^>]*data-tab="${tab}"[\\s\\S]*?<\\/button>`))?.[0];
     assert.ok(button, `Missing ${tab} tab`);
-    const icon = button.match(/<span class="tab-icon"[^>]*><svg viewBox="0 0 32 32">([\s\S]*?)<\/svg><\/span>/)?.[1];
+    const icon = button.match(/<span class="tab-icon"[^>]*><svg viewBox="0 0 32 32"[^>]*>([\s\S]*?)<\/svg><\/span>/)?.[1];
     assert.ok(icon, `${tab} needs its own 32x32 mobile SVG`);
     assert.ok((icon.match(/<(?:path|rect|circle)\b/g) || []).length >= 3, `${tab} icon lacks detail`);
     assert.match(icon, /class="icon-accent(?:\s|")/);

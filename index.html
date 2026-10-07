@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=110" />
+    <link rel="manifest" href="manifest.webmanifest?v=111" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=110" />
+    <link rel="stylesheet" href="styles.css?v=111" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -204,11 +204,41 @@
                   <span class="tab-label">Tổng quan</span>
                 </button>
                 <button class="tab-button" type="button" data-tab="income" aria-selected="false">
-                  <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M5 20.5v4.5a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2v-4.5l-3.5-6H21M11 14.5H8.5l-3.5 6h22M5.5 20.5h7l1.5 2h4l1.5-2h7"/><path d="M8 24.5h3m10 0h3"/><path class="icon-accent" d="M16 4v12m-4-4 4 4 4-4"/></svg></span>
+                  <!-- Wallet & Package shapes adapted from Lucide (wallet, wallet-cards,
+                  package-open, arrow-down-left, arrow-up-right, arrow-down-to-line).
+                  ISC License: Copyright (c) 2026 Lucide Icons and Contributors.
+                  Permission to use, copy, modify, and/or distribute this software for any
+                  purpose with or without fee is hereby granted, provided that the above
+                  copyright notice and this permission notice appear in all copies.
+                  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+                  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+                  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+                  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+                  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+                  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+                  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+                  Arrow-down-left and arrow-up-right are derived from Feather:
+                  MIT License: Copyright (c) 2013-present Cole Bemis.
+                  Permission is hereby granted, free of charge, to any person obtaining a copy
+                  of this software and associated documentation files (the "Software"), to deal
+                  in the Software without restriction, including without limitation the rights
+                  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+                  copies of the Software, and to permit persons to whom the Software is
+                  furnished to do so, subject to the following conditions:
+                  The above copyright notice and this permission notice shall be included in all
+                  copies or substantial portions of the Software.
+                  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+                  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+                  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+                  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+                  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+                  SOFTWARE. -->
+                  <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 32 32" data-icon-design="wallet-income"><g class="cash-stock-main" transform="translate(4.16 4.48) scale(.9333)"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></g><rect class="cash-stock-badge" x="17.92" y="17.92" width="12.48" height="12.48" rx="3"/><g class="icon-accent cash-stock-direction" transform="translate(18.88 18.88) scale(.44)"><path d="M17 7 7 17M17 17H7V7"/></g></svg></span>
                   <span class="tab-label">Thu</span>
                 </button>
                 <button class="tab-button" type="button" data-tab="purchase" aria-selected="false">
-                  <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 7 8-4 8 4-8 4-8-4Z" /><path d="m4 7 8 4 8-4v10l-8 4-8-4V7Z" /><path d="M12 11v10" /></svg></span>
+                  <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 32 32" data-icon-design="package-open"><g class="cash-stock-main" transform="translate(4.16 4.48) scale(.9333)"><path d="M12 22v-9M15.17 2.21a1.67 1.67 0 0 1 1.63 0L21 4.57a1.93 1.93 0 0 1 0 3.36L8.82 14.79a1.655 1.655 0 0 1-1.64 0L3 12.43a1.93 1.93 0 0 1 0-3.36Z"/><path d="M20 13v3.87a2.06 2.06 0 0 1-1.11 1.83l-6 3.08a1.93 1.93 0 0 1-1.78 0l-6-3.08A2.06 2.06 0 0 1 4 16.87V13"/><path d="M21 12.43a1.93 1.93 0 0 0 0-3.36L8.83 2.2a1.64 1.64 0 0 0-1.63 0L3 4.57a1.93 1.93 0 0 0 0 3.36l12.18 6.86a1.636 1.636 0 0 0 1.63 0Z"/></g><rect class="cash-stock-badge" x="17.92" y="17.92" width="12.48" height="12.48" rx="3"/><g class="icon-accent cash-stock-direction" transform="translate(18.88 18.88) scale(.44)"><path d="M12 17V3m-6 8 6 6 6-6M19 21H5"/></g></svg></span>
                   <span class="tab-label">Nhập hàng</span>
                 </button>
                 <button class="tab-button" type="button" data-tab="sales" aria-selected="false">
@@ -216,7 +246,7 @@
                   <span class="tab-label">Bán Hàng</span>
                 </button>
                 <button class="tab-button" type="button" data-tab="expense" aria-selected="false">
-                  <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M5 9v16a2 2 0 0 0 2 2h19V10a2 2 0 0 0-2-2H8a3 3 0 0 1-3-3v4Z"/><path d="M5 9V6a2 2 0 0 1 2-2h16v4M21 16h6v6h-6a3 3 0 0 1 0-6Z"/><circle cx="23" cy="19" r=".7" class="icon-accent-fill"/><path class="icon-accent" d="M10 16h7m-3-3 3 3-3 3"/></svg></span>
+                  <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 32 32" data-icon-design="wallet-expense"><g class="cash-stock-main" transform="translate(4.16 4.48) scale(.9333)"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2M3 11h3c.8 0 1.6.3 2.1.9l1.1.9c1.6 1.6 4.1 1.6 5.7 0l1.1-.9c.5-.5 1.3-.9 2.1-.9H21"/></g><rect class="cash-stock-badge" x="17.92" y="17.92" width="12.48" height="12.48" rx="3"/><g class="icon-accent cash-stock-direction" transform="translate(18.88 18.88) scale(.44)"><path d="M7 7h10v10M7 17 17 7"/></g></svg></span>
                   <span class="tab-label">Chi</span>
                 </button>
                 <button
@@ -1492,8 +1522,8 @@
         </article>
       </section>
     </section>
-    <script defer src="app.js?v=110"></script>
-    <script defer src="closing-book-core.js?v=110"></script>
-    <script defer src="closing-book.js?v=110"></script>
+    <script defer src="app.js?v=111"></script>
+    <script defer src="closing-book-core.js?v=111"></script>
+    <script defer src="closing-book.js?v=111"></script>
   </body>
 </html>
