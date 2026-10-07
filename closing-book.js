@@ -164,7 +164,34 @@ function renderClosingBookShiftOptions() {
   document.querySelector('#closingBookAddShift').disabled=closingBook.shifts.length>=4;
 }
 const closingBookLabels={opening:'Tiền trong két đếm đầu ca',pos:'POS · Tổng tất cả bill',vcb:'Bill VCB',momo:'Bill Momo',zalop:'Bill Zalop',cash:'Bill Tiền mặt',actualVcb:'VCB thực tế',actualMomo:'Momo thực tế',actualZalop:'Zalop thực tế',ending:'Tiền trong két đếm cuối ca'};
-function closingBookMoneyField(key,value) { return `<label>${closingBookLabels[key]}<input name="${key}" type="text" inputmode="numeric" autocomplete="off" value="${escapeHtml(String(value??''))}" placeholder="0" /></label>`; }
+function formatClosingBookMoney(value) {
+  const raw=String(value??'');
+  if (!/^(?:\d+|\d{1,3}(?:\.\d{3})+)$/.test(raw)) return raw;
+  const digits=raw.replace(/\./g,'').replace(/^0+(?=\d)/,'');
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+}
+function formatClosingBookMoneyInput(target,event={}) {
+  const raw=target.value, start=target.selectionStart??raw.length, end=target.selectionEnd??start;
+  const editingGrouped=target.dataset.bookGrouped==='true' && (event.inputType?.startsWith('delete') || (event.inputType==='insertText' && /^\d+$/.test(event.data||'')));
+  const source=editingGrouped && /^[\d.]*$/.test(raw)?raw.replace(/\./g,''):raw;
+  const display=formatClosingBookMoney(source);
+  const valid=/^(?:\d+|\d{1,3}(?:\.\d{3})+)$/.test(display);
+  target.dataset.bookGrouped=String(valid && display.includes('.'));
+  if (display!==raw) {
+    const leadingZeros=source.replace(/\./g,'').match(/^0+(?=\d)/)?.[0].length||0;
+    const caret=position=> {
+      const count=Math.max(0,(raw.slice(0,position).match(/\d/g)||[]).length-leadingZeros);
+      if (!count) return 0;
+      let seen=0;
+      for(let i=0;i<display.length;i++) if (/\d/.test(display[i]) && ++seen===count) return i+1;
+      return display.length;
+    };
+    target.value=display;
+    target.setSelectionRange(caret(start),caret(end));
+  }
+  return valid?display.replace(/\./g,''):display;
+}
+function closingBookMoneyField(key,value) { const display=formatClosingBookMoney(value);return `<label>${closingBookLabels[key]}<input name="${key}" data-book-money data-book-grouped="${display.includes('.')}" type="text" inputmode="numeric" autocomplete="off" value="${escapeHtml(display)}" placeholder="0" /></label>`; }
 function renderClosingBookShift() {
   closingBook.draft=closingBook.shifts[closingBook.shiftIndex];
   const shift=closingBook.draft;
@@ -181,6 +208,10 @@ function renderClosingBookEntries() {
     const label=index===0?'Thu':'Chi';
     return `<section class="closing-book-section ${index===0?'book-income':'book-expense'}" data-book-group="${key}"><div class="closing-book-group-heading"><h2>Khoản ${label}</h2><button type="button" data-book-add="${key}" aria-label="Thêm khoản ${label.toLowerCase()}" ${rows.length>=ClosingBookCore.maxRows?'disabled':''}>＋</button></div><div class="closing-book-rows">${rows.map((row,i)=>`<div class="closing-book-row"><label>Nội dung<input data-book-note="${key}" data-row="${i}" type="text" maxlength="1000" value="${escapeHtml(row.note||'')}" /></label><label>Số tiền<input data-book-amount="${key}" data-row="${i}" type="text" inputmode="numeric" value="${escapeHtml(String(row.amount??''))}" placeholder="0" /></label><button type="button" data-book-remove="${key}" data-row="${i}" aria-label="Xóa dòng ${i+1}">×</button></div>`).join('')}</div><p class="closing-book-group-total">Tổng ${label.toLowerCase()} <strong data-book-total="${key}"></strong></p></section>`;
   }).join('');
+  document.querySelectorAll('#closingBookEntries [data-book-amount]').forEach(input=> {
+    input.value=formatClosingBookMoney(input.value);
+    input.dataset.bookMoney='';input.dataset.bookGrouped=String(input.value.includes('.'));
+  });
   document.querySelectorAll('#closingBookEntries [data-book-group]').forEach(section=> {
     const key=section.dataset.bookGroup;
     const label=key==='income'?'Thu':'Chi';
@@ -214,12 +245,24 @@ function updateClosingBookCalculations() {
     closingBookNotice(error.message,true);
   }
 }
+closingBook.form.addEventListener('beforeinput',event=> {
+  const target=event.target;
+  if (!target.matches('[data-book-money]') || target.readOnly || target.selectionStart!==target.selectionEnd || event.isComposing) return;
+  const position=target.selectionStart;
+  if (event.inputType==='deleteContentBackward' && target.value[position-1]==='.') target.setSelectionRange(position-1,position-1);
+  if (event.inputType==='deleteContentForward' && target.value[position]==='.') target.setSelectionRange(position+1,position+1);
+});
+closingBook.form.addEventListener('compositionend',event=> {
+  if (event.target.matches('[data-book-money]')) event.target.dispatchEvent(new Event('input',{bubbles:true}));
+});
 closingBook.form.addEventListener('input',event=> {
   if (!closingBook.draft || closingBook.saving) return;
   const target=event.target;
+  if (event.isComposing && target.matches('[data-book-money]')) return;
+  const value=target.matches('[data-book-money]')?formatClosingBookMoneyInput(target,event):target.value;
   if (target.dataset.bookNote) closingBook.draft[target.dataset.bookNote][Number(target.dataset.row)].note=target.value;
-  else if (target.dataset.bookAmount) closingBook.draft[target.dataset.bookAmount][Number(target.dataset.row)].amount=target.value;
-  else if (target.name) closingBook.draft[target.name]=target.value;
+  else if (target.dataset.bookAmount) closingBook.draft[target.dataset.bookAmount][Number(target.dataset.row)].amount=value;
+  else if (target.name) closingBook.draft[target.name]=value;
   stampClosingBookRows(closingBook.draft);
   closingBook.dirty=true;
   updateClosingBookCalculations();

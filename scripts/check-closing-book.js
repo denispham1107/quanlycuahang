@@ -25,6 +25,22 @@ async function main() {
     await page.locator('#closingBookNewMonth').fill('09/2026');
     await page.locator('#closingBookCreateMonth button').click();
     assert.equal(await page.locator('#closingBookDay option').count(),30);
+    for(const key of ['opening','pos','vcb','momo','zalop','cash','actualVcb','actualMomo','actualZalop','ending']) {
+      const input=page.locator(`[name="${key}"]`);
+      await input.fill('10000');assert.equal(await input.inputValue(),'10.000');
+      assert.equal(await page.evaluate(key=>ClosingBookCore.parseMoney(closingBook.draft[key]),key),10000);
+      await input.fill('');
+    }
+    const amount=page.locator('[name="opening"]');
+    await amount.fill('123456');await amount.evaluate(el=>el.setSelectionRange(4,4));await amount.press('Backspace');
+    assert.equal(await amount.inputValue(),'12.456');assert.equal(await amount.evaluate(el=>el.selectionStart),2);
+    await amount.fill('123456');await amount.evaluate(el=>el.setSelectionRange(3,3));await amount.press('Delete');assert.equal(await amount.inputValue(),'12.356');
+    await amount.fill('123456');await amount.evaluate(el=>el.setSelectionRange(1,1));await page.keyboard.insertText('9');assert.equal(await amount.inputValue(),'1.923.456');
+    await amount.fill('123456');await amount.evaluate(el=>el.setSelectionRange(4,7));await page.keyboard.insertText('8');assert.equal(await amount.inputValue(),'1.238');
+    await amount.fill('12.3');assert.equal(await amount.inputValue(),'12.3');assert.match(await page.locator('#closingBookMessage').innerText(),/Số tiền/);
+    for(const type of ['income','expense']) {
+      const input=page.locator(`[data-book-amount="${type}"]`);await input.fill('125000');assert.equal(await input.inputValue(),'125.000');await input.fill('');
+    }
     await page.locator('[name="opening"]').fill('500000');
     await page.locator('[name="cash"]').fill('200000');
     await page.locator('[name="ending"]').fill('600000');
@@ -38,7 +54,7 @@ async function main() {
     await page.locator('#closingBookDay').selectOption('2026-09-02');
     assert.equal(await page.locator('[name="opening"]').inputValue(),'');
     await page.locator('#closingBookDay').selectOption('2026-09-01');
-    assert.equal(await page.locator('[name="opening"]').inputValue(),'500000');
+    assert.equal(await page.locator('[name="opening"]').inputValue(),'500.000');
     await page.locator('[name="opening"]').fill('-5');
     const saves=await page.evaluate(()=>saves);
     await page.locator('#closingBookForm button[type="submit"]').click();
@@ -327,7 +343,7 @@ async function main() {
     });
     assert.equal(await full.locator('#closingBookPage').isVisible(),true);
     await full.locator('#closingBookDay').selectOption('2024-02-29');
-    assert.equal(await full.locator('[name="opening"]').inputValue(),'123000');
+    assert.equal(await full.locator('[name="opening"]').inputValue(),'123.000');
     await full.locator('[data-book-add="expense"]').click();
     await full.locator('[data-book-note="expense"]').fill('Khoản chuyển thực tế');
     await full.locator('[data-book-amount="expense"]').fill('45000');

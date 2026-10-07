@@ -5,6 +5,32 @@ const path=require('node:path');
 const vm=require('node:vm');
 const core=require('../closing-book-core');
 const root=path.join(__dirname,'..');
+test('closing money display groups thousands without rounding or changing validation',()=> {
+  const source=fs.readFileSync(path.join(root,'closing-book.js'),'utf8');
+  const start=source.indexOf('function formatClosingBookMoney('),end=source.indexOf('function closingBookMoneyField(',start);
+  const context={};vm.runInNewContext(source.slice(start,end),context);
+  for(const [raw,display] of [['10000','10.000'],['200000','200.000'],['125000','125.000'],['1000000','1.000.000'],['0','0'],['',''],['00010','10'],['10.000','10.000'],['9007199254740993','9.007.199.254.740.993']]) {
+    assert.equal(context.formatClosingBookMoney(raw),display);
+    if(raw&&Number(raw.replace(/\./g,''))<=Number.MAX_SAFE_INTEGER) assert.equal(core.parseMoney(display),core.parseMoney(raw));
+  }
+  for(const invalid of ['-5','12.3','1,000','abc']) assert.equal(context.formatClosingBookMoney(invalid),invalid);
+  assert.throws(()=>core.parseMoney(context.formatClosingBookMoney('9007199254740993')),/quá lớn/);
+});
+test('closing money formatter preserves editing position, blank input and unformatted draft values',()=> {
+  const source=fs.readFileSync(path.join(root,'closing-book.js'),'utf8');
+  const start=source.indexOf('function formatClosingBookMoney('),end=source.indexOf('function closingBookMoneyField(',start);
+  const context={};vm.runInNewContext(source.slice(start,end),context);
+  const input=(value,caret,grouped=false)=>({value,selectionStart:caret,selectionEnd:caret,dataset:{bookGrouped:String(grouped)},setSelectionRange(start,end){this.selectionStart=start;this.selectionEnd=end;}});
+  let target=input('10000',5);
+  assert.equal(context.formatClosingBookMoneyInput(target),'10000');assert.equal(target.value,'10.000');assert.equal(target.selectionStart,6);
+  target=input('1923.456',2,true);
+  assert.equal(context.formatClosingBookMoneyInput(target,{inputType:'insertText',data:'9'}),'1923456');
+  assert.equal(target.value,'1.923.456');assert.equal(target.selectionStart,3);
+  target=input('12.456',2,true);
+  assert.equal(context.formatClosingBookMoneyInput(target,{inputType:'deleteContentBackward'}),'12456');assert.equal(target.selectionStart,2);
+  target=input('',0,true);assert.equal(context.formatClosingBookMoneyInput(target),'');assert.equal(target.value,'');
+  target=input('12.3',4,true);assert.equal(context.formatClosingBookMoneyInput(target,{inputType:'insertFromPaste'}),'12.3');
+});
 test('deleting a shift cascades only linked entries and preserves other days and shifts',()=> {
   const a={...core.emptyShift(),expense:[{id:'row-a',transferredEntryId:'entry-a',note:'A',amount:1}],income:[{id:'row-b',note:'B',amount:2}]};
   const b={...core.emptyShift(),expense:[{id:'row-other',note:'Other',amount:3}]};
