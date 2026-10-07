@@ -86,7 +86,7 @@ test("employee tabs stay clickable while their panels are empty and inert", () =
   assert.equal(tabs[5].dataset.roleHidden, "true");
   for (const panel of panels.slice(0, 4)) {
     assert.equal(panel.dataset.employeeEmpty, "true", panel.dataset.tabPanel);
-    assert.equal(panel.inert, panel.dataset.tabPanel !== "stores", panel.dataset.tabPanel);
+    assert.equal(panel.inert, !["stores","overview"].includes(panel.dataset.tabPanel), panel.dataset.tabPanel);
   }
   assert.equal(panels[4].inert, false);
   assert.equal(adminOnly[0].dataset.roleHidden, "true");

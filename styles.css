@@ -2235,6 +2235,12 @@ body.auth-pending {
 body.employee-session .tab-panel[data-employee-empty="true"] > * {
   display: none !important;
 }
+body.employee-session .tab-panel[data-employee-empty="true"] > .employee-overview-access:not([hidden]) { display: flex !important; }
+.employee-overview-access { align-items: center; justify-content: space-between; gap: 16px; padding: clamp(18px,4vw,30px); border: 1px solid #d8ddff; border-radius: 24px; background: linear-gradient(115deg,#f9ecff,#e4f7ff); }
+.employee-overview-access > div { min-width: 0; }
+.employee-overview-access span { font-size: 12px; font-weight: 800; letter-spacing: .08em; color: #586db4; }
+.employee-overview-access h2 { margin: 8px 0 0; font-size: clamp(23px,4vw,34px); overflow-wrap: anywhere; }
+.employee-overview-access .closing-book-icon { flex: 0 0 58px; }
 
 body.employee-session .signed-in-user-name {
   display: block;

@@ -527,6 +527,7 @@ function isEmployeeUser() {
 }
 
 const DEFAULT_EMPLOYEE_PERMISSIONS = Object.freeze({
+  closingBook: Object.freeze({ manage: false }),
   purchase: Object.freeze({ view: true, create: true, inventoryView: false }),
   sales: Object.freeze({ view: true, create: true, draft: false }),
   history: Object.freeze({ viewOwn: true })
@@ -538,6 +539,7 @@ function normalizeEmployeePermissions(profile = {}) {
     return JSON.parse(JSON.stringify(DEFAULT_EMPLOYEE_PERMISSIONS));
   }
   const permissions = {
+    closingBook: { manage: source.closingBook?.manage === true },
     purchase: {
       view: source.purchase?.view === true,
       create: source.purchase?.create === true,
@@ -576,6 +578,7 @@ function isEmployeeEmptyTab(tabName) {
 function getFirstEmployeeTab() {
   if (employeeCan("purchase", "view")) return "purchase";
   if (employeeCan("sales", "view")) return "sales";
+  if (employeeCan("closingBook", "manage")) return "overview";
   return "purchase";
 }
 
@@ -2168,7 +2171,7 @@ function applyRoleAccess() {
   document.querySelectorAll("[data-tab-panel]").forEach((panel) => {
     const empty = isEmployeeEmptyTab(panel.dataset.tabPanel);
     panel.dataset.employeeEmpty = String(empty);
-    panel.inert = empty && panel.dataset.tabPanel !== "stores";
+    panel.inert = empty && !["stores", "overview"].includes(panel.dataset.tabPanel);
   });
   els.activeStorePanel.dataset.roleHidden = employee ? "true" : "false";
   document.querySelector(".sidebar")?.setAttribute("data-role-hidden", employee && USE_MOBILE_APP_THEME ? "true" : "false");
@@ -2400,6 +2403,7 @@ function setEmployeeManagerStatus(message = "", type = "") {
 function getPermissionsFromContainer(container) {
   const checked = (name) => Boolean(container?.querySelector(`[name="${name}"]`)?.checked);
   const permissions = {
+    closingBook: { manage: checked("closingBookManage") },
     purchase: {
       view: checked("purchaseView"),
       create: checked("purchaseCreate"),
@@ -2472,7 +2476,8 @@ function employeePermissionFields(permissions) {
     field("salesView", normalized.sales.view, "Xem tab Bán hàng"),
     field("salesCreate", normalized.sales.create, "Tạo mới trong Bán hàng"),
     field("salesDraft", normalized.sales.draft, "Lưu và mở đơn đang lưu"),
-    field("historyViewOwn", normalized.history.viewOwn, "Xem lịch sử của chính mình")
+    field("historyViewOwn", normalized.history.viewOwn, "Xem lịch sử của chính mình"),
+    field("closingBookManage", normalized.closingBook.manage, "Chốt sổ · Toàn bộ chức năng, chuyển Thu/Chi và xóa ca")
   ].join("");
 }
 
@@ -2586,7 +2591,7 @@ async function createEmployeeAccount(event) {
   const form = els.employeeCreateForm;
   if (!form.reportValidity()) return;
   const permissions = getPermissionsFromContainer(form);
-  if (!permissions.purchase.view && !permissions.sales.view) {
+  if (!permissions.purchase.view && !permissions.sales.view && !permissions.closingBook.manage) {
     setEmployeeManagerStatus("Nhân viên phải được xem ít nhất một tab nghiệp vụ.", "error");
     return;
   }
@@ -2619,7 +2624,7 @@ async function updateEmployeeAccount(card) {
   const permissions = getPermissionsFromContainer(card);
   const status = card.querySelector(".employee-card-status");
   const button = card.querySelector("[data-save-employee]");
-  if (!permissions.purchase.view && !permissions.sales.view) {
+  if (!permissions.purchase.view && !permissions.sales.view && !permissions.closingBook.manage) {
     status.textContent = "Phải được xem ít nhất một tab.";
     status.dataset.type = "error";
     return;
@@ -2648,6 +2653,7 @@ async function updateEmployeeAccount(card) {
 async function loadEmployeeState() {
   try {
     const result = await callEmployeeFunction("getStateUrl");
+    if (result.profile) authState.profile={...authState.profile,...result.profile};
     state = normalizeState(result.state || cloneDefaultData());
     if (authState.profile?.storeId && state.stores.some((store) => store.id === authState.profile.storeId)) {
       state.activeStoreId = authState.profile.storeId;
@@ -2688,7 +2694,7 @@ async function saveStateToCloud(employeeMutation = null) {
       saveStateToCache();
       render();
       updateSyncStatus("Đã lưu cloud", "ok");
-      return;
+      return true;
     }
     await cloudStore.docRef.set(
       {
@@ -2703,6 +2709,11 @@ async function saveStateToCloud(employeeMutation = null) {
     cloudStore.lastError = error;
     updateSyncStatus("Lưu cloud thất bại", "error");
     console.error("Cannot save cloud state", error);
+    if (employeeMutation?.type === "closing-book-save") {
+      await loadEmployeeState();
+      window.reloadClosingBookFromCloud?.();
+      updateSyncStatus(error.message || "Không lưu được Chốt sổ", "error");
+    }
     return false;
   }
 }

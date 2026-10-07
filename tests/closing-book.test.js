@@ -100,7 +100,7 @@ test('closing book page is admin-only, isolated by store, protected on logout an
   const ui=fs.readFileSync(path.join(root,'closing-book.js'),'utf8');
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
   const worker=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
-  assert.match(ui,/isAdminUser\(\) && els.authScreen.hidden/);
+  assert.match(ui,/isAdminUser\(\) \|\| \(isEmployeeUser\(\) && employeeCan\('closingBook','manage'\)/);
   assert.match(ui,/store.id!==closingBook.storeId/);
   assert.match(app,/closingMonths: Array.isArray\(store.closingMonths\)/);
   assert.match(app,/function showLoginScreen[^]*hideClosingBookPage/);

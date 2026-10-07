@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=99" />
+    <link rel="manifest" href="manifest.webmanifest?v=100" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=99" />
+    <link rel="stylesheet" href="styles.css?v=100" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -299,6 +299,7 @@
             </section>
 
             <section class="tab-panel" data-tab-panel="overview" hidden>
+              <section class="employee-overview-access" id="employeeOverviewAccess" hidden aria-label="Cửa hàng và Chốt sổ"><div><span>CỬA HÀNG ĐANG CHỌN</span><h2 id="employeeOverviewStoreName">Cửa hàng</h2></div><button class="closing-book-icon" id="openClosingBookEmployee" type="button" aria-label="Chốt sổ" title="Chốt sổ" hidden></button></section>
               <section class="mobile-overview-flow" aria-label="Tổng quan dòng tiền">
                 <header class="mobile-overview-heading">
                   <div>
@@ -1372,6 +1373,7 @@
               <label><input name="salesCreate" type="checkbox" checked /> Tạo mới trong Bán hàng</label>
               <label><input name="salesDraft" type="checkbox" /> Lưu và mở đơn đang lưu</label>
               <label><input name="historyViewOwn" type="checkbox" checked /> Xem lịch sử của chính mình</label>
+              <label><input name="closingBookManage" type="checkbox" /> Chốt sổ · Toàn bộ chức năng, chuyển Thu/Chi và xóa ca</label>
             </fieldset>
             <p class="employee-manager-status" id="employeeManagerStatus" role="status" hidden></p>
             <button class="employee-create-submit" type="submit">Tạo tài khoản nhân viên</button>
@@ -1482,8 +1484,8 @@
         </article>
       </section>
     </section>
-    <script defer src="app.js?v=99"></script>
-    <script defer src="closing-book-core.js?v=99"></script>
-    <script defer src="closing-book.js?v=99"></script>
+    <script defer src="app.js?v=100"></script>
+    <script defer src="closing-book-core.js?v=100"></script>
+    <script defer src="closing-book.js?v=100"></script>
   </body>
 </html>

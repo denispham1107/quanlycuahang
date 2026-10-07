@@ -18,6 +18,7 @@ async function main() {
     await page.goto('http://closing.test/');
     await page.addScriptTag({content:`let admin=true; let saves=0; let state={activeStoreId:'a',stores:[{id:'a',name:'Cửa hàng thử nghiệm',closingMonths:[],entries:[],categories:{income:[],expense:[]}},{id:'b',name:'Cửa hàng 2',closingMonths:[],entries:[],categories:{income:[],expense:[]}}]}; const els=Object.fromEntries(Array.from(document.querySelectorAll('[id]'),el=>[el.id,el])); function isAdminUser(){return admin;} function getActiveStore(){return state.stores.find(s=>s.id===state.activeStoreId);} function getActiveTabName(){return 'overview';} function updateTimeFiltersVisibility(){} function recordActivity(){} function saveAndRender(){saves++;window.refreshClosingBookAccess?.();} ${['formatCurrency','formatDate','formatActivityDateTime','escapeHtml','createId'].map(helper).join('\n')}`});
     await page.addScriptTag({content:fs.readFileSync(path.join(root,'closing-book-core.js'),'utf8')});
+    await page.addScriptTag({content:`function isEmployeeUser(){return false;} function employeeCan(){return false;} for(const id of ['employeeOverviewAccess','employeeOverviewStoreName','openClosingBookEmployee']) {const el=document.createElement(id==='openClosingBookEmployee'?'button':'div');el.id=id;document.body.append(el);}`});
     await page.addScriptTag({content:fs.readFileSync(path.join(root,'closing-book.js'),'utf8')});
     await page.locator('#openClosingBookDesktop').click();
     assert.equal(await page.locator('#closingBookPage').isVisible(),true);
@@ -376,6 +377,65 @@ async function main() {
     await full.evaluate(()=>showLoginScreen());
     assert.equal(await full.locator('#closingBookPage').isVisible(),false);
     assert.deepEqual(fullErrors,[]);
+    // Staff uses real frontend permission/mutation flow with an isolated server fixture.
+    const {applyClosingBookMutation}=require('../functions/closing-book-mutation');
+    const employee=await browser.newPage({viewport:{width:375,height:900}});
+    const employeeErrors=[];employee.on('pageerror',error=>employeeErrors.push(error.message));
+    employee.on('dialog',dialog=>dialog.accept());
+    let serverStore={id:'staff-store',name:'Cửa hàng được gán cho nhân viên · Tên dài để kiểm tra',closingMonths:[],categories:{income:[],expense:[]},entries:[{id:'direct-entry',type:'expense',note:'Nhập trực tiếp',amount:999}],activityHistory:[]};
+    const staffUser={uid:'staff-test',profile:{role:'employee',active:true,storeId:'staff-store',displayName:'Nhân viên thử',permissions:{closingBook:{manage:true}}}};
+    await employee.exposeFunction('testStaffMutation',async(name,mutation)=> {
+      if (name==='saveMutationUrl') applyClosingBookMutation(serverStore,mutation,staffUser,()=> 'log-'+Date.now());
+      return {profile:JSON.parse(JSON.stringify(staffUser.profile)),state:{activeStoreId:serverStore.id,stores:[{...JSON.parse(JSON.stringify(serverStore)),entries:serverStore.entries.filter(entry=>entry.closingBookRowId)}]}};
+    });
+    await employee.route('**/*',serveFull);await employee.goto('http://full.test/');
+    await employee.evaluate(async()=> {
+      authState.role='employee';authState.ready=true;authState.user={uid:'staff-test'};authState.profile={role:'employee',active:true,storeId:'staff-store',displayName:'Nhân viên thử',permissions:{closingBook:{manage:true}}};
+      callEmployeeFunction=(name,body={})=>testStaffMutation(name,body.mutation);
+      cloudStore.enabled=true;cloudStore.docRef={set:()=>{throw new Error('Employee must never write shared state directly');}};
+      state=normalizeState((await callEmployeeFunction('getStateUrl')).state);
+      els.authScreen.hidden=true;els.appShell.hidden=false;document.body.classList.remove('auth-pending');activateTab('overview');render();
+    });
+    for(const [width,height] of [[320,700],[375,900],[430,900],[667,375],[375,400],[800,900],[1024,900],[1440,900]]) {
+      await employee.setViewportSize({width,height});
+      await employee.evaluate(width=>document.documentElement.classList.toggle('mobile-app-theme',width<700),width);
+      assert.equal(await employee.locator('#employeeOverviewAccess').isVisible(),true);
+      assert.match(await employee.locator('#employeeOverviewStoreName').innerText(),/Cửa hàng được gán/);
+      assert.equal(await employee.locator('#openClosingBookEmployee').isVisible(),true);
+      assert.equal(await employee.locator('.overview-charts').isVisible(),false,'Permission does not grant unrelated overview data');
+      const controls=await employee.locator('#employeeOverviewAccess h2,#openClosingBookEmployee').evaluateAll(els=>els.map(el=>el.getBoundingClientRect().toJSON()));
+      assert.ok(controls.every(r=>r.left>=0&&r.right<=width),`Staff overview fits ${width}`);
+      if(process.env.INVENTORY_TEST_SHOTS&&[375,1440].includes(width)&&height===900) await employee.screenshot({path:path.join(process.env.INVENTORY_TEST_SHOTS,`closing-book-staff-overview-${width}.png`)});
+    }
+    await employee.locator('#openClosingBookEmployee').click();
+    await employee.locator('#closingBookNewMonth').fill('09/2026');await employee.locator('#closingBookCreateMonth button').click();
+    await employee.waitForFunction(()=>!closingBook.page.inert);
+    for(const type of ['income','expense']) {
+      await employee.locator(`[data-book-note="${type}"]`).fill('Khoản '+type+' từ nhân viên');
+      await employee.locator(`[data-book-amount="${type}"]`).fill(type==='income'?'150000':'25000');
+    }
+    await employee.locator('#closingBookForm button[type="submit"]').click();await employee.waitForFunction(()=>!closingBook.page.inert);
+    for(const type of ['income','expense']) {
+      await employee.locator(`[data-book-details="${type}"]`).click();await employee.waitForFunction(()=>!closingBook.page.inert);
+      await employee.locator('[data-detail-edit]').click();await employee.locator('[data-detail-new-name]').fill('Mục '+type);
+      await employee.locator('[data-detail-create]').click();await employee.waitForFunction(()=>!closingBook.page.inert);
+      await employee.locator('[data-detail-select]').check();await employee.locator('#closingBookTransferSelected').click();await employee.waitForFunction(()=>!closingBook.page.inert);
+      assert.equal(serverStore.entries.filter(entry=>entry.type===type&&entry.closingBookRowId).length,1);
+      await employee.locator('#closeClosingBookDetail').click();await employee.waitForFunction(()=>closingBook.detailType===null);
+    }
+    await employee.locator('#closingBookDeleteShift').click();await employee.waitForFunction(()=>!closingBook.saving&&!closingBook.page.inert);
+    assert.equal(serverStore.entries.length,1);assert.equal(serverStore.entries[0].id,'direct-entry');assert.equal(serverStore.closingMonths[0].days.length,0);
+    const serverBeforeDenied=JSON.stringify(serverStore);
+    staffUser.profile.permissions.closingBook.manage=false;
+    await employee.locator('#closingBookNewMonth').fill('10/2026');await employee.locator('#closingBookCreateMonth button').click();
+    await employee.waitForFunction(()=>!closingBook.page.inert);
+    assert.equal(JSON.stringify(serverStore),serverBeforeDenied,'Server revocation prevents stale browser credentials from writing');
+    assert.equal(await employee.evaluate(()=>authState.profile.permissions.closingBook.manage),false,'Refresh picks up current permission');
+    await employee.evaluate(()=>{authState.profile.permissions.closingBook.manage=false;refreshClosingBookAccess();});
+    assert.equal(await employee.locator('#closingBookPage').isVisible(),false,'Revocation closes the book immediately');
+    await employee.evaluate(()=>{activateTab('overview');render();});
+    await employee.locator('#openClosingBookEmployee').click();assert.equal(await employee.locator('#closingBookPage').isVisible(),false,'No access after revocation');
+    assert.deepEqual(employeeErrors,[]);
     const mobile=await browser.newPage({userAgent:'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36',viewport:{width:375,height:900}});
     const mobileErrors=[];mobile.on('pageerror',error=>mobileErrors.push(error.message));
     await mobile.route('**/*',serveFull); await mobile.goto('http://full.test/');

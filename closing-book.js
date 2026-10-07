@@ -15,7 +15,10 @@ document.querySelectorAll('.closing-book-icon, .closing-book-emblem').forEach((e
   element.innerHTML=closingBookIcon.replaceAll('bookCover',`bookCover${index}`);
 });
 
-function closingBookAllowed() { return isAdminUser() && els.authScreen.hidden && Boolean(getActiveStore()); }
+function closingBookAllowed() {
+  const store=getActiveStore();
+  return els.authScreen.hidden && Boolean(store) && (isAdminUser() || (isEmployeeUser() && employeeCan('closingBook','manage') && store.id===authState.profile?.storeId));
+}
 function closingBookNotice(message, error=false) {
   closingBook.message.textContent=message;
   closingBook.message.classList.toggle('is-error',error);
@@ -27,13 +30,19 @@ function closingBookDiscard() {
 }
 function refreshClosingBookAccess() {
   const allowed=closingBookAllowed();
-  document.querySelector('#openClosingBookDesktop').hidden=!allowed || getActiveTabName()!=='overview';
-  document.querySelector('#openClosingBookMobile').hidden=!allowed;
+  const employee=isEmployeeUser();
+  document.querySelector('#openClosingBookDesktop').hidden=employee || !allowed || getActiveTabName()!=='overview';
+  document.querySelector('#openClosingBookMobile').hidden=employee || !allowed;
+  document.querySelector('#employeeOverviewAccess').hidden=!employee || !els.authScreen.hidden;
+  document.querySelector('#employeeOverviewStoreName').textContent=getActiveStore()?.name || 'Chưa chọn cửa hàng';
+  const employeeIcon=document.querySelector('#openClosingBookEmployee');
+  employeeIcon.hidden=!employee || !els.authScreen.hidden;
+  employeeIcon.title=allowed?'Chốt sổ':'Chốt sổ · Chưa được cấp quyền';
   if (!closingBook.page.hidden && (!allowed || closingBook.storeId!==getActiveStore()?.id)) hideClosingBookPage({force:true});
   if (allowed && closingBook.page.hidden && window.location.hash.startsWith('#closing-book')) openClosingBookPage({fromHistory:true});
 }
 function openClosingBookPage({fromHistory=false}={}) {
-  if (!closingBookAllowed()) return;
+  if (!closingBookAllowed()) { if (isEmployeeUser()) window.alert('Bạn chưa được cấp quyền Chốt sổ. Vui lòng liên hệ admin.'); return; }
   if (!closingBook.page.hidden) return;
   closingBook.storeId=getActiveStore().id;
   closingBook.dirty=false;
@@ -81,6 +90,17 @@ function hideClosingBookPage({force=false}={}) {
 }
 window.refreshClosingBookAccess=refreshClosingBookAccess;
 window.hideClosingBookPage=hideClosingBookPage;
+window.reloadClosingBookFromCloud=()=> {
+  if (closingBook.page.hidden) return;
+  const {monthKey,dayKey,shiftIndex}=closingBook;
+  closeClosingBookDetails();
+  renderClosingBookMonths(monthKey);
+  if (Array.from(closingBook.day.options).some(option=>option.value===dayKey)) { closingBook.day.value=dayKey;loadClosingBookDay(); }
+  closingBook.shiftIndex=Math.min(shiftIndex,closingBook.shifts.length-1);
+  if (closingBook.shifts.length) { renderClosingBookShiftOptions();renderClosingBookShift(); }
+  closingBook.dirty=false;
+  closingBookNotice('Không lưu được thay đổi. Đã tải lại dữ liệu cloud; vui lòng thử lại.',true);
+};
 window.refreshClosingBookSync=(message,status)=> {
   const element=document.querySelector('#closingBookSync');
   element.textContent=message;
@@ -242,8 +262,8 @@ async function syncClosingBookDeletion(write) {
     closingBookNotice('Đã xóa trên thiết bị. Đang xác nhận xóa trên Firebase...');
     const result=await Promise.race([write,new Promise(resolve=>{timer=setTimeout(()=>resolve(false),15000);})]);
     if (closingBook.page.hidden || closingBook.storeId!==storeId) return;
-    retry.hidden=result===true;
-    closingBookNotice(result===true?'Đã xóa ca và các khoản Thu/Chi liên kết trên thiết bị và Firebase.':'Chưa xác nhận được việc xóa trên Firebase. Vui lòng kiểm tra kết nối và bấm Thử đồng bộ lại.',result!==true);
+    retry.hidden=result===true || isEmployeeUser();
+    closingBookNotice(result===true?'Đã xóa ca và các khoản Thu/Chi liên kết trên thiết bị và Firebase.':isEmployeeUser()?'Chưa xóa được ca trên Firebase. Hãy tải lại ngày chốt sổ và thử lại.':'Chưa xác nhận được việc xóa trên Firebase. Vui lòng kiểm tra kết nối và bấm Thử đồng bộ lại.',result!==true);
   } finally {
     clearTimeout(timer);
     document.querySelector('#closingBookMain').inert=false;
@@ -285,10 +305,16 @@ function commitClosingBookMonths(months,activity,changes={},details={}) {
   if (!closingBookAllowed() || store.id!==closingBook.storeId) throw new Error('Không còn quyền chốt sổ cho cửa hàng này.');
   const candidate={...state,stores:state.stores.map(item=>item.id===store.id?{...item,...changes,closingMonths:months}:item)};
   if (new TextEncoder().encode(JSON.stringify(candidate)).length>900000) throw new Error('Dữ liệu cửa hàng gần giới hạn đồng bộ. Chưa lưu thay đổi; hãy sao lưu và giảm dữ liệu trước.');
+  const employeeMutation=isEmployeeUser()?{type:'closing-book-save',storeId:store.id,baseClosingMonths:JSON.parse(JSON.stringify(store.closingMonths||[])),closingMonths:months,categories:changes.categories||store.categories}:null;
   Object.assign(store,changes,{closingMonths:months});
   const {action='update',...activityDetails}=details;
   recordActivity(store,action,'Chốt sổ',activity,{tab:'overview',targetDate:closingBook.dayKey,...activityDetails});
-  return saveAndRender();
+  const write=saveAndRender(employeeMutation);
+  if (employeeMutation) {
+    closingBook.page.inert=true;
+    return Promise.resolve(write).finally(()=> {closingBook.page.inert=false;});
+  }
+  return write;
 }
 
 function stampClosingBookRows(shift,savedAt) {

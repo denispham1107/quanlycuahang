@@ -6,6 +6,7 @@ const { logger } = require("firebase-functions");
 const admin = require("firebase-admin");
 const OpenAI = require("openai");
 const crypto = require("crypto");
+const { applyClosingBookMutation } = require("./closing-book-mutation");
 
 admin.initializeApp();
 
@@ -338,6 +339,7 @@ function allocateEmployeeSalesBillCode(store, date) {
 }
 
 const DEFAULT_EMPLOYEE_PERMISSIONS = Object.freeze({
+  closingBook: Object.freeze({ manage: false }),
   purchase: Object.freeze({ view: true, create: true, inventoryView: false }),
   sales: Object.freeze({ view: true, create: true, draft: false }),
   history: Object.freeze({ viewOwn: true })
@@ -349,6 +351,7 @@ function normalizeEmployeePermissions(profile = {}) {
     return JSON.parse(JSON.stringify(DEFAULT_EMPLOYEE_PERMISSIONS));
   }
   const permissions = {
+    closingBook: { manage: source.closingBook?.manage === true },
     purchase: {
       view: source.purchase?.view === true,
       create: source.purchase?.create === true,
@@ -405,8 +408,9 @@ function sanitizeEmployeeState(state, user) {
       return {
         id: store.id,
         name: store.name,
-        categories: { income: [], expense: [] },
-        entries: [],
+        categories: permissions.closingBook.manage ? store.categories : { income: [], expense: [] },
+        entries: permissions.closingBook.manage ? (store.entries||[]).filter(entry=>entry.closingBookRowId) : [],
+        closingMonths: permissions.closingBook.manage ? (store.closingMonths||[]) : [],
         orders: permissions.sales.view ? store.orders : [],
         salesBillSequences: permissions.sales.view ? store.salesBillSequences : {},
         draftOrders:
@@ -425,7 +429,7 @@ function sanitizeEmployeeState(state, user) {
         exportReasons: [],
         activityHistory: permissions.history.viewOwn
           ? (Array.isArray(store.activityHistory) ? store.activityHistory : []).filter(
-              (activity) => activity.actorUid === user.uid && ["Nhập hàng", "Bán hàng"].includes(activity.area)
+              (activity) => activity.actorUid === user.uid && ["Nhập hàng", "Bán hàng", "Chốt sổ"].includes(activity.area)
             )
           : [],
         createdAt: store.createdAt || ""
@@ -2263,7 +2267,7 @@ async function getEmployeeManagementStores() {
 
 function validateManagedEmployeePermissions(rawPermissions) {
   const permissions = normalizeEmployeePermissions({ permissions: rawPermissions || {} });
-  if (!permissions.purchase.view && !permissions.sales.view) {
+  if (!permissions.purchase.view && !permissions.sales.view && !permissions.closingBook.manage) {
     throw Object.assign(new Error("EMPLOYEE_TAB_REQUIRED"), { status: 400 });
   }
   return permissions;
@@ -2420,7 +2424,7 @@ exports.getEmployeeState = onRequest(
       const user = await requireUserProfile(req, "employee");
       const stateSnap = await db.collection(APP_STATE_COLLECTION).doc(APP_STATE_DOCUMENT).get();
       const state = stateSnap.exists ? (stateSnap.data()?.state || stateSnap.data()) : { activeStoreId: null, stores: [] };
-      res.json({ ok: true, state: sanitizeEmployeeState(state, user) });
+      res.json({ ok: true, state: sanitizeEmployeeState(state, user), profile: {storeId:user.profile.storeId,permissions:normalizeEmployeePermissions(user.profile)} });
     } catch (error) {
       logger.warn("getEmployeeState denied", { message: error?.message || "", status: error?.status || 500 });
       sendError(res, error?.status || 500, error?.status ? "Không có quyền truy cập." : "Không tải được dữ liệu.");
@@ -2438,7 +2442,7 @@ exports.saveEmployeeMutation = onRequest(
       const user = await requireUserProfile(req, "employee");
       const mutation = req.body?.mutation || {};
       const type = employeeText(mutation.type, 40);
-      if (!["sales-create", "sales-draft-save", "purchase-create"].includes(type)) {
+      if (!["sales-create", "sales-draft-save", "purchase-create", "closing-book-save"].includes(type)) {
         return sendError(res, 403, "Nhân viên chỉ được tạo mới trong Nhập hàng và Bán hàng.");
       }
       if (type === "sales-create" && !hasEmployeePermission(user, "sales", "create")) {
@@ -2449,6 +2453,9 @@ exports.saveEmployeeMutation = onRequest(
       }
       if (type === "sales-draft-save" && !hasEmployeePermission(user, "sales", "draft")) {
         return sendError(res, 403, "Bạn chưa được cấp quyền lưu và mở đơn đang lưu.");
+      }
+      if (type === "closing-book-save" && !hasEmployeePermission(user, "closingBook", "manage")) {
+        return sendError(res, 403, "Bạn chưa được cấp quyền Chốt sổ.");
       }
 
       const stateRef = db.collection(APP_STATE_COLLECTION).doc(APP_STATE_DOCUMENT);
@@ -2470,6 +2477,8 @@ exports.saveEmployeeMutation = onRequest(
         }
         if (type === "sales-draft-save") applyEmployeeSalesDraftMutation(store, mutation.draft, user);
         if (type === "purchase-create") applyEmployeePurchaseMutation(store, mutation.order, user);
+        if (type === "closing-book-save") applyClosingBookMutation(store, mutation, user, employeeId);
+        if (type === "closing-book-save" && Buffer.byteLength(JSON.stringify(state),"utf8")>900000) throw Object.assign(new Error("STATE_TOO_LARGE"),{status:400});
         transaction.set(stateRef, { state, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
         resultState = sanitizeEmployeeState(state, user);
       });
@@ -2479,6 +2488,8 @@ exports.saveEmployeeMutation = onRequest(
       const knownStatus = error?.status || 500;
       const message = String(error?.message || "").startsWith("OUT_OF_STOCK:")
         ? `Không đủ tồn kho cho ${String(error.message).split(":").slice(1).join(":")}.`
+        : error?.message === "CLOSING_BOOK_CONFLICT"
+          ? "Chốt sổ đã thay đổi trên thiết bị khác. Vui lòng tải lại và thử lại."
         : knownStatus < 500
           ? "Dữ liệu không hợp lệ hoặc bạn không có quyền thực hiện thao tác này."
           : "Không thể lưu dữ liệu nhân viên.";
