@@ -71,7 +71,7 @@ test("compact summaries use the selected store, range, live category totals and 
 });
 
 test("Thu and Chi retain the category report when history opens and collapse details independently", () => {
-  const start = app.indexOf("function setMobileCashFlowPanel(type, view, innerTarget = null) {");
+  const start = app.indexOf("function setMobileCashFlowPanel(type, view, innerTarget = null, { scroll = true } = {}) {");
   const end = app.indexOf("function renderSalesGoodsReport(", start);
   assert.ok(start >= 0 && end > start);
   const calls = [];
@@ -110,5 +110,9 @@ test("Thu and Chi retain the category report when history opens and collapse det
     context.setMobileCashFlowPanel(type, "history");
     context.setMobileCashFlowPanel(type, "report");
     assert.equal(panel.dataset.mobileFlowView, "report-history");
+    const previousScrolls = calls.length;
+    context.setMobileCashFlowPanel(type, "history", null, { scroll: false });
+    assert.equal(panel.dataset.mobileFlowView, "report-history");
+    assert.equal(calls.length, previousScrolls, "targeted navigation does not scroll the overview first");
   }
 });

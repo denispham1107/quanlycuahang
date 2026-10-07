@@ -3283,7 +3283,14 @@ function navigateToActivity(activityId) {
   if (!store || !activity) return;
 
   const target = resolveActivityTarget(store, activity);
-  const targetDate = /^\d{4}-\d{2}-\d{2}$/.test(target.targetDate || "") ? target.targetDate : "";
+  // Do not close the current history page or change filters when access is denied.
+  if (isEmployeeUser() && (target.tab === "income" || target.tab === "expense")) {
+    activateTab(target.tab);
+    return;
+  }
+  const targetEntry = target.targetType === "entry" ? (store.entries || []).find(entry => entry.id === target.targetId) : null;
+  const recordDate = targetEntry?.date || target.targetDate || "";
+  const targetDate = /^\d{4}-\d{2}-\d{2}$/.test(recordDate) ? recordDate : "";
 
   if (targetDate) {
     uiState.rangeMode = "day";
@@ -3308,6 +3315,10 @@ function navigateToActivity(activityId) {
   hideActivityHistoryPage({ restoreFocus: false });
   clearSettingsDetailHash("#activity-history");
   activateTab(target.tab || "stores");
+  if (target.tab === "income" || target.tab === "expense") {
+    // Reveal details before locating the row; only the row scroll below should run.
+    setMobileCashFlowPanel(target.tab, "history", null, { scroll: false });
+  }
   render();
 
   window.requestAnimationFrame(() => {
@@ -3315,7 +3326,16 @@ function navigateToActivity(activityId) {
       const row = findActivityTargetRow(target);
       if (row) {
         row.classList.add("activity-target-highlight");
-        row.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+        let scrollBlock = "center";
+        if (USE_MOBILE_APP_THEME && target.targetType === "entry") {
+          const filterBottom = els.timeFilterToggle?.hidden ? 0 : (els.timeFilterToggle?.getBoundingClientRect().bottom || 0);
+          const dockTop = els.tabBar?.getBoundingClientRect().top ?? window.innerHeight;
+          row.style.setProperty("--activity-target-scroll-top", `${Math.max(0, filterBottom) + 2}px`);
+          row.style.setProperty("--activity-target-scroll-bottom", `${Math.max(0, window.innerHeight - dockTop) + 2}px`);
+          // A tall card on a landscape/keyboard viewport cannot fit in full; show its beginning.
+          if (row.getBoundingClientRect().height > dockTop - Math.max(0, filterBottom) - 4) scrollBlock = "start";
+        }
+        row.scrollIntoView({ behavior: "smooth", block: scrollBlock, inline: "nearest" });
         window.setTimeout(() => row.classList.remove("activity-target-highlight"), 3600);
         showActivityNavigationNotice("Đã chuyển đến đúng dòng dữ liệu.");
         return;
@@ -7697,7 +7717,7 @@ function renderMobileCashFlow(store, type, range, entries) {
     : `<div class="mobile-flow-empty">Chưa có khoản ${type === "income" ? "thu" : "chi"} trong kỳ này.</div>`;
 }
 
-function setMobileCashFlowPanel(type, view, innerTarget = null) {
+function setMobileCashFlowPanel(type, view, innerTarget = null, { scroll = true } = {}) {
   if (!USE_MOBILE_APP_THEME) return;
   const panel = document.querySelector(`[data-tab-panel="${type}"]`);
   if (!panel) return;
@@ -7718,7 +7738,7 @@ function setMobileCashFlowPanel(type, view, innerTarget = null) {
       : view === "report" || next === "report"
         ? panel.querySelector('[data-mobile-flow-panel="report"]')
         : panel.querySelector(".mobile-cash-flow");
-  window.requestAnimationFrame(() => target?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  if (scroll) window.requestAnimationFrame(() => target?.scrollIntoView({ behavior: "smooth", block: "start" }));
 }
 
 function renderSalesGoodsReport(container, orders, store) {
