@@ -5,6 +5,13 @@ const path=require('node:path');
 const vm=require('node:vm');
 const core=require('../closing-book-core');
 const root=path.join(__dirname,'..');
+test('closing cash rows have a single full-width separator with spacing on both platforms',()=> {
+  const css=fs.readFileSync(path.join(root,'styles.css'),'utf8');
+  assert.match(css,/\.closing-book-row \+ \.closing-book-row\s*\{[^}]*padding-top:\s*18px;[^}]*border-top:\s*1px solid #c8d6ec;/);
+  assert.match(css,/\.book-expense \.closing-book-row \+ \.closing-book-row\s*\{[^}]*border-top-color:\s*#d8c0d2;/);
+  assert.match(css,/\.closing-book-row:last-child\s*\{\s*padding-bottom:\s*0;/);
+  assert.doesNotMatch(css,/\.closing-book-row\s*\{[^}]*border-bottom:/,'Mobile must not add a second separator');
+});
 test('closing money display groups thousands without rounding or changing validation',()=> {
   const source=fs.readFileSync(path.join(root,'closing-book.js'),'utf8');
   const start=source.indexOf('function formatClosingBookMoney('),end=source.indexOf('function closingBookMoneyField(',start);

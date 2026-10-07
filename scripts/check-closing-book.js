@@ -108,6 +108,17 @@ async function main() {
         return controls.flatMap((a,i)=>controls.slice(i+1).filter(b=>Math.min(a.r.right,b.r.right)-Math.max(a.r.left,b.r.left)>2&&Math.min(a.r.bottom,b.r.bottom)-Math.max(a.r.top,b.r.top)>2).map(b=>[a.name,b.name]));
       });
       assert.deepEqual(overlaps,[],`Overlapping controls at ${width}x${height}`);
+      for(const type of ['income','expense']) {
+        const rows=await page.locator(`[data-book-group="${type}"] .closing-book-row`).evaluateAll(els=>els.map(el=> {
+          const css=getComputedStyle(el);
+          return {topBorder:css.borderTopWidth,bottomBorder:css.borderBottomWidth,paddingTop:css.paddingTop,paddingBottom:css.paddingBottom};
+        }));
+        assert.equal(rows[0].topBorder,'0px','No divider before the first item');
+        assert.equal(rows[1].topBorder,'1px',`Full-width divider between ${type} items at ${width}x${height}`);
+        assert.equal(rows[0].paddingBottom,'18px');assert.equal(rows[1].paddingTop,'18px');
+        assert.equal(rows[1].paddingBottom,'0px','No extra spacing after the last item');
+        assert.ok(rows.every(row=>row.bottomBorder==='0px'),'No doubled mobile separators');
+      }
       assert.equal(await page.evaluate(()=>closingBook.page.scrollWidth<=closingBook.page.clientWidth),true);
       const incomeBounds=await page.locator('[data-book-group="income"]').boundingBox();
       const expenseBounds=await page.locator('[data-book-group="expense"]').boundingBox();

@@ -10527,8 +10527,11 @@ body.closing-book-open .tab-bar { display: none !important; }
 .closing-book-page [data-book-add] { width: 44px; padding: 5px; background: #edf0ff; color: #6150bd; border: 1px solid #d9d6fa; box-shadow: none; font-size: 22px; }
 .book-income { background: #f1f9ffe0; }
 .book-expense { background: #fff4f9e0; }
-.closing-book-rows { display: grid; gap: 12px; }
-.closing-book-row { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(0,1fr) 36px; gap: 8px; align-items: start; }
+.closing-book-rows { display: grid; gap: 0; }
+.closing-book-row { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(0,1fr) 36px; gap: 8px; align-items: start; padding-bottom: 18px; }
+.closing-book-row + .closing-book-row { padding-top: 18px; border-top: 1px solid #c8d6ec; }
+.book-expense .closing-book-row + .closing-book-row { border-top-color: #d8c0d2; }
+.closing-book-row:last-child { padding-bottom: 0; }
 .closing-book-row > [data-book-remove] { margin-top: 22px; }
 .closing-book-row > .book-category-field { grid-column: 1 / -1; }
 .closing-book-row select { width: 100%; min-width: 0; max-width: 100%; }
@@ -10569,7 +10572,7 @@ body.closing-book-open .tab-bar { display: none !important; }
   .closing-book-controls,.closing-book-fields,.closing-book-notes { grid-template-columns: minmax(0,1fr); }
   .closing-book-section { padding: 15px 12px; }
   .closing-book-payments { grid-template-columns: minmax(0,1fr); }
-  .closing-book-row { grid-template-columns: minmax(0,1fr) 36px; padding-bottom: 12px; border-bottom: 1px solid #dde5f4; }
+  .closing-book-row { grid-template-columns: minmax(0,1fr) 36px; }
   .closing-book-row > label:first-child { grid-column: 1 / -1; }
   .closing-book-row > .book-note-field { grid-column: 1 / -1; }
   .closing-book-save button { width: 100%; }
