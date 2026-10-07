@@ -98,7 +98,7 @@ async function main() {
     assert.equal(await page.locator('[name="result"]').inputValue(),'Kết quả cũ');
     assert.equal(await page.evaluate(()=>getActiveStore().closingMonths[0].days.find(d=>d.date==='2026-09-03').shifts[0].cancelled),7);
     await page.evaluate(()=>document.activeElement.blur());
-    for(const [width,height] of [[320,700],[375,900],[430,900],[667,375],[375,400],[800,900],[1024,900],[1440,900]]) {
+    for(const [width,height] of [[320,700],[375,900],[430,900],[667,375],[375,400],[800,900],[1024,900],[1200,900],[1328,900],[1440,900]]) {
       await page.setViewportSize({width,height});
       await page.evaluate(width=> {document.documentElement.classList.toggle('mobile-app-theme',width<700);closingBook.page.scrollTop=0;},width);
       const overflow=await page.evaluate(()=>Array.from(document.querySelectorAll('#closingBookPage input,#closingBookPage select,#closingBookPage textarea,#closingBookPage button,#closingBookPage strong')).filter(el=> {const r=el.getBoundingClientRect();return r.left<-1||r.right>innerWidth+1;}).map(el=>el.id||el.name||el.className));
@@ -118,11 +118,27 @@ async function main() {
         assert.equal(rows[0].paddingBottom,'18px');assert.equal(rows[1].paddingTop,'18px');
         assert.equal(rows[1].paddingBottom,'0px','No extra spacing after the last item');
         assert.ok(rows.every(row=>row.bottomBorder==='0px'),'No doubled mobile separators');
+        if(width>=701) {
+          const fields=await page.locator(`[data-book-group="${type}"] .closing-book-row`).first().locator('input,select,button[data-book-remove]').evaluateAll(els=>els.map(el=>el.getBoundingClientRect().toJSON()));
+          assert.ok(fields.every(r=>Math.abs(r.top-fields[0].top)<1),`Note, amount, category and delete share one desktop line at ${width}`);
+          const note=await page.locator(`[data-book-note="${type}"]`).first().boundingBox();
+          const amount=await page.locator(`[data-book-amount="${type}"]`).first().boundingBox();
+          const category=await page.locator(`[data-book-category="${type}"]`).first().boundingBox();
+          const remove=await page.locator(`[data-book-remove="${type}"]`).first().boundingBox();
+          assert.ok(note.x<amount.x&&amount.x<category.x&&category.x<remove.x,'Desktop field order');
+          assert.ok(note.width>=140&&amount.width>=164&&category.width>=145,'Desktop controls retain readable widths');
+          const moneyFits=await page.locator(`[data-book-amount="${type}"]`).first().evaluate(el=> {
+            const css=getComputedStyle(el), canvas=document.createElement('canvas'), context=canvas.getContext('2d');
+            context.font=`${css.fontWeight} ${css.fontSize} ${css.fontFamily}`;
+            return context.measureText('9.007.199.254.740.991').width<=el.clientWidth-parseFloat(css.paddingLeft)-parseFloat(css.paddingRight);
+          });
+          assert.equal(moneyFits,true,'Even the largest safe integer fits the desktop amount field');
+        }
       }
       assert.equal(await page.evaluate(()=>closingBook.page.scrollWidth<=closingBook.page.clientWidth),true);
       const incomeBounds=await page.locator('[data-book-group="income"]').boundingBox();
       const expenseBounds=await page.locator('[data-book-group="expense"]').boundingBox();
-      if(width>800) assert.ok(incomeBounds.x<expenseBounds.x&&Math.abs(incomeBounds.y-expenseBounds.y)<1,'Thu left, Chi right');
+      if(width>=1200) assert.ok(incomeBounds.x<expenseBounds.x&&Math.abs(incomeBounds.y-expenseBounds.y)<1,'Thu left, Chi right');
       else assert.ok(incomeBounds.y<expenseBounds.y,'Thu above Chi on narrow screens');
       const cancelledBounds=await page.locator('[name="recheck"]').boundingBox();
       const resultBounds=await page.locator('[name="result"]').boundingBox();

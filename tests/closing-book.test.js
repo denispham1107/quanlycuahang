@@ -12,6 +12,12 @@ test('closing cash rows have a single full-width separator with spacing on both 
   assert.match(css,/\.closing-book-row:last-child\s*\{\s*padding-bottom:\s*0;/);
   assert.doesNotMatch(css,/\.closing-book-row\s*\{[^}]*border-bottom:/,'Mobile must not add a second separator');
 });
+test('desktop closing rows keep note, amount, category and delete on one line without changing mobile',()=> {
+  const css=fs.readFileSync(path.join(root,'styles.css'),'utf8');
+  assert.match(css,/@media\(min-width:701px\)\s*\{[\s\S]*?html:not\(\.mobile-app-theme\) \.closing-book-row\s*\{[^}]*grid-template-columns:\s*minmax\(140px,1\.35fr\) 164px minmax\(145px,1fr\) 32px;/);
+  assert.match(css,/html:not\(\.mobile-app-theme\) \.closing-book-row > \.book-category-field\s*\{\s*grid-column:\s*3;\s*grid-row:\s*1;/);
+  assert.match(css,/html:not\(\.mobile-app-theme\) \.closing-book-row > \[data-book-remove\]\s*\{\s*grid-column:\s*4;\s*grid-row:\s*1;/);
+});
 test('closing money display groups thousands without rounding or changing validation',()=> {
   const source=fs.readFileSync(path.join(root,'closing-book.js'),'utf8');
   const start=source.indexOf('function formatClosingBookMoney('),end=source.indexOf('function closingBookMoneyField(',start);

@@ -10579,6 +10579,22 @@ body.closing-book-open .tab-bar { display: none !important; }
   .closing-book-totals strong { font-size: 17px; }
 }
 
+/* Desktop cash rows: note, amount and category remain on one aligned line. */
+@media(min-width:701px) {
+  html:not(.mobile-app-theme) #closingBookMain { max-width: 1400px; }
+  html:not(.mobile-app-theme) .closing-book-row { grid-template-columns: minmax(140px,1.35fr) 164px minmax(145px,1fr) 32px; column-gap: 6px; }
+  html:not(.mobile-app-theme) .closing-book-row > .book-category-field { grid-column: 3; grid-row: 1; }
+  html:not(.mobile-app-theme) .closing-book-row > [data-book-remove] { grid-column: 4; grid-row: 1; width: 32px; min-height: 40px; border-radius: 10px; font-size: 20px; }
+  html:not(.mobile-app-theme) .closing-book-row label { font-size: 11px; line-height: 16px; gap: 6px; }
+  html:not(.mobile-app-theme) .closing-book-row input,
+  html:not(.mobile-app-theme) .closing-book-row select { min-height: 40px; padding: 8px; border-radius: 10px; font-size: 13px; }
+  html:not(.mobile-app-theme) .closing-book-row [data-book-amount] { text-align: right; font-variant-numeric: tabular-nums; }
+  html:not(.mobile-app-theme) .closing-book-page [data-book-add] { width: 36px; min-height: 36px; border-radius: 11px; font-size: 20px; }
+}
+@media(min-width:701px) and (max-width:1199px) {
+  html:not(.mobile-app-theme) .closing-book-entry-groups { grid-template-columns: minmax(0,1fr); }
+}
+
 /* Dedicated Thu/Chi classification and explicit transfer view. */
 #closingBookMain[hidden], #closingBookDetailPage[hidden], .book-detail-editor[hidden] { display: none !important; }
 .closing-book-page .book-detail-link { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 14px; padding: 10px 0; color: #315db4; background: transparent; border: 0; box-shadow: none; text-align: left; }
