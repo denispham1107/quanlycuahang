@@ -73,3 +73,14 @@ test('closing book page is admin-only, isolated by store, protected on logout an
   assert.match(html,/Các bill đã hủy<textarea name="recheck"/);
   assert.doesNotMatch(ui,/· Nhóm|Tổng nhóm/);
 });
+
+test('closing book uses bill labels and puts cancelled-bill notes before the closing result',()=> {
+  const ui=fs.readFileSync(path.join(root,'closing-book.js'),'utf8');
+  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+  for (const [key,label] of Object.entries({vcb:'Bill VCB',momo:'Bill Momo',zalop:'Bill Zalop',cash:'Bill Tiền mặt'})) {
+    assert.ok(ui.includes(`${key}:'${label}'`));
+  }
+  assert.match(html,/<h2>Kiểm tiền trong Két<\/h2>/);
+  const notes=html.match(/<div class="closing-book-notes">([^]*?)<\/div>/)[1];
+  assert.ok(notes.indexOf('name="recheck"')<notes.indexOf('name="result"'));
+});

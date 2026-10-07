@@ -124,7 +124,7 @@ function renderClosingBookShiftOptions() {
   closingBook.shift.value=String(closingBook.shiftIndex);
   document.querySelector('#closingBookAddShift').disabled=closingBook.shifts.length>=4;
 }
-const closingBookLabels={opening:'Tiền trong két đếm đầu ca',pos:'POS · Tổng tất cả bill',vcb:'VCB trong sổ',momo:'Momo trong sổ',zalop:'Zalop trong sổ',cash:'Tiền mặt',actualVcb:'VCB thực tế',actualMomo:'Momo thực tế',actualZalop:'Zalop thực tế',ending:'Tiền trong két đếm cuối ca'};
+const closingBookLabels={opening:'Tiền trong két đếm đầu ca',pos:'POS · Tổng tất cả bill',vcb:'Bill VCB',momo:'Bill Momo',zalop:'Bill Zalop',cash:'Bill Tiền mặt',actualVcb:'VCB thực tế',actualMomo:'Momo thực tế',actualZalop:'Zalop thực tế',ending:'Tiền trong két đếm cuối ca'};
 function closingBookMoneyField(key,value) { return `<label>${closingBookLabels[key]}<input name="${key}" type="text" inputmode="numeric" autocomplete="off" value="${escapeHtml(String(value??''))}" placeholder="0" /></label>`; }
 function renderClosingBookShift() {
   closingBook.draft=closingBook.shifts[closingBook.shiftIndex];

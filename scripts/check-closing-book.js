@@ -53,7 +53,7 @@ async function main() {
     await page.locator('#closingBookShift').selectOption('0');
     // Opening an old saved day merges both former groups without persisting until Save.
     await page.evaluate(()=>getActiveStore().closingMonths[0].days.push({date:'2026-09-03',updatedAt:new Date().toISOString(),shifts:[{
-      opening:500000,cash:200000,ending:600000,cancelled:7,recheck:'Bill cũ đã hủy',
+      opening:500000,cash:200000,ending:600000,cancelled:7,recheck:'Bill cũ đã hủy',result:'Kết quả cũ',
       income1:[{note:'Thu A',amount:100000}],income2:[{note:'Thu B',amount:200000}],
       expense1:[{note:'Chi A',amount:100000}],expense2:[{note:'Chi B',amount:200000}]
     }]}));
@@ -61,6 +61,11 @@ async function main() {
     assert.equal(await page.locator('[data-book-group]').count(),2);
     assert.equal(await page.locator('[name="cancelled"]').count(),0);
     assert.equal(await page.locator('[name="recheck"]').inputValue(),'Bill cũ đã hủy');
+    assert.equal(await page.locator('[name="result"]').inputValue(),'Kết quả cũ');
+    assert.deepEqual(await page.locator('.closing-book-notes textarea').evaluateAll(els=>els.map(el=>el.name)),['recheck','result']);
+    for(const [key,label] of Object.entries({vcb:'Bill VCB',momo:'Bill Momo',zalop:'Bill Zalop',cash:'Bill Tiền mặt'})) {
+      assert.equal(await page.locator(`#closingBookFields [name="${key}"]`).locator('..').innerText(),label);
+    }
     assert.match(await page.locator('[name="recheck"]').locator('..').innerText(),/Các bill đã hủy/);
     for(const key of ['income','expense']) {
       assert.equal(await page.locator(`[data-book-note="${key}"]`).count(),2);
@@ -71,6 +76,8 @@ async function main() {
     await page.locator('#closingBookDay').selectOption('2026-09-01');
     await page.locator('#closingBookDay').selectOption('2026-09-03');
     assert.equal(await page.locator('[data-book-note="income"]').count(),2);
+    assert.equal(await page.locator('[name="recheck"]').inputValue(),'Bill cũ đã hủy');
+    assert.equal(await page.locator('[name="result"]').inputValue(),'Kết quả cũ');
     assert.equal(await page.evaluate(()=>getActiveStore().closingMonths[0].days.find(d=>d.date==='2026-09-03').shifts[0].cancelled),7);
     await page.evaluate(()=>document.activeElement.blur());
     for(const [width,height] of [[320,700],[375,900],[430,900],[667,375],[375,400],[800,900],[1024,900],[1440,900]]) {
@@ -88,12 +95,18 @@ async function main() {
       const expenseBounds=await page.locator('[data-book-group="expense"]').boundingBox();
       if(width>800) assert.ok(incomeBounds.x<expenseBounds.x&&Math.abs(incomeBounds.y-expenseBounds.y)<1,'Thu left, Chi right');
       else assert.ok(incomeBounds.y<expenseBounds.y,'Thu above Chi on narrow screens');
+      const cancelledBounds=await page.locator('[name="recheck"]').boundingBox();
+      const resultBounds=await page.locator('[name="result"]').boundingBox();
+      if(width>520) assert.ok(cancelledBounds.x<resultBounds.x,'Cancelled bills before result on desktop');
+      else assert.ok(cancelledBounds.y<resultBounds.y,'Cancelled bills above result on mobile');
       const buttonStyle=await page.locator('#closingBookCreateMonth button').evaluate(el=>({background:getComputedStyle(el).backgroundImage,color:getComputedStyle(el).color,variable:getComputedStyle(el).getPropertyValue('--accent-gradient')}));
       assert.notEqual(buttonStyle.background,'none',JSON.stringify(buttonStyle));
       if(process.env.INVENTORY_TEST_SHOTS&&[375,1440].includes(width)&&height===900) await page.screenshot({path:path.join(process.env.INVENTORY_TEST_SHOTS,`closing-book-${width}.png`)});
       if(process.env.INVENTORY_TEST_SHOTS&&[375,1440].includes(width)&&height===900) {
         await page.locator('#closingBookEntries').scrollIntoViewIfNeeded();
         await page.screenshot({path:path.join(process.env.INVENTORY_TEST_SHOTS,`closing-book-columns-${width}.png`)});
+        await page.locator('.closing-book-notes').scrollIntoViewIfNeeded();
+        await page.screenshot({path:path.join(process.env.INVENTORY_TEST_SHOTS,`closing-book-notes-${width}.png`)});
       }
     }
     await page.setViewportSize({width:375,height:400});
