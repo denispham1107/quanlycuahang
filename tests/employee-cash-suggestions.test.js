@@ -46,3 +46,43 @@ test('partial closing-book search handles Vietnamese with or without accents',()
   const ctx={};vm.runInNewContext(book.slice(start,end),ctx);
   assert.ok(ctx.closingBookSuggestionSearch('Tại nhà Ngọc').includes(ctx.closingBookSuggestionSearch('tai nha')));
 });
+
+test('saved untransferred closing rows feed both directions, with latest amount/category and legacy groups',()=> {
+  const saved={...store,closingMonths:[{month:'2026-09',days:[{date:'2026-09-01',updatedAt:'2026-10-05T00:00:00Z',shifts:[{
+    income:[{id:'book-i',note:'Thu trong ca',amount:35000,categoryId:'i',createdAt:'2026-10-04T01:00:00Z'}],
+    expense:[{id:'book-e',note:'Rác',amount:450000,categoryId:'e'}, {id:'book-new',note:'Tại nhà Ngọc',amount:150000,categoryId:'e'}, {note:'Không còn Mục',amount:12,categoryId:'removed'}]
+  }]},{date:'2026-09-02',updatedAt:'2026-10-06T00:00:00Z',shifts:[{income1:[{note:'Thu cũ',amount:25,categoryId:'i'}],expense2:[{note:'Rác',amount:460000,categoryId:'e'}]}]}]}]};
+  const before=JSON.stringify(saved), ctx={};
+  vm.runInNewContext(app.slice(app.indexOf('function getEntrySuggestions('),app.indexOf('function matchEntrySuggestion(')),ctx);
+  for(const type of ['income','expense']) assert.equal(JSON.stringify(ctx.getEntrySuggestions(saved,type)),JSON.stringify(getCashEntrySuggestions(saved)[type]));
+  const templates=getCashEntrySuggestions(saved);
+  assert.equal(templates.expense.find(s=>s.note==='Rác').amount,460000);
+  assert.equal(templates.expense.find(s=>s.note==='Tại nhà Ngọc').amount,150000);
+  assert.equal(templates.expense.find(s=>s.note==='Không còn Mục').categoryId,'');
+  assert.equal(templates.income.find(s=>s.note==='Thu trong ca').categoryId,'i');
+  assert.equal(templates.income.find(s=>s.note==='Thu cũ').amount,25);
+  assert.equal(JSON.stringify(saved),before,'Suggestion generation never creates transactions or changes saved rows');
+  assert.equal(saved.entries.length,4,'No Chuyển operation is needed');
+});
+
+test('transferred closing rows cannot resurrect cancelled or outdated transaction suggestions',()=> {
+  const saved={categories:store.categories,entries:[{id:'actual',closingBookRowId:'row',type:'expense',note:'Đã sửa',amount:2,categoryId:'e',createdAt:'2026-10-01'},{id:'cancelled',type:'expense',note:'Đã hủy',amount:5,status:'cancelled'}],closingMonths:[{days:[{updatedAt:'2026-10-07',shifts:[{expense:[{id:'row',transferredEntryId:'actual',note:'Tên cũ',amount:1},{id:'row2',transferredEntryId:'cancelled',note:'Đã hủy',amount:5},{note:'Không hợp lệ',amount:-1},{note:'Quá lớn',amount:1e30}]}]}]}]};
+  assert.deepEqual(getCashEntrySuggestions(saved).expense,[{note:'Đã sửa',amount:2,categoryId:'e'}]);
+});
+
+test('employee suggestion refresh changes templates only, preserving drafts, state and manual inputs',async()=> {
+  const local={id:'a',entries:[],closingMonths:[],categories:{income:[],expense:[]},cashEntrySuggestions:{income:[],expense:[]}};
+  const ctx={isEmployeeUser:()=>true,employeeCan:()=>true,cloudStore:{enabled:true},getActiveStore:()=>local,authState:{user:{uid:'staff-b'},profile:{storeId:'a'}},document:{addEventListener(){},querySelectorAll:()=>[]},els:{quickEntryModal:{hidden:true}},window:{},renderEntrySuggestions(){},saveStateToCache(){},normalizeState:x=>x,Date,console};
+  let calls=0;
+  ctx.callEmployeeFunction=async()=> {calls++;return {state:{stores:[{...local,entries:[{id:'private'}],closingMonths:[{month:'private'}],categories:store.categories,cashEntrySuggestions:{income:[{note:'Thu từ nhân viên A',amount:35,categoryId:'i'}],expense:[{note:'Rác',amount:450000,categoryId:'e'}]}}]}};};
+  vm.runInNewContext(app.slice(app.indexOf('let employeeSuggestionRefresh ='),app.indexOf('async function loadEmployeeState(')),ctx);
+  assert.equal(await ctx.refreshEmployeeCashSuggestions(),true);
+  assert.equal(local.cashEntrySuggestions.expense[0].note,'Rác');
+  assert.equal(local.entries.length,0);assert.equal(local.closingMonths.length,0,'Background read does not replace financial data or drafts');
+  assert.equal(await ctx.refreshEmployeeCashSuggestions(),false);assert.equal(calls,1,'Repeated focus is throttled');
+  ctx.callEmployeeFunction=async()=>{throw new Error('offline');};ctx.console={warn(){}};
+  assert.equal(await ctx.refreshEmployeeCashSuggestions(true),false);assert.equal(local.cashEntrySuggestions.expense[0].amount,450000);
+  let resolve;ctx.callEmployeeFunction=()=>new Promise(r=>{resolve=r;});
+  const request=ctx.refreshEmployeeCashSuggestions(true);ctx.authState.user={uid:'other'};resolve({state:{stores:[]}});
+  assert.equal(await request,false,'Late responses from a previous login are discarded');
+});

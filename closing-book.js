@@ -71,6 +71,7 @@ function openClosingBookPage({fromHistory=false}={}) {
   updateTimeFiltersVisibility();
   closingBook.page.scrollTop=0;
   document.querySelector('#closeClosingBook').focus({preventScroll:true});
+  void refreshEmployeeCashSuggestions(true);
 }
 function hideClosingBookPage({force=false}={}) {
   if (closingBook.page.hidden) return true;
@@ -267,8 +268,26 @@ function showClosingBookNoteSuggestions(target) {
   target.setAttribute('aria-expanded',String(matches.length>0));
   if (matches.length) target.closest('.book-note-field').scrollIntoView({block:'nearest'});
 }
+window.refreshClosingBookSuggestionOptions=()=> {
+  if (closingBook.page.hidden || closingBook.storeId!==getActiveStore()?.id) return;
+  closingBook.form.querySelectorAll('[data-book-category]').forEach(select=> {
+    const value=select.value, previous=select.selectedOptions[0]?.outerHTML||'', type=select.dataset.bookCategory;
+    const categories=getActiveStore().categories[type]||[];
+    select.innerHTML=`<option value="">Chọn Mục ${type==='income'?'thu':'chi'}</option>`+categories.map(category=>`<option value="${escapeHtml(category.id)}">${escapeHtml(category.name)}</option>`).join('');
+    if (value && !categories.some(category=>category.id===value)) select.insertAdjacentHTML('beforeend',previous);
+    select.value=value;
+  });
+  const input=document.activeElement;
+  if (input?.matches('[data-book-note]')) showClosingBookNoteSuggestions(input);
+};
 closingBook.form.addEventListener('focusin',event=> {
-  if (event.target.matches('[data-book-note]')) showClosingBookNoteSuggestions(event.target);
+  if (event.target.matches('[data-book-note]')) {
+    showClosingBookNoteSuggestions(event.target);
+    void refreshEmployeeCashSuggestions();
+  }
+});
+window.addEventListener('focus',()=> {
+  if (!closingBook.page.hidden) void refreshEmployeeCashSuggestions(true);
 });
 closingBook.form.addEventListener('focusout',event=> {
   if (!event.target.matches('[data-book-note]')) return;

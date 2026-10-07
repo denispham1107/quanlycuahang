@@ -23,6 +23,7 @@ async function main() {
         if(name==='saveMutationUrl')applyClosingBookMutation(store,mutation,user,()=>String(Date.now()));
         return {state:context.sanitizeEmployeeState({stores:[store]},user),profile:user.profile};
       });
+      await page.exposeFunction('adminFixtureState',()=>JSON.parse(JSON.stringify({stores:[store],activeStoreId:'a'})));
       await page.route('**/*',route=> {
         const url=new URL(route.request().url());if(url.hostname!=='staff-suggestions.test')return route.abort();
         if(url.pathname==='/firebase-config.js')return route.fulfill({contentType:'application/javascript',body:'window.firebaseAppConfig={};'});
@@ -62,6 +63,39 @@ async function main() {
       assert.equal(store.entries.length,4,'Both suggested rows transfer through the real employee mutation validator');
       assert.equal(store.entries.find(e=>e.closingBookRowId&&e.type==='expense').categoryId,'e');
       assert.equal(store.entries[0].id,'admin-i','Original admin entries remain unchanged');
+      const olderStaffState=await page.evaluate(()=>JSON.parse(JSON.stringify(state)));
+      for(const [type,note,amount,category] of [['income','Thu tại quầy','35000','i'],['expense','Rác','450000','e']]) {
+        await page.locator(`[data-book-add="${type}"]`).click();
+        await page.locator(`[data-book-note="${type}"]`).last().fill(note);
+        await page.locator(`[data-book-amount="${type}"]`).last().fill(amount);
+        await page.locator(`[data-book-category="${type}"]`).last().selectOption(category);
+      }
+      assert.equal(await page.evaluate(()=>getEntrySuggestions(getActiveStore(),'expense').some(s=>s.note==='Rác')),false,'Unsaved rows are not shared');
+      await page.locator('#closingBookForm button[type="submit"]').click();await page.waitForFunction(()=>!closingBook.page.inert);
+      assert.equal(store.entries.length,4,'Saving new templates must not create Thu/Chi transactions');
+      await page.evaluate(old=> {
+        hideClosingBookPage({force:true});authState.user={uid:'staff-b'};state=normalizeState(old);render();openClosingBookPage();
+        closingBook.draft.result='Giữ bản nháp nhân viên B';closingBook.dirty=true;
+      },olderStaffState);
+      await page.waitForFunction(()=>getEntrySuggestions(getActiveStore(),'expense').some(s=>s.note==='Rác'));
+      assert.equal(await page.evaluate(()=>closingBook.draft.result),'Giữ bản nháp nhân viên B','Refresh preserves another employee draft');
+      for(const [type,partial,note,amount,category] of [['income','Thu tại','Thu tại quầy','35.000','i'],['expense','rac','Rác','450.000','e']]) {
+        await page.locator(`[data-book-add="${type}"]`).click();
+        const input=page.locator(`[data-book-note="${type}"]`).last();await input.fill(partial);
+        await page.locator(`[data-book-group="${type}"] [data-book-suggestion]`).filter({hasText:note}).click();
+        assert.equal(await page.locator(`[data-book-amount="${type}"]`).last().inputValue(),amount);
+        assert.equal(await page.locator(`[data-book-category="${type}"]`).last().inputValue(),category);
+      }
+      await page.evaluate(async()=> {
+        hideClosingBookPage({force:true});authState.role='admin';authState.user={uid:'admin'};
+        state=normalizeState(await adminFixtureState());render();
+        for(const [type,note,amount,category] of [['income','Thu tại quầy','35.000','i'],['expense','Rác','450.000','e']]) {
+          const form=document.querySelector(`.entry-form[data-type="${type}"]`);
+          const input=form.querySelector('[name="note"]');input.value=note;delete input.dataset.entrySuggestionKey;applyEntrySuggestion(form);
+          if(form.querySelector('[name="amount"]').value!==amount||form.querySelector('[name="categoryId"]').value!==category) throw new Error('Admin Thu/Chi cannot reuse saved staff closing rows');
+        }
+      });
+      assert.equal(store.entries.length,4,'Cross-account suggestions do not transfer rows');
       assert.deepEqual(errors,[]);await page.close();console.log(`Staff shared admin suggestions, keyboard/pointer selection and transfer ${width}x${height}: OK`);
     }
   } finally {await browser.close();}

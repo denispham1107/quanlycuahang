@@ -2659,6 +2659,55 @@ async function updateEmployeeAccount(card) {
   }
 }
 
+let employeeSuggestionRefresh = {key: "", at: 0, pending: null};
+async function refreshEmployeeCashSuggestions(force = false) {
+  if (!isEmployeeUser() || !employeeCan('closingBook', 'manage') || !cloudStore.enabled) return false;
+  const store = getActiveStore(), uid = authState.user?.uid;
+  if (!store || !uid || store.id !== authState.profile?.storeId) return false;
+  const key = JSON.stringify([uid, store.id]);
+  if (employeeSuggestionRefresh.key === key && employeeSuggestionRefresh.pending) return employeeSuggestionRefresh.pending;
+  if (!force && employeeSuggestionRefresh.key === key && Date.now() - employeeSuggestionRefresh.at < 10000) return false;
+  const refresh = {key, at: 0, pending: null};
+  employeeSuggestionRefresh = refresh;
+  refresh.pending = (async () => {
+    try {
+      const result = await callEmployeeFunction('getStateUrl');
+      // A late read must never overwrite a newer mutation, another store, or another login.
+      if (!isEmployeeUser() || authState.user?.uid !== uid || getActiveStore() !== store) return false;
+      const remote = normalizeState(result.state || cloneDefaultData()).stores.find(item => item.id === store.id);
+      if (!remote?.cashEntrySuggestions) return false;
+      store.cashEntrySuggestions = remote.cashEntrySuggestions;
+      for (const type of ['income', 'expense']) {
+        store.categories[type] = remote.categories[type] || [];
+        const selects = [...document.querySelectorAll(`.entry-form[data-type="${type}"] select[name="categoryId"]`)];
+        if (!els.quickEntryModal.hidden && els.quickEntryForm.dataset.type === type) selects.push(els.quickEntryCategory);
+        for (const select of selects) {
+          const value = select.value, previous = select.selectedOptions[0]?.outerHTML || '';
+          select.innerHTML = '<option value="">Chọn mục</option>' + store.categories[type].map(category => `<option value="${escapeHtml(category.id)}">${escapeHtml(category.name)}</option>`).join('');
+          if (value && !store.categories[type].some(category => category.id === value)) select.insertAdjacentHTML('beforeend', previous);
+          select.value = value;
+          select.disabled = !store.categories[type].length;
+          const submit = select.closest('form')?.querySelector('button[type="submit"]');
+          if (submit) submit.disabled = !store.categories[type].length;
+        }
+      }
+      renderEntrySuggestions(store);
+      if (!els.quickEntryModal.hidden) renderEntrySuggestionList(els.quickEntrySuggestions, getEntrySuggestions(store, els.quickEntryForm.dataset.type));
+      window.refreshClosingBookSuggestionOptions?.();
+      saveStateToCache();
+      refresh.at = Date.now();
+      return true;
+    } catch (error) {
+      console.warn('Cannot refresh shared cash suggestions', error);
+      return false; // Keep available suggestions and every unsaved field on read failure.
+    } finally { refresh.pending = null; }
+  })();
+  return refresh.pending;
+}
+document.addEventListener('focusin', event => {
+  if (event.target.matches('.entry-form [name="note"], #quickEntryNote')) void refreshEmployeeCashSuggestions();
+});
+
 async function loadEmployeeState() {
   try {
     const result = await callEmployeeFunction("getStateUrl");
@@ -3665,21 +3714,35 @@ function applyPurchaseProductSuggestion(row) {
 function getEntrySuggestions(store, type) {
   if (Array.isArray(store.cashEntrySuggestions?.[type])) return store.cashEntrySuggestions[type];
   const suggestions = new Map();
-  [...store.entries]
-    .filter((entry) => entry.type === type && !isCancelledEntry(entry) && String(entry.note || "").trim())
-    .sort((a, b) => String(b.updatedAt || b.createdAt || b.date || "").localeCompare(String(a.updatedAt || a.createdAt || a.date || "")))
-    .forEach((entry) => {
-      const note = String(entry.note || "").trim();
-      const key = note.toLowerCase();
-      if (!suggestions.has(key)) {
-        suggestions.set(key, {
-          note,
-          amount: Number(entry.orderUnitPrice || entry.amount || 0),
-          categoryId: (store.categories?.[type] || []).some((category) => category.id === entry.categoryId) ? entry.categoryId : ""
-        });
+  const entries = store.entries || [];
+  const entryIds = new Set(entries.map(entry => entry.id).filter(Boolean));
+  const transferredRowIds = new Set(entries.map(entry => entry.closingBookRowId).filter(Boolean));
+  const candidates = entries.filter(entry => entry.type === type && entry.status !== "cancelled");
+  // Only persisted days are used: editor drafts never become shared suggestions.
+  for (const month of store.closingMonths || []) {
+    for (const day of month.days || []) {
+      for (const shift of day.shifts || []) {
+        const rows = Array.isArray(shift[type]) ? shift[type] : [...(shift[type + "1"] || []), ...(shift[type + "2"] || [])];
+        for (const row of rows) {
+          // The actual transaction remains authoritative after transfer, including cancellation.
+          if (entryIds.has(row.transferredEntryId) || transferredRowIds.has(row.id)) continue;
+          candidates.push({...row, updatedAt: day.updatedAt || row.createdAt || day.date || "", date: day.date});
+        }
       }
+    }
+  }
+  candidates
+    .filter(entry => String(entry.note || "").trim())
+    .sort((a, b) => String(b.updatedAt || b.createdAt || b.date || "").localeCompare(String(a.updatedAt || a.createdAt || a.date || "")) ||
+      String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
+    .forEach(entry => {
+      const note = String(entry.note || "").trim(), key = note.toLowerCase();
+      if (suggestions.has(key)) return;
+      const amount = Number(entry.orderUnitPrice || entry.amount || 0);
+      if (!Number.isSafeInteger(amount) || amount < 0) return;
+      const categoryId = (store.categories?.[type] || []).some(category => category.id === entry.categoryId) ? entry.categoryId : "";
+      suggestions.set(key, {note, amount, categoryId});
     });
-
   return [...suggestions.values()].sort((a, b) => a.note.localeCompare(b.note, "vi"));
 }
 
