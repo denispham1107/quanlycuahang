@@ -123,3 +123,24 @@ test('whole detail-row surface opens classification without intercepting control
   handler({target:{closest:()=>null}});
   assert.equal(opened,1,'Click outside a row has no effect');
 });
+
+test('batch transfer only includes selected classified rows, preserves dates and blocks duplicates',()=> {
+  for(const type of core.groups) {
+    const base={note:'Khoản thử',amount:50000,createdAt:'2026-09-03T07:12:13.000Z',categoryId:'cat'};
+    const rows=[{...base,id:'a'},{...base,id:'b'},{...base,id:'c',categoryId:''},{...base,id:'d',categoryId:'deleted'},
+      {...base,id:'e',transferredEntryId:'old'},{...base,id:'f',amount:0},{...base,id:'g'}];
+    const original=JSON.stringify(rows);
+    let index=0;
+    const options={type,date:'2026-09-03',categories:[{id:'cat'}],entries:[],createEntryId:()=>`new-${index++}`};
+    const plan=core.transferBatch(rows,['a','b','b','c','d','e','f'],options);
+    assert.equal(plan.entries.length,2);
+    assert.equal(plan.skipped.length,4);
+    assert.deepEqual(plan.entries.map(entry=>entry.closingBookRowId),['a','b']);
+    assert.ok(plan.entries.every(entry=>entry.date===options.date&&entry.createdAt===base.createdAt&&entry.type===type));
+    assert.equal(JSON.stringify(rows),original,'Planning never mutates book rows');
+    const repeated=core.transferBatch(rows,['a','b'],{...options,entries:plan.entries});
+    assert.equal(repeated.entries.length,0);
+    assert.equal(repeated.skipped.length,2);
+    assert.equal(core.transferBatch(rows,[],options).entries.length,0);
+  }
+});

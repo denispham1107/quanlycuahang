@@ -10564,11 +10564,20 @@ body.closing-book-open .tab-bar { display: none !important; }
 .book-detail-summary span { font-size: 12px; color: #677792; }
 .book-detail-summary strong { font-size: 23px; color: #2663bd; overflow-wrap: anywhere; }
 .book-detail-hint { margin: 0; font-size: 13px; color: #6c7991; line-height: 1.6; }
-#closingBookDetailMessage { margin: 0; border-radius: 12px; background: #e5f5f0; padding: 12px 15px; color: #186a55; font-size: 13px; }
+#closingBookDetailMessage { margin: 0; border-radius: 12px; background: #e5f5f0; padding: 12px 15px; color: #186a55; font-size: 13px; overflow-wrap: anywhere; line-height: 1.6; }
 #closingBookDetailMessage:empty { display: none; }
 #closingBookDetailMessage.is-error { background: #ffedf3; color: #ad2851; }
 .book-detail-list { display: grid; gap: 14px; }
 .book-row-transfer-note { grid-column: 1 / -1; font-size: 11px; color: #28765e; }
+.book-bulk-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; background: #f1f4ff; border: 1px solid #dae3f6; border-radius: 16px; padding: 14px; }
+.closing-book-page .book-select-all,.closing-book-page .book-row-select { display: flex; align-items: center; gap: 9px; cursor: pointer; color: #526786; font-size: 12px; }
+.closing-book-page .book-row-select { width: fit-content; margin-bottom: 13px; }
+.closing-book-page [data-detail-select],.closing-book-page #closingBookSelectAll { width: 20px; height: 20px; min-height: 20px; padding: 0; margin: 0; accent-color: #7352d4; flex: 0 0 20px; }
+.book-detail-row.is-selected { background: #faf8ff; border-color: #9274dc; box-shadow: 0 0 0 2px #9c7be51a; }
+#closingBookSelectionCount { margin-left: auto; font-size: 12px; color: #657593; }
+.closing-book-page #closingBookTransferSelected { width: auto; background: linear-gradient(120deg,#8650e9,#128ddc); color: #fff; border: 0; }
+.closing-book-page #closingBookTransferSelected:disabled { opacity: .5; cursor: default; }
+@media(max-width:520px) { .book-bulk-toolbar { gap: 10px; } .closing-book-page #closingBookTransferSelected { width: 100%; } #closingBookSelectionCount { margin-left: 0; } }
 .book-detail-row { border: 1px solid #dce4f4; border-radius: 20px; background: #fff; box-shadow: 0 8px 22px #526aa309; padding: 18px; overflow-wrap: anywhere; cursor: pointer; }
 .book-detail-row:focus-within { border-color: #bba9ef; }
 .book-detail-editor { cursor: default; }

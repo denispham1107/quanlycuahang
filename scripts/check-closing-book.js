@@ -181,6 +181,58 @@ async function main() {
       assert.equal(await page.locator('#closingBookMain').isVisible(),true);
       assert.equal(await page.locator(`[data-book-note="${type}"]`).first().getAttribute('readonly'),'');
     }
+    await page.evaluate(()=> {
+      const store=getActiveStore(), shift=ClosingBookCore.emptyShift();
+      for(const type of ['income','expense']) shift[type]=[0,1,2,3].map(index=>({id:`batch-${type}-${index}`,note:`Khoản ${index+1}`,amount:index===3?0:50000,categoryId:index===2?'':store.categories[type][0].id,createdAt:'2026-09-04T03:12:34.000Z'}));
+      store.closingMonths[0].days.push({date:'2026-09-04',updatedAt:'2026-09-04T04:00:00.000Z',shifts:[shift]});
+    });
+    await page.locator('#closingBookDay').selectOption('2026-09-04');
+    for(const type of ['income','expense']) {
+      await page.locator(`[data-book-details="${type}"]`).click();
+      const before=await page.evaluate(()=>getActiveStore().entries.length);
+      assert.equal(await page.locator('#closingBookTransferSelected').isDisabled(),true);
+      await page.locator('[data-detail-select]').first().check();
+      assert.equal(await page.locator('.book-detail-editor').first().isVisible(),false,'Selection does not open the category editor');
+      assert.match(await page.locator('#closingBookSelectionCount').innerText(),/1 dòng/);
+      assert.equal(await page.locator('#closingBookSelectAll').evaluate(el=>el.indeterminate),true);
+      await page.locator('#closingBookSelectAll').check();
+      assert.match(await page.locator('#closingBookSelectionCount').innerText(),/4 dòng/);
+      await page.locator('#closingBookSelectAll').uncheck();
+      assert.equal(await page.locator('#closingBookTransferSelected').isDisabled(),true);
+      await page.locator('#closingBookSelectAll').check();
+      for(const [width,height] of [[320,700],[375,900],[430,900],[667,375],[375,400],[800,900],[1024,900],[1440,900]]) {
+        await page.setViewportSize({width,height});
+        await page.evaluate(width=>document.documentElement.classList.toggle('mobile-app-theme',width<700),width);
+        const overflow=await page.locator('.book-bulk-toolbar input,.book-bulk-toolbar button,.book-bulk-toolbar span,[data-detail-select]').evaluateAll(els=>els.filter(el=>{const r=el.getBoundingClientRect();return r.width>0&&(r.left<0||r.right>innerWidth+1);}));
+        assert.equal(overflow.length,0,`Batch selection ${width}x${height}`);
+        if(process.env.INVENTORY_TEST_SHOTS&&[375,1440].includes(width)&&height===900) {await page.evaluate(()=>closingBook.page.scrollTop=0);await page.screenshot({path:path.join(process.env.INVENTORY_TEST_SHOTS,`closing-book-batch-${type}-${width}.png`)});}
+      }
+      // A rejected commit must create no entries and must leave row transfer markers untouched.
+      await page.evaluate(()=>state.batchTestPadding='x'.repeat(900000));
+      await page.locator('#closingBookTransferSelected').click();
+      assert.equal(await page.evaluate(()=>getActiveStore().entries.length),before);
+      assert.equal(await page.evaluate(()=>closingBook.draft[closingBook.detailType].some(row=>row.transferredEntryId)),false);
+      await page.evaluate(()=>delete state.batchTestPadding);
+      await page.locator('#closingBookTransferSelected').click();
+      assert.equal(await page.evaluate(()=>getActiveStore().entries.length),before+2);
+      assert.match(await page.locator('#closingBookDetailMessage').innerText(),/Đã chuyển 2 khoản/);
+      assert.match(await page.locator('#closingBookDetailMessage').innerText(),/Giữ lại 2 dòng/);
+      assert.match(await page.locator('#closingBookSelectionCount').innerText(),/2 dòng/);
+      assert.equal(await page.locator('[data-detail-select]').first().isDisabled(),true);
+      const created=await page.evaluate(type=>getActiveStore().entries.filter(entry=>entry.closingBookRowId?.startsWith('batch-'+type)),type);
+      assert.ok(created.every(entry=>entry.date==='2026-09-04'&&entry.createdAt==='2026-09-04T03:12:34.000Z'));
+      await page.locator('#closingBookTransferSelected').click();
+      assert.equal(await page.evaluate(()=>getActiveStore().entries.length),before+2,'Repeated batch action cannot duplicate entries');
+      await page.locator('.book-detail-time').nth(2).click();
+      const categoryId=await page.evaluate(type=>getActiveStore().categories[type][0].id,type);
+      await page.locator('[data-detail-category]').nth(2).selectOption(categoryId);
+      assert.match(await page.locator('#closingBookSelectionCount').innerText(),/2 dòng/,'Selection survives category assignment');
+      await page.locator('#closingBookTransferSelected').click();
+      assert.equal(await page.evaluate(()=>getActiveStore().entries.length),before+3);
+      assert.match(await page.locator('#closingBookSelectionCount').innerText(),/1 dòng/);
+      await page.locator('#closeClosingBookDetail').click();
+      await page.waitForFunction(()=>closingBook.detailType===null);
+    }
     await page.evaluate(()=>{state.activeStoreId='b';refreshClosingBookAccess();});
     assert.equal(await page.locator('#closingBookPage').isVisible(),false);
     await page.evaluate(()=>openClosingBookPage());
@@ -238,7 +290,8 @@ async function main() {
     await full.locator('[data-detail-new-name]').fill('Sinh hoạt');
     await full.locator('[data-detail-create]').click();
     const sourceTime=await full.evaluate(()=>closingBook.draft.expense[0].createdAt);
-    await full.locator('[data-detail-transfer]').click();
+    await full.locator('[data-detail-select]').check();
+    await full.locator('#closingBookTransferSelected').click();
     const cached=await full.evaluate(()=>JSON.parse(localStorage.getItem(STORAGE_KEY)).stores[0]);
     assert.equal(cached.entries.length,1);assert.equal(cached.entries[0].date,'2024-02-29');assert.equal(cached.entries[0].createdAt,sourceTime);assert.equal(cached.entries[0].categoryId,cached.categories.expense[0].id);
     assert.equal(cached.closingMonths[0].days[0].shifts[0].expense[0].transferredEntryId,cached.entries[0].id);

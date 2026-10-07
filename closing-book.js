@@ -7,7 +7,7 @@ const closingBook = {
   shift: document.querySelector('#closingBookShift'),
   message: document.querySelector('#closingBookMessage'),
   storeId: null, draft: null, dirty: false, monthKey: '', dayKey: '', shiftIndex: 0,
-  shifts: [], saving: false, detailType: null, mainScroll: 0
+  shifts: [], saving: false, detailType: null, mainScroll: 0, selectedRows: new Set()
 };
 const closingBookIcon = `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="bookCover" x2="1" y2="1"><stop stop-color="#8e49ee"/><stop offset="1" stop-color="#176bd2"/></linearGradient></defs><path d="M15 8h33c4 0 6 3 6 6v39H20c-7 0-10-4-10-9V15c0-4 2-7 5-7Z" fill="#254283"/><path d="M19 6h30c3 0 5 2 5 5v35H20c-4 0-7 2-7 5V13c0-4 2-7 6-7Z" fill="url(#bookCover)"/><path d="M21 6v39" stroke="#c3bcff" stroke-width="2"/><path d="M21 46h31v9H21c-6 0-8-2-8-5s3-4 8-4Z" fill="#fff5de"/><path d="M24 49h25M23 52h25" stroke="#baa6cc" stroke-width="1.4"/><path d="M29 17h16M29 22h12M29 27h16" stroke="#eee7ff" stroke-width="2.2" stroke-linecap="round"/><path d="M43 35v22l-5-4-5 4V35Z" fill="#ffbd60"/><path d="m35 35 3 3 5-6" fill="none" stroke="#653488" stroke-width="2.3" stroke-linecap="round"/><path d="M15 16h3M15 23h3M15 30h3M15 37h3" stroke="#ded5ff" stroke-width="1.5"/><path d="M24 9h23" stroke="#c3b4ff" stroke-linecap="round" opacity=".55"/></svg>`;
 // SVG gradient IDs are unique per displayed button.
@@ -281,6 +281,7 @@ function openClosingBookDetails(type,{fromHistory=false}={}) {
     // Persist the complete draft and stable row IDs before a row can create a cash entry.
     if (!fromHistory) persistClosingBookDraft();
     closingBook.mainScroll=closingBook.page.scrollTop;
+    if (!fromHistory || closingBook.detailType!==type) closingBook.selectedRows.clear();
     closingBook.detailType=type;
     document.querySelector('#closingBookMain').hidden=true;
     document.querySelector('#closingBookDetailPage').hidden=false;
@@ -294,6 +295,7 @@ function openClosingBookDetails(type,{fromHistory=false}={}) {
 function closeClosingBookDetails() {
   if (!closingBook.detailType) return;
   closingBook.detailType=null;
+  closingBook.selectedRows.clear();
   document.querySelector('#closingBookDetailPage').hidden=true;
   document.querySelector('#closingBookMain').hidden=false;
   closingBook.page.setAttribute('aria-labelledby','closingBookTitle');
@@ -315,16 +317,61 @@ function renderClosingBookDetails() {
   document.querySelector('#closingBookDetailContext').textContent=`${formatDate(closingBook.dayKey)} · Ca ${closingBook.shiftIndex+1}`;
   document.querySelector('.book-detail-symbol').textContent=type==='income'?'↙':'↗';
   const transferred=row=>Boolean(row.transferredEntryId || store.entries.some(entry=>entry.closingBookRowId===row.id));
+  const selectable=new Set(rows.filter(row=>!transferred(row)).map(row=>row.id));
+  closingBook.selectedRows.forEach(id=>{if(!selectable.has(id)) closingBook.selectedRows.delete(id);});
   document.querySelector('#closingBookDetailSummary').innerHTML=[['Tổng '+label.toLowerCase(),formatCurrency(rows.reduce((sum,row)=>sum+ClosingBookCore.parseMoney(row.amount),0))],['Số khoản',rows.length],['Đã chuyển',rows.filter(transferred).length]].map(([title,value])=>`<div><span>${title}</span><strong>${value}</strong></div>`).join('');
   document.querySelector('#closingBookDetailList').innerHTML=rows.length?rows.map((row,index)=> {
     const done=transferred(row), category=categories.find(item=>item.id===row.categoryId);
-    return `<article class="book-detail-row ${done?'is-transferred':''}" data-detail-id="${escapeHtml(row.id)}">
+    return `<article class="book-detail-row ${done?'is-transferred':''} ${closingBook.selectedRows.has(row.id)?'is-selected':''}" data-detail-id="${escapeHtml(row.id)}">
+      <label class="book-row-select"><input type="checkbox" data-detail-select ${closingBook.selectedRows.has(row.id)?'checked':''} ${done?'disabled':''} aria-label="Chọn khoản ${escapeHtml(row.note)}" />${done?'Đã chuyển':'Chọn dòng'}</label>
       <div class="book-detail-row-top"><button type="button" class="book-detail-row-title" data-detail-edit aria-expanded="false"><span class="book-detail-number">${String(index+1).padStart(2,'0')}</span><span><strong>${escapeHtml(row.note)}</strong><small>${category?escapeHtml(category.name):'Chưa chọn Mục'} · ${done?'Đã chuyển':'Chọn để phân loại'}</small></span></button><div class="book-detail-row-action"><strong>${formatCurrency(row.amount)}</strong><button type="button" data-detail-transfer ${done?'disabled':''}>${done?'✓ Đã chuyển':'Chuyển →'}</button></div></div>
       <p class="book-detail-time">Ngày sổ: ${formatDate(closingBook.dayKey)} · ${row.timeSource==='saved'?'Giờ lưu sổ cũ (không có giờ tạo riêng)':'Tạo lúc'}: ${formatActivityDateTime(row.createdAt)}</p>
       <div class="book-detail-editor" hidden><label>Mục ${label.toLowerCase()}<select data-detail-category ${done?'disabled':''}><option value="">Chọn Mục</option>${categories.map(item=>`<option value="${escapeHtml(item.id)}" ${item.id===row.categoryId?'selected':''}>${escapeHtml(item.name)}</option>`).join('')}</select></label><div class="book-detail-new-category" ${done?'hidden':''}><label>Tạo Mục mới<input type="text" data-detail-new-name maxlength="100" placeholder="Tên Mục mới" /></label><button type="button" class="ghost-button" data-detail-create>＋ Tạo Mục</button></div></div>
     </article>`;
   }).join(''):'<div class="book-detail-empty"><span aria-hidden="true">▤</span><h2>Chưa có khoản '+label.toLowerCase()+'</h2><p>Quay lại Chốt sổ để nhập khoản trước.</p></div>';
+  updateClosingBookSelection();
 }
+function updateClosingBookSelection() {
+  const checkboxes=Array.from(document.querySelectorAll('#closingBookDetailList [data-detail-select]:not(:disabled)'));
+  const count=closingBook.selectedRows.size;
+  document.querySelector('#closingBookSelectionCount').textContent=`Đã chọn ${count} dòng`;
+  const all=document.querySelector('#closingBookSelectAll');
+  all.checked=checkboxes.length>0 && count===checkboxes.length;
+  all.indeterminate=count>0 && count<checkboxes.length;
+  all.disabled=!checkboxes.length;
+  document.querySelector('#closingBookTransferSelected').disabled=count===0 || closingBook.saving;
+}
+document.querySelector('#closingBookSelectAll').addEventListener('change',event=> {
+  document.querySelectorAll('#closingBookDetailList [data-detail-select]:not(:disabled)').forEach(checkbox=> {
+    const card=checkbox.closest('[data-detail-id]'), id=card.dataset.detailId;
+    if(event.target.checked) closingBook.selectedRows.add(id); else closingBook.selectedRows.delete(id);
+    checkbox.checked=event.target.checked; card.classList.toggle('is-selected',checkbox.checked);
+  });
+  updateClosingBookSelection();
+});
+document.querySelector('#closingBookTransferSelected').addEventListener('click',()=> {
+  if (closingBook.saving || !closingBook.selectedRows.size) return;
+  const previous=[];
+  try {
+    if (!closingBookAllowed() || getActiveStore().id!==closingBook.storeId || !closingBook.detailType) throw new Error('Không còn quyền truy cập cửa hàng này.');
+    closingBook.saving=true; updateClosingBookSelection();
+    const store=getActiveStore(), type=closingBook.detailType, rows=closingBook.draft[type];
+    const plan=ClosingBookCore.transferBatch(rows,closingBook.selectedRows,{type,date:closingBook.dayKey,categories:store.categories[type],entries:store.entries,createEntryId:createId});
+    if (plan.entries.length) {
+      plan.entries.forEach(entry=> {
+        const row=rows.find(item=>item.id===entry.closingBookRowId);
+        previous.push({row,value:row.transferredEntryId}); row.transferredEntryId=entry.id;
+      });
+      persistClosingBookDraft({entries:[...store.entries,...plan.entries]},`Chuyển ${plan.entries.length} khoản ${type==='income'?'Thu':'Chi'} từ Chốt sổ.`,{tab:type});
+    }
+    renderClosingBookDetails();
+    const messages=plan.skipped.map(item=>`“${item.note}”: ${item.message}`).join(' ');
+    closingBookDetailNotice(`Đã chuyển ${plan.entries.length} khoản sang tab ${type==='income'?'Thu':'Chi'}.${plan.skipped.length?` Giữ lại ${plan.skipped.length} dòng: ${messages}`:''}`,plan.skipped.length>0);
+  } catch(error) {
+    previous.forEach(({row,value})=>row.transferredEntryId=value);
+    closingBookDetailNotice(error.message,true);
+  } finally { closingBook.saving=false; updateClosingBookSelection(); }
+});
 function closingBookDetailRow(target) {
   if (!closingBookAllowed() || getActiveStore().id!==closingBook.storeId || !closingBook.detailType) throw new Error('Không còn quyền truy cập cửa hàng này.');
   const card=target.closest('[data-detail-id]');
@@ -341,6 +388,15 @@ function openClosingBookDetailEditor(card) {
   if (!select.disabled) select.focus();
 }
 document.querySelector('#closingBookDetailList').addEventListener('change',event=> {
+  if (event.target.matches('[data-detail-select]')) {
+    try {
+      const {card,row}=closingBookDetailRow(event.target);
+      if(event.target.disabled || row.transferredEntryId) return;
+      if(event.target.checked) closingBook.selectedRows.add(row.id); else closingBook.selectedRows.delete(row.id);
+      card.classList.toggle('is-selected',event.target.checked); updateClosingBookSelection();
+    } catch(error) { closingBookDetailNotice(error.message,true); }
+    return;
+  }
   if (!event.target.matches('[data-detail-category]')) return;
   let row,previous;
   try {

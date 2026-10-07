@@ -79,7 +79,17 @@
     if (Object.values(result).some(value=>!Number.isSafeInteger(value))) throw new Error('Tổng tiền vượt giới hạn an toàn.');
     return result;
   }
-  const api={moneyKeys,groups,maxRows,normalizeShift,parseMoney,validMonth,monthDays,emptyShift,validateShift,calculate,transferEntry};
+  function transferBatch(rows,selectedIds,options) {
+    if (!groups.includes(options.type)) throw new Error('Loại khoản không hợp lệ.');
+    const selected=new Set(selectedIds), entries=[], skipped=[];
+    rows.filter(row=>selected.has(row.id)).forEach(row=> {
+      try {
+        entries.push(transferEntry(row,{...options,entries:[...options.entries,...entries],entryId:options.createEntryId()}));
+      } catch(error) { skipped.push({id:row.id,note:row.note,message:error.message}); }
+    });
+    return {entries,skipped};
+  }
+  const api={moneyKeys,groups,maxRows,normalizeShift,parseMoney,validMonth,monthDays,emptyShift,validateShift,calculate,transferEntry,transferBatch};
   if (typeof module !== 'undefined' && module.exports) module.exports=api;
   else root.ClosingBookCore=api;
 })(typeof window === 'undefined' ? globalThis : window);
