@@ -20,7 +20,7 @@ test("customer manager is a full page with a back control, search, filters and c
   assert.match(app, /els\.customerMemberChips\.addEventListener\("click"/);
   assert.match(css, /\.customers-page\s*\{\s*position: fixed;/);
   assert.match(css, /\.customers-page\[hidden\]\s*\{\s*display: none;/);
-  assert.match(css, /\.customer-history-backdrop,\s*\.member-tier-backdrop\s*\{\s*z-index: 190;/);
+  assert.match(css, /\.modal-backdrop\.customer-history-backdrop,\s*\.modal-backdrop\.member-tier-backdrop\s*\{\s*z-index: 190;/);
   assert.match(css, /body\.customers-page-open > #tabBar,/);
   assert.match(css, /html\.mobile-app-theme \.customers-card/);
   assert.match(css, /html\.mobile-app-theme \.customers-card \.customer-form\[hidden\] \{\s*display: none;/);

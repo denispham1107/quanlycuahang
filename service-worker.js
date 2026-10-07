@@ -1,14 +1,14 @@
-const CACHE_VERSION = "quanlycuahang-pwa-v107";
+const CACHE_VERSION = "quanlycuahang-pwa-v108";
 const FIREBASE_SDK_PREFIX = "https://www.gstatic.com/firebasejs/10.12.5/";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=107",
-  "./app.js?v=107",
-  "./closing-book-core.js?v=107",
-  "./closing-book.js?v=107",
+  "./styles.css?v=108",
+  "./app.js?v=108",
+  "./closing-book-core.js?v=108",
+  "./closing-book.js?v=108",
   "./firebase-config.js",
-  "./manifest.webmanifest?v=107",
+  "./manifest.webmanifest?v=108",
   "./icons/settings-flat-v1.webp",
   "./icons/icon-v3.svg",
   "./icons/icon-v3-192.png",

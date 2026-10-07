@@ -2029,6 +2029,12 @@ html {
   text-size-adjust: 100%;
 }
 
+/* A visible page/dialog owns scrolling; locking only body leaves html scrollable. */
+html:has(body > :is(.auth-screen, .modal-backdrop, .bulk-cash-page, .settings-detail-page, .customers-page, .sales-order-detail-page, .sales-catalog-page, .closing-book-page):not([hidden])),
+body:has(> :is(.auth-screen, .modal-backdrop, .bulk-cash-page, .settings-detail-page, .customers-page, .sales-order-detail-page, .sales-catalog-page, .closing-book-page):not([hidden])) {
+  overflow: hidden;
+}
+
 button,
 a,
 input,
@@ -2785,8 +2791,8 @@ form button:disabled {
   display: none;
 }
 
-.customer-history-backdrop,
-.member-tier-backdrop {
+.modal-backdrop.customer-history-backdrop,
+.modal-backdrop.member-tier-backdrop {
   z-index: 190;
 }
 
@@ -3638,7 +3644,7 @@ body.sales-order-detail-open {
 
 .sales-catalog-backdrop,
 .sales-customer-catalog-backdrop {
-  align-items: center;
+  align-items: safe center;
   justify-items: center;
   padding: clamp(14px, 3vw, 32px);
   padding-bottom: max(clamp(18px, 4vw, 42px), env(safe-area-inset-bottom));
@@ -4590,12 +4596,19 @@ th:last-child {
   z-index: 80;
   display: grid;
   place-items: center;
+  align-items: safe center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 18px;
   background: rgba(23, 32, 28, 0.48);
 }
 
 .modal-backdrop[hidden] {
   display: none;
+}
+
+.modal-backdrop[inert] {
+  overflow: hidden !important;
 }
 
 .quick-entry-fab {
@@ -5613,7 +5626,7 @@ th:last-child {
 }
 
 .inventory-backdrop {
-  align-items: center;
+  align-items: safe center;
   justify-items: center;
   padding: clamp(14px, 3vw, 32px);
   padding-bottom: max(clamp(18px, 4vw, 42px), env(safe-area-inset-bottom));
@@ -10714,4 +10727,22 @@ body.closing-book-open .tab-bar { display: none !important; }
 @media (max-width: 360px) {
   #inventoryModal .inventory-catalog { padding-inline: 12px; }
   #inventoryModal .inventory-summary .report-item { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* These dialogs scroll as a whole so short viewports cannot clip their lists. */
+#salesCustomerCatalogModal .sales-catalog-card,
+#inventoryHistoryModal .inventory-card {
+  max-height: none;
+  overflow: visible;
+}
+#salesCustomerCatalogModal .sales-catalog-list,
+#inventoryHistoryModal .inventory-list {
+  max-height: none;
+  overflow: visible;
+}
+/* A child dialog owns scrolling while its parent remains open underneath. */
+body:has(> :is(#inventoryHistoryModal, #editInventoryModal, #exportInventoryModal):not([hidden])) > #inventoryModal,
+body:has(> :is(#orderDiscountModal, #salesCustomerCatalogModal):not([hidden])) > #quickEntryModal,
+body:has(> :is(#customerHistoryModal, #memberTierModal):not([hidden])) > #customersPage {
+  overflow: hidden;
 }
