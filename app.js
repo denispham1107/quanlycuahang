@@ -528,8 +528,8 @@ function isEmployeeUser() {
 
 const DEFAULT_EMPLOYEE_PERMISSIONS = Object.freeze({
   closingBook: Object.freeze({ manage: false }),
-  purchase: Object.freeze({ view: true, create: true, inventoryView: false }),
-  sales: Object.freeze({ view: true, create: true, draft: false }),
+  purchase: Object.freeze({ view: true, create: true, inventoryView: false, inventoryExport: false }),
+  sales: Object.freeze({ view: true, create: true, draft: false, customerManage: false }),
   history: Object.freeze({ viewOwn: true })
 });
 
@@ -543,19 +543,23 @@ function normalizeEmployeePermissions(profile = {}) {
     purchase: {
       view: source.purchase?.view === true,
       create: source.purchase?.create === true,
-      inventoryView: source.purchase?.inventoryView === true
+      inventoryView: source.purchase?.inventoryView === true,
+      inventoryExport: source.purchase?.inventoryExport === true
     },
     sales: {
       view: source.sales?.view === true,
       create: source.sales?.create === true,
-      draft: source.sales?.draft === true
+      draft: source.sales?.draft === true,
+      customerManage: source.sales?.customerManage === true
     },
     history: {
       viewOwn: source.history?.viewOwn === true
     }
   };
   if (permissions.purchase.create) permissions.purchase.view = true;
+  if (permissions.purchase.inventoryExport) permissions.purchase.inventoryView = true;
   if (permissions.purchase.inventoryView) permissions.purchase.view = true;
+  if (permissions.sales.customerManage) permissions.sales.view = true;
   if (permissions.sales.create) permissions.sales.view = true;
   if (permissions.sales.draft) {
     permissions.sales.create = true;
@@ -1544,13 +1548,14 @@ els.inventoryLogPanel.addEventListener("input", (event) => {
 });
 
 els.inventoryList.addEventListener("click", (event) => {
-  if (isEmployeeUser()) return;
   const exportButton = event.target.closest("[data-export-inventory]");
   if (exportButton) {
     event.stopPropagation();
     openExportInventoryModal(exportButton.dataset.exportInventory);
     return;
   }
+
+  if (isEmployeeUser()) return;
 
   const item = event.target.closest("[data-edit-inventory]");
   if (!item) return;
@@ -2184,7 +2189,8 @@ function applyRoleAccess() {
   });
   els.activeStorePanel.dataset.roleHidden = employee ? "true" : "false";
   document.querySelector(".sidebar")?.setAttribute("data-role-hidden", employee && USE_MOBILE_APP_THEME ? "true" : "false");
-  els.openCustomers.dataset.roleHidden = employee ? "true" : "false";
+  els.openCustomers.dataset.roleHidden = employee && !employeeCan("sales", "customerManage") ? "true" : "false";
+  els.openCustomers.disabled = employee && !employeeCan("sales", "customerManage");
   els.openBulkPurchase.dataset.roleHidden = employee && !purchaseCreate ? "true" : "false";
   els.toggleInventory.dataset.roleHidden = employee && !inventoryView ? "true" : "false";
   els.toggleInventory.disabled = employee && !inventoryView;
@@ -2192,6 +2198,8 @@ function applyRoleAccess() {
   els.deleteSalesDraft.dataset.roleHidden = employee ? "true" : "false";
   els.openActivityHistory.dataset.roleHidden = employee && !historyViewOwn ? "true" : "false";
   els.openActivityHistory.disabled = employee && !historyViewOwn;
+  if (employee && !employeeCan("sales", "customerManage") && els.customersPage?.hidden === false) hideCustomersPage({restoreFocus:false});
+  if (employee && !employeeCan("purchase", "inventoryExport") && els.exportInventoryModal?.hidden === false) closeExportInventoryModal();
 }
 
 async function loadUserProfile(db, user) {
@@ -2416,19 +2424,23 @@ function getPermissionsFromContainer(container) {
     purchase: {
       view: checked("purchaseView"),
       create: checked("purchaseCreate"),
-      inventoryView: checked("purchaseInventoryView")
+      inventoryView: checked("purchaseInventoryView"),
+      inventoryExport: checked("purchaseInventoryExport")
     },
     sales: {
       view: checked("salesView"),
       create: checked("salesCreate"),
-      draft: checked("salesDraft")
+      draft: checked("salesDraft"),
+      customerManage: checked("salesCustomerManage")
     },
     history: {
       viewOwn: checked("historyViewOwn")
     }
   };
   if (permissions.purchase.create) permissions.purchase.view = true;
+  if (permissions.purchase.inventoryExport) permissions.purchase.inventoryView = true;
   if (permissions.purchase.inventoryView) permissions.purchase.view = true;
+  if (permissions.sales.customerManage) permissions.sales.view = true;
   if (permissions.sales.create) permissions.sales.view = true;
   if (permissions.sales.draft) {
     permissions.sales.create = true;
@@ -2442,14 +2454,23 @@ function enforceEmployeePermissionDependencies(container, changedInput) {
   const purchaseView = container.querySelector('[name="purchaseView"]');
   const purchaseCreate = container.querySelector('[name="purchaseCreate"]');
   const purchaseInventoryView = container.querySelector('[name="purchaseInventoryView"]');
+  const purchaseInventoryExport = container.querySelector('[name="purchaseInventoryExport"]');
+  const salesCustomerManage = container.querySelector('[name="salesCustomerManage"]');
   const salesView = container.querySelector('[name="salesView"]');
   const salesCreate = container.querySelector('[name="salesCreate"]');
   const salesDraft = container.querySelector('[name="salesDraft"]');
   if (changedInput.name === "purchaseCreate" && changedInput.checked && purchaseView) purchaseView.checked = true;
   if (changedInput.name === "purchaseInventoryView" && changedInput.checked && purchaseView) purchaseView.checked = true;
+  if (changedInput.name === "purchaseInventoryExport" && changedInput.checked) {
+    if (purchaseInventoryView) purchaseInventoryView.checked = true;
+    if (purchaseView) purchaseView.checked = true;
+  }
+  if (changedInput.name === "purchaseInventoryView" && !changedInput.checked && purchaseInventoryExport) purchaseInventoryExport.checked = false;
+  if (changedInput.name === "salesCustomerManage" && changedInput.checked && salesView) salesView.checked = true;
   if (changedInput.name === "purchaseView" && !changedInput.checked) {
     if (purchaseCreate) purchaseCreate.checked = false;
     if (purchaseInventoryView) purchaseInventoryView.checked = false;
+    if (purchaseInventoryExport) purchaseInventoryExport.checked = false;
   }
   if (changedInput.name === "salesCreate" && changedInput.checked && salesView) salesView.checked = true;
   if (changedInput.name === "salesDraft" && changedInput.checked) {
@@ -2460,6 +2481,7 @@ function enforceEmployeePermissionDependencies(container, changedInput) {
   if (changedInput.name === "salesView" && !changedInput.checked) {
     if (salesCreate) salesCreate.checked = false;
     if (salesDraft) salesDraft.checked = false;
+    if (salesCustomerManage) salesCustomerManage.checked = false;
   }
 }
 
@@ -2481,10 +2503,12 @@ function employeePermissionFields(permissions) {
   return [
     field("purchaseView", normalized.purchase.view, "Xem tab Nhập hàng"),
     field("purchaseCreate", normalized.purchase.create, "Tạo mới trong Nhập hàng"),
-    field("purchaseInventoryView", normalized.purchase.inventoryView, "Xem Kho hàng (không được Xuất)"),
+    field("purchaseInventoryView", normalized.purchase.inventoryView, "Xem Kho hàng"),
+    field("purchaseInventoryExport", normalized.purchase.inventoryExport, "Xuất hàng trong Kho hàng"),
     field("salesView", normalized.sales.view, "Xem tab Bán hàng"),
     field("salesCreate", normalized.sales.create, "Tạo mới trong Bán hàng"),
     field("salesDraft", normalized.sales.draft, "Lưu và mở đơn đang lưu"),
+    field("salesCustomerManage", normalized.sales.customerManage, "Thông tin khách hàng · Thêm, chỉnh sửa (không được xóa)"),
     field("historyViewOwn", normalized.history.viewOwn, "Xem lịch sử của chính mình"),
     field("closingBookManage", normalized.closingBook.manage, "Chốt sổ · Toàn bộ chức năng, chuyển Thu/Chi và xóa ca")
   ].join("");
@@ -2781,6 +2805,33 @@ function updateSyncStatus(message, status) {
   els.syncStatus.textContent = message;
   els.syncStatus.dataset.status = status;
   window.refreshClosingBookSync?.(message, status);
+}
+
+const employeeManagedFormsSaving = new Set();
+async function saveEmployeeManagedMutation(mutation, form, onSaved) {
+  if (employeeManagedFormsSaving.has(form)) return false;
+  const signature=JSON.stringify(mutation);
+  if (form.dataset.mutationSignature !== signature) {
+    form.dataset.mutationSignature=signature;
+    form.dataset.mutationId=createId();
+  }
+  if (mutation.type === "inventory-export") mutation.requestId=form.dataset.mutationId;
+  if (mutation.type === "customer-save" && !mutation.customer.customerId) mutation.customer.newId=form.dataset.mutationId;
+  const button=form.querySelector('[type="submit"]');
+  employeeManagedFormsSaving.add(form);
+  if (button) button.disabled=true;
+  try {
+    const saved=await saveStateToCloud(mutation);
+    if (!saved) {
+      window.alert(cloudStore.lastError?.message || "Chưa lưu được vào Firebase. Dữ liệu nhập được giữ lại để bạn thử lại.");
+      return false;
+    }
+    delete form.dataset.mutationSignature;delete form.dataset.mutationId;
+    onSaved();return true;
+  } finally {
+    employeeManagedFormsSaving.delete(form);
+    if (button) button.disabled=false;
+  }
 }
 
 function getActiveStore() {
@@ -5029,7 +5080,7 @@ function getStoreCustomers(store) {
 }
 
 function openCustomersPage({ fromHistory = false } = {}) {
-  if (isEmployeeUser()) {
+  if (isEmployeeUser() && !employeeCan("sales", "customerManage")) {
     if (window.location.hash === "#customers") {
       window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
     }
@@ -5102,6 +5153,7 @@ function ensureCustomerFocusVisible(target) {
 }
 
 function openCustomerForm(customer = null) {
+  if (isEmployeeUser() && !employeeCan("sales", "customerManage")) return;
   // Capture the opening moment for a new customer; editing keeps the saved timestamp.
   const initialCreatedAt = customer?.createdAt || new Date();
   uiState.customerFormOpen = true;
@@ -5376,6 +5428,7 @@ function toDateInputValue(date) {
 }
 
 function saveCustomerFromForm(formData) {
+  if (isEmployeeUser() && !employeeCan("sales", "customerManage")) return false;
   const store = getActiveStore();
   if (!store) return false;
 
@@ -5400,6 +5453,12 @@ function saveCustomerFromForm(formData) {
     store.customers.find((customer) => getCustomerKey(customer.name, customer.phone) === key);
   const now = new Date().toISOString();
   const premiumTier = !isRegularMemberTier(memberTier);
+
+  if (isEmployeeUser()) {
+    return saveEmployeeManagedMutation({type:"customer-save",storeId:store.id,customer:{
+      customerId:existing?.id || "",baseUpdatedAt:existing?.updatedAt || "",name,phone,memberTier,createdAt
+    }},els.customerForm,()=>{closeCustomerForm();renderCustomers(getActiveStore());});
+  }
 
   if (existing) {
     const previousTier = existing.memberTier || "Thường";
@@ -5627,7 +5686,7 @@ function closeEditInventoryModal() {
 }
 
 function openExportInventoryModal(inventoryId) {
-  if (isEmployeeUser()) return;
+  if (isEmployeeUser() && !employeeCan("purchase", "inventoryExport")) return;
   const store = getActiveStore();
   const item = (store?.inventory || []).find((stock) => stock.id === inventoryId);
   if (!item) return;
@@ -5638,6 +5697,8 @@ function openExportInventoryModal(inventoryId) {
   els.exportInventoryQuantity.value = Math.min(1, Math.max(0, Number(item.quantity || 0))) || 1;
   els.exportInventoryQuantity.max = Math.max(0, Number(item.quantity || 0));
   renderExportInventoryReasonOptions();
+  els.toggleExportInventoryReason.hidden = isEmployeeUser();
+  els.deleteExportInventoryReason.hidden = isEmployeeUser();
   setExportReasonCreator(false);
   els.exportInventoryModal.hidden = false;
 }
@@ -5650,6 +5711,7 @@ function closeExportInventoryModal() {
 }
 
 function openEditInventoryLogModal(logId) {
+  if (isEmployeeUser()) return;
   const store = getActiveStore();
   if (!store) return;
 
@@ -5723,6 +5785,7 @@ function setExportReasonCreator(open) {
 }
 
 function addExportInventoryReasonOption() {
+  if (isEmployeeUser()) return;
   const store = getActiveStore();
   if (!store) return;
 
@@ -5744,6 +5807,7 @@ function addExportInventoryReasonOption() {
 }
 
 function deleteSelectedExportInventoryReason() {
+  if (isEmployeeUser()) return;
   const store = getActiveStore();
   if (!store) return;
 
@@ -5831,7 +5895,7 @@ function saveEditedInventory(formData) {
 }
 
 function exportInventoryItem(formData) {
-  if (isEmployeeUser()) return false;
+  if (isEmployeeUser() && !employeeCan("purchase", "inventoryExport")) return false;
   const store = getActiveStore();
   if (!store) return false;
 
@@ -5839,13 +5903,13 @@ function exportInventoryItem(formData) {
   if (!item) return false;
 
   const date = String(formData.get("date") || today);
-  const quantity = Number.parseInt(formData.get("quantity"), 10);
+  const quantity = Number(formData.get("quantity"));
   const reason = String(formData.get("reason") || "").trim();
   const oldQuantity = Number(item.quantity || 0);
   const lastPrice = Number(item.lastPrice || 0);
   const salePrice = getInventorySalePrice(item);
 
-  if (!isValidDateInput(date) || !Number.isFinite(quantity) || quantity <= 0) {
+  if (!isValidDateInput(date) || !Number.isSafeInteger(quantity) || quantity <= 0) {
     window.alert("Vui lòng chọn ngày xuất và nhập số lượng lớn hơn 0.");
     return false;
   }
@@ -5853,6 +5917,11 @@ function exportInventoryItem(formData) {
   if (quantity > oldQuantity) {
     window.alert(`Số lượng xuất không được lớn hơn tồn kho hiện tại (${oldQuantity.toLocaleString("vi-VN")}).`);
     return false;
+  }
+
+  if (isEmployeeUser()) {
+    return saveEmployeeManagedMutation({type:"inventory-export",storeId:store.id,inventoryId:item.id,date,quantity,reason},els.exportInventoryForm,
+      ()=>{renderInventory(getActiveStore());closeExportInventoryModal();});
   }
 
   const updatedAt = new Date().toISOString();
@@ -5897,6 +5966,7 @@ function exportInventoryItem(formData) {
 }
 
 function saveEditedInventoryLog(formData) {
+  if (isEmployeeUser()) return false;
   const store = getActiveStore();
   if (!store) return false;
 
@@ -5968,6 +6038,7 @@ function saveEditedInventoryLog(formData) {
 }
 
 function deleteEditingInventoryLog() {
+  if (isEmployeeUser()) return;
   const store = getActiveStore();
   if (!store) return;
 
@@ -7913,6 +7984,7 @@ function renderInventory(store) {
   }
 
   const canManageInventory = !isEmployeeUser();
+  const canExportInventory = !isEmployeeUser() || employeeCan("purchase", "inventoryExport");
 
   const allInventory = [...(store.inventory || [])].sort((a, b) =>
     String(a.groupName || "").localeCompare(String(b.groupName || ""), "vi") ||
@@ -8004,7 +8076,7 @@ function renderInventory(store) {
             <div class="inventory-product-footer">
               <span class="inventory-date">Cập nhật: ${formatDate(String(item.updatedAt || item.createdAt || today).slice(0, 10))}</span>
               ${
-                canManageInventory
+                canExportInventory
                   ? `<button class="inventory-export-button" type="button" data-export-inventory="${escapeHtml(item.id || "")}" ${quantity <= 0 ? "disabled" : ""}>Xuất <span aria-hidden="true">→</span></button>`
                   : ""
               }

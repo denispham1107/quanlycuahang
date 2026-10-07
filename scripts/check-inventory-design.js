@@ -30,9 +30,10 @@ async function main() {
       const uiState = { inventorySearch: '', inventoryFilter: 'all' };
       const today = '2026-10-07';
       let employee = false;
+      let inventoryExportAllowed = false;
       const actions = [];
       function isEmployeeUser() { return employee; }
-      function employeeCan() { return true; }
+      function employeeCan(area, action) { return area === 'purchase' && (action === 'inventoryView' || (action === 'inventoryExport' && inventoryExportAllowed)); }
       function openExportInventoryModal(id) { actions.push(['export', id]); }
       function openEditInventoryModal(id) { actions.push(['edit', id]); }
       ${['renderInventory', 'normalizeSearchText', 'formatCurrency', 'formatDate', 'getInventorySalePrice', 'escapeHtml'].map(functionSource).join('\n')}
@@ -58,6 +59,11 @@ async function main() {
     assert.equal(await page.locator('.inventory-item').count(), 1);
     await page.evaluate(() => { uiState.inventoryFilter = 'all'; employee = true; renderInventory(store); });
     assert.equal(await page.locator('[data-edit-inventory], [data-export-inventory]').count(), 0);
+    await page.evaluate(() => { inventoryExportAllowed = true; renderInventory(store); });
+    assert.equal(await page.locator('[data-edit-inventory]').count(), 0);
+    assert.equal(await page.locator('[data-export-inventory]').count(), 2);
+    await page.locator('[data-export-inventory="cat"]').click();
+    assert.deepEqual(await page.evaluate(() => actions.at(-1)), ['export', 'cat']);
     await page.evaluate(() => { employee = false; renderInventory({inventory:[]}); });
     assert.equal(await page.locator('#inventoryList .empty-list').count(), 1);
     await page.evaluate(() => { renderInventory(store); });

@@ -154,7 +154,7 @@ test("opening an existing customer loads both compact date and time controls", (
     customerCreatedDate: { value: "", setCustomValidity() {} },
     customerCreatedTime: { value: "", setCustomValidity() {} }
   };
-  const context = { els, uiState: {}, USE_MOBILE_APP_THEME: true, toDateTimeLocalValue: () => "2026-08-29T04:37", formatDate: () => "29/08/2026" };
+  const context = { isEmployeeUser:()=>false, els, uiState: {}, USE_MOBILE_APP_THEME: true, toDateTimeLocalValue: () => "2026-08-29T04:37", formatDate: () => "29/08/2026" };
   vm.createContext(context);
   vm.runInContext(app.slice(start, end), context);
   context.openCustomerForm({ id: "customer-1", name: "An", phone: "0123", memberTier: "Thường", createdAt: "2026-08-28T21:37:00.000Z" });
@@ -185,7 +185,7 @@ test("each new customer form uses its own opening time while edits keep the save
   };
   const sources = [];
   const context = {
-    els, uiState: {}, USE_MOBILE_APP_THEME: true, Date: ClockDate,
+    isEmployeeUser:()=>false, els, uiState: {}, USE_MOBILE_APP_THEME: true, Date: ClockDate,
     formatDate: (date) => date.split("-").reverse().join("/"),
     toDateTimeLocalValue(value) {
       sources.push(value);
@@ -261,6 +261,7 @@ test("opening and leaving the customer page preserves browser history and backgr
     USE_MOBILE_APP_THEME: true,
     uiState: {},
     isEmployeeUser: () => employee,
+    employeeCan: () => false,
     getActiveTabName: () => activeTab,
     activateTab: (tab) => { activeTab = tab; },
     getActiveStore: () => ({ customers: [] }),
