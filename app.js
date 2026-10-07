@@ -1994,6 +1994,11 @@ function normalizeState(data) {
         expense: store.categories?.expense || []
       },
       entries: store.entries || [],
+      ...(store.cashEntrySuggestions ? { cashEntrySuggestions: Object.fromEntries(["income", "expense"].map(type => [type,
+        (Array.isArray(store.cashEntrySuggestions[type]) ? store.cashEntrySuggestions[type] : []).filter(item =>
+          typeof item.note === "string" && item.note.trim() && Number.isSafeInteger(item.amount) && item.amount >= 0
+        ).map(item => ({ note: item.note, amount: item.amount, categoryId: (store.categories?.[type] || []).some(category => category.id === item.categoryId) ? item.categoryId : "" }))
+      ])) } : {}),
       orders: salesBills.orders,
       ...(Array.isArray(store.overviewSales) ? { overviewSales: store.overviewSales.filter((day) =>
         /^\d{4}-\d{2}-\d{2}$/.test(day.date || "") && Number.isFinite(day.total) && day.total >= 0 && Number.isInteger(day.count) && day.count >= 0
@@ -3658,6 +3663,7 @@ function applyPurchaseProductSuggestion(row) {
 }
 
 function getEntrySuggestions(store, type) {
+  if (Array.isArray(store.cashEntrySuggestions?.[type])) return store.cashEntrySuggestions[type];
   const suggestions = new Map();
   [...store.entries]
     .filter((entry) => entry.type === type && !isCancelledEntry(entry) && String(entry.note || "").trim())

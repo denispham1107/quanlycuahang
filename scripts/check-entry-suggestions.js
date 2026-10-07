@@ -44,7 +44,11 @@ async function main() {
       await page.locator('#closingBookNewMonth').fill('09/2026');await page.locator('#closingBookCreateMonth button').click();
       for(const type of ['income','expense']) {
         const expected=type==='income'?'200.000':'300.000';
-        await page.locator(`[data-book-note="${type}"]`).fill('Khoản quen thuộc');
+        await page.locator(`[data-book-note="${type}"]`).fill('Khoản quen');
+        const suggested=page.locator(`[data-book-group="${type}"] [data-book-suggestion]`).first();
+        assert.equal(await suggested.isVisible(),true,'Partial names show an explicit suggestion list');
+        await suggested.click();
+        assert.equal(await page.locator(`[data-book-note="${type}"]`).inputValue(),'Khoản quen thuộc');
         assert.equal(await page.locator(`[data-book-amount="${type}"]`).inputValue(),expected);
         assert.equal(await page.locator(`[data-book-category="${type}"]`).inputValue(),type+'1');
         assert.equal(await page.locator(`[data-book-category="${type}"] option`).count(),3);

@@ -399,6 +399,7 @@ function getEmployeeStoreIds(state, profile) {
 }
 
 const { getEmployeeOverviewSales } = require("./employee-overview");
+const { getCashEntrySuggestions } = require("./cash-entry-suggestions");
 
 function sanitizeEmployeeState(state, user) {
   const permissions = normalizeEmployeePermissions(user.profile);
@@ -412,6 +413,7 @@ function sanitizeEmployeeState(state, user) {
         name: store.name,
         categories: permissions.closingBook.manage ? store.categories : { income: [], expense: [] },
         entries: permissions.closingBook.manage ? (store.entries||[]).filter(entry=>entry.closingBookRowId) : [],
+        cashEntrySuggestions: permissions.closingBook.manage && store.id === user.profile.storeId ? getCashEntrySuggestions(store) : {income:[],expense:[]},
         closingMonths: permissions.closingBook.manage ? (store.closingMonths||[]) : [],
         orders: permissions.sales.view ? store.orders : [],
         overviewSales: getEmployeeOverviewSales(store),

@@ -202,13 +202,17 @@ function renderClosingBookShift() {
   renderClosingBookEntries();
   updateClosingBookCalculations();
 }
+function renderClosingBookEntryRow(row,index,key,categories,label) {
+  const listId=`book-note-options-${key}-${index}`;
+  return `<div class="closing-book-row"><div class="book-note-field"><label>Nội dung<input data-book-note="${key}" data-row="${index}" type="text" maxlength="1000" autocomplete="off" aria-controls="${listId}" aria-expanded="false" value="${escapeHtml(row.note||'')}" /></label><div class="book-note-suggestions" id="${listId}" aria-label="Gợi ý khoản ${label.toLowerCase()}" hidden></div></div><label>Số tiền<input data-book-amount="${key}" data-row="${index}" type="text" inputmode="numeric" value="${escapeHtml(String(row.amount??''))}" placeholder="0" /></label><button type="button" data-book-remove="${key}" data-row="${index}" aria-label="Xóa dòng ${index+1}">×</button><label class="book-category-field">Mục ${label.toLowerCase()}<select data-book-category="${key}" data-row="${index}"><option value="">Chọn Mục ${label.toLowerCase()}</option>${categories.map(category=>`<option value="${escapeHtml(category.id)}" ${category.id===row.categoryId?'selected':''}>${escapeHtml(category.name)}</option>`).join('')}</select></label></div>`;
+}
 function renderClosingBookEntries() {
   const store=getActiveStore();
   document.querySelector('#closingBookEntries').innerHTML=ClosingBookCore.groups.map((key,index)=> {
     const rows=closingBook.draft[key];
     const label=index===0?'Thu':'Chi';
     const categories=store.categories?.[key]||[];
-    return `<section class="closing-book-section ${index===0?'book-income':'book-expense'}" data-book-group="${key}"><div class="closing-book-group-heading"><h2>Khoản ${label}</h2><button type="button" data-book-add="${key}" aria-label="Thêm khoản ${label.toLowerCase()}" ${rows.length>=ClosingBookCore.maxRows?'disabled':''}>＋</button></div><datalist id="closingBookSuggestions-${key}"></datalist><div class="closing-book-rows">${rows.map((row,i)=>`<div class="closing-book-row"><label>Nội dung<input data-book-note="${key}" data-row="${i}" type="text" maxlength="1000" autocomplete="off" list="closingBookSuggestions-${key}" value="${escapeHtml(row.note||'')}" /></label><label>Số tiền<input data-book-amount="${key}" data-row="${i}" type="text" inputmode="numeric" value="${escapeHtml(String(row.amount??''))}" placeholder="0" /></label><button type="button" data-book-remove="${key}" data-row="${i}" aria-label="Xóa dòng ${i+1}">×</button><label class="book-category-field">Mục ${label.toLowerCase()}<select data-book-category="${key}" data-row="${i}"><option value="">Chọn Mục ${label.toLowerCase()}</option>${categories.map(category=>`<option value="${escapeHtml(category.id)}" ${category.id===row.categoryId?'selected':''}>${escapeHtml(category.name)}</option>`).join('')}</select></label></div>`).join('')}</div><p class="closing-book-group-total">Tổng ${label.toLowerCase()} <strong data-book-total="${key}"></strong></p></section>`;
+    return `<section class="closing-book-section ${index===0?'book-income':'book-expense'}" data-book-group="${key}"><div class="closing-book-group-heading"><h2>Khoản ${label}</h2><button type="button" data-book-add="${key}" aria-label="Thêm khoản ${label.toLowerCase()}" ${rows.length>=ClosingBookCore.maxRows?'disabled':''}>＋</button></div><datalist id="closingBookSuggestions-${key}"></datalist><div class="closing-book-rows">${rows.map((row,i)=>renderClosingBookEntryRow(row,i,key,categories,label)).join('')}</div><p class="closing-book-group-total">Tổng ${label.toLowerCase()} <strong data-book-total="${key}"></strong></p></section>`;
   }).join('');
   document.querySelectorAll('#closingBookEntries [data-book-amount]').forEach(input=> {
     input.value=formatClosingBookMoney(input.value);
@@ -243,6 +247,49 @@ function applyClosingBookEntrySuggestion(target) {
   amount.dataset.bookGrouped=String(amount.value.includes('.'));
   container.querySelector('[data-book-category]').value=row.categoryId;
 }
+function closingBookSuggestionSearch(value) {
+  return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toLowerCase().trim();
+}
+function hideClosingBookNoteSuggestions(target) {
+  target.closest('.book-note-field')?.querySelector('.book-note-suggestions')?.setAttribute('hidden','');
+  target.setAttribute('aria-expanded','false');
+}
+function showClosingBookNoteSuggestions(target) {
+  if (target.readOnly || !closingBook.draft || document.activeElement!==target) return;
+  const container=target.closest('.book-note-field').querySelector('.book-note-suggestions');
+  const type=target.dataset.bookNote, store=getActiveStore(), query=closingBookSuggestionSearch(target.value);
+  const matches=getEntrySuggestions(store,type).filter(item=>closingBookSuggestionSearch(item.note).includes(query)).slice(0,8);
+  container.innerHTML=matches.map(item=> {
+    const category=store.categories[type].find(category=>category.id===item.categoryId);
+    return `<button type="button" data-book-suggestion="${escapeHtml(item.note)}"><strong>${escapeHtml(item.note)}</strong><span>${escapeHtml(formatCurrency(item.amount))} · ${escapeHtml(category?.name||'Chưa chọn Mục')}</span></button>`;
+  }).join('');
+  container.hidden=!matches.length;
+  target.setAttribute('aria-expanded',String(matches.length>0));
+  if (matches.length) target.closest('.book-note-field').scrollIntoView({block:'nearest'});
+}
+closingBook.form.addEventListener('focusin',event=> {
+  if (event.target.matches('[data-book-note]')) showClosingBookNoteSuggestions(event.target);
+});
+closingBook.form.addEventListener('focusout',event=> {
+  if (!event.target.matches('[data-book-note]')) return;
+  const list=event.target.closest('.book-note-field').querySelector('.book-note-suggestions');
+  if (!list.contains(event.relatedTarget)) hideClosingBookNoteSuggestions(event.target);
+});
+closingBook.form.addEventListener('pointerdown',event=> {
+  if (event.target.closest('[data-book-suggestion]')) event.preventDefault();
+});
+closingBook.form.addEventListener('keydown',event=> {
+  const field=event.target.closest('.book-note-field');
+  if (!field) return;
+  const input=field.querySelector('[data-book-note]'), list=field.querySelector('.book-note-suggestions');
+  if (event.key==='Escape') {event.preventDefault();input.focus();hideClosingBookNoteSuggestions(input);return;}
+  if (list.hidden || !['ArrowDown','ArrowUp'].includes(event.key)) return;
+  const buttons=[...list.querySelectorAll('button')];
+  if (!buttons.length) return;
+  event.preventDefault();
+  const index=buttons.indexOf(document.activeElement), step=event.key==='ArrowDown'?1:-1;
+  buttons[index<0?(step===1?0:buttons.length-1):(index+step+buttons.length)%buttons.length].focus();
+});
 function updateClosingBookCalculations() {
   try {
     const result=ClosingBookCore.calculate(closingBook.draft);
@@ -283,6 +330,7 @@ closingBook.form.addEventListener('input',event=> {
     if (row.transferredEntryId) return;
     row.note=target.value;
     if (!event.isComposing) applyClosingBookEntrySuggestion(target);
+    if (!event.isComposing) showClosingBookNoteSuggestions(target);
   }
   else if (target.dataset.bookAmount) closingBook.draft[target.dataset.bookAmount][Number(target.dataset.row)].amount=value;
   else if (target.name) closingBook.draft[target.name]=value;
@@ -306,6 +354,14 @@ closingBook.form.addEventListener('change',event=> {
   closingBook.dirty=true;updateClosingBookCalculations();
 });
 closingBook.form.addEventListener('click',event=> {
+  const suggestion=event.target.closest('[data-book-suggestion]');
+  if (suggestion) {
+    const input=suggestion.closest('.book-note-field').querySelector('[data-book-note]');
+    input.value=suggestion.dataset.bookSuggestion;
+    delete input.dataset.entrySuggestionKey;
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+    input.focus();hideClosingBookNoteSuggestions(input);return;
+  }
   const detail=event.target.closest('[data-book-details]');
   if (detail) { openClosingBookDetails(detail.dataset.bookDetails); return; }
   const add=event.target.closest('[data-book-add]');
@@ -629,17 +685,25 @@ closingBook.form.addEventListener('submit',async event=> {
 });
 closingBook.page.addEventListener('focusin',event=> {
   if (event.target.matches('input,select,textarea')) [100,350].forEach(delay=>setTimeout(()=> {
-    if (!event.target.isConnected) return;
-    const target=event.target.matches('[data-detail-new-name]')?event.target.closest('.book-detail-new-category'):event.target;
+    if (!event.target.isConnected || document.activeElement!==event.target) return;
+    const target=closingBookFocusTarget(event.target);
     target.scrollIntoView({block:'nearest',behavior:'smooth'});
   },delay));
 });
+function closingBookFocusTarget(target) {
+  if (target.matches('[data-detail-new-name]')) return target.closest('.book-detail-new-category');
+  if (target.matches('[data-book-note]')) {
+    const field=target.closest('.book-note-field');
+    if (field && !field.querySelector('.book-note-suggestions').hidden) return field;
+  }
+  return target;
+}
 function updateClosingBookViewport() {
   const viewport=window.visualViewport;
   closingBook.page.style.setProperty('--book-height',`${viewport?.height||window.innerHeight}px`);
   closingBook.page.style.setProperty('--book-top',`${viewport?.offsetTop||0}px`);
   if (!closingBook.page.hidden && closingBook.page.contains(document.activeElement)) {
-    const target=document.activeElement.matches('[data-detail-new-name]')?document.activeElement.closest('.book-detail-new-category'):document.activeElement;
+    const target=closingBookFocusTarget(document.activeElement);
     target.scrollIntoView({block:'nearest'});
   }
 }

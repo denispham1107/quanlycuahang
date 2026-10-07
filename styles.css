@@ -10528,9 +10528,16 @@ body.closing-book-open .tab-bar { display: none !important; }
 .book-income { background: #f1f9ffe0; }
 .book-expense { background: #fff4f9e0; }
 .closing-book-rows { display: grid; gap: 12px; }
-.closing-book-row { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(0,1fr) 36px; gap: 8px; align-items: end; }
+.closing-book-row { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(0,1fr) 36px; gap: 8px; align-items: start; }
+.closing-book-row > [data-book-remove] { margin-top: 22px; }
 .closing-book-row > .book-category-field { grid-column: 1 / -1; }
 .closing-book-row select { width: 100%; min-width: 0; max-width: 100%; }
+.book-note-field { min-width: 0; }
+.book-note-suggestions { display: grid; gap: 4px; max-height: 200px; overflow-y: auto; margin-top: 8px; padding: 6px; border: 1px solid #d7dffc; border-radius: 14px; background: #fff; box-shadow: 0 6px 16px #6176ba14; }
+.book-note-suggestions[hidden] { display: none !important; }
+.closing-book-page .book-note-suggestions button { display: grid; gap: 5px; width: 100%; min-width: 0; padding: 10px; border: 0; border-radius: 10px; color: #254583; background: #f2f6ff; box-shadow: none; text-align: left; white-space: normal; overflow-wrap: anywhere; }
+.closing-book-page .book-note-suggestions button:hover, .closing-book-page .book-note-suggestions button:focus-visible { background: #e7edff; outline: 2px solid #9381f0; outline-offset: -2px; }
+.book-note-suggestions span { font-size: 12px; font-weight: 500; color: #607299; }
 .closing-book-page [data-book-remove] { min-height: 46px; width: 36px; padding: 0; color: #b3345c; background: #ffe4ed; border: 1px solid #f4bdd0; box-shadow: none; font-size: 22px; }
 .closing-book-group-total { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; border-top: 1px solid #dce5f6; padding-top: 14px; margin: 16px 0 0; font-size: 13px; }
 .closing-book-group-total strong { overflow-wrap: anywhere; }
@@ -10564,6 +10571,7 @@ body.closing-book-open .tab-bar { display: none !important; }
   .closing-book-payments { grid-template-columns: minmax(0,1fr); }
   .closing-book-row { grid-template-columns: minmax(0,1fr) 36px; padding-bottom: 12px; border-bottom: 1px solid #dde5f4; }
   .closing-book-row > label:first-child { grid-column: 1 / -1; }
+  .closing-book-row > .book-note-field { grid-column: 1 / -1; }
   .closing-book-save button { width: 100%; }
   .closing-book-totals strong { font-size: 17px; }
 }
