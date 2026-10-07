@@ -398,6 +398,8 @@ function getEmployeeStoreIds(state, profile) {
   return stores[0]?.id ? [stores[0].id] : [];
 }
 
+const { getEmployeeOverviewSales } = require("./employee-overview");
+
 function sanitizeEmployeeState(state, user) {
   const permissions = normalizeEmployeePermissions(user.profile);
   const allowedStoreIds = new Set(getEmployeeStoreIds(state, user.profile));
@@ -412,6 +414,7 @@ function sanitizeEmployeeState(state, user) {
         entries: permissions.closingBook.manage ? (store.entries||[]).filter(entry=>entry.closingBookRowId) : [],
         closingMonths: permissions.closingBook.manage ? (store.closingMonths||[]) : [],
         orders: permissions.sales.view ? store.orders : [],
+        overviewSales: getEmployeeOverviewSales(store),
         salesBillSequences: permissions.sales.view ? store.salesBillSequences : {},
         draftOrders:
           permissions.sales.draft && Array.isArray(store.draftOrders)

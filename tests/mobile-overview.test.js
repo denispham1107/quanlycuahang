@@ -36,6 +36,7 @@ test("mobile and desktop use the same filtered, non-cancelled totals", () => {
   });
   const context = {
     els,
+    renderEmployeeOverview() {},
     getDateRange: () => ({ start: "2026-10-04", end: "2026-10-04", label: "04/10/2026" }),
     isCancelledEntry: (entry) => entry.cancelled === true,
     filterEntriesBySearch: (entries) => entries,

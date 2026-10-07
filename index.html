@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=101" />
+    <link rel="manifest" href="manifest.webmanifest?v=102" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=101" />
+    <link rel="stylesheet" href="styles.css?v=102" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -300,6 +300,12 @@
 
             <section class="tab-panel" data-tab-panel="overview" hidden>
               <section class="employee-overview-access" id="employeeOverviewAccess" hidden aria-label="Cửa hàng và Chốt sổ"><div><span>CỬA HÀNG ĐANG CHỌN</span><h2 id="employeeOverviewStoreName">Cửa hàng</h2></div><button class="closing-book-icon" id="openClosingBookEmployee" type="button" aria-label="Chốt sổ" title="Chốt sổ" hidden></button></section>
+              <section class="employee-overview-sales" id="employeeOverviewSales" hidden aria-label="Tổng bán hàng">
+                <div class="employee-sales-heading"><span class="employee-sales-label">DOANH THU BÁN HÀNG</span><span id="employeeSalesRange"></span></div>
+                <h3>Tổng tiền các đơn đã bán</h3>
+                <strong id="employeeSalesTotal" aria-live="polite">0 ₫</strong>
+                <div class="employee-sales-footer"><span id="employeeSalesCount">0 đơn đã bán</span><span id="employeeSalesStatus">Chưa có đơn bán hàng trong kỳ đã chọn</span></div>
+              </section>
               <section class="mobile-overview-flow" aria-label="Tổng quan dòng tiền">
                 <header class="mobile-overview-heading">
                   <div>
@@ -1484,8 +1490,8 @@
         </article>
       </section>
     </section>
-    <script defer src="app.js?v=101"></script>
-    <script defer src="closing-book-core.js?v=101"></script>
-    <script defer src="closing-book.js?v=101"></script>
+    <script defer src="app.js?v=102"></script>
+    <script defer src="closing-book-core.js?v=102"></script>
+    <script defer src="closing-book.js?v=102"></script>
   </body>
 </html>

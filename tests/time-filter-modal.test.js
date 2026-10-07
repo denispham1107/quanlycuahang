@@ -94,7 +94,11 @@ test("mobile time filter hides on entry sheets and overlays and returns after cl
   }
 
   context.isEmployeeEmptyTab = (tab) => tab === "overview";
+  check(false, "overview");
+  els.closingBookPage.hidden = false;
   check(true, "overview");
+  els.closingBookPage.hidden = true;
+  check(false, "overview");
   context.isEmployeeEmptyTab = () => false;
 
   context.USE_MOBILE_APP_THEME = false;

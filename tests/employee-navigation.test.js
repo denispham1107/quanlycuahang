@@ -132,15 +132,15 @@ test("employee can open blank tabs without redirection but still cannot open ung
 });
 
 test("protected empty tabs do not expose time filters or desktop summary chrome", () => {
-  assert.match(app, /const filtersAvailable = Boolean\(store\) && visibleTabs\.has\(tabName\) && !suppressed && !isEmployeeEmptyTab\(tabName\)/);
-  assert.match(app, /desktopUi\.filterRail\.hidden = employeeEmpty/);
+  assert.match(app, /!suppressed && \(!isEmployeeEmptyTab\(tabName\) \|\| tabName === "overview"\)/);
+  assert.match(app, /desktopUi\.filterRail\.hidden = \(employeeEmpty && tabName !== "overview"\)/);
   assert.match(app, /desktopUi\.heading\.hidden = employeeEmpty/);
   assert.match(app, /desktopUi\.insights\.hidden = employeeEmpty/);
   assert.match(app, /els\.aiButton\.hidden = !\(store && tabName === "overview" && !isEmployeeEmptyTab\(tabName\)\)/);
 });
 
 test("desktop employees retain the admin-style filter rail on permitted purchase and sales tabs", () => {
-  assert.match(css, /body\.employee-session:is\(\[data-active-tab="overview"\], \[data-active-tab="income"\], \[data-active-tab="expense"\]\) \.sidebar\s*\{\s*display: none;/);
+  assert.match(css, /body\.employee-session:is\(\[data-active-tab="income"\], \[data-active-tab="expense"\]\) \.sidebar\s*\{\s*display: none;/);
   assert.doesNotMatch(css, /body\.employee-session \.sidebar\s*\{\s*display: none;/);
   const body = { dataset: {} };
   const desktopUi = {
@@ -165,4 +165,7 @@ test("desktop employees retain the admin-style filter rail on permitted purchase
   }
   context.updateDesktopPageChrome("income");
   assert.equal(desktopUi.filterRail.hidden, true);
+  context.updateDesktopPageChrome("overview");
+  assert.equal(desktopUi.filterRail.hidden, false);
+  assert.equal(desktopUi.insights.hidden, true, "Other financial summaries remain private");
 });

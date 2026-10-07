@@ -1994,6 +1994,9 @@ function normalizeState(data) {
       },
       entries: store.entries || [],
       orders: salesBills.orders,
+      ...(Array.isArray(store.overviewSales) ? { overviewSales: store.overviewSales.filter((day) =>
+        /^\d{4}-\d{2}-\d{2}$/.test(day.date || "") && Number.isFinite(day.total) && day.total >= 0 && Number.isInteger(day.count) && day.count >= 0
+      ) } : {}),
       salesBillSequences: salesBills.salesBillSequences,
       draftOrders: store.draftOrders || [],
       customers: store.customers || [],
@@ -3438,6 +3441,7 @@ function render() {
   els.deleteStore.disabled = !store;
   applyRoleAccess();
   if (!store) {
+    renderEmployeeOverview(null, null);
     hideSalesCatalogPage({ restoreFocus: false });
     uiState.salesCatalogRow = null;
     if (!els.customersPage.hidden) hideCustomersPage({ restoreFocus: false });
@@ -6888,7 +6892,7 @@ function updateDesktopPageChrome(tabName = getActiveTabName()) {
   desktopUi.subtitle.textContent = subtitle;
   desktopUi.primaryActionLabel.textContent = action;
   desktopUi.primaryAction.hidden = !action || els.quickEntryButton.hidden;
-  desktopUi.filterRail.hidden = employeeEmpty || tabName === "stores" || !getActiveStore();
+  desktopUi.filterRail.hidden = (employeeEmpty && tabName !== "overview") || tabName === "stores" || !getActiveStore();
   desktopUi.heading.hidden = employeeEmpty || tabName === "stores";
   desktopUi.insights.hidden = employeeEmpty || !["income", "expense", "sales", "purchase"].includes(tabName);
 }
@@ -6987,7 +6991,7 @@ function updateTimeFiltersVisibility(tabName = getActiveTabName()) {
     clearTimeFiltersAutoCollapse();
     uiState.timeFiltersExpanded = false;
   }
-  const filtersAvailable = Boolean(store) && visibleTabs.has(tabName) && !suppressed && !isEmployeeEmptyTab(tabName);
+  const filtersAvailable = Boolean(store) && visibleTabs.has(tabName) && !suppressed && (!isEmployeeEmptyTab(tabName) || tabName === "overview");
   const filtersExpanded = filtersAvailable && (desktopUi ? true : uiState.timeFiltersExpanded);
 
   if (USE_MOBILE_APP_THEME && filtersAvailable) {
@@ -7318,8 +7322,27 @@ function showOverviewBarValue(button) {
   detail.hidden = false;
 }
 
+function getEmployeeSalesSummary(store, range) {
+  const source = Array.isArray(store.overviewSales) ? store.overviewSales :
+    (store.orders || []).filter((order) => !isCancelledEntry(order)).map((order) => ({ date: order.date, total: Number(order.total || 0), count: 1 }));
+  return source.filter((day) => day.date >= range.start && day.date <= range.end && Number.isFinite(day.total) && day.total >= 0)
+    .reduce((result, day) => ({ total: result.total + day.total, count: result.count + day.count }), { total: 0, count: 0 });
+}
+
+function renderEmployeeOverview(store, range) {
+  const panel = document.getElementById("employeeOverviewSales");
+  panel.hidden = !isEmployeeUser() || !store;
+  if (panel.hidden) return;
+  const summary = getEmployeeSalesSummary(store, range);
+  document.getElementById("employeeSalesRange").textContent = range.label;
+  document.getElementById("employeeSalesTotal").textContent = formatCurrency(summary.total);
+  document.getElementById("employeeSalesCount").textContent = `${summary.count.toLocaleString("vi-VN")} đơn đã bán`;
+  document.getElementById("employeeSalesStatus").textContent = summary.count ? "Không bao gồm đơn đã hủy" : "Chưa có đơn bán hàng trong kỳ đã chọn";
+}
+
 function renderReports(store) {
   const range = getDateRange();
+  renderEmployeeOverview(store, range);
   const entries = store.entries
     .filter((entry) => entry.date >= range.start && entry.date <= range.end)
     .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
@@ -8904,6 +8927,9 @@ function fromDateTimeLocalValue(value) {
 
 function getStoreStartDate(store) {
   if (!store) return today;
+  if (isEmployeeUser() && store.overviewSales?.length) {
+    return [String(store.createdAt || today).slice(0, 10), ...store.overviewSales.map((day) => day.date)].sort()[0];
+  }
   if (store.createdAt) return String(store.createdAt).slice(0, 10);
   return getEarliestEntryDate(store.entries || []) || today;
 }
