@@ -984,6 +984,7 @@ document.querySelectorAll('.entry-form input[name="amount"]').forEach((input) =>
 document.querySelectorAll('.entry-form input[name="note"]').forEach((input) => {
   input.addEventListener("input", () => applyEntrySuggestion(input.closest(".entry-form")));
   input.addEventListener("change", () => applyEntrySuggestion(input.closest(".entry-form")));
+  input.closest(".entry-form").addEventListener("reset", () => delete input.dataset.entrySuggestionKey);
 });
 
 els.editEntryAmount.addEventListener("input", () => {
@@ -3659,7 +3660,7 @@ function applyPurchaseProductSuggestion(row) {
 function getEntrySuggestions(store, type) {
   const suggestions = new Map();
   [...store.entries]
-    .filter((entry) => entry.type === type && String(entry.note || "").trim())
+    .filter((entry) => entry.type === type && !isCancelledEntry(entry) && String(entry.note || "").trim())
     .sort((a, b) => String(b.updatedAt || b.createdAt || b.date || "").localeCompare(String(a.updatedAt || a.createdAt || a.date || "")))
     .forEach((entry) => {
       const note = String(entry.note || "").trim();
@@ -3667,12 +3668,21 @@ function getEntrySuggestions(store, type) {
       if (!suggestions.has(key)) {
         suggestions.set(key, {
           note,
-          amount: Number(entry.orderUnitPrice || entry.amount || 0)
+          amount: Number(entry.orderUnitPrice || entry.amount || 0),
+          categoryId: (store.categories?.[type] || []).some((category) => category.id === entry.categoryId) ? entry.categoryId : ""
         });
       }
     });
 
   return [...suggestions.values()].sort((a, b) => a.note.localeCompare(b.note, "vi"));
+}
+
+function matchEntrySuggestion(store, type, input) {
+  const note = String(input.value || "").trim().toLowerCase();
+  const key = JSON.stringify([store.id, type, note]);
+  if (input.dataset.entrySuggestionKey === key) return null;
+  input.dataset.entrySuggestionKey = key;
+  return note ? getEntrySuggestions(store, type).find((item) => item.note.toLowerCase() === note) : null;
 }
 
 function applyEntrySuggestion(form) {
@@ -3681,13 +3691,12 @@ function applyEntrySuggestion(form) {
 
   const noteInput = form.querySelector('[name="note"]');
   const amountInput = form.querySelector('[name="amount"]');
-  const note = String(noteInput.value || "").trim().toLowerCase();
-  if (!note) return;
-
-  const suggestion = getEntrySuggestions(store, form.dataset.type).find((item) => item.note.toLowerCase() === note);
+  const suggestion = matchEntrySuggestion(store, form.dataset.type, noteInput);
   if (!suggestion) return;
 
   amountInput.value = formatAmountInput(suggestion.amount);
+  const categoryInput = form.querySelector('[name="categoryId"]');
+  if (categoryInput) categoryInput.value = suggestion.categoryId || "";
 }
 
 function setQuickCategoryCreatorOpen(open) {
@@ -3770,6 +3779,7 @@ function openQuickEntryModal(type) {
   els.quickEntryNote.placeholder = type === "income" ? "Khoản Thu" : "Khoản Chi";
   els.quickEntryAmount.value = "";
   els.quickEntryNote.value = "";
+  delete els.quickEntryNote.dataset.entrySuggestionKey;
   els.quickEntrySubmit.textContent = "Lưu";
   els.openOrderDiscount.hidden = true;
   els.saveSalesDraft.hidden = true;
@@ -4211,13 +4221,11 @@ function applyQuickEntrySuggestion() {
   const type = els.quickEntryForm.dataset.type;
   if (!store || !type) return;
 
-  const note = String(els.quickEntryNote.value || "").trim().toLowerCase();
-  if (!note) return;
-
-  const suggestion = getEntrySuggestions(store, type).find((item) => item.note.toLowerCase() === note);
+  const suggestion = matchEntrySuggestion(store, type, els.quickEntryNote);
   if (!suggestion) return;
 
   els.quickEntryAmount.value = formatAmountInput(suggestion.amount);
+  els.quickEntryCategory.value = suggestion.categoryId || "";
 }
 
 function openSalesOrderModal(store, draft = null) {

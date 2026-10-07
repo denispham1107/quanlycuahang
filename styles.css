@@ -10529,6 +10529,8 @@ body.closing-book-open .tab-bar { display: none !important; }
 .book-expense { background: #fff4f9e0; }
 .closing-book-rows { display: grid; gap: 12px; }
 .closing-book-row { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(0,1fr) 36px; gap: 8px; align-items: end; }
+.closing-book-row > .book-category-field { grid-column: 1 / -1; }
+.closing-book-row select { width: 100%; min-width: 0; max-width: 100%; }
 .closing-book-page [data-book-remove] { min-height: 46px; width: 36px; padding: 0; color: #b3345c; background: #ffe4ed; border: 1px solid #f4bdd0; box-shadow: none; font-size: 22px; }
 .closing-book-group-total { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; border-top: 1px solid #dce5f6; padding-top: 14px; margin: 16px 0 0; font-size: 13px; }
 .closing-book-group-total strong { overflow-wrap: anywhere; }

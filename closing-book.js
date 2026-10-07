@@ -203,10 +203,12 @@ function renderClosingBookShift() {
   updateClosingBookCalculations();
 }
 function renderClosingBookEntries() {
+  const store=getActiveStore();
   document.querySelector('#closingBookEntries').innerHTML=ClosingBookCore.groups.map((key,index)=> {
     const rows=closingBook.draft[key];
     const label=index===0?'Thu':'Chi';
-    return `<section class="closing-book-section ${index===0?'book-income':'book-expense'}" data-book-group="${key}"><div class="closing-book-group-heading"><h2>Khoản ${label}</h2><button type="button" data-book-add="${key}" aria-label="Thêm khoản ${label.toLowerCase()}" ${rows.length>=ClosingBookCore.maxRows?'disabled':''}>＋</button></div><div class="closing-book-rows">${rows.map((row,i)=>`<div class="closing-book-row"><label>Nội dung<input data-book-note="${key}" data-row="${i}" type="text" maxlength="1000" value="${escapeHtml(row.note||'')}" /></label><label>Số tiền<input data-book-amount="${key}" data-row="${i}" type="text" inputmode="numeric" value="${escapeHtml(String(row.amount??''))}" placeholder="0" /></label><button type="button" data-book-remove="${key}" data-row="${i}" aria-label="Xóa dòng ${i+1}">×</button></div>`).join('')}</div><p class="closing-book-group-total">Tổng ${label.toLowerCase()} <strong data-book-total="${key}"></strong></p></section>`;
+    const categories=store.categories?.[key]||[];
+    return `<section class="closing-book-section ${index===0?'book-income':'book-expense'}" data-book-group="${key}"><div class="closing-book-group-heading"><h2>Khoản ${label}</h2><button type="button" data-book-add="${key}" aria-label="Thêm khoản ${label.toLowerCase()}" ${rows.length>=ClosingBookCore.maxRows?'disabled':''}>＋</button></div><datalist id="closingBookSuggestions-${key}"></datalist><div class="closing-book-rows">${rows.map((row,i)=>`<div class="closing-book-row"><label>Nội dung<input data-book-note="${key}" data-row="${i}" type="text" maxlength="1000" autocomplete="off" list="closingBookSuggestions-${key}" value="${escapeHtml(row.note||'')}" /></label><label>Số tiền<input data-book-amount="${key}" data-row="${i}" type="text" inputmode="numeric" value="${escapeHtml(String(row.amount??''))}" placeholder="0" /></label><button type="button" data-book-remove="${key}" data-row="${i}" aria-label="Xóa dòng ${i+1}">×</button><label class="book-category-field">Mục ${label.toLowerCase()}<select data-book-category="${key}" data-row="${i}"><option value="">Chọn Mục ${label.toLowerCase()}</option>${categories.map(category=>`<option value="${escapeHtml(category.id)}" ${category.id===row.categoryId?'selected':''}>${escapeHtml(category.name)}</option>`).join('')}</select></label></div>`).join('')}</div><p class="closing-book-group-total">Tổng ${label.toLowerCase()} <strong data-book-total="${key}"></strong></p></section>`;
   }).join('');
   document.querySelectorAll('#closingBookEntries [data-book-amount]').forEach(input=> {
     input.value=formatClosingBookMoney(input.value);
@@ -215,15 +217,31 @@ function renderClosingBookEntries() {
   document.querySelectorAll('#closingBookEntries [data-book-group]').forEach(section=> {
     const key=section.dataset.bookGroup;
     const label=key==='income'?'Thu':'Chi';
+    renderEntrySuggestionList(document.getElementById(`closingBookSuggestions-${key}`),getEntrySuggestions(store,key));
     section.insertAdjacentHTML('beforeend',`<button type="button" class="book-detail-link" data-book-details="${key}">Chi tiết ${label} <span aria-hidden="true">→</span></button>`);
     closingBook.draft[key].forEach((row,index)=> {
       if (!row.transferredEntryId) return;
       section.querySelector(`[data-book-note][data-row="${index}"]`).readOnly=true;
       section.querySelector(`[data-book-amount][data-row="${index}"]`).readOnly=true;
+      section.querySelector(`[data-book-category][data-row="${index}"]`).disabled=true;
       section.querySelector(`[data-book-remove][data-row="${index}"]`).disabled=true;
       section.querySelector(`[data-book-remove][data-row="${index}"]`).parentElement.insertAdjacentHTML('beforeend','<small class="book-row-transfer-note">✓ Đã chuyển · Sửa khoản trong tab Thu/Chi</small>');
     });
   });
+}
+function applyClosingBookEntrySuggestion(target) {
+  const key=target.dataset.bookNote;
+  const row=closingBook.draft?.[key]?.[Number(target.dataset.row)];
+  if (!row || row.transferredEntryId || target.readOnly) return;
+  const suggestion=matchEntrySuggestion(getActiveStore(),key,target);
+  if (!suggestion) return;
+  row.amount=String(suggestion.amount);
+  row.categoryId=suggestion.categoryId||'';
+  const container=target.closest('.closing-book-row');
+  const amount=container.querySelector('[data-book-amount]');
+  amount.value=formatClosingBookMoney(row.amount);
+  amount.dataset.bookGrouped=String(amount.value.includes('.'));
+  container.querySelector('[data-book-category]').value=row.categoryId;
 }
 function updateClosingBookCalculations() {
   try {
@@ -260,12 +278,32 @@ closingBook.form.addEventListener('input',event=> {
   const target=event.target;
   if (event.isComposing && target.matches('[data-book-money]')) return;
   const value=target.matches('[data-book-money]')?formatClosingBookMoneyInput(target,event):target.value;
-  if (target.dataset.bookNote) closingBook.draft[target.dataset.bookNote][Number(target.dataset.row)].note=target.value;
+  if (target.dataset.bookNote) {
+    const row=closingBook.draft[target.dataset.bookNote][Number(target.dataset.row)];
+    if (row.transferredEntryId) return;
+    row.note=target.value;
+    if (!event.isComposing) applyClosingBookEntrySuggestion(target);
+  }
   else if (target.dataset.bookAmount) closingBook.draft[target.dataset.bookAmount][Number(target.dataset.row)].amount=value;
   else if (target.name) closingBook.draft[target.name]=value;
   stampClosingBookRows(closingBook.draft);
   closingBook.dirty=true;
   updateClosingBookCalculations();
+});
+closingBook.form.addEventListener('change',event=> {
+  if (!closingBook.draft || closingBook.saving) return;
+  const target=event.target;
+  if (target.dataset.bookCategory) {
+    const row=closingBook.draft[target.dataset.bookCategory][Number(target.dataset.row)];
+    if (!row || row.transferredEntryId) return;
+    row.categoryId=target.value;
+  } else if (target.dataset.bookNote) {
+    const row=closingBook.draft[target.dataset.bookNote][Number(target.dataset.row)];
+    if (!row || row.transferredEntryId) return;
+    row.note=target.value;applyClosingBookEntrySuggestion(target);
+  } else return;
+  stampClosingBookRows(closingBook.draft);
+  closingBook.dirty=true;updateClosingBookCalculations();
 });
 closingBook.form.addEventListener('click',event=> {
   const detail=event.target.closest('[data-book-details]');
