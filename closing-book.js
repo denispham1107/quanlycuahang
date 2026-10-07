@@ -7,7 +7,7 @@ const closingBook = {
   shift: document.querySelector('#closingBookShift'),
   message: document.querySelector('#closingBookMessage'),
   storeId: null, draft: null, dirty: false, monthKey: '', dayKey: '', shiftIndex: 0,
-  shifts: [], saving: false, detailType: null, mainScroll: 0, selectedRows: new Set()
+  shifts: [], saving: false, detailType: null, mainScroll: 0, selectedRows: new Set(), daySnapshot: '[]'
 };
 const closingBookIcon = `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="bookCover" x2="1" y2="1"><stop stop-color="#8e49ee"/><stop offset="1" stop-color="#176bd2"/></linearGradient></defs><path d="M15 8h33c4 0 6 3 6 6v39H20c-7 0-10-4-10-9V15c0-4 2-7 5-7Z" fill="#254283"/><path d="M19 6h30c3 0 5 2 5 5v35H20c-4 0-7 2-7 5V13c0-4 2-7 6-7Z" fill="url(#bookCover)"/><path d="M21 6v39" stroke="#c3bcff" stroke-width="2"/><path d="M21 46h31v9H21c-6 0-8-2-8-5s3-4 8-4Z" fill="#fff5de"/><path d="M24 49h25M23 52h25" stroke="#baa6cc" stroke-width="1.4"/><path d="M29 17h16M29 22h12M29 27h16" stroke="#eee7ff" stroke-width="2.2" stroke-linecap="round"/><path d="M43 35v22l-5-4-5 4V35Z" fill="#ffbd60"/><path d="m35 35 3 3 5-6" fill="none" stroke="#653488" stroke-width="2.3" stroke-linecap="round"/><path d="M15 16h3M15 23h3M15 30h3M15 37h3" stroke="#ded5ff" stroke-width="1.5"/><path d="M24 9h23" stroke="#c3b4ff" stroke-linecap="round" opacity=".55"/></svg>`;
 // SVG gradient IDs are unique per displayed button.
@@ -129,6 +129,7 @@ function loadClosingBookMonth() {
 function loadClosingBookDay() {
   closingBook.dayKey=closingBook.day.value;
   const saved=closingBookMonthData().days?.find(day=>day.date===closingBook.dayKey);
+  closingBook.daySnapshot=JSON.stringify(saved?.shifts||[]);
   closingBook.shifts=JSON.parse(JSON.stringify(saved?.shifts?.length?saved.shifts:[ClosingBookCore.emptyShift()])).map(ClosingBookCore.normalizeShift);
   closingBook.shifts.forEach(shift=>stampClosingBookRows(shift,saved?.updatedAt));
   closingBook.shiftIndex=0;
@@ -232,14 +233,62 @@ document.querySelector('#closingBookAddShift').addEventListener('click',()=> {
   closingBook.shiftIndex=closingBook.shifts.length-1;
   closingBook.dirty=true; renderClosingBookShiftOptions(); renderClosingBookShift();
 });
+async function syncClosingBookDeletion(write) {
+  const storeId=closingBook.storeId;
+  const retry=document.querySelector('#closingBookRetryDelete');
+  let timer;
+  try {
+    document.querySelector('#closingBookMain').inert=true;
+    closingBookNotice('Đã xóa trên thiết bị. Đang xác nhận xóa trên Firebase...');
+    const result=await Promise.race([write,new Promise(resolve=>{timer=setTimeout(()=>resolve(false),15000);})]);
+    if (closingBook.page.hidden || closingBook.storeId!==storeId) return;
+    retry.hidden=result===true;
+    closingBookNotice(result===true?'Đã xóa ca và các khoản Thu/Chi liên kết trên thiết bị và Firebase.':'Chưa xác nhận được việc xóa trên Firebase. Vui lòng kiểm tra kết nối và bấm Thử đồng bộ lại.',result!==true);
+  } finally {
+    clearTimeout(timer);
+    document.querySelector('#closingBookMain').inert=false;
+  }
+}
+document.querySelector('#closingBookRetryDelete').addEventListener('click',()=> {
+  if (!closingBookAllowed() || getActiveStore().id!==closingBook.storeId) return;
+  syncClosingBookDeletion(saveStateToCloud());
+});
+document.querySelector('#closingBookDeleteShift').addEventListener('click',async()=> {
+  try {
+    const store=getActiveStore();
+    if (!closingBookAllowed() || store.id!==closingBook.storeId || closingBook.saving) return;
+    if (!cloudStore.enabled || !cloudStore.docRef || navigator.onLine===false) throw new Error('Cần kết nối Firebase để xóa ca. Vui lòng kiểm tra mạng và thử lại.');
+    const currentDay=closingBookMonthData()?.days?.find(day=>day.date===closingBook.dayKey);
+    if (JSON.stringify(currentDay?.shifts||[])!==closingBook.daySnapshot) throw new Error('Dữ liệu ca đã thay đổi trên cloud. Hãy mở lại ngày chốt sổ để kiểm tra trước khi xóa.');
+    const index=closingBook.shiftIndex;
+    const plan=ClosingBookCore.deleteShift(store.closingMonths||[],closingBook.dayKey,index,store.entries||[],closingBook.draft);
+    const income=plan.removedEntries.filter(entry=>entry.type==='income').length;
+    const expense=plan.removedEntries.filter(entry=>entry.type==='expense').length;
+    if (!window.confirm(`Xóa toàn bộ Ca ${index+1}${closingBook.draft.name?' · '+closingBook.draft.name:''} ngày ${formatDate(closingBook.dayKey)}?\n\nXóa cả ${income} khoản Thu và ${expense} khoản Chi đã chuyển từ ca này trên thiết bị và Firebase. Các thay đổi chưa lưu của ca này cũng sẽ bị xóa. Không thể hoàn tác.`)) return;
+    closingBook.saving=true;
+    const write=commitClosingBookMonths(plan.months,`Xóa Ca ${index+1} ngày ${formatDate(closingBook.dayKey)} và ${plan.removedEntries.length} khoản Thu/Chi liên kết`,{entries:plan.entries},{action:'delete'});
+    closingBook.shifts.splice(index,1);
+    if (!closingBook.shifts.length) { closingBook.shifts=[ClosingBookCore.emptyShift()]; closingBook.dirty=false; }
+    closingBook.shiftIndex=Math.min(index,closingBook.shifts.length-1);
+    closingBook.selectedRows.clear();
+    renderClosingBookShiftOptions(); renderClosingBookShift();
+    const saved=closingBookMonthData().days?.find(day=>day.date===closingBook.dayKey);
+    closingBook.daySnapshot=JSON.stringify(saved?.shifts||[]);
+    document.querySelector('#closingBookSaved').textContent=saved?`Đã lưu ${formatActivityDateTime(saved.updatedAt)}`:'Ngày chưa lưu';
+    closingBook.day.selectedOptions[0].textContent=`Ngày ${Number(closingBook.dayKey.slice(-2))}${saved?' · Đã lưu':''}`;
+    await syncClosingBookDeletion(write);
+  } catch(error) { closingBookNotice(error.message,true); }
+  finally { closingBook.saving=false; }
+});
 function commitClosingBookMonths(months,activity,changes={},details={}) {
   const store=getActiveStore();
   if (!closingBookAllowed() || store.id!==closingBook.storeId) throw new Error('Không còn quyền chốt sổ cho cửa hàng này.');
   const candidate={...state,stores:state.stores.map(item=>item.id===store.id?{...item,...changes,closingMonths:months}:item)};
   if (new TextEncoder().encode(JSON.stringify(candidate)).length>900000) throw new Error('Dữ liệu cửa hàng gần giới hạn đồng bộ. Chưa lưu thay đổi; hãy sao lưu và giảm dữ liệu trước.');
   Object.assign(store,changes,{closingMonths:months});
-  recordActivity(store,'update','Chốt sổ',activity,{tab:'overview',targetDate:closingBook.dayKey,...details});
-  saveAndRender();
+  const {action='update',...activityDetails}=details;
+  recordActivity(store,action,'Chốt sổ',activity,{tab:'overview',targetDate:closingBook.dayKey,...activityDetails});
+  return saveAndRender();
 }
 
 function stampClosingBookRows(shift,savedAt) {
@@ -265,6 +314,7 @@ function persistClosingBookDraft(changes={},activity='',details={}) {
   month.days=(month.days||[]).filter(item=>item.date!==day.date); month.days.push(day);
   commitClosingBookMonths(months,activity||`Lưu chốt sổ ngày ${formatDate(day.date)} (${shifts.length} ca)`,changes,details);
   closingBook.shifts=shifts;
+  closingBook.daySnapshot=JSON.stringify(shifts);
   closingBook.draft=shifts[closingBook.shiftIndex];
   closingBook.dirty=false;
   document.querySelector('#closingBookSaved').textContent=`Đã lưu ${formatActivityDateTime(day.updatedAt)}`;

@@ -89,7 +89,32 @@
     });
     return {entries,skipped};
   }
-  const api={moneyKeys,groups,maxRows,normalizeShift,parseMoney,validMonth,monthDays,emptyShift,validateShift,calculate,transferEntry,transferBatch};
+  function deleteShift(months,date,index,entries,draftShift) {
+    if (!Number.isInteger(index) || index<0) throw new Error('Ca không hợp lệ.');
+    const nextMonths=JSON.parse(JSON.stringify(months));
+    const month=nextMonths.find(item=>item.month===date.slice(0,7));
+    if (!month) throw new Error('Tháng không còn tồn tại.');
+    const day=month.days?.find(item=>item.date===date);
+    const savedShift=day?.shifts?.[index];
+    if (!savedShift && !draftShift) throw new Error('Ca không còn tồn tại.');
+    const rowIds=new Set(), entryIds=new Set();
+    [savedShift,draftShift].filter(Boolean).forEach(raw=> {
+      const shift=normalizeShift(raw);
+      groups.forEach(type=>(shift[type]||[]).forEach(row=> {
+        if (row.id) rowIds.add(row.id);
+        if (row.transferredEntryId) entryIds.add(row.transferredEntryId);
+      }));
+    });
+    const removedEntries=entries.filter(entry=>entryIds.has(entry.id) || (entry.closingBookRowId && rowIds.has(entry.closingBookRowId)));
+    const nextEntries=entries.filter(entry=>!removedEntries.includes(entry));
+    if (savedShift) {
+      day.shifts.splice(index,1);
+      if (!day.shifts.length) month.days=month.days.filter(item=>item.date!==date);
+      else day.updatedAt=new Date().toISOString();
+    }
+    return {months:nextMonths,entries:nextEntries,removedEntries};
+  }
+  const api={moneyKeys,groups,maxRows,normalizeShift,parseMoney,validMonth,monthDays,emptyShift,validateShift,calculate,transferEntry,transferBatch,deleteShift};
   if (typeof module !== 'undefined' && module.exports) module.exports=api;
   else root.ClosingBookCore=api;
 })(typeof window === 'undefined' ? globalThis : window);

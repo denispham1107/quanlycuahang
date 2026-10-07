@@ -10495,6 +10495,9 @@ body.closing-book-open .tab-bar { display: none !important; }
 #closingBookEditor[hidden] { display: none; }
 .closing-book-shift-bar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
 .closing-book-shift-bar label { flex: 1 1 220px; }
+.closing-book-page #closingBookDeleteShift { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: auto; min-height: 48px; padding: 12px 18px; border: 1px solid #ffb7cd; border-radius: 13px; background: #ffe8ef; color: #ac2851; box-shadow: none; }
+.closing-book-page #closingBookDeleteShift svg { width: 20px; height: 20px; flex: 0 0 20px; }
+.closing-book-page #closingBookDeleteShift:hover { background: #ffdae5; }
 #closingBookSaved { font-size: 12px; color: #6c7d99; }
 .closing-book-section { background: #ffffffd9; border: 1px solid #dde5f4; padding: 20px; border-radius: 20px; }
 .closing-book-section h2 { font-size: 19px; margin: 0 0 16px; }

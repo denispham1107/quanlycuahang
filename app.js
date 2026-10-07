@@ -2018,7 +2018,7 @@ function normalizeState(data) {
 function saveAndRender(employeeMutation = null) {
   saveStateToCache();
   render();
-  saveStateToCloud(employeeMutation);
+  return saveStateToCloud(employeeMutation);
 }
 
 function saveStateToCache() {
@@ -2672,7 +2672,7 @@ async function saveStateToCloud(employeeMutation = null) {
     } else if (cloudStore.status === "starting") {
       updateSyncStatus("Đang khởi tạo cloud...", "loading");
     }
-    return;
+    return false;
   }
 
   try {
@@ -2698,10 +2698,12 @@ async function saveStateToCloud(employeeMutation = null) {
       { merge: true }
     );
     updateSyncStatus("Đã lưu cloud", "ok");
+    return true;
   } catch (error) {
     cloudStore.lastError = error;
     updateSyncStatus("Lưu cloud thất bại", "error");
     console.error("Cannot save cloud state", error);
+    return false;
   }
 }
 

@@ -5,6 +5,47 @@ const path=require('node:path');
 const vm=require('node:vm');
 const core=require('../closing-book-core');
 const root=path.join(__dirname,'..');
+test('deleting a shift cascades only linked entries and preserves other days and shifts',()=> {
+  const a={...core.emptyShift(),expense:[{id:'row-a',transferredEntryId:'entry-a',note:'A',amount:1}],income:[{id:'row-b',note:'B',amount:2}]};
+  const b={...core.emptyShift(),expense:[{id:'row-other',note:'Other',amount:3}]};
+  const months=[{month:'2026-09',days:[{date:'2026-09-01',shifts:[a,b]},{date:'2026-09-02',shifts:[b]}]},{month:'2026-10',days:[]}];
+  const entries=[{id:'entry-a',type:'expense'},{id:'entry-b',type:'income',closingBookRowId:'row-b'},{id:'other',closingBookRowId:'row-other'},{id:'manual',date:'2026-09-01',note:'A',amount:1}];
+  const before=JSON.stringify({months,entries});
+  const plan=core.deleteShift(months,'2026-09-01',0,entries);
+  assert.deepEqual(plan.removedEntries.map(e=>e.id),['entry-a','entry-b']);
+  assert.deepEqual(plan.entries.map(e=>e.id),['other','manual']);
+  assert.deepEqual(plan.months[0].days[0].shifts,[b]);
+  assert.deepEqual(plan.months[0].days[1],months[0].days[1]);
+  assert.deepEqual(plan.months[1],months[1]);
+  assert.equal(JSON.stringify({months,entries}),before);
+  const last=core.deleteShift(plan.months,'2026-09-01',0,plan.entries);
+  assert.deepEqual(last.months[0].days.map(d=>d.date),['2026-09-02']);
+  assert.throws(()=>core.deleteShift(months,'2026-08-01',0,entries),/Tháng/);
+  assert.throws(()=>core.deleteShift(months,'2026-09-01',-1,entries),/Ca/);
+});
+test('shift deletion handles legacy groups and unsaved drafts without saving invalid other drafts',()=> {
+  const months=[{month:'2026-09',days:[{date:'2026-09-01',shifts:[{income1:[{id:'legacy'}],expense2:[{transferredEntryId:'old'}]}]}]}];
+  const entries=[{id:'a',closingBookRowId:'legacy'},{id:'old'},{id:'draft',closingBookRowId:'new'},{id:'manual'}];
+  const plan=core.deleteShift(months,'2026-09-01',0,entries,{income:[{id:'new'}],expense:[]});
+  assert.deepEqual(plan.entries,[{id:'manual'}]);
+  assert.equal(plan.months[0].days.length,0);
+  const unsaved=core.deleteShift(months,'2026-09-01',1,entries,{income:[{id:'new'}],expense:[]});
+  assert.deepEqual(unsaved.months,months);
+  assert.deepEqual(unsaved.removedEntries,[entries[2]]);
+});
+test('Firebase state write replaces store arrays and reports success or failure for deletion',async()=> {
+  const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+  const start=app.indexOf('async function saveStateToCloud('),end=app.indexOf('\nfunction updateSyncStatus',start);
+  let payload,options,fail=false;
+  const context={cloudStore:{enabled:true,docRef:{set:async(data,opts)=>{if(fail)throw new Error('test');payload=JSON.parse(JSON.stringify(data));options=opts;}}},
+    state:{stores:[{id:'a',entries:[],closingMonths:[{month:'2026-09',days:[]}]}]},isEmployeeUser:()=>false,updateSyncStatus:()=>{},console:{error:()=>{}},window:{firebase:{firestore:{FieldValue:{serverTimestamp:()=> 'timestamp'}}}}};
+  vm.runInNewContext(app.slice(start,end),context);
+  assert.equal(await context.saveStateToCloud(),true);
+  assert.deepEqual(payload.state,context.state);
+  assert.equal(options.merge,true);
+  fail=true;assert.equal(await context.saveStateToCloud(),false);
+  context.cloudStore.enabled=false;assert.equal(await context.saveStateToCloud(),false);
+});
 test('closing book preserves every source formula and does not subtract cancelled bills twice',()=> {
   const shift={opening:500000,pos:500000,vcb:250000,momo:80000,zalop:0,cash:200000,cancelled:999,ending:0,
     income1:[{note:'Thu',amount:200000}],expense1:[{note:'Chi',amount:525000}],expense2:[{note:'Chi 2',amount:125000}]};

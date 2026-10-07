@@ -101,6 +101,9 @@ async function main() {
       else assert.ok(cancelledBounds.y<resultBounds.y,'Cancelled bills above result on mobile');
       const buttonStyle=await page.locator('#closingBookCreateMonth button').evaluate(el=>({background:getComputedStyle(el).backgroundImage,color:getComputedStyle(el).color,variable:getComputedStyle(el).getPropertyValue('--accent-gradient')}));
       assert.notEqual(buttonStyle.background,'none',JSON.stringify(buttonStyle));
+      const deleteStyle=await page.locator('#closingBookDeleteShift').evaluate(el=>({background:getComputedStyle(el).backgroundImage,color:getComputedStyle(el).color}));
+      assert.equal(deleteStyle.background,'none','Delete uses a readable warning background, not the global gradient');
+      assert.equal(deleteStyle.color,'rgb(172, 40, 81)');
       if(process.env.INVENTORY_TEST_SHOTS&&[375,1440].includes(width)&&height===900) await page.screenshot({path:path.join(process.env.INVENTORY_TEST_SHOTS,`closing-book-${width}.png`)});
       if(process.env.INVENTORY_TEST_SHOTS&&[375,1440].includes(width)&&height===900) {
         await page.locator('#closingBookEntries').scrollIntoViewIfNeeded();
@@ -233,6 +236,48 @@ async function main() {
       await page.locator('#closeClosingBookDetail').click();
       await page.waitForFunction(()=>closingBook.detailType===null);
     }
+    // Cascading deletion: cancel, Firebase unavailable/failure/retry, and final shift.
+    await page.setViewportSize({width:1440,height:900});
+    await page.evaluate(()=> {
+      window.cloudStore={enabled:true,docRef:{}};
+      window.saveStateToCloud=async()=>true;
+      saveAndRender=()=>{saves++;refreshClosingBookAccess();return window.saveStateToCloud();};
+      getActiveStore().entries.push({id:'manual-delete-test',type:'expense',date:closingBook.dayKey,note:'Nhập trực tiếp',amount:1000});
+    });
+    const beforeDelete=await page.evaluate(()=>JSON.stringify(getActiveStore()));
+    await page.evaluate(()=>getActiveStore().closingMonths[0].days.find(d=>d.date===closingBook.dayKey).shifts[0].name='Sửa từ thiết bị khác');
+    await page.locator('#closingBookDeleteShift').click();
+    assert.match(await page.locator('#closingBookMessage').innerText(),/đã thay đổi trên cloud/);
+    await page.evaluate(()=>getActiveStore().closingMonths[0].days.find(d=>d.date===closingBook.dayKey).shifts[0].name='');
+    await page.locator('#closingBookDeleteShift').click();
+    assert.equal(await page.evaluate(()=>JSON.stringify(getActiveStore())),beforeDelete,'Cancel never changes data');
+    await page.evaluate(()=>cloudStore.enabled=false);
+    await page.locator('#closingBookDeleteShift').click();
+    assert.match(await page.locator('#closingBookMessage').innerText(),/kết nối Firebase/);
+    assert.equal(await page.evaluate(()=>JSON.stringify(getActiveStore())),beforeDelete);
+    await page.evaluate(()=>{cloudStore.enabled=true;saveStateToCloud=async()=>false;});
+    page.removeAllListeners('dialog');page.on('dialog',dialog=>dialog.accept());
+    const otherStore=await page.evaluate(()=>JSON.stringify(state.stores[1]));
+    await page.locator('#closingBookDeleteShift').click();
+    await page.waitForFunction(()=>!closingBook.saving);
+    assert.match(await page.locator('#closingBookMessage').innerText(),/Chưa xác nhận/);
+    assert.equal(await page.locator('#closingBookRetryDelete').isVisible(),true);
+    assert.equal(await page.evaluate(()=>getActiveStore().entries.filter(e=>e.date==='2026-09-04').length),1,'Only the unrelated manual entry remains');
+    assert.equal(await page.evaluate(()=>getActiveStore().closingMonths[0].days.some(d=>d.date==='2026-09-04')),false,'Deleting last shift removes saved day');
+    assert.equal(await page.evaluate(()=>JSON.stringify(state.stores[1])),otherStore);
+    await page.evaluate(()=>saveStateToCloud=async()=>true);
+    await page.locator('#closingBookRetryDelete').click();
+    await page.waitForFunction(()=>document.querySelector('#closingBookMain').inert===false);
+    assert.match(await page.locator('#closingBookMessage').innerText(),/thiết bị và Firebase/);
+    assert.equal(await page.locator('#closingBookRetryDelete').isVisible(),false);
+    assert.equal(await page.locator('#closingBookShift option').count(),1,'A fresh empty draft remains usable');
+    await page.locator('#closingBookDay').selectOption('2026-09-01');
+    await page.locator('#closingBookShift').selectOption('0');
+    await page.locator('#closingBookDeleteShift').click();
+    await page.waitForFunction(()=>!closingBook.saving);
+    assert.equal(await page.evaluate(()=>getActiveStore().closingMonths[0].days.find(d=>d.date==='2026-09-01').shifts.length),1);
+    assert.equal(await page.locator('[name="name"]').inputValue(),'Ca tối');
+    page.removeAllListeners('dialog');page.on('dialog',dialog=>dialog.dismiss());
     await page.evaluate(()=>{state.activeStoreId='b';refreshClosingBookAccess();});
     assert.equal(await page.locator('#closingBookPage').isVisible(),false);
     await page.evaluate(()=>openClosingBookPage());
@@ -303,6 +348,27 @@ async function main() {
     assert.equal(await full.locator('#closingBookDetailPage').isVisible(),true);
     assert.equal(await full.locator('[data-detail-transfer]').isDisabled(),true);
     assert.equal(await full.evaluate(()=>getActiveStore().entries.length),1);
+    await full.locator('#closeClosingBookDetail').click();
+    await full.waitForFunction(()=>closingBook.detailType===null);
+    await full.evaluate(()=> {
+      window.firestoreWrites=[];
+      window.firebase={firestore:{FieldValue:{serverTimestamp:()=> 'mock-server-time'}}};
+      cloudStore.enabled=true;
+      cloudStore.docRef={set:async payload=>firestoreWrites.push(JSON.parse(JSON.stringify(payload)))};
+    });
+    full.on('dialog',dialog=>dialog.accept());
+    await full.locator('#closingBookDeleteShift').click();
+    await full.waitForFunction(()=>!closingBook.saving);
+    const deleted=await full.evaluate(()=>({cached:JSON.parse(localStorage.getItem(STORAGE_KEY)).stores[0],remote:firestoreWrites.at(-1).state.stores[0]}));
+    for(const store of [deleted.cached,deleted.remote]) {assert.equal(store.entries.length,0);assert.equal(store.closingMonths[0].days.length,0);}
+    assert.match(await full.locator('#closingBookMessage').innerText(),/thiết bị và Firebase/);
+    await full.reload();
+    await full.evaluate(()=> {
+      authState.role='admin';authState.ready=true;authState.profile={role:'admin',displayName:'Admin'};
+      els.authScreen.hidden=true;els.appShell.hidden=false;document.body.classList.remove('auth-pending');activateTab('overview');render();
+    });
+    assert.equal(await full.evaluate(()=>getActiveStore().entries.length),0,'Deleted entries do not reappear after cache reload');
+    assert.equal(await full.evaluate(()=>getActiveStore().closingMonths[0].days.length),0);
     await full.evaluate(()=>hideClosingBookPage({force:true}));
     const desktopIcon=await full.locator('#openClosingBookDesktop svg').boundingBox();
     assert.ok(desktopIcon.width>=36&&desktopIcon.height>=36,'Detailed desktop book icon is not collapsed by the heading action-button style');
