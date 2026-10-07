@@ -98,21 +98,23 @@ test("employee tabs stay clickable while their panels are empty and inert", () =
   assert.ok(panels.every((panel) => !panel.inert && panel.dataset.employeeEmpty === "false"));
 });
 
-test("employee can open blank tabs without redirection but still cannot open ungranted sales", () => {
+test("employee Thu/Chi show a blocking alert and preserve the current tab and filters", () => {
   const tabs = ["stores", "overview", "income", "expense", "purchase", "sales"]
     .map((tab) => ({ dataset: { tab }, classList: classes(), setAttribute() {} }));
   const panels = tabs.map((button) => ({ dataset: { tabPanel: button.dataset.tab }, classList: classes(), hidden: false }));
   const body = { classList: classes() };
+  let employee = true;
+  const alerts = [], updates = [];
   const context = vm.createContext({
-    isEmployeeUser: () => true,
+    isEmployeeUser: () => employee,
     employeeCan: (area, action) => area === "purchase" && action === "view",
     getFirstEmployeeTab: () => "purchase",
     USE_MOBILE_APP_THEME: true,
     document: { body },
-    window: {},
+    window: { alert(message) { alerts.push(message); } },
     uiState: {},
     els: { tabButtons: tabs, tabPanels: panels },
-    clearTimeFiltersAutoCollapse() {}, updateTimeFiltersVisibility() {},
+    clearTimeFiltersAutoCollapse() { updates.push('clear'); }, updateTimeFiltersVisibility() { updates.push('filters'); },
     updateQuickEntryButton() {}, updatePinnedTabs() {}, updateDesktopCategoryFilter() {},
     updateDesktopPageChrome() {}, renderDesktopInsights() {}, getActiveStore() {}
   });
@@ -121,14 +123,31 @@ test("employee can open blank tabs without redirection but still cannot open ung
     section("function activateTab(tabName) {", "function getActiveTabName() {"), context
   );
 
-  for (const name of ["stores", "overview", "income", "expense"]) {
+  for (const name of ["stores", "overview", "purchase"]) {
     context.activateTab(name);
     assert.equal(panels.find((panel) => panel.dataset.tabPanel === name).hidden, false, name);
     assert.equal(tabs.find((tab) => tab.dataset.tab === name).classList.contains("active"), true, name);
     assert.equal(body.classList.contains("mobile-secondary-tab"), name !== "stores");
+    context.uiState.timeFiltersExpanded = true;
+    const beforeUpdates = updates.length;
+    for (const blocked of ["income", "expense"]) {
+      context.activateTab(blocked);
+      assert.equal(alerts.at(-1), "Bạn chưa được phân quyền");
+      assert.equal(panels.find(panel => panel.dataset.tabPanel === name).hidden, false);
+      assert.equal(tabs.find(tab => tab.dataset.tab === name).classList.contains('active'), true);
+      assert.equal(context.uiState.timeFiltersExpanded, true);
+      assert.equal(updates.length, beforeUpdates, 'No navigation/filter side effects');
+    }
   }
   context.activateTab("sales");
   assert.equal(tabs.find((tab) => tab.dataset.tab === "purchase").classList.contains("active"), true);
+  employee = false;
+  const alertCount = alerts.length;
+  for (const name of ["income", "expense"]) {
+    context.activateTab(name);
+    assert.equal(panels.find(panel => panel.dataset.tabPanel === name).hidden, false);
+  }
+  assert.equal(alerts.length, alertCount, 'Admin retains Thu/Chi access');
 });
 
 test("protected empty tabs do not expose time filters or desktop summary chrome", () => {

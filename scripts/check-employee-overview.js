@@ -84,11 +84,35 @@ async function main() {
       await page.evaluate(()=>{state.stores.push(normalizeState({stores:[{id:'b',name:'Cửa hàng trống',overviewSales:[]}]}).stores[0]);state.activeStoreId='b';render();});
       await check(0,0);
       assert.match(await page.locator('#employeeOverviewStoreName').innerText(),/Cửa hàng trống/);
+      // Thu/Chi must alert before changing the selected page or any filter state.
+      await page.evaluate(()=>{authState.profile.permissions={purchase:{view:true},sales:{view:true}};render();});
+      const alerts=[];
+      page.on('dialog',async dialog=>{assert.equal(dialog.type(),'alert');alerts.push(dialog.message());await dialog.accept();});
+      const navigationSnapshot=()=>page.evaluate(()=>({tab:getActiveTabName(),panels:[...els.tabPanels].map(p=>[p.dataset.tabPanel,p.hidden]),hash:location.hash,mode:els.rangeMode.value,month:els.monthDate.value,expanded:uiState.timeFiltersExpanded,secondary:document.body.classList.contains('mobile-secondary-tab')}));
+      for(const current of ['stores','overview','purchase','sales']) {
+        await page.locator(`[data-tab="${current}"]`).click();
+        const before=await navigationSnapshot();
+        for(const blocked of ['income','expense']) {
+          const count=alerts.length;
+          await page.locator(`[data-tab="${blocked}"]`).click();
+          assert.equal(alerts.length,count+1);
+          assert.equal(alerts.at(-1),'Bạn chưa được phân quyền');
+          assert.deepEqual(await navigationSnapshot(),before,`${current} remains open after ${blocked} OK`);
+        }
+      }
+      await page.evaluate(()=>{authState.role='admin';authState.profile={role:'admin'};render();});
+      const count=alerts.length;
+      for(const tab of ['income','expense']) {
+        await page.locator(`[data-tab="${tab}"]`).click();
+        assert.equal(await page.evaluate(()=>getActiveTabName()),tab);
+      }
+      assert.equal(alerts.length,count,'Admin navigation is unchanged');
+      await page.evaluate(()=>{authState.role='employee';authState.profile={role:'employee',storeId:'a',permissions:{}};render();});
       await page.evaluate(()=>{state.stores=[];state.activeStoreId=null;render();activateTab('overview');});
       assert.equal(await page.locator('#employeeOverviewSales').isVisible(),false,'Removed assignment does not retain stale sales totals');
       assert.deepEqual(errors,[]);
       await page.close();
-      console.log(`Employee overview filters/totals/layout: ${width}x${height} OK`);
+      console.log(`Employee overview filters/totals/layout and blocked Thu/Chi navigation: ${width}x${height} OK`);
     }
   } finally {await browser.close();}
 }

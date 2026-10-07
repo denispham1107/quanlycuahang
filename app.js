@@ -6964,6 +6964,10 @@ function renderHistoryFilter(select, categories, includeCancelled = false) {
   select.value = stillExists ? currentValue : "all";
 }
 function activateTab(tabName) {
+  if (isEmployeeUser() && (tabName === "income" || tabName === "expense")) {
+    window.alert("Bạn chưa được phân quyền");
+    return;
+  }
   if (
     isEmployeeUser() &&
     !EMPLOYEE_EMPTY_TABS.has(tabName) &&
