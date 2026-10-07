@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=111" />
+    <link rel="manifest" href="manifest.webmanifest?v=112" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=111" />
+    <link rel="stylesheet" href="styles.css?v=112" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -1420,6 +1420,12 @@
             <h3>Tài khoản đã tạo</h3>
             <span id="employeeCount">0 nhân viên</span>
           </div>
+          <div class="employee-delete-toolbar" id="employeeDeleteToolbar" hidden>
+            <label class="employee-select-control"><input id="employeeSelectAll" type="checkbox" /> Chọn tất cả</label>
+            <span id="employeeSelectionCount" role="status">Đã chọn 0 nhân viên</span>
+            <button class="employee-delete-button" id="deleteSelectedEmployees" type="button" disabled>Xóa đã chọn</button>
+          </div>
+          <p class="employee-manager-status" id="employeeDeleteStatus" role="status" hidden></p>
           <div class="employee-account-list" id="employeeAccountList"></div>
         </div>
       </section>
@@ -1522,8 +1528,8 @@
         </article>
       </section>
     </section>
-    <script defer src="app.js?v=111"></script>
-    <script defer src="closing-book-core.js?v=111"></script>
-    <script defer src="closing-book.js?v=111"></script>
+    <script defer src="app.js?v=112"></script>
+    <script defer src="closing-book-core.js?v=112"></script>
+    <script defer src="closing-book.js?v=112"></script>
   </body>
 </html>

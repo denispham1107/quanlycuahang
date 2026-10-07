@@ -2275,6 +2275,8 @@ async function getEmployeeManagementStores() {
     .map((store) => ({ id: employeeText(store.id, 100), name: employeeText(store.name, 160) }));
 }
 
+const { deleteManagedEmployees } = require("./employee-account-deletion");
+
 function validateManagedEmployeePermissions(rawPermissions) {
   const permissions = normalizeEmployeePermissions({ permissions: rawPermissions || {} });
   if (!permissions.purchase.view && !permissions.sales.view && !permissions.closingBook.manage) {
@@ -2311,6 +2313,7 @@ async function listManagedEmployees() {
         email: authUser?.email || "",
         displayName: employeeText(profile.displayName || authUser?.displayName || authUser?.email, 120),
         active: profile.active !== false && authUser?.disabled !== true,
+        deletionPending: profile.deletionPending === true,
         storeId: employeeText(profile.storeId, 100),
         permissions: normalizeEmployeePermissions(profile)
       };
@@ -2365,18 +2368,24 @@ async function updateManagedEmployee(body) {
   if (!profileSnapshot.exists || profileSnapshot.data()?.role !== "employee") {
     throw Object.assign(new Error("EMPLOYEE_NOT_FOUND"), { status: 404 });
   }
+  if (profileSnapshot.data()?.deletionPending === true) throw Object.assign(new Error("EMPLOYEE_DELETION_PENDING"), {status:409});
   await admin.auth().updateUser(uid, { displayName, disabled: !active });
-  await profileRef.set(
-    {
-      displayName,
-      role: "employee",
-      active,
-      storeId,
-      permissions,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    },
-    { merge: true }
-  );
+  await db.runTransaction(async transaction => {
+    const fresh = await transaction.get(profileRef);
+    if (!fresh.exists || fresh.data()?.role !== "employee") throw Object.assign(new Error("EMPLOYEE_NOT_FOUND"), {status:404});
+    if (fresh.data()?.deletionPending === true) throw Object.assign(new Error("EMPLOYEE_DELETION_PENDING"), {status:409});
+    transaction.set(profileRef,
+      {
+        displayName,
+        role: "employee",
+        active,
+        storeId,
+        permissions,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      },
+      { merge: true }
+    );
+  });
 }
 
 exports.manageEmployeeAccounts = onRequest(
@@ -2386,7 +2395,7 @@ exports.manageEmployeeAccounts = onRequest(
     if (req.method === "OPTIONS") return res.status(204).send("");
     if (req.method !== "POST") return sendError(res, 405, "Chỉ hỗ trợ POST.");
     try {
-      await requireFirebaseAdmin(req);
+      const manager = await requireFirebaseAdmin(req);
       const action = employeeText(req.body?.action, 30);
       if (action === "list") {
         return res.json({ ok: true, ...(await listManagedEmployees()) });
@@ -2399,6 +2408,10 @@ exports.manageEmployeeAccounts = onRequest(
         await updateManagedEmployee(req.body || {});
         return res.json({ ok: true, ...(await listManagedEmployees()) });
       }
+      if (action === "delete") {
+        const result = await deleteManagedEmployees({uids:req.body?.uids,actor:{uid:manager.userId,isAdmin:true},db,auth:admin.auth(),serverTimestamp:()=>admin.firestore.FieldValue.serverTimestamp()});
+        return res.json({ok:true,...result,...(await listManagedEmployees())});
+      }
       return sendError(res, 400, "Thao tác quản lý nhân viên không hợp lệ.");
     } catch (error) {
       logger.warn("manageEmployeeAccounts failed", {
@@ -2409,6 +2422,12 @@ exports.manageEmployeeAccounts = onRequest(
       const duplicateEmail = error?.code === "auth/email-already-exists";
       const invalidEmail = error?.code === "auth/invalid-email" || error?.message === "INVALID_EMAIL";
       const invalidPassword = error?.code === "auth/invalid-password" || error?.message === "INVALID_PASSWORD";
+      const managementErrors = {
+        CANNOT_DELETE_SELF: "Không thể xóa tài khoản đang đăng nhập.",
+        CANNOT_DELETE_ADMIN: "Không được xóa tài khoản admin trong danh sách nhân viên.",
+        INVALID_EMPLOYEE_SELECTION: "Vui lòng chọn từ 1 đến 50 nhân viên hợp lệ để xóa.",
+        EMPLOYEE_DELETION_PENDING: "Tài khoản đang chờ xóa lại và đã tạm khóa; không thể cập nhật phân quyền."
+      };
       const status = duplicateEmail ? 409 : invalidEmail || invalidPassword ? 400 : error?.status || 500;
       const message = duplicateEmail
         ? "Email này đã được sử dụng."
@@ -2416,9 +2435,9 @@ exports.manageEmployeeAccounts = onRequest(
           ? "Email không hợp lệ."
           : invalidPassword
             ? "Mật khẩu phải có từ 8 đến 128 ký tự."
-            : status < 500
+            : managementErrors[error?.message] || (status < 500
               ? "Thông tin nhân viên không hợp lệ hoặc tài khoản không tồn tại."
-              : "Không thể quản lý tài khoản nhân viên.";
+              : "Không thể quản lý tài khoản nhân viên.");
       return sendError(res, status, message);
     }
   }

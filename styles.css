@@ -5163,6 +5163,23 @@ th:last-child {
   min-height: 0;
 }
 
+.employee-delete-toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:12px; padding:14px; border:1px solid #e0d9fa; border-radius:16px; background:#f5f2ff; }
+.employee-delete-toolbar[hidden] { display:none; }
+.employee-select-control { display:flex; align-items:center; gap:9px; min-height:44px; color:#334b7d; font-size:13px; font-weight:800; cursor:pointer; }
+#employeeManagerPage .employee-select-control input { flex:0 0 20px; width:20px; height:20px; min-height:20px; padding:0; margin:0; box-shadow:none; accent-color:#7453e5; }
+#employeeSelectionCount { flex:1 1 140px; color:#687592; font-size:13px; }
+.employee-delete-toolbar .employee-delete-button { width:auto; min-height:44px; padding:10px 16px; border:1px solid #f3b6cb; border-radius:12px; background:#ffedf3; color:#b92c60; font-weight:800; box-shadow:none; }
+.employee-delete-toolbar .employee-delete-button:disabled { opacity:.55; cursor:not-allowed; }
+.employee-account-card.employee-account-selected { border-color:#9172f0; box-shadow:0 0 0 2px #9475eb20; }
+.employee-card-select-row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px solid #e6e9f5; padding-bottom:8px; }
+.employee-deletion-pending { color:#b92c60; font-size:12px; overflow-wrap:anywhere; }
+@media(max-width:480px) {
+  .employee-delete-toolbar { gap:8px; }
+  .employee-delete-toolbar .employee-select-control { flex:1 1 130px; }
+  #employeeSelectionCount { flex:1 1 100px; }
+  .employee-delete-toolbar .employee-delete-button { flex:1 1 100%; }
+}
+
 .employee-account-heading > div {
   display: grid;
   gap: 3px;

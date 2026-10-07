@@ -183,6 +183,11 @@ const els = {
   employeeManagerStatus: document.querySelector("#employeeManagerStatus"),
   employeeAccountList: document.querySelector("#employeeAccountList"),
   employeeCount: document.querySelector("#employeeCount"),
+  employeeDeleteToolbar: document.querySelector("#employeeDeleteToolbar"),
+  employeeSelectAll: document.querySelector("#employeeSelectAll"),
+  employeeSelectionCount: document.querySelector("#employeeSelectionCount"),
+  deleteSelectedEmployees: document.querySelector("#deleteSelectedEmployees"),
+  employeeDeleteStatus: document.querySelector("#employeeDeleteStatus"),
   openActivityHistory: document.querySelector("#openActivityHistory"),
   activityHistoryPage: document.querySelector("#activityHistoryPage"),
   activityHistoryStoreName: document.querySelector("#activityHistoryStoreName"),
@@ -1720,9 +1725,21 @@ els.employeeCreateForm?.addEventListener("change", (event) => {
 });
 els.employeeCreateForm?.addEventListener("submit", createEmployeeAccount);
 els.employeeAccountList?.addEventListener("change", (event) => {
+  if (event.target.matches("[data-select-employee]")) {
+    const uid=event.target.value;
+    if (event.target.checked) employeeManagerState.selected.add(uid);
+    else employeeManagerState.selected.delete(uid);
+    updateEmployeeSelectionControls();
+    return;
+  }
   const card = event.target.closest("[data-employee-uid]");
   if (card) enforceEmployeePermissionDependencies(card, event.target);
 });
+els.employeeSelectAll?.addEventListener("change", () => {
+  employeeManagerState.selected = new Set(els.employeeSelectAll.checked ? employeeManagerState.employees.filter(employee=>employee.uid!==authState.user?.uid).map(employee=>employee.uid) : []);
+  updateEmployeeSelectionControls();
+});
+els.deleteSelectedEmployees?.addEventListener("click", deleteSelectedEmployeeAccounts);
 els.employeeAccountList?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-save-employee]");
   if (button) updateEmployeeAccount(button.closest("[data-employee-uid]"));
@@ -2407,8 +2424,71 @@ async function callEmployeeFunction(name, body = {}) {
 
 const employeeManagerState = {
   employees: [],
-  stores: []
+  stores: [],
+  selected: new Set(),
+  deleting: false
 };
+
+function setEmployeeDeletionStatus(message="",type="") {
+  if (!els.employeeDeleteStatus) return;
+  els.employeeDeleteStatus.textContent=message;
+  els.employeeDeleteStatus.dataset.type=type;
+  els.employeeDeleteStatus.hidden=!message;
+}
+
+function updateEmployeeSelectionControls() {
+  const available=employeeManagerState.employees.filter(employee=>employee.uid!==authState.user?.uid);
+  const valid=new Set(available.map(employee=>employee.uid));
+  employeeManagerState.selected=new Set([...employeeManagerState.selected].filter(uid=>valid.has(uid)));
+  const count=employeeManagerState.selected.size;
+  if (els.employeeDeleteToolbar) els.employeeDeleteToolbar.hidden=!isAdminUser() || !available.length;
+  if (els.employeeSelectionCount) els.employeeSelectionCount.textContent=`Đã chọn ${count} nhân viên`;
+  if (els.employeeSelectAll) {
+    els.employeeSelectAll.checked=available.length>0 && count===available.length;
+    els.employeeSelectAll.indeterminate=count>0 && count<available.length;
+    els.employeeSelectAll.disabled=employeeManagerState.deleting;
+  }
+  if (els.deleteSelectedEmployees) els.deleteSelectedEmployees.disabled=employeeManagerState.deleting || !count;
+  els.employeeAccountList?.querySelectorAll("[data-select-employee]").forEach(input=>{
+    input.checked=employeeManagerState.selected.has(input.value);
+    input.disabled=employeeManagerState.deleting || input.value===authState.user?.uid;
+    input.closest("[data-employee-uid]")?.classList.toggle("employee-account-selected",input.checked);
+  });
+}
+
+async function deleteSelectedEmployeeAccounts() {
+  if (!isAdminUser() || employeeManagerState.deleting) return;
+  updateEmployeeSelectionControls();
+  const uids=[...employeeManagerState.selected];
+  if (!uids.length) return;
+  if (uids.length>50) {setEmployeeDeletionStatus("Vui lòng chọn tối đa 50 nhân viên trong mỗi lần xóa.","error");return;}
+  const names=employeeManagerState.employees.filter(employee=>uids.includes(employee.uid)).map(employee=>employee.displayName || employee.email || employee.uid);
+  const namesByUid=new Map(employeeManagerState.employees.map(employee=>[employee.uid,employee.displayName || employee.email || employee.uid]));
+  const preview=names.slice(0,5).join("\n")+(names.length>5?`\n… và ${names.length-5} nhân viên khác`:"");
+  if (!window.confirm(`Xóa vĩnh viễn ${uids.length} nhân viên đã chọn?\n${preview}\n\nTài khoản đăng nhập và hồ sơ phân quyền sẽ bị xóa. Giao dịch và lịch sử cũ vẫn được giữ nguyên.\nThao tác này không thể hoàn tác.`)) return;
+  employeeManagerState.deleting=true;
+  const controls=[...els.employeeManagerPage.querySelectorAll("input, select, button:not(#closeEmployeeManager)")].map(element=>({element,disabled:element.disabled}));
+  controls.forEach(({element})=>element.disabled=true);
+  updateEmployeeSelectionControls();
+  setEmployeeDeletionStatus("Đang xóa tài khoản nhân viên…","loading");
+  try {
+    const result=await callEmployeeFunction("manageAccountsUrl",{action:"delete",uids});
+    for (const uid of result.deletedUids || []) employeeManagerState.selected.delete(uid);
+    renderEmployeeAccounts(result);
+    const deleted=(result.deletedUids || []).length;
+    const failed=Array.isArray(result.failed)?result.failed:[];
+    if (failed.length) {
+      const labels=failed.map(failure=>namesByUid.get(failure.uid) || failure.uid).join(", ");
+      setEmployeeDeletionStatus(`Đã xóa ${deleted} nhân viên. Chưa xóa xong ${failed.length} tài khoản (${labels}); các tài khoản này đã tạm khóa. Bạn có thể chọn và thử xóa lại.`,"error");
+    } else setEmployeeDeletionStatus(`Đã xóa ${deleted} nhân viên. Giao dịch và lịch sử cũ được giữ nguyên.`,"success");
+  } catch (error) {
+    setEmployeeDeletionStatus(error.message || "Không thể xác nhận xóa tài khoản. Hãy tải lại danh sách hoặc thử lại.","error");
+  } finally {
+    employeeManagerState.deleting=false;
+    controls.forEach(({element,disabled})=>{if(element.isConnected)element.disabled=disabled;});
+    updateEmployeeSelectionControls();
+  }
+}
 
 function setEmployeeManagerStatus(message = "", type = "") {
   if (!els.employeeManagerStatus) return;
@@ -2529,12 +2609,17 @@ function renderEmployeeAccounts(payload = {}) {
   if (!els.employeeAccountList) return;
   if (!employeeManagerState.employees.length) {
     els.employeeAccountList.innerHTML = '<div class="empty-list">Chưa có tài khoản nhân viên.</div>';
+    updateEmployeeSelectionControls();
     return;
   }
   els.employeeAccountList.innerHTML = employeeManagerState.employees
     .map(
       (employee) => `
         <article class="employee-account-card" data-employee-uid="${escapeHtml(employee.uid)}">
+          <div class="employee-card-select-row">
+            <label class="employee-select-control"><input type="checkbox" data-select-employee value="${escapeHtml(employee.uid)}" aria-label="Chọn ${escapeHtml(employee.displayName || employee.email || "nhân viên")}" /> Chọn nhân viên</label>
+            ${employee.deletionPending ? '<span class="employee-deletion-pending">Đang chờ xóa lại · đã tạm khóa</span>' : ""}
+          </div>
           <div class="employee-account-heading">
             <div>
               <strong>${escapeHtml(employee.displayName || "Nhân viên")}</strong>
@@ -2561,12 +2646,13 @@ function renderEmployeeAccounts(payload = {}) {
           </fieldset>
           <div class="employee-card-actions">
             <span class="employee-card-status" role="status"></span>
-            <button type="button" data-save-employee>Lưu phân quyền</button>
+            <button type="button" data-save-employee ${employee.deletionPending ? "disabled" : ""}>Lưu phân quyền</button>
           </div>
         </article>
       `
     )
     .join("");
+  updateEmployeeSelectionControls();
 }
 
 async function loadEmployeeAccounts() {
@@ -2614,13 +2700,15 @@ function hideEmployeeManagerPage({ restoreFocus = true } = {}) {
   if (!els.employeeManagerPage || els.employeeManagerPage.hidden) return;
   els.employeeManagerPage.hidden = true;
   setEmployeeManagerStatus();
+  setEmployeeDeletionStatus();
+  if (!employeeManagerState.deleting) employeeManagerState.selected.clear();
   finishSettingsDetailPageClose();
   if (restoreFocus) els.settingsToggle?.focus({ preventScroll: true });
 }
 
 async function createEmployeeAccount(event) {
   event.preventDefault();
-  if (!isAdminUser() || !els.employeeCreateForm) return;
+  if (!isAdminUser() || !els.employeeCreateForm || employeeManagerState.deleting) return;
   const form = els.employeeCreateForm;
   if (!form.reportValidity()) return;
   const permissions = getPermissionsFromContainer(form);
@@ -2653,7 +2741,7 @@ async function createEmployeeAccount(event) {
 }
 
 async function updateEmployeeAccount(card) {
-  if (!isAdminUser() || !card) return;
+  if (!isAdminUser() || !card || employeeManagerState.deleting || employeeManagerState.employees.some(employee=>employee.uid===card.dataset.employeeUid && employee.deletionPending)) return;
   const permissions = getPermissionsFromContainer(card);
   const status = card.querySelector(".employee-card-status");
   const button = card.querySelector("[data-save-employee]");
