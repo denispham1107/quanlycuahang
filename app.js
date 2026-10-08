@@ -788,11 +788,24 @@ els.renameStore.addEventListener("click", () => {
 });
 
 els.deleteStore.addEventListener("click", () => {
+  if (!isAdminUser()) return;
   const store = getActiveStore();
-  if (!store) return;
-  const ok = window.confirm(`Xóa cửa hàng "${store.name}" và toàn bộ dữ liệu bên trong?`);
-  if (!ok) return;
-  state.stores = state.stores.filter((item) => item.id !== store.id);
+  if (!store || typeof store.name !== "string" || !store.name.trim()) return;
+  const storeId = store.id;
+  const storeName = store.name;
+  // Start blank: an accidental OK/Enter cannot confirm a destructive action.
+  const confirmation = window.prompt(`Bạn đang xóa cửa hàng "${storeName}" và toàn bộ dữ liệu bên trong.\nThao tác này không thể hoàn tác.\n\nNhập chính xác tên cửa hàng để xác nhận xóa:\n${storeName}`, "");
+  if (confirmation === null) return;
+  if (confirmation !== storeName) {
+    window.alert("Tên cửa hàng không khớp. Cửa hàng chưa được xóa. Vui lòng nhập đúng tên, gồm chữ hoa/thường và dấu tiếng Việt.");
+    return;
+  }
+  const currentStore = getActiveStore();
+  if (!isAdminUser() || !currentStore || currentStore.id !== storeId || currentStore.name !== storeName) {
+    window.alert("Cửa hàng hoặc quyền truy cập đã thay đổi. Vui lòng kiểm tra và thực hiện lại.");
+    return;
+  }
+  state.stores = state.stores.filter((item) => item.id !== storeId);
   state.activeStoreId = state.stores[0]?.id || null;
   saveAndRender();
 });

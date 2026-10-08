@@ -1,5 +1,7 @@
 # Quy tắc hồi quy giao diện
 
+- Xóa cửa hàng chỉ dành cho admin và phải dùng ô xác nhận tên để trống ban đầu; chỉ xóa khi chuỗi nhập khớp chính xác tên cửa hàng (hoa/thường, dấu, khoảng trắng). Hủy/nhập sai không đổi state và không gửi lưu Firebase; kiểm tra lại quyền, ID và tên cửa hàng sau xác nhận để không xóa nhầm nếu ngữ cảnh đã đổi. Không điền sẵn tên hoặc dùng confirm OK đơn thuần. Chạy `store-deletion-confirmation.test.js` và kiểm tra native prompt trên desktop/mobile bằng dữ liệu giả.
+
 - Kiểm kê “Tất cả” phải hiển thị đủ 5 nhóm POS/VCB/Momo/Zalop/Tiền két và tổng, danh sách ngày riêng cho từng nhóm theo bộ lọc Dư/Thiếu; tuyệt đối không cộng chéo loại vì có thể trùng nguồn tiền. Chuyển qua lại Tất cả/một loại, tháng rỗng và cloud cập nhật phải giữ đúng dữ liệu, không để tổng/list cũ sót lại. Kiểm thử tổng từng nhóm độc lập và bố cục mobile/desktop.
 
 - Kiểm kê Chốt sổ là trang con chỉ đọc dành cho admin, dùng dữ liệu đã lưu của cửa hàng/tháng đang chọn và công thức `ClosingBookCore.calculate`. Cộng chênh lệch tất cả ca theo ngày trước khi lọc Dư (>0)/Thiếu (<0), bỏ ngày bằng 0; tổng Thiếu hiển thị trị tuyệt đối nhưng từng ngày giữ dấu âm. Kiểm tra cả năm loại chênh lệch, nhiều ca triệt tiêu, dữ liệu cũ, tổng vượt số nguyên an toàn, đổi tháng và cập nhật cloud; không tự lưu hoặc làm mất nháp khi mở/quay lại/Back. Giữ một vùng cuộn chung với Chốt sổ; chạy `closing-book-audit.test.js`, `check-closing-book-audit.js` và `check-page-scrolling.js`.
