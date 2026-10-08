@@ -1,6 +1,6 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {chromium}=require('playwright');
-const layers=['quickEntryModal','bulkCashPage','salesCatalogPage','customersPage','employeeManagerPage','activityHistoryPage','closingBookPage','inventoryModal','inventoryHistoryModal','editInventoryModal','exportInventoryModal','editInventoryLogModal','salesOrderDetailModal','orderDiscountModal','salesCustomerCatalogModal','customerHistoryModal','memberTierModal','editEntryModal','aiChatModal'];
+const layers=['closingPosModal','quickEntryModal','bulkCashPage','salesCatalogPage','customersPage','employeeManagerPage','activityHistoryPage','closingBookPage','inventoryModal','inventoryHistoryModal','editInventoryModal','exportInventoryModal','editInventoryLogModal','salesOrderDetailModal','orderDiscountModal','salesCustomerCatalogModal','customerHistoryModal','memberTierModal','editEntryModal','aiChatModal'];
 async function main() {
   const root=path.resolve(__dirname,'..');
   const browser=await chromium.launch({headless:true,args:['--disable-features=OverlayScrollbar,OverlayScrollbars'],...(process.env.BULK_TEST_CHROME?{executablePath:process.env.BULK_TEST_CHROME}:{})});
@@ -42,6 +42,7 @@ async function main() {
         ['Quản lý nhân viên','employeeManagerPage',"openEmployeeManagerPage()","hideEmployeeManagerPage({restoreFocus:false})"],
         ['Lịch sử hoạt động','activityHistoryPage',"openActivityHistoryPage()","hideActivityHistoryPage({restoreFocus:false})"],
         ['Chốt sổ','closingBookPage',"openClosingBookPage()","hideClosingBookPage({force:true})"],
+        ['Chuyển POS','closingPosModal',"openClosingBookPage();openClosingPosModal()","closeClosingPosModal();hideClosingBookPage({force:true})"],
         ['Chi tiết Thu','closingBookPage',"openClosingBookPage();openClosingBookDetails('income')","hideClosingBookPage({force:true})"],
         ['Chi tiết Chi','closingBookPage',"openClosingBookPage();openClosingBookDetails('expense')","hideClosingBookPage({force:true})"],
         ['Kho hàng','inventoryModal',"openInventoryModal()","closeInventoryModal()"],
@@ -101,7 +102,7 @@ async function main() {
       await page.evaluate(()=>showLoginScreen());assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).overflowY),'hidden','Login also owns scrolling');
       for(const id of await page.evaluate(()=>window.__scrollCovered))covered.add(id);
       assert.deepEqual(layers.filter(id=>!covered.has(id)),[],'Every page/modal opening surface is covered');
-      assert.deepEqual(errors,[]);await page.close();console.log(`26 page/modal flows, nested close, Back and login scrolling ${width}x${height}: OK`);
+      assert.deepEqual(errors,[]);await page.close();console.log(`27 page/modal flows, nested close, Back and login scrolling ${width}x${height}: OK`);
     }
   } finally {await browser.close();}
 }

@@ -145,7 +145,8 @@ test('closing book page is admin-only, isolated by store, protected on logout an
   assert.match(app,/function showLoginScreen[^]*hideClosingBookPage/);
   assert.match(ui,/beforeunload/);
   assert.match(ui,/closingBookDiscard/);
-  assert.doesNotMatch(ui,/store\.entries\s*=|entries\.push\(|orders\.push\(/);
+  assert.doesNotMatch(ui.slice(0,ui.indexOf('function openClosingPosModal()')),/store\.entries\s*=|entries\.push\(|orders\.push\(/,'Regular book edits never create receipts implicitly');
+  assert.match(ui,/cloudStore\.db\.runTransaction/,'POS receipt requires an explicit Firebase transaction');
   assert.match(ui,/ClosingBookCore\.transferEntry/);
   assert.match(html,/id="openClosingBookDesktop"[^>]*aria-label="Chốt sổ"/);
   assert.match(html,/id="openClosingBookMobile"[^>]*aria-label="Chốt sổ"/);

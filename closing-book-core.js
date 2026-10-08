@@ -36,6 +36,12 @@
     const shift = { name: String(raw.name || '').trim(), result: String(raw.result || '').trim(), recheck: String(raw.recheck || '').trim() };
     // The removed numeric field is retained only as legacy metadata, never in calculations.
     if (Object.prototype.hasOwnProperty.call(raw, 'cancelled')) shift.cancelled = raw.cancelled;
+    if (raw.posTransfer) {
+      const row=raw.posTransfer;
+      if (!row.id || !row.transferredEntryId || !row.categoryId || !Number.isFinite(Date.parse(row.createdAt)) || !String(row.note||'').trim() || String(row.note).length>1000) throw new Error('Thông tin chuyển POS không hợp lệ.');
+      shift.posTransfer={id:String(row.id),transferredEntryId:String(row.transferredEntryId),categoryId:String(row.categoryId),createdAt:String(row.createdAt),note:String(row.note).trim(),amount:parseMoney(row.amount)};
+      if (shift.posTransfer.amount<=0) throw new Error('Số tiền chuyển POS phải lớn hơn 0.');
+    }
     if ([shift.name,shift.result,shift.recheck].some(v=>v.length>2000)) throw new Error('Nội dung quá dài (tối đa 2.000 ký tự).');
     moneyKeys.forEach(key => { shift[key] = parseMoney(raw[key]); });
     groups.forEach(key => {
@@ -100,6 +106,7 @@
     const rowIds=new Set(), entryIds=new Set();
     [savedShift,draftShift].filter(Boolean).forEach(raw=> {
       const shift=normalizeShift(raw);
+      if (shift.posTransfer) { rowIds.add(shift.posTransfer.id); entryIds.add(shift.posTransfer.transferredEntryId); }
       groups.forEach(type=>(shift[type]||[]).forEach(row=> {
         if (row.id) rowIds.add(row.id);
         if (row.transferredEntryId) entryIds.add(row.transferredEntryId);

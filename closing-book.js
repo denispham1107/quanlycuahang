@@ -1,4 +1,4 @@
-/* Daily cash reconciliation; only an explicit detail-page transfer creates entries. */
+/* Daily cash reconciliation; only explicit confirmed transfers create entries. */
 const closingBook = {
   page: document.querySelector('#closingBookPage'),
   form: document.querySelector('#closingBookForm'),
@@ -9,6 +9,7 @@ const closingBook = {
   storeId: null, draft: null, dirty: false, monthKey: '', dayKey: '', shiftIndex: 0,
   shifts: [], saving: false, detailType: null, mainScroll: 0, selectedRows: new Set(), daySnapshot: '[]'
 };
+const closingPos={modal:document.querySelector('#closingPosModal'),form:document.querySelector('#closingPosForm'),session:null,busy:false};
 const closingBookIcon = `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="bookCover" x2="1" y2="1"><stop stop-color="#8e49ee"/><stop offset="1" stop-color="#176bd2"/></linearGradient></defs><path d="M15 8h33c4 0 6 3 6 6v39H20c-7 0-10-4-10-9V15c0-4 2-7 5-7Z" fill="#254283"/><path d="M19 6h30c3 0 5 2 5 5v35H20c-4 0-7 2-7 5V13c0-4 2-7 6-7Z" fill="url(#bookCover)"/><path d="M21 6v39" stroke="#c3bcff" stroke-width="2"/><path d="M21 46h31v9H21c-6 0-8-2-8-5s3-4 8-4Z" fill="#fff5de"/><path d="M24 49h25M23 52h25" stroke="#baa6cc" stroke-width="1.4"/><path d="M29 17h16M29 22h12M29 27h16" stroke="#eee7ff" stroke-width="2.2" stroke-linecap="round"/><path d="M43 35v22l-5-4-5 4V35Z" fill="#ffbd60"/><path d="m35 35 3 3 5-6" fill="none" stroke="#653488" stroke-width="2.3" stroke-linecap="round"/><path d="M15 16h3M15 23h3M15 30h3M15 37h3" stroke="#ded5ff" stroke-width="1.5"/><path d="M24 9h23" stroke="#c3b4ff" stroke-linecap="round" opacity=".55"/></svg>`;
 // SVG gradient IDs are unique per displayed button.
 document.querySelectorAll('.closing-book-icon, .closing-book-emblem').forEach((element,index)=> {
@@ -76,6 +77,7 @@ function openClosingBookPage({fromHistory=false}={}) {
 function hideClosingBookPage({force=false}={}) {
   if (closingBook.page.hidden) return true;
   if (!force && !closingBookDiscard()) return false;
+  closeClosingPosModal({force:true,restoreFocus:false});
   closingBook.page.hidden=true;
   closeClosingBookDetails();
   closingBook.dirty=false;
@@ -198,6 +200,7 @@ function renderClosingBookShift() {
   const shift=closingBook.draft;
   document.querySelector('#closingBookFields').innerHTML=`<label>Tên / Người chốt ca<input name="name" type="text" maxlength="2000" value="${escapeHtml(shift.name||'')}" /></label>`+['opening','pos','vcb','momo','zalop','cash','ending'].map(key=>closingBookMoneyField(key,shift[key])).join('');
   document.querySelector('#closingBookPayments').innerHTML=['POS','VCB','Momo','Zalop'].map((label,index)=>`<article><h3>${label}</h3><p>Trong sổ <strong data-book-payment="${index}"></strong></p>${index===0?'<p>Thực tế <strong id="closingBookActualPos"></strong></p>':closingBookMoneyField(['','actualVcb','actualMomo','actualZalop'][index],shift[['','actualVcb','actualMomo','actualZalop'][index]])}<p>Chênh lệch <strong data-payment-difference="${index}"></strong></p></article>`).join('');
+  if (isAdminUser()) document.querySelector('#closingBookPayments article').insertAdjacentHTML('beforeend',`<button id="closingBookTransferPos" class="book-pos-transfer" type="button" ${shift.posTransfer?'disabled':''}>${shift.posTransfer?'✓ Đã chuyển POS':'Chuyển →'}</button>`);
   closingBook.form.elements.result.value=shift.result||'';
   closingBook.form.elements.recheck.value=shift.recheck||'';
   renderClosingBookEntries();
@@ -721,11 +724,99 @@ function updateClosingBookViewport() {
   const viewport=window.visualViewport;
   closingBook.page.style.setProperty('--book-height',`${viewport?.height||window.innerHeight}px`);
   closingBook.page.style.setProperty('--book-top',`${viewport?.offsetTop||0}px`);
+  closingPos.modal.style.setProperty('--pos-height',`${viewport?.height||window.innerHeight}px`);
+  closingPos.modal.style.setProperty('--pos-top',`${viewport?.offsetTop||0}px`);
+  if (!closingPos.modal.hidden && closingPos.modal.contains(document.activeElement)) document.activeElement.scrollIntoView({block:'nearest'});
   if (!closingBook.page.hidden && closingBook.page.contains(document.activeElement)) {
     const target=closingBookFocusTarget(document.activeElement);
     target.scrollIntoView({block:'nearest'});
   }
 }
+function openClosingPosModal() {
+  try {
+    if (!isAdminUser() || !closingBookAllowed() || closingBook.page.hidden || closingBook.saving || closingPos.busy || closingBook.storeId!==getActiveStore()?.id) return;
+    if (closingBook.draft.posTransfer) throw new Error('POS của ca này đã chuyển. Hãy chỉnh sửa khoản trong tab Thu.');
+    const actualPos=ClosingBookCore.calculate(closingBook.draft).actualPos;
+    closingPos.session={storeId:closingBook.storeId,date:closingBook.dayKey,month:closingBook.monthKey,shiftIndex:closingBook.shiftIndex,daySnapshot:closingBook.daySnapshot,shifts:JSON.parse(JSON.stringify(closingBook.shifts)),entryId:createId(),rowId:createId(),actorUid:authState.user?.uid};
+    document.querySelector('#closingPosContext').textContent=`${getActiveStore().name} · ${formatDate(closingBook.dayKey)} · Ca ${closingBook.shiftIndex+1}`;
+    document.querySelector('#closingPosAmount').value=formatClosingBookMoney(actualPos);
+    document.querySelector('#closingPosNote').value='';
+    const categories=getActiveStore().categories.income||[];
+    document.querySelector('#closingPosCategory').innerHTML='<option value="">Chọn Mục thu</option>'+categories.map(item=>`<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('');
+    document.querySelector('#closingPosMessage').textContent=categories.length?'':'Chưa có Mục thu. Hãy tạo Mục trong tab Thu trước khi chuyển.';
+    document.querySelector('#closingPosMessage').classList.remove('is-error');
+    closingPos.modal.hidden=false;closingBook.page.inert=true;updateClosingBookViewport();
+    document.querySelector('#closingPosNote').focus({preventScroll:true});
+  } catch(error) { closingBookNotice(error.message,true); }
+}
+function closeClosingPosModal({force=false,restoreFocus=true}={}) {
+  if (closingPos.busy && !force) return;
+  closingPos.modal.hidden=true;closingPos.session=null;closingBook.page.inert=false;
+  if (restoreFocus && !closingBook.page.hidden) document.querySelector('#closingBookTransferPos')?.focus({preventScroll:true});
+}
+document.querySelector('#closingBookPayments').addEventListener('click',event=> {
+  if (event.target.closest('#closingBookTransferPos')) openClosingPosModal();
+});
+document.querySelector('#closingPosCancel').addEventListener('click',()=>closeClosingPosModal());
+closingPos.modal.addEventListener('click',event=>{if(event.target===closingPos.modal)closeClosingPosModal();});
+closingPos.modal.addEventListener('keydown',event=> {
+  if(event.key==='Escape'){event.preventDefault();closeClosingPosModal();}
+  if(event.key==='Tab'){
+    const controls=[...closingPos.modal.querySelectorAll('input,select,button')].filter(item=>!item.disabled),first=controls[0],last=controls.at(-1);
+    if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+    else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+  }
+});
+document.querySelector('#closingPosAmount').addEventListener('input',event=>formatClosingBookMoneyInput(event.target,event));
+closingPos.form.addEventListener('focusin',()=>[100,350].forEach(delay=>setTimeout(updateClosingBookViewport,delay)));
+closingPos.form.addEventListener('submit',async event=> {
+  event.preventDefault();if(closingPos.busy)return;
+  const session=closingPos.session,message=document.querySelector('#closingPosMessage');
+  try {
+    if(!session||!isAdminUser()||!closingBookAllowed()||getActiveStore()?.id!==session.storeId||authState.user?.uid!==session.actorUid)throw new Error('Không còn quyền chuyển POS cho cửa hàng này.');
+    const note=document.querySelector('#closingPosNote').value.trim(),amount=ClosingBookCore.parseMoney(document.querySelector('#closingPosAmount').value),categoryId=document.querySelector('#closingPosCategory').value;
+    if(!note||note.length>1000)throw new Error('Vui lòng nhập tên Khoản thu (tối đa 1.000 ký tự).');
+    if(amount<=0)throw new Error('Số tiền phải lớn hơn 0.');
+    if(!getActiveStore().categories.income.some(item=>item.id===categoryId))throw new Error('Vui lòng chọn Mục thu.');
+    if(navigator.onLine===false||!cloudStore.enabled||!cloudStore.db?.runTransaction)throw new Error('Cần kết nối Firebase để chuyển POS. Dữ liệu chưa được chuyển.');
+    const shifts=session.shifts.map(shift=>{stampClosingBookRows(shift);return ClosingBookCore.validateShift(shift);});
+    const source={id:session.rowId,note,amount,categoryId,createdAt:new Date().toISOString()};
+    closingPos.busy=true;closingBook.saving=true;
+    message.classList.remove('is-error');
+    closingPos.form.querySelectorAll('input,select,button').forEach(item=>item.disabled=true);message.textContent='Đang chuyển và xác nhận trên Firebase...';
+    if(pendingAdminCloudWrites.size){let timer;try{await Promise.race([Promise.all([...pendingAdminCloudWrites]),new Promise((_,reject)=>timer=setTimeout(()=>reject(new Error('Chưa hoàn tất đồng bộ trước đó. Hãy kiểm tra kết nối rồi thử lại.')),15000))]);}finally{clearTimeout(timer);}}
+    const committed=await cloudStore.db.runTransaction(async transaction=> {
+      const snapshot=await transaction.get(cloudStore.docRef);
+      if(!snapshot.exists)throw new Error('Không tìm thấy dữ liệu Firebase.');
+      const data=snapshot.data()||{},next=JSON.parse(JSON.stringify(data.state||data)),store=next.stores.find(item=>item.id===session.storeId),month=store?.closingMonths?.find(item=>item.month===session.month),day=month?.days?.find(item=>item.date===session.date);
+      if(!store||!month)throw new Error('Cửa hàng hoặc tháng chốt sổ không còn tồn tại.');
+      if(day?.shifts?.[session.shiftIndex]?.posTransfer?.transferredEntryId===session.entryId)return next;
+      if(JSON.stringify(day?.shifts||[])!==session.daySnapshot)throw new Error('Ca đã thay đổi trên Firebase. Hãy đóng popup và mở lại ngày Chốt sổ để kiểm tra.');
+      if(day?.shifts?.[session.shiftIndex]?.posTransfer)throw new Error('POS của ca này đã được chuyển, không tạo trùng.');
+      const entry=ClosingBookCore.transferEntry(source,{type:'income',date:session.date,categories:store.categories.income,entries:store.entries||[],entryId:session.entryId});
+      shifts[session.shiftIndex].posTransfer={...source,transferredEntryId:entry.id};
+      const savedDay={date:session.date,shifts,updatedAt:new Date().toISOString()};
+      month.days=(month.days||[]).filter(item=>item.date!==session.date);month.days.push(savedDay);
+      store.entries=[...(store.entries||[]),{...entry,closingBookSource:'pos',actorUid:session.actorUid,actorRole:'admin'}];
+      recordActivity(store,'create','Thu',`Chuyển POS Ca ${session.shiftIndex+1} thành khoản Thu "${note}" · ${formatCurrency(amount)}.`,{tab:'income',targetType:'entry',targetId:entry.id,targetDate:session.date});
+      if(new TextEncoder().encode(JSON.stringify(next)).length>900000)throw new Error('Dữ liệu gần giới hạn Firebase. Chưa chuyển khoản Thu.');
+      const update={state:next,updatedAt:window.firebase.firestore.FieldValue.serverTimestamp()};
+      if(data.state)transaction.update(cloudStore.docRef,update);else transaction.set(cloudStore.docRef,update);
+      return next;
+    });
+    if(!isAdminUser()||authState.user?.uid!==session.actorUid)return;
+    const activeStoreId=state.activeStoreId;state=normalizeState(committed);state.activeStoreId=activeStoreId;saveStateToCache();render();
+    if(!closingBook.page.hidden&&closingBook.storeId===session.storeId){
+      const savedDay=getActiveStore().closingMonths.find(item=>item.month===session.month).days.find(item=>item.date===session.date);
+      closingBook.shifts=JSON.parse(JSON.stringify(savedDay.shifts));closingBook.daySnapshot=JSON.stringify(savedDay.shifts);closingBook.dirty=false;renderClosingBookShiftOptions();renderClosingBookShift();
+      document.querySelector('#closingBookSaved').textContent=`Đã lưu ${formatActivityDateTime(savedDay.updatedAt)}`;
+      closingBook.day.selectedOptions[0].textContent=`Ngày ${Number(session.date.slice(-2))} · Đã lưu`;
+      closingBookNotice('Đã chuyển POS thành khoản Thu và lưu trên Firebase.');
+    }
+    closeClosingPosModal({force:true});updateSyncStatus('Đã chuyển POS và lưu Firebase','ok');
+  }catch(error){message.textContent=error.message;message.classList.add('is-error');}
+  finally{closingPos.busy=false;closingBook.saving=false;closingPos.form.querySelectorAll('input,select,button').forEach(item=>item.disabled=false);}
+});
 window.visualViewport?.addEventListener('resize',updateClosingBookViewport);
 window.visualViewport?.addEventListener('scroll',updateClosingBookViewport);
 window.addEventListener('resize',updateClosingBookViewport);

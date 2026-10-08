@@ -20,6 +20,7 @@ function validateMonths(raw,baseline=[]) {
       }
       const shifts=day.shifts.map(rawShift=> {
         const shift=core.validateShift(rawShift);core.calculate(shift);
+        if (shift.posTransfer) { if(rows.has(shift.posTransfer.id))fail('INVALID_CLOSING_ROW');rows.add(shift.posTransfer.id); }
         core.groups.forEach(type=>shift[type].forEach(row=> {
           if (!row.id || rows.has(row.id) || !Number.isFinite(Date.parse(row.createdAt))) fail('INVALID_CLOSING_ROW');
           rows.add(row.id);
@@ -34,6 +35,7 @@ function rowMap(months) {
   const map=new Map();
   (months||[]).forEach(month=>(month.days||[]).forEach(day=>(day.shifts||[]).forEach(raw=> {
     const shift=core.normalizeShift(raw);
+    if (shift.posTransfer) map.set(shift.posTransfer.id,{row:shift.posTransfer,type:'income',date:day.date,pos:true});
     core.groups.forEach(type=>(shift[type]||[]).forEach(row=>{if(row.id)map.set(row.id,{row,type,date:day.date});}));
   })));
   return map;
@@ -61,8 +63,9 @@ function applyClosingBookMutation(store,mutation,user,createId) {
   const removedEntryIds=new Set([...before.values()].filter(item=>removedRowIds.has(item.row.id)).map(item=>item.row.transferredEntryId).filter(Boolean));
   let entries=(store.entries||[]).filter(entry=>!removedEntryIds.has(entry.id) && !removedRowIds.has(entry.closingBookRowId));
   const entryIds=new Set(entries.map(entry=>entry.id));
-  after.forEach(({row,type,date},id)=> {
+  after.forEach(({row,type,date,pos},id)=> {
     const old=before.get(id);
+    if ((pos || old?.pos) && (!pos || !old?.pos || !isDeepStrictEqual(row,old.row) || date!==old.date)) fail('POS_TRANSFER_ADMIN_ONLY',403);
     if (old?.row.transferredEntryId) {
       if (row.transferredEntryId!==old.row.transferredEntryId || row.note!==old.row.note || row.amount!==old.row.amount || row.categoryId!==old.row.categoryId || row.createdAt!==old.row.createdAt || type!==old.type || date!==old.date) fail('TRANSFERRED_ROW_EDIT_FORBIDDEN');
       return;

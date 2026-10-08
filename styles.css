@@ -10575,6 +10575,7 @@ body.closing-book-open > .quick-entry-fab,
 body.closing-book-open .tab-bar { display: none !important; }
 .closing-book-page { position: fixed; inset: var(--book-top,0px) 0 auto; height: var(--book-height,100dvh); z-index: 180; overflow: auto; scroll-padding-top: 88px; padding: 20px; background: radial-gradient(circle at 0 0,#ffd5f5,transparent 50%),linear-gradient(135deg,#f3e9ff,#d1f0ff); color: #192e5e; }
 .closing-book-page[hidden] { display: none; }
+.closing-book-page[inert] { overflow: hidden !important; }
 .closing-book-page * { box-sizing: border-box; min-width: 0; }
 .closing-book-shell { width: 100%; max-width: 1180px; margin: 0 auto; display: grid; gap: 16px; }
 .closing-book-nav { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: 12px; border-radius: 20px; background: #ffffffed; padding: 12px 16px; backdrop-filter: blur(15px); }
@@ -10643,6 +10644,30 @@ body.closing-book-open .tab-bar { display: none !important; }
 .closing-book-totals span { font-size: 13px; }
 .closing-book-totals strong { font-size: 20px; color: #1664c4; overflow-wrap: anywhere; }
 .closing-book-page .book-mismatch { color: #b32854; }
+.closing-book-payments article:first-child { position: relative; padding-bottom: 64px; }
+.closing-book-page .book-pos-transfer { position: absolute; right: 14px; bottom: 12px; width: auto; min-height: 36px; padding: 8px 13px; font-size: 12px; color: #fff; background: linear-gradient(120deg,#8650e9,#128ddc); border: 0; }
+.closing-book-page .book-pos-transfer:disabled { background: #e5f4ec; color: #28765e; box-shadow: none; opacity: 1; }
+.modal-backdrop.closing-pos-backdrop { z-index: 230; top: var(--pos-top,0); bottom: auto; height: var(--pos-height,100dvh); padding: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #14274c66; backdrop-filter: blur(8px); }
+.closing-pos-backdrop[hidden] { display: none !important; }
+.closing-pos-card { width: min(500px,100%); max-height: 100%; overflow: auto; padding: 24px; border-radius: 24px; background: linear-gradient(145deg,#fff7fd,#f0f8ff); border: 1px solid #fff; box-shadow: 0 22px 70px #192e5e33; color: #192e5e; box-sizing: border-box; }
+.closing-pos-card * { box-sizing: border-box; min-width: 0; }
+.closing-pos-card header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.closing-pos-symbol { display: grid; place-items: center; width: 48px; height: 48px; flex: 0 0 48px; color: #fff; font-size: 30px; background: linear-gradient(135deg,#9252ee,#148edc); border-radius: 15px; }
+.closing-pos-card header p { margin: 0 0 4px; font-size: 10px; letter-spacing: 1px; font-weight: 800; color: #6659aa; }
+.closing-pos-card h2 { margin: 0 0 6px; font-size: 21px; line-height: 1.25; }
+.closing-pos-card header span:not(.closing-pos-symbol) { font-size: 12px; color: #5b6e90; }
+.closing-pos-card form { display: grid; gap: 14px; }
+.closing-pos-card label { display: grid; gap: 6px; font-size: 13px; font-weight: 700; color: #586c8d; }
+.closing-pos-card input,.closing-pos-card select { width: 100%; max-width: 100%; min-height: 46px; padding: 10px 12px; border: 1px solid #cedaf0; border-radius: 12px; background: #fff; color: #203b71; font-size: 16px; }
+.closing-pos-card #closingPosAmount { font-size: 24px; font-weight: 800; color: #245fb4; }
+.closing-pos-hint { margin: 0; font-size: 12px; line-height: 1.5; color: #657997; }
+#closingPosMessage { margin: 0; font-size: 13px; line-height: 1.4; color: #245fb4; }
+#closingPosMessage.is-error { color: #b32854; }
+.closing-pos-actions { display: grid; grid-template-columns: 1fr 1.65fr; gap: 10px; }
+.closing-pos-actions button { width: auto; min-height: 46px; padding: 10px 8px; border-radius: 12px; font-size: 13px; font-weight: 750; line-height: 1.35; }
+.closing-pos-actions button:disabled { opacity: .6; }
+.closing-pos-actions .ghost-button { color: #243f7b; background: #eef2ff; border: 1px solid #cdd9f7; box-shadow: none; }
+@media(max-width:520px) { .closing-pos-card { padding: 18px; border-radius: 20px; } .closing-pos-card h2 { font-size: 18px; } }
 .closing-book-notes { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; margin-top: 18px; }
 .closing-book-save { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
 .closing-book-save span { font-size: 12px; color: #6a7b96; }
