@@ -5366,6 +5366,35 @@ th:last-child {
   overflow-wrap: anywhere;
 }
 
+.history-purge-button {
+  width: auto;
+  min-height: 34px;
+  padding: 8px 10px;
+  border: 1px solid #f2bdd0;
+  border-radius: 10px;
+  background: #fff0f5;
+  color: #ae2454;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: none;
+  cursor: pointer;
+}
+.history-purge-button:disabled { opacity: .55; cursor: wait; }
+.history-purge-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.activity-history-content > .history-purge-button { justify-self: start; margin-top: 6px; }
+html.mobile-app-theme #incomeEntryTable .history-purge-actions,
+html.mobile-app-theme #expenseEntryTable .history-purge-actions,
+html.mobile-app-theme #salesOrderTable .history-purge-actions {
+  padding-right: 48px; /* Keep the permanent-delete action clear of the floating + button. */
+}
+html.mobile-app-theme .inventory-log-table td:has(.history-purge-button) {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  justify-content: normal;
+}
+html.mobile-app-theme .inventory-log-table .history-purge-button { justify-self: start; }
+
 .activity-history-content {
   display: grid;
   gap: 4px;
@@ -6904,6 +6933,7 @@ html.mobile-app-theme tr.activity-target-highlight {
   .inventory-log-table td:nth-child(9)::before {
     content: "Tổng tiền";
   }
+  .inventory-log-table td:nth-child(10)::before { content: "Thao tác"; }
 
   .inventory-log-table td:nth-child(7),
   .inventory-log-table td:nth-child(8),

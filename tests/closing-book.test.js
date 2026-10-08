@@ -76,7 +76,7 @@ test('Firebase state write replaces store arrays and reports success or failure 
   const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
   const start=app.indexOf('async function saveStateToCloud('),end=app.indexOf('\nfunction updateSyncStatus',start);
   let payload,options,fail=false;
-  const context={cloudStore:{enabled:true,docRef:{set:async(data,opts)=>{if(fail)throw new Error('test');payload=JSON.parse(JSON.stringify(data));options=opts;}}},
+  const context={pendingAdminCloudWrites:new Set(),cloudStore:{enabled:true,docRef:{set:async(data,opts)=>{if(fail)throw new Error('test');payload=JSON.parse(JSON.stringify(data));options=opts;}}},
     state:{stores:[{id:'a',entries:[],closingMonths:[{month:'2026-09',days:[]}]}]},isEmployeeUser:()=>false,updateSyncStatus:()=>{},console:{error:()=>{}},window:{firebase:{firestore:{FieldValue:{serverTimestamp:()=> 'timestamp'}}}}};
   vm.runInNewContext(app.slice(start,end),context);
   assert.equal(await context.saveStateToCloud(),true);

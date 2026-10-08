@@ -21,6 +21,7 @@ let cloudStore = {
   lastError: null,
   status: "starting"
 };
+const pendingAdminCloudWrites = new Set();
 
 let authState = {
   ready: false,
@@ -1509,7 +1510,7 @@ els.customersList.addEventListener("keydown", (event) => {
 });
 
 els.salesOrderTable.addEventListener("click", (event) => {
-  if (event.target.closest("[data-delete-order]")) return;
+  if (event.target.closest("[data-delete-order], [data-purge-history]")) return;
   const row = event.target.closest("[data-open-sales-order]");
   if (!row) return;
   openSalesOrderDetail(row.dataset.openSalesOrder);
@@ -1753,10 +1754,12 @@ window.visualViewport?.addEventListener("scroll", updateSettingsDetailViewport);
   [100, 350].forEach((delay) => window.setTimeout(() => ensureSettingsDetailFocusVisible(event.target), delay));
 }));
 els.activityHistoryList?.addEventListener("click", (event) => {
+  if (event.target.closest("[data-purge-history]")) return;
   const row = event.target.closest("[data-activity-id]");
   if (row) navigateToActivity(row.dataset.activityId);
 });
 els.activityHistoryList?.addEventListener("keydown", (event) => {
+  if (event.target.closest("[data-purge-history]")) return;
   if (event.key !== "Enter" && event.key !== " ") return;
   const row = event.target.closest("[data-activity-id]");
   if (!row) return;
@@ -1810,6 +1813,11 @@ els.importData.addEventListener("change", async (event) => {
 
 document.addEventListener("click", (event) => {
   const categoryButton = event.target.closest("[data-delete-category]");
+  const purgeButton = event.target.closest("[data-purge-history]");
+  if (purgeButton) {
+    void purgeHistoryRecord(purgeButton.dataset.historyRecordType, purgeButton.dataset.purgeHistory);
+    return;
+  }
   const entryButton = event.target.closest("[data-delete-entry]");
   const orderButton = event.target.closest("[data-delete-order]");
   const editCategoryButton = event.target.closest("[data-edit-category]");
@@ -2866,13 +2874,15 @@ async function saveStateToCloud(employeeMutation = null) {
       updateSyncStatus("Đã lưu cloud", "ok");
       return true;
     }
-    await cloudStore.docRef.set(
+    const write = cloudStore.docRef.set(
       {
         state,
         updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
       },
       { merge: true }
     );
+    pendingAdminCloudWrites.add(write);
+    try { await write; } finally { pendingAdminCloudWrites.delete(write); }
     updateSyncStatus("Đã lưu cloud", "ok");
     return true;
   } catch (error) {
@@ -3098,6 +3108,7 @@ function renderActivityHistory(store) {
             <span class="activity-history-message">${escapeHtml(activity.message || "Cập nhật dữ liệu.")}</span>
             ${targetDate ? `<span class="activity-history-record-date">Ngày dữ liệu: ${escapeHtml(targetDate)}</span>` : ""}
             <span class="activity-history-actor">Thực hiện bởi: ${escapeHtml(getActivityActorLabel(activity))}</span>
+            ${renderHistoryPurgeButton("activity", activity.id)}
           </span>
         </article>
       `;
@@ -3507,12 +3518,127 @@ function editCategory(type, categoryId) {
   selectCategory(type, category.id);
 }
 
+let historyPurgePending = false;
+
+function renderHistoryPurgeButton(type, id) {
+  if (!isAdminUser() || !id) return "";
+  return `<button class="history-purge-button" type="button" data-history-record-type="${escapeHtml(type)}" data-purge-history="${escapeHtml(id)}" title="Xóa vĩnh viễn khỏi Firebase" ${historyPurgePending ? "disabled" : ""}>Xóa vĩnh viễn</button>`;
+}
+
+function applyPermanentHistoryDeletion(store, type, id) {
+  const fields = { entry: "entries", "sales-order": "orders", "inventory-log": "inventoryLogs", activity: "activityHistory" };
+  if (!Object.hasOwn(fields, type) || typeof id !== "string" || !id) throw new Error("Dòng lịch sử không hợp lệ.");
+  const field = fields[type];
+  const records = Array.isArray(store[field]) ? store[field] : [];
+  const record = records.find(item => item.id === id);
+  if (!record) return false; // Retry after another admin has already deleted this exact ID.
+  if ((type === "entry" || type === "sales-order") && !isCancelledEntry(record)) {
+    throw new Error("Dòng này còn hiệu lực. Hãy hủy khoản/đơn trước khi xóa vĩnh viễn để xử lý tiền và tồn kho đúng.");
+  }
+  if (type === "entry" && record.orderId && (store.orders || []).some(order => order.id === record.orderId)) {
+    throw new Error("Khoản này thuộc một đơn bán hàng. Hãy xóa từ Lịch sử bán hàng để không để lại dữ liệu liên kết.");
+  }
+  const removedEntries = type === "entry" ? [record] : type === "sales-order" ? (store.entries || []).filter(entry => entry.orderId === id) : [];
+  const removedIds = new Set(removedEntries.map(entry => entry.id));
+  store[field] = records.filter(item => item.id !== id);
+  if (type === "sales-order") store.entries = (store.entries || []).filter(entry => entry.orderId !== id);
+  if (removedIds.size) {
+    // The closing-book source remains; only its receipt link is cleared, never auto-transferred again.
+    for (const month of store.closingMonths || []) for (const day of month.days || []) for (const shift of day.shifts || []) {
+      for (const rows of [shift.income, shift.expense, shift.income1, shift.income2, shift.expense1, shift.expense2]) {
+        for (const row of Array.isArray(rows) ? rows : []) if (removedIds.has(row.transferredEntryId)) delete row.transferredEntryId;
+      }
+    }
+  }
+  if (type === "inventory-log") syncInventoryItemAfterLogDelete(store, record);
+  return true;
+}
+
+async function purgeHistoryRecord(type, id) {
+  if (!isAdminUser() || historyPurgePending) return false;
+  const store = getActiveStore();
+  const fields = { entry: "entries", "sales-order": "orders", "inventory-log": "inventoryLogs", activity: "activityHistory" };
+  if (!Object.hasOwn(fields, type)) return false;
+  const record = (store?.[fields[type]] || []).find(item => item.id === id);
+  if (!store || !record) return false;
+  const label = record.billCode || record.note || record.itemName || record.message || "Dòng lịch sử";
+  const impact = type === "sales-order" ? "Các khoản thu liên kết với đơn này cũng sẽ bị xóa. Không hoàn kho lần nữa vì đơn đã hủy."
+    : type === "inventory-log" ? "Số lượng và giá hiện tại sẽ được cập nhật theo lịch sử kho còn lại, giống thao tác xóa lịch sử kho hiện có."
+      : type === "activity" ? "Chỉ xóa nhật ký này, không xóa giao dịch gốc." : "Chỉ xóa khoản này; không xóa dữ liệu của ca Chốt sổ gốc.";
+  if (!window.confirm(`Xóa vĩnh viễn "${label}" khỏi Firebase?\n\n${impact}\nThao tác này không thể hoàn tác.`)) return false;
+  if (window.navigator?.onLine === false || !cloudStore.enabled || !cloudStore.docRef || !cloudStore.db?.runTransaction) {
+    window.alert("Chưa kết nối được Firebase. Dòng lịch sử chưa bị xóa; hãy kết nối mạng rồi thử lại.");
+    return false;
+  }
+  historyPurgePending = true;
+  const lockedSurfaces = Array.from(document.body.children).filter(element => !element.inert);
+  lockedSurfaces.forEach(element => element.inert = true);
+  const actorUid = authState.user?.uid, storeId = store.id;
+  document.querySelectorAll("[data-purge-history]").forEach(button => button.disabled = true);
+  updateSyncStatus("Đang xóa vĩnh viễn trên Firebase...", "loading");
+  try {
+    // Finish older full-state writes before deleting, so a queued save cannot resurrect the row.
+    if (pendingAdminCloudWrites.size) {
+      let timer;
+      try {
+        await Promise.race([
+          Promise.all(Array.from(pendingAdminCloudWrites)),
+          new Promise((_, reject) => timer = window.setTimeout(() => reject(new Error("Chưa hoàn tất lưu dữ liệu trước đó lên Firebase. Dòng chưa bị xóa; hãy kiểm tra kết nối rồi thử lại.")), 15000))
+        ]);
+      } finally { window.clearTimeout(timer); }
+    }
+    const committed = await cloudStore.db.runTransaction(async transaction => {
+      const snapshot = await transaction.get(cloudStore.docRef);
+      if (!snapshot.exists) throw new Error("Không tìm thấy dữ liệu Firebase; dòng lịch sử chưa bị xóa.");
+      const data = snapshot.data() || {};
+      const next = JSON.parse(JSON.stringify(data.state || data));
+      const remoteStore = (next.stores || []).find(item => item.id === storeId);
+      if (!remoteStore) throw new Error("Không tìm thấy cửa hàng trên Firebase.");
+      if (type === "inventory-log" && !(remoteStore.inventoryLogs || []).some(log => log.id === id)) {
+        const signature = log => JSON.stringify(Object.keys(log).filter(key => key !== "id").sort().map(key => [key, log[key]]));
+        const legacyMatches = (remoteStore.inventoryLogs || []).filter(log => !log.id && signature(log) === signature(record));
+        if (legacyMatches.length > 1) throw new Error("Có nhiều lịch sử kho cũ giống nhau chưa có mã. Hãy mở Sửa và lưu lại dòng cần xóa trước.");
+        if (legacyMatches.length === 1) legacyMatches[0].id = id;
+      }
+      applyPermanentHistoryDeletion(remoteStore, type, id);
+      const update = { state: next, updatedAt: window.firebase.firestore.FieldValue.serverTimestamp() };
+      if (data.state) transaction.update(cloudStore.docRef, update);
+      else transaction.set(cloudStore.docRef, update);
+      return next;
+    });
+    // Do not expose the old admin's state if the session changed while waiting for Firebase.
+    if (isAdminUser() && authState.user?.uid === actorUid) {
+      const activeStoreId = state.activeStoreId;
+      state = normalizeState(committed);
+      if (state.stores.some(item => item.id === activeStoreId)) state.activeStoreId = activeStoreId;
+      saveStateToCache();
+      render();
+      if (type === "sales-order") {
+        closeSalesOrderDetailModal();
+        closeCustomerHistoryModal();
+      }
+      updateSyncStatus("Đã xóa vĩnh viễn trên Firebase", "ok");
+    }
+    return true;
+  } catch (error) {
+    updateSyncStatus("Xóa Firebase thất bại", "error");
+    window.alert(error.message || "Không thể xóa trên Firebase. Dòng lịch sử được giữ lại để bạn thử lại.");
+    return false;
+  } finally {
+    historyPurgePending = false;
+    lockedSurfaces.forEach(element => element.inert = false);
+    document.querySelectorAll("[data-purge-history]").forEach(button => button.disabled = false);
+  }
+}
+
 function deleteEntry(entryId) {
+  if (!isAdminUser()) return;
   const store = getActiveStore();
   if (!store) return;
 
   const entry = store.entries.find((item) => item.id === entryId);
   if (!entry) return;
+  if (isCancelledEntry(entry)) return;
 
   entry.status = "cancelled";
   entry.cancelledAt = new Date().toISOString();
@@ -3527,6 +3653,7 @@ function deleteEntry(entryId) {
 }
 
 function deleteSalesOrder(orderId) {
+  if (!isAdminUser()) return;
   const store = getActiveStore();
   if (!store) return;
 
@@ -5690,7 +5817,7 @@ function renderCustomerHistoryOrder(order) {
       }
       ${
         cancelled
-          ? '<div class="customer-history-summary cancelled-text"><span>Trạng thái</span><strong>Đã hủy</strong></div>'
+          ? `<div class="customer-history-summary cancelled-text"><span>Trạng thái</span><strong>Đã hủy</strong></div><div class="history-purge-actions">${renderHistoryPurgeButton("sales-order", order.id)}</div>`
           : ""
       }
     </article>
@@ -6145,8 +6272,8 @@ function saveEditedInventoryLog(formData) {
   return true;
 }
 
-function deleteEditingInventoryLog() {
-  if (isEmployeeUser()) return;
+async function deleteEditingInventoryLog() {
+  if (!isAdminUser()) return;
   const store = getActiveStore();
   if (!store) return;
 
@@ -6154,21 +6281,7 @@ function deleteEditingInventoryLog() {
   const log = findInventoryLogById(store, uiState.editingInventoryLogId);
   if (!log) return;
 
-  const confirmed = window.confirm("Xóa dòng lịch sử kho này? Số lượng và giá hiện tại sẽ được cập nhật theo lịch sử mới nhất còn lại.");
-  if (!confirmed) return;
-
-  const purpose = getInventoryLogPurpose(log);
-  store.inventoryLogs = (store.inventoryLogs || []).filter((current) => current.id !== log.id);
-  syncInventoryItemAfterLogDelete(store, log);
-  recordActivity(
-    store,
-    "delete",
-    purpose.value === "export" ? "Xuất kho" : "Nhập hàng",
-    `Xóa lịch sử ${purpose.label.toLowerCase()} của "${log.itemName || "Không rõ hàng hóa"}".`,
-    { tab: "purchase", targetType: "inventory-log", targetId: log.id, targetDate: getInventoryLogDate(log) }
-  );
-  saveAndRender();
-  closeEditInventoryLogModal();
+  if (await purgeHistoryRecord("inventory-log", log.id)) closeEditInventoryLogModal();
 }
 
 function addPurchaseItemRow(item = {}) {
@@ -7877,9 +7990,9 @@ function renderSalesOrderTable(container, orders) {
         cancelled ? '<span class="cancelled-pill">Hủy</span>' : ""
       ].join("");
       const actions = cancelled
-        ? '<span class="muted-action">Đã hủy</span>'
+        ? `<div class="history-purge-actions"><span class="muted-action">Đã hủy</span>${renderHistoryPurgeButton("sales-order", order.id)}</div>`
         : isAdminUser()
-          ? `<button class="delete-small" type="button" data-delete-order="${order.id}" title="Xóa đơn" aria-label="Xóa đơn">×</button>`
+          ? `<button class="delete-small" type="button" data-delete-order="${order.id}" title="Hủy đơn" aria-label="Hủy đơn">×</button>`
           : "";
 
       return `
@@ -7915,7 +8028,7 @@ function openSalesOrderDetail(orderId) {
   const discountTotal = Number(order.discountTotal || 0);
   const total = Number(order.total || 0);
 
-  els.salesOrderDetailStatus.innerHTML = cancelled ? '<span class="cancelled-pill">Đã hủy</span>' : '<span class="completed-pill">Hoàn thành</span>';
+  els.salesOrderDetailStatus.innerHTML = cancelled ? `<div class="history-purge-actions"><span class="cancelled-pill">Đã hủy</span>${renderHistoryPurgeButton("sales-order", order.id)}</div>` : '<span class="completed-pill">Hoàn thành</span>';
   els.salesOrderDetailContent.innerHTML = `
     <dl class="order-detail-meta" aria-label="Thông tin đơn hàng">
       <div>
@@ -8489,6 +8602,7 @@ function renderInventoryLogs(store) {
             <th>Giá vốn</th>
             <th>Giá bán</th>
             <th>Tổng tiền</th>
+            ${isAdminUser() ? '<th>Thao tác</th>' : ""}
           </tr>
         </thead>
         <tbody>
@@ -8519,6 +8633,7 @@ function renderInventoryLogs(store) {
                     <td>${renderInventoryLogPrice(log.oldPrice, log.newPrice)}</td>
                     <td>${renderInventoryLogPrice(getInventoryLogOldSalePrice(log), getInventoryLogNewSalePrice(log))}</td>
                     <td><span class="inventory-log-total">${formatCurrency(total)}</span></td>
+                    ${isAdminUser() ? `<td>${renderHistoryPurgeButton("inventory-log", log.id)}</td>` : ""}
                   </tr>
                 `;
               }
@@ -8994,10 +9109,10 @@ function renderEntryTable(container, store, entries) {
         cancelled ? '<span class="cancelled-pill">Hủy</span>' : ""
       ].join("");
       const actions = cancelled
-        ? '<span class="muted-action">Đã hủy</span>'
+        ? `<div class="history-purge-actions"><span class="muted-action">Đã hủy</span>${renderHistoryPurgeButton("entry", entry.id)}</div>`
         : `
             <button class="edit-small" type="button" data-edit-entry="${entry.id}" title="Sửa dòng" aria-label="Sửa dòng">Sửa</button>
-            <button class="delete-small" type="button" data-delete-entry="${entry.id}" title="Xóa dòng" aria-label="Xóa dòng">×</button>
+            <button class="delete-small" type="button" data-delete-entry="${entry.id}" title="Hủy khoản" aria-label="Hủy khoản">×</button>
           `;
 
       return `
