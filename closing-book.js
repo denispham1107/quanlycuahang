@@ -126,6 +126,14 @@ window.addEventListener('popstate',()=> {
 window.addEventListener('beforeunload',event=> {
   if (closingBook.dirty) { event.preventDefault(); event.returnValue=''; }
 });
+function closingBookSnapshotMatches(shifts, snapshot) {
+  // Firestore map fields may be returned in a different order than a local pending write.
+  // Compare the whole payload, preserving array order and every value, not JSON key order.
+  const canonical=value=>Array.isArray(value)?value.map(canonical):value && typeof value==='object'
+    ?Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])):value;
+  try { return JSON.stringify(canonical(shifts))===JSON.stringify(canonical(JSON.parse(snapshot))); }
+  catch { return false; }
+}
 function closingBookMonthData() { return (getActiveStore()?.closingMonths||[]).find(month=>month.month===closingBook.monthKey); }
 function renderClosingBookMonths(preferred='') {
   const months=(getActiveStore().closingMonths||[]).slice().sort((a,b)=>b.month.localeCompare(a.month));
@@ -438,7 +446,7 @@ document.querySelector('#closingBookDeleteShift').addEventListener('click',async
     if (!closingBookAllowed() || store.id!==closingBook.storeId || closingBook.saving) return;
     if (!cloudStore.enabled || !cloudStore.docRef || navigator.onLine===false) throw new Error('Cần kết nối Firebase để xóa ca. Vui lòng kiểm tra mạng và thử lại.');
     const currentDay=closingBookMonthData()?.days?.find(day=>day.date===closingBook.dayKey);
-    if (JSON.stringify(currentDay?.shifts||[])!==closingBook.daySnapshot) throw new Error('Dữ liệu ca đã thay đổi trên cloud. Hãy mở lại ngày chốt sổ để kiểm tra trước khi xóa.');
+    if (!closingBookSnapshotMatches(currentDay?.shifts||[],closingBook.daySnapshot)) throw new Error('Dữ liệu ca đã thay đổi trên cloud. Hãy mở lại ngày chốt sổ để kiểm tra trước khi xóa.');
     const index=closingBook.shiftIndex;
     const plan=ClosingBookCore.deleteShift(store.closingMonths||[],closingBook.dayKey,index,store.entries||[],closingBook.draft);
     const income=plan.removedEntries.filter(entry=>entry.type==='income').length;
@@ -791,7 +799,7 @@ closingPos.form.addEventListener('submit',async event=> {
       const data=snapshot.data()||{},next=JSON.parse(JSON.stringify(data.state||data)),store=next.stores.find(item=>item.id===session.storeId),month=store?.closingMonths?.find(item=>item.month===session.month),day=month?.days?.find(item=>item.date===session.date);
       if(!store||!month)throw new Error('Cửa hàng hoặc tháng chốt sổ không còn tồn tại.');
       if(day?.shifts?.[session.shiftIndex]?.posTransfer?.transferredEntryId===session.entryId)return next;
-      if(JSON.stringify(day?.shifts||[])!==session.daySnapshot)throw new Error('Ca đã thay đổi trên Firebase. Hãy đóng popup và mở lại ngày Chốt sổ để kiểm tra.');
+      if(!closingBookSnapshotMatches(day?.shifts||[],session.daySnapshot))throw new Error('Ca đã thay đổi trên Firebase. Hãy đóng popup và mở lại ngày Chốt sổ để kiểm tra.');
       if(day?.shifts?.[session.shiftIndex]?.posTransfer)throw new Error('POS của ca này đã được chuyển, không tạo trùng.');
       const entry=ClosingBookCore.transferEntry(source,{type:'income',date:session.date,categories:store.categories.income,entries:store.entries||[],entryId:session.entryId});
       shifts[session.shiftIndex].posTransfer={...source,transferredEntryId:entry.id};
