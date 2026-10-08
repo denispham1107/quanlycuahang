@@ -176,6 +176,12 @@ function buildClosingBookAudit(month, metric, direction) {
   rows.sort((a,b)=>a.date.localeCompare(b.date));
   return {rows,signedTotal,total:Math.abs(signedTotal),savedDays:seen.size};
 }
+function buildClosingBookAuditReports(month, metric, direction) {
+  const labels={posDifference:'POS chênh lệch',vcbDifference:'VCB chênh lệch',momoDifference:'Momo chênh lệch',zalopDifference:'Zalop chênh lệch',difference:'Tiền két chênh lệch'};
+  const metrics=metric==='all'?Object.keys(labels):[metric];
+  // Never sum different payment/cash metrics: each report keeps its own days and total.
+  return metrics.map(key=>({metric:key,label:labels[key],...buildClosingBookAudit(month,key,direction)}));
+}
 function openClosingBookAudit({fromHistory=false}={}) {
   if (!isAdminUser() || !closingBookAllowed() || closingBook.page.hidden || !closingBook.monthKey) return;
   if (!closingBook.auditOpen) closingBook.auditScroll=closingBook.page.scrollTop;
@@ -204,11 +210,13 @@ function renderClosingBookAudit() {
   document.querySelector('#closingBookAuditDraftNotice').hidden=!closingBook.dirty;
   message.textContent='';
   try {
-    const report=buildClosingBookAudit(closingBookMonthData(),metric.value,direction);
-    summary.innerHTML=[['Tổng '+label.toLowerCase(),formatCurrency(report.total)],['Số ngày '+label.toLowerCase(),report.rows.length],['Ngày đã lưu trong tháng',report.savedDays]].map(([title,value])=>`<div><span>${title}</span><strong>${value}</strong></div>`).join('');
+    const reports=buildClosingBookAuditReports(closingBookMonthData(),metric.value,direction), all=metric.value==='all';
+    summary.classList.toggle('book-audit-overview',all);
+    summary.innerHTML=all?reports.map(report=>`<div data-audit-total="${report.metric}"><span>${report.label}</span><span>Tổng ${label.toLowerCase()}</span><strong class="book-audit-amount ${direction}">${formatCurrency(report.total)}</strong><small>${report.rows.length} ngày ${label.toLowerCase()} / ${report.savedDays} ngày đã lưu</small></div>`).join(''):[['Tổng '+label.toLowerCase(),formatCurrency(reports[0].total)],['Số ngày '+label.toLowerCase(),reports[0].rows.length],['Ngày đã lưu trong tháng',reports[0].savedDays]].map(([title,value])=>`<div><span>${title}</span><strong>${value}</strong></div>`).join('');
     summary.dataset.direction=direction;
     const amount=value=>`${value>0?'+':''}${formatCurrency(value)}`;
-    list.innerHTML=report.rows.length?report.rows.map(row=>`<article class="book-audit-day" data-audit-date="${row.date}"><div class="book-audit-day-heading"><div><h2>${formatDate(row.date)}</h2><span>${escapeHtml(metric.selectedOptions[0].textContent)} · ${label}</span></div><strong class="book-audit-amount ${direction}">${amount(row.value)}</strong></div><details><summary>Đối chiếu ${row.shifts.length} ca trong ngày</summary><div class="book-audit-shifts">${row.shifts.map(shift=>`<div><span>Ca ${shift.index}${shift.name?' · '+escapeHtml(shift.name):''}</span><strong class="book-audit-amount ${shift.value<0?'shortage':shift.value>0?'surplus':''}">${amount(shift.value)}</strong></div>`).join('')}</div></details></article>`).join(''):`<div class="book-detail-empty"><h2>Không có ngày ${label.toLowerCase()}</h2><p>Không có ngày đã lưu nào có ${escapeHtml(metric.selectedOptions[0].textContent.toLowerCase())} ${direction==='shortage'?'âm':'lớn hơn 0'} trong tháng này.</p></div>`;
+    const renderRows=report=>report.rows.length?report.rows.map(row=>`<article class="book-audit-day" data-audit-date="${row.date}"><div class="book-audit-day-heading"><div><h2>${formatDate(row.date)}</h2><span>${report.label} · ${label}</span></div><strong class="book-audit-amount ${direction}">${amount(row.value)}</strong></div><details><summary>Đối chiếu ${row.shifts.length} ca trong ngày</summary><div class="book-audit-shifts">${row.shifts.map(shift=>`<div><span>Ca ${shift.index}${shift.name?' · '+escapeHtml(shift.name):''}</span><strong class="book-audit-amount ${shift.value<0?'shortage':shift.value>0?'surplus':''}">${amount(shift.value)}</strong></div>`).join('')}</div></details></article>`).join(''):`<div class="book-detail-empty"><h2>Không có ngày ${label.toLowerCase()}</h2><p>Không có ngày đã lưu nào có ${report.label.toLowerCase()} ${direction==='shortage'?'âm':'lớn hơn 0'} trong tháng này.</p></div>`;
+    list.innerHTML=all?reports.map(report=>`<section class="book-audit-group" data-audit-metric="${report.metric}"><header><h2>${report.label}</h2><span>${report.rows.length} ngày ${label.toLowerCase()}</span></header><div class="book-audit-list">${renderRows(report)}</div></section>`).join(''):renderRows(reports[0]);
   } catch(error) {summary.replaceChildren();list.replaceChildren();message.textContent=error.message;}
 }
 document.querySelector('#openClosingBookAudit').addEventListener('click',()=>openClosingBookAudit());

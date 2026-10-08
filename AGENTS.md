@@ -1,5 +1,7 @@
 # Quy tắc hồi quy giao diện
 
+- Kiểm kê “Tất cả” phải hiển thị đủ 5 nhóm POS/VCB/Momo/Zalop/Tiền két và tổng, danh sách ngày riêng cho từng nhóm theo bộ lọc Dư/Thiếu; tuyệt đối không cộng chéo loại vì có thể trùng nguồn tiền. Chuyển qua lại Tất cả/một loại, tháng rỗng và cloud cập nhật phải giữ đúng dữ liệu, không để tổng/list cũ sót lại. Kiểm thử tổng từng nhóm độc lập và bố cục mobile/desktop.
+
 - Kiểm kê Chốt sổ là trang con chỉ đọc dành cho admin, dùng dữ liệu đã lưu của cửa hàng/tháng đang chọn và công thức `ClosingBookCore.calculate`. Cộng chênh lệch tất cả ca theo ngày trước khi lọc Dư (>0)/Thiếu (<0), bỏ ngày bằng 0; tổng Thiếu hiển thị trị tuyệt đối nhưng từng ngày giữ dấu âm. Kiểm tra cả năm loại chênh lệch, nhiều ca triệt tiêu, dữ liệu cũ, tổng vượt số nguyên an toàn, đổi tháng và cập nhật cloud; không tự lưu hoặc làm mất nháp khi mở/quay lại/Back. Giữ một vùng cuộn chung với Chốt sổ; chạy `closing-book-audit.test.js`, `check-closing-book-audit.js` và `check-page-scrolling.js`.
 
 - Kiểm tra xung đột Chốt sổ phải so sánh toàn bộ nội dung snapshot không phụ thuộc thứ tự khóa của object (Firestore có thể sắp xếp lại map sau lần lưu local). Không so sánh trực tiếp hai chuỗi `JSON.stringify` chưa chuẩn hóa khóa. Vẫn giữ thứ tự ca/dòng, kiểu dữ liệu và mọi giá trị để chặn thay đổi thật. Mô phỏng Firestore trả map đã sắp khóa trong `check-closing-pos-transfer.js`; kiểm thử reorder khóa lồng nhau, sửa số tiền/Mục, thêm/xóa/đổi thứ tự dòng và dữ liệu cũ.

@@ -3,6 +3,16 @@ const ClosingBookCore=require('../closing-book-core.js'),ui=fs.readFileSync(path
 vm.runInNewContext(ui.slice(ui.indexOf('function buildClosingBookAudit('),ui.indexOf('function openClosingBookAudit(')),context);
 const report=(month,metric='difference',direction='shortage')=>JSON.parse(JSON.stringify(context.buildClosingBookAudit(month,metric,direction)));
 const shift=(extra={})=>({...ClosingBookCore.emptyShift(),...extra});
+test('All returns five independent totals and independently filters each metric by day',()=>{
+  const month={month:'2026-09',days:[{date:'2026-09-01',shifts:[shift({pos:1000,vcb:100,momo:200,zalop:300,opening:400})]},{date:'2026-09-02',shifts:[shift({cash:50,actualVcb:60,actualMomo:70,actualZalop:80,ending:90})]}]},before=JSON.stringify(month);
+  const reports=direction=>JSON.parse(JSON.stringify(context.buildClosingBookAuditReports(month,'all',direction)));
+  assert.deepEqual(reports('shortage').map(r=>r.total),[400,100,200,300,400]);
+  assert.deepEqual(reports('surplus').map(r=>r.total),[50,60,70,80,40]);
+  for(const direction of ['shortage','surplus'])for(const r of reports(direction))assert.deepEqual(({metric:r.metric,label:r.label,...report(month,r.metric,direction)}),r);
+  assert.equal(JSON.stringify(month),before);
+  assert.equal(reports('shortage').length,5);
+  assert.deepEqual(context.buildClosingBookAuditReports({month:'2026-09',days:[]},'all','shortage').map(r=>r.total).join(','),'0,0,0,0,0');
+});
 test('all five discrepancies use existing closing-book calculations and both signs',()=>{
   const fields={posDifference:[{cash:10},{pos:10}],vcbDifference:[{actualVcb:10},{vcb:10}],momoDifference:[{actualMomo:10},{momo:10}],zalopDifference:[{actualZalop:10},{zalop:10}],difference:[{ending:10},{opening:10}]};
   for(const [metric,[positive,negative]] of Object.entries(fields)){

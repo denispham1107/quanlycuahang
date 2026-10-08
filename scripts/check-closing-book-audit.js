@@ -22,18 +22,28 @@ async function main(){
    const expected=await page.evaluate(({metric,direction})=>{const r=buildClosingBookAudit(closingBookMonthData(),metric,direction);return {count:r.rows.length,total:formatCurrency(r.total)};},{metric,direction});
    assert.equal(await page.locator('[data-audit-date]').count(),expected.count);assert.equal(await page.locator('#closingBookAuditSummary > div:first-child strong').textContent(),expected.total);
   }
+  await page.locator('#closingBookAuditMetric').selectOption('all');
+  for(const direction of ['shortage','surplus']){
+   await page.locator('#closingBookAuditDirection').selectOption(direction);
+   assert.equal(await page.locator('[data-audit-total]').count(),5);assert.equal(await page.locator('[data-audit-metric]').count(),5);
+   const expected=await page.evaluate(direction=>buildClosingBookAuditReports(closingBookMonthData(),'all',direction).map(r=>({metric:r.metric,count:r.rows.length,total:formatCurrency(r.total)})),direction);
+   for(const r of expected){assert.equal(await page.locator(`[data-audit-total="${r.metric}"] strong`).textContent(),r.total);assert.equal(await page.locator(`[data-audit-metric="${r.metric}"] [data-audit-date]`).count(),r.count);}
+  }
   await page.locator('#closingBookAuditDirection').selectOption('shortage');
-  for(const selector of ['#closingBookAuditMetric','#closingBookAuditDirection','#closeClosingBookAudit','#closingBookAuditSummary']){await page.locator(selector).scrollIntoViewIfNeeded();const b=await page.locator(selector).boundingBox();assert.ok(b.x>=0&&b.x+b.width<=width+1&&b.y>=0&&b.y+b.height<=height+1,`${width}: ${selector} bounds`);}
+  for(const selector of ['#closingBookAuditMetric','#closingBookAuditDirection','#closeClosingBookAudit']){await page.locator(selector).scrollIntoViewIfNeeded();const b=await page.locator(selector).boundingBox();assert.ok(b.x>=0&&b.x+b.width<=width+1&&b.y>=0&&b.y+b.height<=height+1,`${width}: ${selector} bounds`);}
   assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).overflowY),'hidden');
   await page.locator('.book-audit-day details').first().locator('summary').click();assert.equal(await page.locator('.book-audit-shifts').first().isVisible(),true);
   await page.evaluate(()=>{closingBook.page.scrollTop=0;});
   if(process.env.AUDIT_TEST_SHOTS&&[375,1440].includes(width)&&height===900)await page.screenshot({path:path.join(process.env.AUDIT_TEST_SHOTS,`closing-audit-${platform}-${width}.png`)});
+  for(const metric of ['posDifference','vcbDifference','momoDifference','zalopDifference','difference']){const tile=page.locator(`[data-audit-total="${metric}"]`);await tile.scrollIntoViewIfNeeded();const b=await tile.boundingBox();assert.ok(b.x>=0&&b.x+b.width<=width+1&&b.y>=0&&b.y+b.height<=height+1,'Each All summary tile is reachable within viewport');}
+  await page.locator('#closingBookAuditMetric').selectOption('zalopDifference');assert.equal(await page.locator('[data-audit-total]').count(),0);assert.equal(await page.locator('[data-audit-metric]').count(),0);
   assert.equal(await page.evaluate(()=>JSON.stringify(state.stores[0].closingMonths)===window.__saved),true);
   await page.locator('#closeClosingBookAudit').click();await page.waitForFunction(()=>!closingBook.auditOpen);assert.equal(await page.evaluate(()=>closingBook.draft.name),'Nháp chưa lưu');assert.equal(await page.evaluate(()=>closingBook.dirty),true);
   await page.goForward();await page.waitForFunction(()=>closingBook.auditOpen);
   await page.evaluate(()=>{getActiveStore().closingMonths[0].days[0].shifts[0].actualZalop=1000;render();});assert.equal(await page.locator('[data-audit-date]').count(),27,'cloud refresh updates report');
+  await page.locator('#closingBookAuditMetric').selectOption('all');assert.equal(await page.locator('[data-audit-metric="zalopDifference"] [data-audit-date]').count(),27);assert.equal(await page.locator('[data-audit-metric="vcbDifference"] [data-audit-date]').count(),28);
   await page.goBack();await page.waitForFunction(()=>!closingBook.auditOpen);
-  await page.evaluate(()=>{closingBook.dirty=false;closingBook.month.value='2026-08';loadClosingBookMonth();openClosingBookAudit();});assert.equal(await page.locator('[data-audit-date]').count(),0);assert.match(await page.locator('#closingBookAuditContext').textContent(),/08\/2026/);
+  await page.evaluate(()=>{closingBook.dirty=false;closingBook.month.value='2026-08';loadClosingBookMonth();openClosingBookAudit();});await page.locator('#closingBookAuditMetric').selectOption('all');assert.equal(await page.locator('[data-audit-date]').count(),0);assert.equal(await page.locator('[data-audit-total]').count(),5);assert.match(await page.locator('#closingBookAuditContext').textContent(),/08\/2026/);
   await page.evaluate(()=>{hideClosingBookPage({force:true});authState.role='employee';authState.profile={role:'employee',storeId:'a',permissions:{closingBook:{manage:true}}};render();openClosingBookPage();openClosingBookAudit();});assert.equal(await page.locator('#openClosingBookAudit').isVisible(),false);assert.equal(await page.locator('#closingBookAuditPage').isVisible(),false);
   await page.evaluate(()=>hideClosingBookPage({force:true}));assert.notEqual(await page.evaluate(()=>getComputedStyle(document.documentElement).overflowY),'hidden');assert.deepEqual(errors,[]);await page.close();console.log(`Kiểm kê ${platform} ${width}x${height}: filters, sums, saved-only, draft, Back, cloud refresh, permissions and bounds OK`);
  }}finally{await browser.close();}

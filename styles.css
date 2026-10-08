@@ -10719,6 +10719,14 @@ body.closing-book-open .tab-bar { display: none !important; }
 .closing-book-page #openClosingBookAudit { width: auto; flex: 0 0 auto; font-size: 13px; }
 .book-audit-filters { display: grid; grid-template-columns: minmax(0,2fr) minmax(0,1fr); gap: 14px; }
 .book-audit-list { display: grid; gap: 14px; }
+.book-detail-summary.book-audit-overview { grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); }
+.book-audit-overview small { font-size: 12px; color: #607595; }
+.book-audit-overview strong.shortage { color: #c12658; }
+.book-audit-overview strong.surplus { color: #087a62; }
+.book-audit-group { border-top: 2px solid #ccd9f5; padding-top: 22px; margin-top: 8px; }
+.book-audit-group > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
+.book-audit-group > header h2 { margin: 0; font-size: 20px; }
+.book-audit-group > header span { font-size: 13px; color: #607595; }
 .book-audit-day { padding: 20px; border: 1px solid #dce3f7; border-radius: 18px; background: #fff; }
 .book-audit-day-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
 .book-audit-day h2 { margin: 0 0 5px; font-size: 18px; }
@@ -10737,6 +10745,7 @@ body.closing-book-open .tab-bar { display: none !important; }
 #closingBookAuditMessage:empty { display: none; }
 @media (max-width: 600px) {
   .book-audit-filters { grid-template-columns: minmax(0,1fr); gap: 12px; }
+  .book-detail-summary.book-audit-overview { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .book-audit-day { padding: 16px 12px; }
   .book-audit-day-heading { align-items: flex-start; flex-direction: column; gap: 10px; }
   .book-audit-shifts > div { flex-wrap: wrap; }
