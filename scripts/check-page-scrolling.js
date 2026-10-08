@@ -42,6 +42,7 @@ async function main() {
         ['Quản lý nhân viên','employeeManagerPage',"openEmployeeManagerPage()","hideEmployeeManagerPage({restoreFocus:false})"],
         ['Lịch sử hoạt động','activityHistoryPage',"openActivityHistoryPage()","hideActivityHistoryPage({restoreFocus:false})"],
         ['Chốt sổ','closingBookPage',"openClosingBookPage()","hideClosingBookPage({force:true})"],
+        ['Kiểm kê','closingBookPage',"openClosingBookPage();openClosingBookAudit()","hideClosingBookPage({force:true})"],
         ['Chuyển POS','closingPosModal',"openClosingBookPage();openClosingPosModal()","closeClosingPosModal();hideClosingBookPage({force:true})"],
         ['Chi tiết Thu','closingBookPage',"openClosingBookPage();openClosingBookDetails('income')","hideClosingBookPage({force:true})"],
         ['Chi tiết Chi','closingBookPage',"openClosingBookPage();openClosingBookDetails('expense')","hideClosingBookPage({force:true})"],
@@ -102,7 +103,7 @@ async function main() {
       await page.evaluate(()=>showLoginScreen());assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).overflowY),'hidden','Login also owns scrolling');
       for(const id of await page.evaluate(()=>window.__scrollCovered))covered.add(id);
       assert.deepEqual(layers.filter(id=>!covered.has(id)),[],'Every page/modal opening surface is covered');
-      assert.deepEqual(errors,[]);await page.close();console.log(`27 page/modal flows, nested close, Back and login scrolling ${width}x${height}: OK`);
+      assert.deepEqual(errors,[]);await page.close();console.log(`${cases.length} page/modal flows, nested close, Back and login scrolling ${width}x${height}: OK`);
     }
   } finally {await browser.close();}
 }

@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=116" />
+    <link rel="manifest" href="manifest.webmanifest?v=117" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=116" />
+    <link rel="stylesheet" href="styles.css?v=117" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -1510,7 +1510,7 @@
               <section class="closing-book-section"><h2>Thông tin ca</h2><div id="closingBookFields" class="closing-book-fields"></div></section>
               <section class="closing-book-section"><h2>Đối chiếu thanh toán</h2><div id="closingBookPayments" class="closing-book-payments"></div></section>
               <div id="closingBookEntries" class="closing-book-entry-groups"></div>
-              <section class="closing-book-section"><h2>Kiểm tiền trong Két</h2><div id="closingBookTotals" class="closing-book-totals" aria-live="polite"></div><div class="closing-book-notes"><label>Các bill đã hủy<textarea name="recheck" rows="3" maxlength="2000"></textarea></label><label>Kết quả chốt két<textarea name="result" rows="3" maxlength="2000"></textarea></label></div></section>
+              <section class="closing-book-section"><div class="closing-book-group-heading"><h2>Kiểm tiền trong Két</h2><button id="openClosingBookAudit" type="button" hidden>Kiểm kê →</button></div><div id="closingBookTotals" class="closing-book-totals" aria-live="polite"></div><div class="closing-book-notes"><label>Các bill đã hủy<textarea name="recheck" rows="3" maxlength="2000"></textarea></label><label>Kết quả chốt két<textarea name="result" rows="3" maxlength="2000"></textarea></label></div></section>
               <div class="closing-book-save"><span>Chỉ lưu vào sổ chốt ca, không tạo lại khoản Thu/Chi.</span><button type="submit">Lưu chốt sổ</button></div>
             </form>
           </div>
@@ -1527,6 +1527,18 @@
           <div id="closingBookDetailList" class="book-detail-list"></div>
         </article>
       </section>
+      <section id="closingBookAuditPage" class="closing-book-shell" aria-labelledby="closingBookAuditTitle" hidden>
+        <header class="closing-book-nav"><button id="closeClosingBookAudit" type="button" class="ghost-button">← Chốt sổ</button><span>Chốt sổ / Kiểm kê</span></header>
+        <article class="closing-book-card book-audit-card">
+          <header class="book-detail-hero"><span class="book-detail-symbol" aria-hidden="true">≋</span><div><p>ĐỐI CHIẾU THEO THÁNG</p><h1 id="closingBookAuditTitle">Kiểm kê</h1><span id="closingBookAuditContext"></span></div></header>
+          <div class="book-audit-filters"><label>Loại chênh lệch<select id="closingBookAuditMetric"><option value="posDifference">POS chênh lệch</option><option value="vcbDifference">VCB chênh lệch</option><option value="momoDifference">Momo chênh lệch</option><option value="zalopDifference">Zalop chênh lệch</option><option value="difference" selected>Tiền két chênh lệch</option></select></label><label>Kết quả<select id="closingBookAuditDirection"><option value="shortage">Thiếu</option><option value="surplus">Dư</option></select></label></div>
+          <p class="book-detail-hint">Chỉ tính dữ liệu đã lưu của tháng đang chọn. Cộng chênh lệch tất cả ca trong từng ngày, sau đó lọc Dư (> 0) hoặc Thiếu (< 0); không tính ngày có chênh lệch bằng 0.</p>
+          <p id="closingBookAuditDraftNotice" class="book-audit-draft" hidden>Chốt sổ đang có thay đổi chưa lưu. Báo cáo này chưa bao gồm các thay đổi đó.</p>
+          <p id="closingBookAuditMessage" role="status"></p>
+          <div id="closingBookAuditSummary" class="book-detail-summary" aria-live="polite"></div>
+          <div id="closingBookAuditList" class="book-audit-list"></div>
+        </article>
+      </section>
     </section>
     <div id="closingPosModal" class="modal-backdrop closing-pos-backdrop" hidden>
       <section class="closing-pos-card" role="dialog" aria-modal="true" aria-labelledby="closingPosTitle">
@@ -1541,8 +1553,8 @@
         </form>
       </section>
     </div>
-    <script defer src="app.js?v=116"></script>
-    <script defer src="closing-book-core.js?v=116"></script>
-    <script defer src="closing-book.js?v=116"></script>
+    <script defer src="app.js?v=117"></script>
+    <script defer src="closing-book-core.js?v=117"></script>
+    <script defer src="closing-book.js?v=117"></script>
   </body>
 </html>

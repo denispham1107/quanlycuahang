@@ -10715,7 +10715,33 @@ body.closing-book-open .tab-bar { display: none !important; }
 }
 
 /* Dedicated Thu/Chi classification and explicit transfer view. */
-#closingBookMain[hidden], #closingBookDetailPage[hidden], .book-detail-editor[hidden] { display: none !important; }
+#closingBookMain[hidden], #closingBookDetailPage[hidden], #closingBookAuditPage[hidden], .book-detail-editor[hidden] { display: none !important; }
+.closing-book-page #openClosingBookAudit { width: auto; flex: 0 0 auto; font-size: 13px; }
+.book-audit-filters { display: grid; grid-template-columns: minmax(0,2fr) minmax(0,1fr); gap: 14px; }
+.book-audit-list { display: grid; gap: 14px; }
+.book-audit-day { padding: 20px; border: 1px solid #dce3f7; border-radius: 18px; background: #fff; }
+.book-audit-day-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.book-audit-day h2 { margin: 0 0 5px; font-size: 18px; }
+.book-audit-day-heading span { font-size: 12px; color: #607595; }
+.book-audit-amount { overflow-wrap: anywhere; font-size: 19px; }
+.book-audit-amount.shortage, .book-detail-summary[data-direction="shortage"] > div:first-child strong { color: #c12658; }
+.book-audit-amount.surplus, .book-detail-summary[data-direction="surplus"] > div:first-child strong { color: #087a62; }
+.book-audit-day details { margin-top: 16px; border-top: 1px solid #e5eaf7; padding-top: 13px; }
+.book-audit-day summary { cursor: pointer; font-size: 13px; color: #34588d; }
+.book-audit-shifts { display: grid; gap: 12px; margin-top: 16px; }
+.book-audit-shifts > div { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+.book-audit-shifts strong { font-size: 14px; flex: 0 0 auto; }
+.book-audit-draft { background: #fff4d8; padding: 12px; border-radius: 12px; font-size: 13px; }
+.book-audit-draft[hidden] { display: none; }
+#closingBookAuditMessage { margin: 0; color: #b62151; }
+#closingBookAuditMessage:empty { display: none; }
+@media (max-width: 600px) {
+  .book-audit-filters { grid-template-columns: minmax(0,1fr); gap: 12px; }
+  .book-audit-day { padding: 16px 12px; }
+  .book-audit-day-heading { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .book-audit-shifts > div { flex-wrap: wrap; }
+  .closing-book-page #openClosingBookAudit { padding: 10px; }
+}
 .closing-book-page .book-detail-link { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 14px; padding: 10px 0; color: #315db4; background: transparent; border: 0; box-shadow: none; text-align: left; }
 .book-expense .book-detail-link { color: #ae3975; }
 .book-detail-hero { display: flex; gap: 18px; align-items: center; padding: 25px; border-radius: 22px; background: linear-gradient(120deg,#e8dcff,#d6efff); }

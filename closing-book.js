@@ -7,7 +7,7 @@ const closingBook = {
   shift: document.querySelector('#closingBookShift'),
   message: document.querySelector('#closingBookMessage'),
   storeId: null, draft: null, dirty: false, monthKey: '', dayKey: '', shiftIndex: 0,
-  shifts: [], saving: false, detailType: null, mainScroll: 0, selectedRows: new Set(), daySnapshot: '[]'
+  shifts: [], saving: false, detailType: null, mainScroll: 0, selectedRows: new Set(), daySnapshot: '[]', auditOpen: false, auditScroll: 0
 };
 const closingPos={modal:document.querySelector('#closingPosModal'),form:document.querySelector('#closingPosForm'),session:null,busy:false};
 const closingBookIcon = `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="bookCover" x2="1" y2="1"><stop stop-color="#8e49ee"/><stop offset="1" stop-color="#176bd2"/></linearGradient></defs><path d="M15 8h33c4 0 6 3 6 6v39H20c-7 0-10-4-10-9V15c0-4 2-7 5-7Z" fill="#254283"/><path d="M19 6h30c3 0 5 2 5 5v35H20c-4 0-7 2-7 5V13c0-4 2-7 6-7Z" fill="url(#bookCover)"/><path d="M21 6v39" stroke="#c3bcff" stroke-width="2"/><path d="M21 46h31v9H21c-6 0-8-2-8-5s3-4 8-4Z" fill="#fff5de"/><path d="M24 49h25M23 52h25" stroke="#baa6cc" stroke-width="1.4"/><path d="M29 17h16M29 22h12M29 27h16" stroke="#eee7ff" stroke-width="2.2" stroke-linecap="round"/><path d="M43 35v22l-5-4-5 4V35Z" fill="#ffbd60"/><path d="m35 35 3 3 5-6" fill="none" stroke="#653488" stroke-width="2.3" stroke-linecap="round"/><path d="M15 16h3M15 23h3M15 30h3M15 37h3" stroke="#ded5ff" stroke-width="1.5"/><path d="M24 9h23" stroke="#c3b4ff" stroke-linecap="round" opacity=".55"/></svg>`;
@@ -39,7 +39,10 @@ function refreshClosingBookAccess() {
   const employeeIcon=document.querySelector('#openClosingBookEmployee');
   employeeIcon.hidden=!employee || !els.authScreen.hidden;
   employeeIcon.title=allowed?'Chốt sổ':'Chốt sổ · Chưa được cấp quyền';
+  document.querySelector('#openClosingBookAudit').hidden=!allowed || !isAdminUser();
   if (!closingBook.page.hidden && (!allowed || closingBook.storeId!==getActiveStore()?.id)) hideClosingBookPage({force:true});
+  if (closingBook.auditOpen && !isAdminUser()) closeClosingBookAudit();
+  if (allowed && closingBook.auditOpen) renderClosingBookAudit();
   if (allowed && closingBook.page.hidden && window.location.hash.startsWith('#closing-book')) openClosingBookPage({fromHistory:true});
 }
 function openClosingBookPage({fromHistory=false}={}) {
@@ -57,6 +60,13 @@ function openClosingBookPage({fromHistory=false}={}) {
   const now=new Date();
   document.querySelector('#closingBookNewMonth').value=`${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
   renderClosingBookMonths();
+  const auditContext=window.history.state?.closingBookAudit;
+  if (fromHistory && window.location.hash==='#closing-book-audit' && isAdminUser()) {
+    if (auditContext && Array.from(closingBook.month.options).some(option=>option.value===auditContext.month)) {
+      closingBook.month.value=auditContext.month; loadClosingBookMonth();
+    }
+    openClosingBookAudit({fromHistory:true});
+  }
   const context=window.history.state?.closingBookDetail;
   if (fromHistory && context && window.location.hash===`#closing-book-detail-${context.type}`) {
     if (ClosingBookCore.groups.includes(context.type) && Array.from(closingBook.month.options).some(option=>option.value===context.month)) {
@@ -71,13 +81,14 @@ function openClosingBookPage({fromHistory=false}={}) {
   }
   updateTimeFiltersVisibility();
   closingBook.page.scrollTop=0;
-  document.querySelector('#closeClosingBook').focus({preventScroll:true});
+  document.querySelector(closingBook.auditOpen?'#closeClosingBookAudit':'#closeClosingBook').focus({preventScroll:true});
   void refreshEmployeeCashSuggestions(true);
 }
 function hideClosingBookPage({force=false}={}) {
   if (closingBook.page.hidden) return true;
   if (!force && !closingBookDiscard()) return false;
   closeClosingPosModal({force:true,restoreFocus:false});
+  closeClosingBookAudit();
   closingBook.page.hidden=true;
   closeClosingBookDetails();
   closingBook.dirty=false;
@@ -116,8 +127,13 @@ document.querySelector('#closeClosingBook').addEventListener('click',()=> {
   else hideClosingBookPage();
 });
 window.addEventListener('popstate',()=> {
-  if (window.location.hash==='#closing-book' && closingBookAllowed()) { closeClosingBookDetails(); openClosingBookPage({fromHistory:true}); }
+  if (window.location.hash==='#closing-book' && closingBookAllowed()) { closeClosingBookAudit(); closeClosingBookDetails(); openClosingBookPage({fromHistory:true}); }
+  else if (window.location.hash==='#closing-book-audit' && closingBookAllowed() && isAdminUser()) {
+    if (closingBook.page.hidden) openClosingBookPage({fromHistory:true});
+    else openClosingBookAudit({fromHistory:true});
+  }
   else if (window.location.hash.startsWith('#closing-book-detail-') && closingBookAllowed()) {
+    closeClosingBookAudit();
     if (closingBook.page.hidden) openClosingBookPage({fromHistory:true});
     else openClosingBookDetails(window.location.hash.endsWith('income')?'income':'expense',{fromHistory:true});
   }
@@ -135,6 +151,72 @@ function closingBookSnapshotMatches(shifts, snapshot) {
   catch { return false; }
 }
 function closingBookMonthData() { return (getActiveStore()?.closingMonths||[]).find(month=>month.month===closingBook.monthKey); }
+function buildClosingBookAudit(month, metric, direction) {
+  const metrics=['posDifference','vcbDifference','momoDifference','zalopDifference','difference'];
+  if (!metrics.includes(metric) || !['shortage','surplus'].includes(direction)) throw new Error('Bộ lọc kiểm kê không hợp lệ.');
+  if (!month) throw new Error('Không tìm thấy tháng Chốt sổ đang chọn.');
+  const count=ClosingBookCore.monthDays(month.month), seen=new Set(), rows=[];
+  const add=(a,b)=>{const value=a+b;if(!Number.isSafeInteger(value))throw new Error('Tổng chênh lệch quá lớn.');return value;};
+  let signedTotal=0;
+  if (!Array.isArray(month.days)) throw new Error('Danh sách ngày Chốt sổ không hợp lệ.');
+  for (const day of month.days) {
+    if (!new RegExp(`^${month.month}-\\d{2}$`).test(day.date) || Number(day.date.slice(8))<1 || Number(day.date.slice(8))>count || seen.has(day.date)) throw new Error('Ngày Chốt sổ không hợp lệ hoặc bị trùng.');
+    seen.add(day.date);
+    if (!Array.isArray(day.shifts)) throw new Error(`Dữ liệu ca ngày ${day.date} không hợp lệ.`);
+    let value=0;
+    const shifts=day.shifts.map((shift,index)=>{
+      try {
+        const amount=ClosingBookCore.calculate(shift)[metric];
+        value=add(value,amount);
+        return {index:index+1,name:String(shift.name||''),value:amount};
+      } catch(error) { throw new Error(`Ngày ${day.date}, ca ${index+1}: ${error.message}`); }
+    });
+    if (direction==='shortage'?value<0:value>0) { rows.push({date:day.date,value,shifts});signedTotal=add(signedTotal,value); }
+  }
+  rows.sort((a,b)=>a.date.localeCompare(b.date));
+  return {rows,signedTotal,total:Math.abs(signedTotal),savedDays:seen.size};
+}
+function openClosingBookAudit({fromHistory=false}={}) {
+  if (!isAdminUser() || !closingBookAllowed() || closingBook.page.hidden || !closingBook.monthKey) return;
+  if (!closingBook.auditOpen) closingBook.auditScroll=closingBook.page.scrollTop;
+  closeClosingBookDetails();
+  closingBook.auditOpen=true;
+  document.querySelector('#closingBookMain').hidden=true;
+  document.querySelector('#closingBookAuditPage').hidden=false;
+  closingBook.page.setAttribute('aria-labelledby','closingBookAuditTitle');
+  if (!fromHistory) window.history.pushState({closingBookPage:true,closingBookAudit:{month:closingBook.monthKey}},'','#closing-book-audit');
+  renderClosingBookAudit();closingBook.page.scrollTop=0;
+  document.querySelector('#closeClosingBookAudit').focus({preventScroll:true});
+}
+function closeClosingBookAudit() {
+  if (!closingBook.auditOpen) return;
+  closingBook.auditOpen=false;
+  document.querySelector('#closingBookAuditPage').hidden=true;
+  document.querySelector('#closingBookMain').hidden=false;
+  closingBook.page.setAttribute('aria-labelledby','closingBookTitle');
+  closingBook.page.scrollTop=closingBook.auditScroll;
+}
+function renderClosingBookAudit() {
+  if (!closingBook.auditOpen) return;
+  const metric=document.querySelector('#closingBookAuditMetric'), direction=document.querySelector('#closingBookAuditDirection').value;
+  const label=direction==='shortage'?'Thiếu':'Dư', summary=document.querySelector('#closingBookAuditSummary'), list=document.querySelector('#closingBookAuditList'), message=document.querySelector('#closingBookAuditMessage');
+  document.querySelector('#closingBookAuditContext').textContent=`${getActiveStore().name} · Tháng ${closingBook.monthKey.slice(5)}/${closingBook.monthKey.slice(0,4)}`;
+  document.querySelector('#closingBookAuditDraftNotice').hidden=!closingBook.dirty;
+  message.textContent='';
+  try {
+    const report=buildClosingBookAudit(closingBookMonthData(),metric.value,direction);
+    summary.innerHTML=[['Tổng '+label.toLowerCase(),formatCurrency(report.total)],['Số ngày '+label.toLowerCase(),report.rows.length],['Ngày đã lưu trong tháng',report.savedDays]].map(([title,value])=>`<div><span>${title}</span><strong>${value}</strong></div>`).join('');
+    summary.dataset.direction=direction;
+    const amount=value=>`${value>0?'+':''}${formatCurrency(value)}`;
+    list.innerHTML=report.rows.length?report.rows.map(row=>`<article class="book-audit-day" data-audit-date="${row.date}"><div class="book-audit-day-heading"><div><h2>${formatDate(row.date)}</h2><span>${escapeHtml(metric.selectedOptions[0].textContent)} · ${label}</span></div><strong class="book-audit-amount ${direction}">${amount(row.value)}</strong></div><details><summary>Đối chiếu ${row.shifts.length} ca trong ngày</summary><div class="book-audit-shifts">${row.shifts.map(shift=>`<div><span>Ca ${shift.index}${shift.name?' · '+escapeHtml(shift.name):''}</span><strong class="book-audit-amount ${shift.value<0?'shortage':shift.value>0?'surplus':''}">${amount(shift.value)}</strong></div>`).join('')}</div></details></article>`).join(''):`<div class="book-detail-empty"><h2>Không có ngày ${label.toLowerCase()}</h2><p>Không có ngày đã lưu nào có ${escapeHtml(metric.selectedOptions[0].textContent.toLowerCase())} ${direction==='shortage'?'âm':'lớn hơn 0'} trong tháng này.</p></div>`;
+  } catch(error) {summary.replaceChildren();list.replaceChildren();message.textContent=error.message;}
+}
+document.querySelector('#openClosingBookAudit').addEventListener('click',()=>openClosingBookAudit());
+document.querySelector('#closeClosingBookAudit').addEventListener('click',()=>{
+  if (window.history.state?.closingBookAudit) window.history.back();
+  else {closeClosingBookAudit();window.history.replaceState({closingBookPage:true},'','#closing-book');}
+});
+['#closingBookAuditMetric','#closingBookAuditDirection'].forEach(selector=>document.querySelector(selector).addEventListener('change',renderClosingBookAudit));
 function renderClosingBookMonths(preferred='') {
   const months=(getActiveStore().closingMonths||[]).slice().sort((a,b)=>b.month.localeCompare(a.month));
   closingBook.month.innerHTML=months.map(month=>`<option value="${escapeHtml(month.month)}">Tháng ${escapeHtml(month.month.slice(5))}/${escapeHtml(month.month.slice(0,4))}</option>`).join('');
