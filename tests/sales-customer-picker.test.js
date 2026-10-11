@@ -17,3 +17,16 @@ test('customer picker follows keyboard viewport, supports Escape and confines ke
   assert.match(select, /els.salesCustomerPhone.value = customer.phone/);
   assert.doesNotMatch(select, /saveState|persist|\.orders|salesItems|salesOrderDate/);
 });
+test('opening customer picker does not focus mobile inputs but retains desktop search autofocus', () => {
+  const vm = require('node:vm');
+  const open = app.match(/function openSalesCustomerCatalogModal\(\) \{([\s\S]*?)\n\}/)[0];
+  assert.match(html, /salesCustomerCatalogTitle" tabindex="-1"/);
+  for (const mobile of [true, false]) {
+    const focused = [], body = {scrollTop:120};
+    const context = {USE_MOBILE_APP_THEME:mobile, getActiveStore:()=>({id:'a'}), uiState:{}, renderSalesCustomerCatalog:()=>{}, updateSalesCustomerPickerViewport:()=>{}, document:{getElementById:()=>body}, els:{salesCustomerCatalogSearch:{value:'old',focus:()=>focused.push('search')},salesCustomerCatalogModal:{hidden:true,querySelector:()=>({focus:()=>focused.push('dialog')})}}};
+    vm.runInNewContext(open+';openSalesCustomerCatalogModal();',context);
+    assert.deepEqual(focused,[mobile ? 'dialog' : 'search']);
+    assert.equal(body.scrollTop,0);
+    assert.equal(context.els.salesCustomerCatalogModal.hidden,false);
+  }
+});

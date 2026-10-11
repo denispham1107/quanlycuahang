@@ -5038,7 +5038,11 @@ function openSalesCustomerCatalogModal() {
   els.salesCustomerCatalogModal.hidden = false;
   document.getElementById("salesCustomerPickerBody").scrollTop = 0;
   updateSalesCustomerPickerViewport();
-  els.salesCustomerCatalogSearch.focus({ preventScroll: true });
+  if (USE_MOBILE_APP_THEME) {
+    els.salesCustomerCatalogModal.querySelector(".sales-customer-picker-card").focus({ preventScroll: true });
+  } else {
+    els.salesCustomerCatalogSearch.focus({ preventScroll: true });
+  }
 }
 
 function closeSalesCustomerCatalogModal() {

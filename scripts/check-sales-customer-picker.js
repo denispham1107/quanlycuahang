@@ -29,6 +29,14 @@ async function main() {
       const modal = page.locator('#salesCustomerCatalogModal'), body = page.locator('#salesCustomerPickerBody');
       assert.equal(await page.locator('[data-select-sales-customer]').count(),40);
       const search = page.locator('#salesCustomerCatalogSearch'); const b = await search.boundingBox();
+      assert.equal(await search.evaluate(el => el === document.activeElement), width >= 700, 'only desktop autofocuses search');
+      if (width < 700) {
+        assert.equal(await modal.locator('section').evaluate(el => el === document.activeElement), true, 'mobile focuses non-editable dialog shell');
+        await page.waitForTimeout(400);
+        assert.equal(await search.evaluate(el => el === document.activeElement), false, 'no deferred mobile autofocus');
+        await search.click();
+        assert.equal(await search.evaluate(el => el === document.activeElement), true, 'search focuses after explicit tap');
+      }
       assert.ok(b.width >= (width > 700 ? 330 : 180), `search usable at ${width}: ${b.width}`);
       for (const node of await modal.locator('.sales-customer-picker-card, header, input, select, button').all()) {
         const rect = await node.boundingBox(); assert.ok(rect.x >= 0 && rect.x + rect.width <= width + 1, 'no horizontal overflow');
@@ -56,6 +64,7 @@ async function main() {
       assert.equal(await page.evaluate(() => JSON.stringify(state)), await page.evaluate(() => window.__stateBefore),'selection never saves data');
       assert.equal(await page.evaluate(() => window.__draftSnapshot()), await page.evaluate(() => window.__draftBefore),'sales items, date, discount and draft retained');
       await page.evaluate(() => openSalesCustomerCatalogModal());
+      assert.equal(await search.evaluate(el => el === document.activeElement), width >= 700, 'reopening preserves platform focus policy');
       await search.press('Shift+Tab'); assert.equal(await page.evaluate(() => document.activeElement.id),'closeSalesCustomerCatalog');
       await page.locator('#closeSalesCustomerCatalog').press('Tab'); assert.equal(await page.evaluate(() => document.activeElement.id),'salesCustomerCatalogSearch');
       await search.press('Escape'); assert.equal(await modal.isVisible(),false);
