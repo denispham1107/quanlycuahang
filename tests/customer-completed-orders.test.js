@@ -1,5 +1,9 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const app=fs.readFileSync(path.join(__dirname,'../app.js'),'utf8');
+test('rounded customer popup uses an inset content scroll owner and themed mobile header/footer',()=>{
+ const css=fs.readFileSync(path.join(__dirname,'../styles.css'),'utf8'),html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+ assert.match(css,/\.modal-card\.customer-history-card\s*\{[^}]*overflow: hidden;/);assert.match(css,/#customerHistoryContent\s*\{[^}]*min-height: 0;[^}]*overflow-y: auto;[^}]*scrollbar-gutter: stable;/);assert.match(css,/#customerHistoryModal\s*\{ overflow: hidden;/);assert.match(css,/html\.mobile-app-theme #closeCustomerHistory\s*\{[^}]*background: var\(--accent-gradient\);[^}]*color: #fff;/);assert.match(html,/class="customer-history-icon" aria-hidden="true"/);
+});
 const source=app.slice(app.indexOf('function getCustomerSalesOrders('),app.indexOf('function openCustomerHistory('));
 const ctx={getCustomerKey:(name,phone)=>`${String(name).trim().toLowerCase()}::${String(phone).trim()}`,isCancelledEntry:order=>order.status==='cancelled'};
 vm.runInNewContext(source,ctx);

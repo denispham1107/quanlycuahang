@@ -83,7 +83,9 @@ async function main() {
           return {x:Math.min(innerWidth-3,rect.right-8),y:Math.min(innerHeight-3,Math.max(3,rect.top+Math.min(rect.height/2,80))),id:scrollable.id,className:scrollable.className,clientHeight:scrollable.clientHeight,scrollHeight:scrollable.scrollHeight};
         },id);
         if(owner) {
-          await page.mouse.move(owner.x,owner.y);await page.mouse.wheel(0,400);await page.waitForTimeout(60);
+          await page.mouse.move(owner.x,owner.y);await page.mouse.wheel(0,400);
+          // Wheel scrolling is asynchronous; wait for its effect instead of a fixed frame delay.
+          await page.waitForFunction(()=>document.querySelector('[data-scroll-test-owner]')?.scrollTop>0,{},{timeout:1500});
           assert.ok(await page.locator('[data-scroll-test-owner]').evaluate(node=>node.scrollTop)>0,`${name}: long content remains wheel-scrollable at ${width}x${height}: ${JSON.stringify(owner)}`);
           await page.locator('[data-scroll-test-owner]').evaluate(node=>delete node.dataset.scrollTestOwner);
           assert.equal(await page.evaluate(()=>scrollY),snapshot.y,`${name}: content scrolling still leaves the background stationary`);

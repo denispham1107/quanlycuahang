@@ -3021,6 +3021,7 @@ body.customers-page-open > .quick-entry-fab {
 .customer-order-meta dd { margin: 0; font-weight: 850; overflow-wrap: anywhere; }
 .customer-history-card .panel-heading { display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: 12px; }
 .customer-history-card .panel-heading h2 { overflow-wrap: anywhere; }
+.customer-history-icon, .customer-history-heading > small { display: none; }
 @media (min-width: 701px) {
   #customerHistoryContent .order-detail-products-header,
   #customerHistoryContent .order-detail-product-row {
@@ -3031,11 +3032,49 @@ body.customers-page-open > .quick-entry-fab {
 }
 
 .modal-card.customer-history-card {
+  display: flex;
+  flex-direction: column;
   width: min(980px, 100%);
   border-radius: 20px;
-  max-height: min(88vh, 920px);
-  overflow: auto;
+  max-height: min(88dvh, 920px);
+  overflow: hidden;
 }
+.customer-history-card > .panel-heading,
+.customer-history-card > .modal-actions { flex: 0 0 auto; margin: 0; }
+#customerHistoryContent { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-gutter: stable; padding-right: 8px; }
+#customerHistoryModal { overflow: hidden; }
+#customerHistoryContent::-webkit-scrollbar { width: 10px; }
+#customerHistoryContent::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 999px; background: #a5b2cd; background-clip: padding-box; }
+
+html.mobile-app-theme .modal-card.customer-history-card {
+  border-radius: 28px;
+  padding: 16px;
+  gap: 14px;
+  background: linear-gradient(145deg, #fff6ffed, #edeaffe8 48%, #e5f7ffed);
+  border: 1.5px solid #fffffff2;
+  box-shadow: 0 24px 70px #45409540, inset 0 1px 0 #fff;
+}
+html.mobile-app-theme .customer-history-card > .panel-heading { grid-template-columns: 42px minmax(0, 1fr) max-content; gap: 10px; align-items: center; }
+html.mobile-app-theme .customer-history-icon { display: grid; place-items: center; width: 42px; height: 46px; border-radius: 14px; background: var(--accent-gradient); color: #fff; box-shadow: 0 8px 18px #7750dc35; }
+html.mobile-app-theme .customer-history-icon svg { width: 28px; height: 28px; }
+html.mobile-app-theme .customer-history-heading > small { display: block; margin-bottom: 3px; color: #7060b6; font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: .06em; }
+html.mobile-app-theme .customer-history-heading h2 { margin: 0; color: #192b60; font-size: clamp(17px, 4.5vw, 20px); line-height: 1.25; }
+html.mobile-app-theme #customerHistoryStatus { padding: 6px 8px; border-radius: 999px; background: #e3deff; color: #5845b9; font-size: 11px; font-weight: 850; white-space: nowrap; }
+html.mobile-app-theme .customer-history-hero { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 14px; border-color: #ffffff; background: #ffffffc9; box-shadow: 0 8px 20px #665fbd0b; }
+html.mobile-app-theme .customer-history-hero > div:last-child { grid-column: 1 / -1; padding: 12px; border-radius: 14px; background: linear-gradient(110deg, #eee1ff, #dcf0ff); }
+html.mobile-app-theme .customer-history-hero small { color: #627292; font-size: 11px; }
+html.mobile-app-theme .customer-history-hero strong { color: #233967; font-size: 14px; }
+html.mobile-app-theme .customer-history-hero > div:last-child strong { color: #156cd2; font-size: 23px; }
+html.mobile-app-theme .customer-history-order { padding: 13px; gap: 11px; border-color: #d5dcfa; background: linear-gradient(145deg, #ffffffed, #f5f7ffeb); box-shadow: 0 8px 20px #665fbd10; }
+html.mobile-app-theme .customer-order-meta { gap: 8px; }
+html.mobile-app-theme .customer-order-meta > div { padding: 9px; border-radius: 12px; background: #eeeaff99; }
+html.mobile-app-theme .customer-order-meta dt { font-size: 10px; color: #6d7294; }
+html.mobile-app-theme .customer-order-meta dd { font-size: 13px; color: #35447b; line-height: 1.35; }
+html.mobile-app-theme .customer-history-order-head { color: #53688e; font-size: 12px; }
+html.mobile-app-theme .customer-history-order-head > strong { color: #176dca; font-size: 17px; }
+html.mobile-app-theme .customer-history-lines { border-color: #dce3fa; }
+html.mobile-app-theme .customer-history-summary { color: #354b78; font-size: 13px; }
+html.mobile-app-theme #closeCustomerHistory { width: 100%; min-height: 44px; border: 0; border-radius: 14px; background: var(--accent-gradient); color: #fff; font-weight: 850; }
 
 .customer-history-content,
 .customer-history-list {
