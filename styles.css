@@ -2869,7 +2869,6 @@ body.customers-page-open > .quick-entry-fab {
   backdrop-filter: none;
 }
 
-.customer-member-chips,
 .customer-mobile-card,
 .customer-add-icon,
 .customer-add-mobile-label {
@@ -9932,7 +9931,33 @@ html.mobile-app-theme #customersCount {
 }
 
 html.mobile-app-theme .customer-filter-row {
-  display: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  order: 2;
+  min-width: 0;
+  margin-bottom: 12px;
+}
+
+html.mobile-app-theme .customer-filter-row .field {
+  min-width: 0;
+}
+
+html.mobile-app-theme .customer-filter-row label {
+  color: #465a82;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+html.mobile-app-theme #customerMemberFilter {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 42px;
+  padding: 7px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.84);
+  color: #1c2b5d;
+  font-size: 16px;
 }
 
 html.mobile-app-theme .customer-search-row {
@@ -9990,35 +10015,6 @@ html.mobile-app-theme .customer-search-row .field::after {
   transform: rotate(45deg);
   transform-origin: left center;
   pointer-events: none;
-}
-
-html.mobile-app-theme .customer-member-chips {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  order: 2;
-  margin-bottom: 16px;
-}
-
-html.mobile-app-theme .customer-member-chip {
-  width: 100%;
-  min-width: 0;
-  min-height: 42px;
-  border: 1px solid rgba(255, 255, 255, 0.95);
-  border-radius: 999px;
-  padding: 8px 5px;
-  background: rgba(255, 255, 255, 0.52);
-  color: #1c2b5d;
-  font-size: 14px;
-  font-weight: 800;
-  box-shadow: none;
-  white-space: nowrap;
-}
-
-html.mobile-app-theme .customer-member-chip.is-active {
-  background: linear-gradient(110deg, #a937ef, #148df6);
-  color: #fff;
-  box-shadow: 0 8px 18px rgba(93, 79, 227, 0.2);
 }
 
 html.mobile-app-theme .customer-form-toggle {
@@ -10185,7 +10181,7 @@ html.mobile-app-theme .customers-card .customer-form[hidden] {
 }
 
 html.mobile-app-theme .customers-card.customer-form-open .customer-search-row,
-html.mobile-app-theme .customers-card.customer-form-open .customer-member-chips,
+html.mobile-app-theme .customers-card.customer-form-open .customer-filter-row,
 html.mobile-app-theme .customers-card.customer-form-open .customer-form-toggle,
 html.mobile-app-theme .customers-card.customer-form-open .customers-list {
   display: none;
@@ -11147,8 +11143,8 @@ body:has(> :is(#customerHistoryModal, #memberTierModal):not([hidden])) > #custom
   html.mobile-app-theme #customersPage .customer-search-row { margin-bottom: 6px; }
   html.mobile-app-theme #customersPage .customer-search-row .field::before { left: 12px; top: 13px; width: 13px; height: 13px; }
   html.mobile-app-theme #customersPage .customer-search-row .field::after { left: 25px; top: 27px; width: 8px; }
-  html.mobile-app-theme #customersPage .customer-member-chips { gap: 6px; margin-bottom: 6px; }
-  html.mobile-app-theme #customersPage .customer-member-chip { min-height: 32px; padding: 5px; font-size: 12px; }
+  html.mobile-app-theme #customersPage .customer-filter-row { margin-bottom: 6px; }
+  html.mobile-app-theme #customersPage #customerMemberFilter { min-height: 34px; padding: 4px 10px; border-radius: 11px; }
   html.mobile-app-theme #customersPage .customer-form-toggle { min-height: 34px; margin-bottom: 8px; padding: 5px; font-size: 13px; border-radius: 11px; gap: 7px; }
   html.mobile-app-theme #customersPage .customer-add-icon { font-size: 21px; }
   html.mobile-app-theme #customersPage .customers-list { gap: 7px; }

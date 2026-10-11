@@ -296,7 +296,6 @@ const els = {
   customersCard: document.querySelector(".customers-card"),
   customersCount: document.querySelector("#customersCount"),
   customersList: document.querySelector("#customersList"),
-  customerMemberChips: document.querySelector("#customerMemberChips"),
   closeCustomersTop: document.querySelector("#closeCustomersTop"),
   toggleCustomerForm: document.querySelector("#toggleCustomerForm"),
   customerForm: document.querySelector("#customerForm"),
@@ -1496,13 +1495,6 @@ els.customerForm.addEventListener("submit", (event) => {
 
 els.customerMemberFilter.addEventListener("change", () => {
   uiState.customerMemberFilter = els.customerMemberFilter.value;
-  renderCustomers(getActiveStore());
-});
-
-els.customerMemberChips.addEventListener("click", (event) => {
-  const chip = event.target.closest("[data-customer-tier-filter]");
-  if (!chip) return;
-  uiState.customerMemberFilter = chip.dataset.customerTierFilter;
   renderCustomers(getActiveStore());
 });
 
@@ -5526,8 +5518,8 @@ function renderCustomers(store) {
     selectedTier === "all"
       ? allCustomers
       : allCustomers.filter((customer) => {
-          const tier = normalizeSearchText(customer.memberTier || "Thường");
-          return selectedTier === "other" ? tier !== "thuong" : tier === selectedTier;
+          const tierName = String(customer.memberTier || "Thường").trim() || "Thường";
+          return normalizeSearchText(tierName) === selectedTier.slice(5);
         });
   const query = normalizeSearchText(uiState.customerSearch || "");
   const customers = query
@@ -5605,27 +5597,20 @@ function renderCustomerMemberFilter(customers) {
   const tierMap = new Map();
   customers.forEach((customer) => {
     const tierName = String(customer.memberTier || "Thường").trim() || "Thường";
-    tierMap.set(normalizeSearchText(tierName), tierName);
+    tierMap.set(`tier:${normalizeSearchText(tierName)}`, tierName);
   });
 
   const tiers = [...tierMap.entries()].sort((a, b) => a[1].localeCompare(b[1], "vi"));
-  const validFilters = new Set(["all", "thuong", "other", ...tiers.map(([key]) => key)]);
+  const validFilters = new Set(["all", ...tiers.map(([key]) => key)]);
   if (!validFilters.has(uiState.customerMemberFilter)) {
     uiState.customerMemberFilter = "all";
   }
 
   els.customerMemberFilter.innerHTML = [
     '<option value="all">Tất cả</option>',
-    ...tiers.map(([key, name]) => `<option value="${key}">${escapeHtml(name)}</option>`)
+    ...tiers.map(([key, name]) => `<option value="${escapeHtml(key)}">${escapeHtml(name)}</option>`)
   ].join("");
-  els.customerMemberFilter.value = tiers.some(([key]) => key === uiState.customerMemberFilter)
-    ? uiState.customerMemberFilter
-    : "all";
-  els.customerMemberChips.innerHTML = [
-    ["all", "Tất cả"],
-    ["thuong", "Thường"],
-    ["other", "Khác"]
-  ].map(([value, label]) => `<button class="customer-member-chip${uiState.customerMemberFilter === value ? " is-active" : ""}" type="button" data-customer-tier-filter="${value}" aria-pressed="${uiState.customerMemberFilter === value}">${label}</button>`).join("");
+  els.customerMemberFilter.value = uiState.customerMemberFilter;
 }
 
 function renderCustomerSearchSuggestions(customers) {

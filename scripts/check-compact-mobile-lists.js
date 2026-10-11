@@ -38,6 +38,15 @@ async function main(){
    await layer.evaluate(el=>el.scrollTop=0);const frame=await layer.boundingBox();await page.mouse.move(frame.x+frame.width/2,frame.y+frame.height/2);await page.mouse.wheel(0,500);await page.waitForFunction(id=>document.getElementById(id).scrollTop>0,id);
    await layer.evaluate(el=>el.scrollTop=0);await search.fill('not found');assert.equal(await layer.locator(itemSelector).count(),0);await search.fill('');
    if(id==='customersPage'){
+    const filter=page.locator('#customerMemberFilter');assert.equal(await filter.isVisible(),true);assert.equal(await layer.locator('#customerMemberChips').count(),0);
+    assert.deepEqual(await filter.locator('option').evaluateAll(nodes=>nodes.map(n=>n.value).sort()),['all','tier:thuong','tier:vip']);
+    await filter.selectOption('tier:vip');assert.equal(await layer.locator(itemSelector).count(),15);await search.fill('0900000001');assert.equal(await layer.locator(itemSelector).count(),1);assert.equal(await filter.inputValue(),'tier:vip');
+    await filter.selectOption('tier:thuong');assert.equal(await layer.locator(itemSelector).count(),0);await search.fill('');assert.equal(await layer.locator(itemSelector).count(),15);
+    await page.evaluate(()=>{getActiveStore().customers.push({id:'custom',name:'Khách mới',phone:'0999',memberTier:'Gói "<Vàng>& '+ 'TênDài'.repeat(8),createdAt:'2026-10-11T10:00:00Z'});renderCustomers(getActiveStore());});
+    const choices=await filter.locator('option').evaluateAll(nodes=>nodes.map(n=>({value:n.value,label:n.textContent})));const custom=choices.find(n=>n.label.startsWith('Gói "<Vàng>&'));assert.ok(custom);await filter.selectOption(custom.value);assert.equal(await layer.locator(itemSelector).count(),1);
+    const filteredRect=await filter.boundingBox();assert.ok(filteredRect.x>=0&&filteredRect.x+filteredRect.width<=width+1);assert.ok(await filter.evaluate(el=>el.scrollWidth<=el.clientWidth+1));
+    await page.evaluate(()=>{getActiveStore().customers=getActiveStore().customers.filter(c=>c.id!=='custom');renderCustomers(getActiveStore());});assert.equal(await filter.inputValue(),'all');assert.equal(await layer.locator(itemSelector).count(),30);assert.equal(await search.inputValue(),'');
+    if(process.env.CUSTOMER_TEST_SHOTS&&width===375&&height===900&&platform==='ios'){await layer.evaluate(el=>el.scrollTop=0);await page.screenshot({path:path.join(process.env.CUSTOMER_TEST_SHOTS,'customer-membership-dropdown.png')});}
     const edit=layer.locator('[data-edit-customer="c0"]:visible');await edit.click();assert.equal(await page.locator('#customerNameInput').inputValue(),'Khách 0');await page.locator('#customerNameInput').fill('Đang sửa');await page.locator('#cancelCustomerForm').click();
     await layer.locator('[data-customer-history="c0"]:visible').click();assert.equal(await page.locator('#customerHistoryModal').isVisible(),true);await page.locator('#closeCustomerHistory').click();
     await layer.locator('[data-open-customer-orders="c0"]').click();assert.equal(await page.locator('#customerHistoryTitle').textContent(),'Đơn hàng đã hoàn thành');await page.locator('#closeCustomerHistory').click();

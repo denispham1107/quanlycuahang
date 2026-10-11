@@ -10,14 +10,15 @@ const css = fs.readFileSync(path.join(root, "styles.css"), "utf8");
 const app = fs.readFileSync(path.join(root, "app.js"), "utf8");
 
 test("customer manager is a full page with a back control, search, filters and creation action", () => {
-  for (const id of ["closeCustomersTop", "customerSearchInput", "customerMemberChips", "toggleCustomerForm", "customerForm", "customersList"]) {
+  for (const id of ["closeCustomersTop", "customerSearchInput", "customerMemberFilter", "toggleCustomerForm", "customerForm", "customersList"]) {
     assert.match(html, new RegExp(`id="${id}"`));
   }
   assert.match(html, /<main class="customers-page" id="customersPage" aria-labelledby="customersTitle" hidden>/);
   assert.match(html, /class="customers-page-header"/);
   assert.doesNotMatch(html, /id="customersModal"/);
   assert.match(app, /els\.closeCustomersTop\.addEventListener\("click", closeCustomersPage\)/);
-  assert.match(app, /els\.customerMemberChips\.addEventListener\("click"/);
+  assert.match(app, /els\.customerMemberFilter\.addEventListener\("change"/);
+  assert.doesNotMatch(html, /customerMemberChips/);
   assert.match(css, /\.customers-page\s*\{\s*position: fixed;/);
   assert.match(css, /\.customers-page\[hidden\]\s*\{\s*display: none;/);
   assert.match(css, /\.modal-backdrop\.customer-history-backdrop,\s*\.modal-backdrop\.member-tier-backdrop\s*\{\s*z-index: 190;/);
@@ -28,14 +29,13 @@ test("customer manager is a full page with a back control, search, filters and c
   assert.match(css, /html\.mobile-app-theme \.customer-mobile-edit \{/);
 });
 
-test("mobile chips filter real customers without losing search or customer actions", () => {
+test("membership dropdown lists every tier and combines exact tier filtering with customer search", () => {
   const start = app.indexOf("function renderCustomers(store) {");
   const end = app.indexOf("function renderCustomerSearchSuggestions(customers) {", start);
   assert.ok(start >= 0 && end > start);
   const els = {
     customerSearchInput: { value: "" },
     customerMemberFilter: { innerHTML: "", value: "all" },
-    customerMemberChips: { innerHTML: "" },
     customerSearchSuggestions: { innerHTML: "" },
     customerForm: { hidden: true },
     customersCount: { textContent: "" },
@@ -51,34 +51,78 @@ test("mobile chips filter real customers without losing search or customer actio
     formatDate: (value) => value,
     formatTime: () => "",
     isRegularMemberTier: (value) => value === "Thường",
-    normalizeSearchText: (value) => String(value).toLocaleLowerCase("vi").normalize("NFD").replace(/[\u0300-\u036f]/g, ""),
+    normalizeSearchText: (value) => String(value).trim().toLocaleLowerCase("vi").normalize("NFD").replace(/[\u0300-\u036f]/g, ""),
     escapeHtml
   };
   vm.createContext(context);
   vm.runInContext(app.slice(start, end), context);
   const store = { customers: [
     { id: "a", name: "An <script>", phone: "0123", memberTier: "Thường", createdAt: "2026-10-04T10:00:00" },
-    { id: "b", name: "Bình", phone: "0987", memberTier: "Vàng", createdAt: "2026-10-03T10:00:00" }
+    { id: "b", name: "Bình", phone: "0987", memberTier: "Vàng", createdAt: "2026-10-03T10:00:00" },
+    { id: "c", name: "Chi", phone: "0456", memberTier: "Vip", createdAt: "2026-10-03T10:00:00" },
+    { id: "d", name: "Dũng", phone: "0789", memberTier: " VIP ", createdAt: "2026-10-03T10:00:00" },
+    { id: "e", name: "Em", phone: "0111", memberTier: " ", createdAt: "2026-10-03T10:00:00" },
+    { id: "f", name: "Khách gói khác", phone: "0222", memberTier: "Khác", createdAt: "2026-10-03T10:00:00" },
+    { id: "g", name: "Khách gói all", phone: "0333", memberTier: "all", createdAt: "2026-10-03T10:00:00" },
+    { id: "h", name: "Khách tên gói HTML", phone: "0444", memberTier: 'Gói "<Vàng>&', createdAt: "2026-10-03T10:00:00" }
   ] };
+  const before = JSON.stringify(store);
   context.renderCustomers(store);
-  assert.equal(els.customersCount.textContent, "2 khách");
+  assert.equal(els.customersCount.textContent, "8 khách");
   assert.match(els.customersList.innerHTML, /An &lt;script&gt;/);
   assert.doesNotMatch(els.customersList.innerHTML, /An <script>/);
   assert.match(els.customersList.innerHTML, /data-customer-history="a"/);
   assert.match(els.customersList.innerHTML, /data-member-tier-customer="b"/);
-  assert.match(els.customerMemberChips.innerHTML, /aria-pressed="true"/);
+  assert.match(els.customerMemberFilter.innerHTML, /value="all">Tất cả/);
+  for (const key of ["thuong", "vang", "vip", "khac", "all"]) {
+    assert.match(els.customerMemberFilter.innerHTML, new RegExp(`value="tier:${key}"`));
+  }
+  assert.equal((els.customerMemberFilter.innerHTML.match(/value="tier:vip"/g) || []).length, 1);
+  assert.match(els.customerMemberFilter.innerHTML, /value="tier:goi &quot;&lt;vang&gt;&amp;"/);
+  assert.doesNotMatch(els.customerMemberFilter.innerHTML, /value="other"/);
 
-  uiState.customerMemberFilter = "other";
+  uiState.customerMemberFilter = "tier:vang";
   context.renderCustomers(store);
   assert.equal(els.customersCount.textContent, "1 khách");
   assert.match(els.customersList.innerHTML, /Bình/);
   assert.doesNotMatch(els.customersList.innerHTML, /An &lt;script&gt;/);
 
-  uiState.customerMemberFilter = "thuong";
+  uiState.customerMemberFilter = "tier:vip";
+  context.renderCustomers(store);
+  assert.equal(els.customersCount.textContent, "2 khách");
+  assert.equal(els.customerMemberFilter.value, "tier:vip");
+
+  uiState.customerSearch = "0789";
+  context.renderCustomers(store);
+  assert.equal(els.customersCount.textContent, "1 khách");
+  assert.match(els.customersList.innerHTML, /Dũng/);
+  assert.doesNotMatch(els.customersList.innerHTML, /data-open-customer-orders="c"/);
+
+  uiState.customerMemberFilter = "tier:thuong";
   uiState.customerSearch = "0123";
   context.renderCustomers(store);
   assert.equal(els.customersCount.textContent, "1 khách");
   assert.match(els.customersList.innerHTML, /An &lt;script&gt;/);
+
+  uiState.customerSearch = "";
+  context.renderCustomers(store);
+  assert.equal(els.customersCount.textContent, "2 khách", "blank tiers default to regular");
+  for (const tier of ["khac", "all"]) {
+    uiState.customerMemberFilter = `tier:${tier}`;
+    context.renderCustomers(store);
+    assert.equal(els.customersCount.textContent, "1 khách", "tier names do not collide with filter controls");
+  }
+  assert.equal(JSON.stringify(store), before, "filtering does not change customer data");
+
+  uiState.customerSearch = "0333";
+  context.renderCustomers({ customers: [store.customers[0]] });
+  assert.equal(uiState.customerMemberFilter, "all", "removed tiers reset to all");
+  assert.equal(els.customerSearchInput.value, "0333", "refresh keeps the search");
+  assert.equal(els.customersCount.textContent, "0 khách");
+  assert.match(els.customersList.innerHTML, /Không tìm thấy/);
+  context.renderCustomers({ customers: [] });
+  assert.equal(els.customerMemberFilter.innerHTML, '<option value="all">Tất cả</option>');
+  assert.match(els.customersList.innerHTML, /Chưa có thông tin/);
 });
 
 test("mobile customer form and keyboard viewport remain usable in the full page", () => {
@@ -88,7 +132,9 @@ test("mobile customer form and keyboard viewport remain usable in the full page"
   assert.match(app, /els\.customersPage\.scrollTop \+= targetBounds\.bottom/);
   assert.match(app, /ensureCustomerFocusVisible\(event\.target\)/);
   assert.match(css, /html\.mobile-app-theme \.customers-card\.customer-form-open \.customers-list/);
-  assert.match(css, /html\.mobile-app-theme \.customer-member-chip\.is-active/);
+  assert.match(css, /html\.mobile-app-theme \.customer-filter-row \{\s*display: grid;/);
+  assert.match(css, /html\.mobile-app-theme #customerMemberFilter \{[^}]*font-size: 16px;/);
+  assert.match(css, /html\.mobile-app-theme \.customers-card\.customer-form-open \.customer-filter-row,/);
   assert.match(css, /html\.mobile-app-theme \.customer-mobile-edit \{[\s\S]*?background: #edf2ff;[\s\S]*?color: #172e75;/);
   assert.match(css, /html\.mobile-app-theme \.customer-form-toggle \{[^}]*align-items: center;[^}]*justify-content: center;[^}]*line-height: 1\.2;/);
   assert.match(css, /html\.mobile-app-theme \.customer-add-icon \{[^}]*align-items: center;[^}]*line-height: 1;/);
