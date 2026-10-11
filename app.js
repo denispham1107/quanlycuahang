@@ -1511,15 +1511,19 @@ els.customersList.addEventListener("click", (event) => {
   }
 
   const customer = event.target.closest("[data-edit-customer]");
-  if (!customer) return;
-  openCustomerById(customer.dataset.editCustomer);
+  if (customer) {
+    openCustomerById(customer.dataset.editCustomer);
+    return;
+  }
+  const card = event.target.closest("[data-open-customer-orders]");
+  if (card) openCustomerHistory(card.dataset.openCustomerOrders, { completedOnly: true });
 });
 
 els.customersList.addEventListener("keydown", (event) => {
   if (event.target !== event.target.closest(".customer-card")) return;
   if (event.key !== "Enter" && event.key !== " ") return;
   event.preventDefault();
-  openCustomerById(event.target.dataset.editCustomer);
+  openCustomerHistory(event.target.dataset.openCustomerOrders, { completedOnly: true });
 });
 
 els.salesOrderTable.addEventListener("click", (event) => {
@@ -5512,7 +5516,7 @@ function renderCustomers(store) {
       const tierClass = isRegularMemberTier(tierName) ? "is-regular" : "is-premium";
       const customerInitial = Array.from(String(customer.name || "?").trim())[0]?.toLocaleUpperCase("vi") || "?";
       return `
-        <div class="customer-card" role="button" tabindex="0" data-edit-customer="${customer.id}">
+        <div class="customer-card" role="button" tabindex="0" data-open-customer-orders="${customer.id}" aria-label="Xem đơn hàng đã hoàn thành của ${escapeHtml(customer.name)}">
           <span class="date-stack">
             <span>${createdDate}</span>
             ${createdTime ? `<small>${createdTime}</small>` : ""}
@@ -5529,7 +5533,10 @@ function renderCustomers(store) {
             <small>Gói thành viên</small>
             <button class="member-tier-badge ${tierClass}" type="button" data-member-tier-customer="${customer.id}" title="Xem thời hạn gói" aria-label="Xem thời hạn gói ${escapeHtml(tierName)}">${escapeHtml(tierName)}</button>
           </span>
-          <button class="customer-history-button" type="button" data-customer-history="${customer.id}" title="Lịch sử giao dịch" aria-label="Lịch sử giao dịch">LS</button>
+          <div class="customer-desktop-actions">
+            <button class="customer-history-button" type="button" data-customer-history="${customer.id}" title="Lịch sử giao dịch" aria-label="Lịch sử giao dịch">LS</button>
+            <button class="customer-edit-button" type="button" data-edit-customer="${customer.id}" aria-label="Sửa thông tin ${escapeHtml(customer.name)}">Sửa</button>
+          </div>
           <div class="customer-mobile-card">
             <span class="customer-avatar" aria-hidden="true">${escapeHtml(customerInitial)}</span>
             <span class="customer-mobile-info">
@@ -5752,19 +5759,25 @@ function openCustomerById(customerId) {
   openCustomerForm(customer);
 }
 
-function openCustomerHistory(customerId) {
+function getCustomerSalesOrders(store, customer, { completedOnly = false } = {}) {
+  const customerKey = getCustomerKey(customer.name, customer.phone);
+  return (store.orders || [])
+    .filter((order) => getCustomerKey(order.customerName, order.customerPhone) === customerKey &&
+      (!completedOnly || !isCancelledEntry(order)))
+    .sort((a, b) => String(b.createdAt || b.date || "").localeCompare(String(a.createdAt || a.date || "")));
+}
+
+function openCustomerHistory(customerId, { completedOnly = false } = {}) {
   const store = getActiveStore();
   if (!store || !customerId) return;
 
   const customer = getStoreCustomers(store).find((item) => item.id === customerId);
   if (!customer) return;
 
-  const customerKey = getCustomerKey(customer.name, customer.phone);
-  const orders = (store.orders || [])
-    .filter((order) => getCustomerKey(order.customerName, order.customerPhone) === customerKey)
-    .sort((a, b) => String(b.createdAt || b.date || "").localeCompare(String(a.createdAt || a.date || "")));
+  const orders = getCustomerSalesOrders(store, customer, { completedOnly });
   const total = orders.reduce((sum, order) => (isCancelledEntry(order) ? sum : sum + Number(order.total || 0)), 0);
 
+  document.querySelector("#customerHistoryTitle").textContent = completedOnly ? "Đơn hàng đã hoàn thành" : "Lịch sử giao dịch";
   els.customerHistoryStatus.textContent = `${orders.length} đơn`;
   els.customerHistoryContent.innerHTML = `
     <div class="customer-history-hero">
@@ -5777,14 +5790,14 @@ function openCustomerHistory(customerId) {
         <strong>${escapeHtml(customer.phone || "")}</strong>
       </div>
       <div>
-        <small>Tổng giao dịch</small>
+        <small>${completedOnly ? "Tổng tiền đơn hoàn thành" : "Tổng giao dịch"}</small>
         <strong>${formatCurrency(total)}</strong>
       </div>
     </div>
     ${
       orders.length
         ? `<div class="customer-history-list">${orders.map(renderCustomerHistoryOrder).join("")}</div>`
-        : '<div class="empty-list">Khách hàng này chưa có đơn hàng nào</div>'
+        : `<div class="empty-list">${completedOnly ? "Khách hàng này chưa có đơn hàng đã hoàn thành" : "Khách hàng này chưa có đơn hàng nào"}</div>`
     }
   `;
   els.customerHistoryModal.hidden = false;
@@ -5803,7 +5816,11 @@ function renderCustomerHistoryOrder(order) {
   const total = Number(order.total || 0);
 
   return `
-    <article class="customer-history-order ${cancelled ? "entry-cancelled" : ""}">
+    <article class="customer-history-order ${cancelled ? "entry-cancelled" : ""}" data-customer-order-id="${escapeHtml(order.id || "")}">
+      <dl class="customer-order-meta">
+        <div><dt>Nhân viên</dt><dd>${escapeHtml(getSalesOrderEmployeeName(order, getActiveStore()))}</dd></div>
+        <div><dt>Mã bill</dt><dd>${escapeHtml(order.billCode || "—")}</dd></div>
+      </dl>
       <div class="customer-history-order-head">
         <span class="date-stack">
           <span>${formatDate(order.date || today)}</span>

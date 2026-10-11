@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=120" />
+    <link rel="manifest" href="manifest.webmanifest?v=121" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=120" />
+    <link rel="stylesheet" href="styles.css?v=121" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -1138,9 +1138,9 @@
     </main>
 
     <div class="modal-backdrop customer-history-backdrop" id="customerHistoryModal" hidden>
-      <section class="modal-card customer-history-card">
+      <section class="modal-card customer-history-card" role="dialog" aria-modal="true" aria-labelledby="customerHistoryTitle">
         <div class="panel-heading">
-          <h2>Lịch sử giao dịch</h2>
+          <h2 id="customerHistoryTitle">Lịch sử giao dịch</h2>
           <span id="customerHistoryStatus"></span>
         </div>
         <div class="customer-history-content" id="customerHistoryContent"></div>
@@ -1554,8 +1554,8 @@
         </form>
       </section>
     </div>
-    <script defer src="app.js?v=120"></script>
-    <script defer src="closing-book-core.js?v=120"></script>
-    <script defer src="closing-book.js?v=120"></script>
+    <script defer src="app.js?v=121"></script>
+    <script defer src="closing-book-core.js?v=121"></script>
+    <script defer src="closing-book.js?v=121"></script>
   </body>
 </html>
