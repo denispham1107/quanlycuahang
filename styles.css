@@ -11036,6 +11036,7 @@ body:has(> :is(#customerHistoryModal, #memberTierModal):not([hidden])) > #custom
 #salesCustomerCatalogModal .empty-list { grid-column: 1 / -1; padding: 30px 14px; border: 1px dashed #c2cbea; border-radius: 18px; text-align: center; color: #667794; }
 #salesCustomerCatalogModal .modal-actions { flex: 0 0 auto; margin: 0; padding-top: 14px; border-top: 1px solid #d8e1f5; }
 #salesCustomerCatalogModal #closeSalesCustomerCatalog { width: auto; min-width: 140px; min-height: 44px; border: 0; border-radius: 14px; color: white; background: linear-gradient(110deg, #a440f1, #118dec); box-shadow: 0 8px 20px #7962cf25; }
+.customer-picker-close-symbol { display: none; }
 @media (max-width: 700px) {
   #salesCustomerCatalogModal { padding: 12px; }
   #salesCustomerCatalogModal .sales-customer-picker-card { max-height: calc(var(--customer-picker-height, 100dvh) - 24px); padding: 15px; gap: 13px; }
@@ -11052,4 +11053,35 @@ body:has(> :is(#customerHistoryModal, #memberTierModal):not([hidden])) > #custom
   #salesCustomerCatalogModal .customer-picker-info strong { font-size: 14px; }
   #salesCustomerCatalogModal .customer-picker-info small { font-size: 11px; }
   #salesCustomerCatalogModal #closeSalesCustomerCatalog { width: 100%; }
+}
+
+/* Mobile picker keeps room for results above the on-screen keyboard. */
+@media (max-width: 700px) {
+  html.mobile-app-theme #salesCustomerCatalogModal { padding: 8px; }
+  html.mobile-app-theme #salesCustomerCatalogModal .sales-customer-picker-card { position: relative; max-height: calc(var(--customer-picker-height, 100dvh) - 16px); padding: 10px; gap: 8px; border-radius: 21px; }
+  html.mobile-app-theme #salesCustomerCatalogModal .sales-customer-picker-heading { grid-template-columns: minmax(0, 1fr); gap: 3px; min-height: 44px; padding: 7px 48px 7px 10px; border-radius: 13px; }
+  html.mobile-app-theme #salesCustomerCatalogModal .sales-customer-picker-icon,
+  html.mobile-app-theme #salesCustomerCatalogModal .sales-customer-picker-heading p { display: none; }
+  html.mobile-app-theme #salesCustomerCatalogModal .sales-customer-picker-heading h2 { font-size: 16px; line-height: 1.3; }
+  html.mobile-app-theme #salesCustomerCatalogCount { grid-column: 1; padding: 2px 7px; font-size: 10px; }
+  html.mobile-app-theme #salesCustomerCatalogModal .modal-actions { position: absolute; top: 13px; right: 13px; padding: 0; border: 0; }
+  html.mobile-app-theme #salesCustomerCatalogModal #closeSalesCustomerCatalog { display: grid; place-items: center; width: 44px; height: 44px; min-width: 44px; min-height: 44px; padding: 0; border-radius: 12px; color: #4e5c91; background: #ffffffbc; box-shadow: none; }
+  html.mobile-app-theme #salesCustomerCatalogModal .customer-picker-close-label { display: none; }
+  html.mobile-app-theme #salesCustomerCatalogModal .customer-picker-close-symbol { display: block; font-size: 28px; line-height: 1; }
+  html.mobile-app-theme #salesCustomerPickerBody { padding-right: 4px; }
+  html.mobile-app-theme #salesCustomerCatalogModal .sales-catalog-tools { padding: 2px; margin: 0 0 8px; gap: 6px; border: 0; background: none; }
+  html.mobile-app-theme #salesCustomerCatalogModal .history-search label { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  html.mobile-app-theme #salesCustomerCatalogModal .history-search { gap: 0; }
+  html.mobile-app-theme #salesCustomerCatalogModal input { min-height: 44px; padding: 9px 11px; border-radius: 11px; font-size: 16px; }
+  html.mobile-app-theme #salesCustomerCatalogModal .history-filter { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+  html.mobile-app-theme #salesCustomerCatalogModal .history-filter label { font-size: 11px; }
+  html.mobile-app-theme #salesCustomerCatalogModal select { width: 140px; min-height: 34px; padding: 5px 9px; border-radius: 10px; font-size: 16px; }
+  html.mobile-app-theme #salesCustomerCatalogModal .sales-catalog-list { gap: 7px; }
+  html.mobile-app-theme #salesCustomerCatalogModal .customer-catalog-item { grid-template-columns: 32px minmax(0, 1fr) minmax(63px, auto); gap: 8px; min-height: 64px; padding: 8px; border-radius: 13px; }
+  html.mobile-app-theme #salesCustomerCatalogModal .customer-picker-avatar { width: 32px; height: 34px; font-size: 11px; border-radius: 10px; }
+  html.mobile-app-theme #salesCustomerCatalogModal .customer-picker-info strong { font-size: 13px; line-height: 1.3; }
+  html.mobile-app-theme #salesCustomerCatalogModal .customer-picker-info small { font-size: 11px; }
+  html.mobile-app-theme #salesCustomerCatalogModal .sales-catalog-meta { gap: 4px; }
+  html.mobile-app-theme #salesCustomerCatalogModal .sales-catalog-meta .customer-picker-tier { padding: 3px 6px; font-size: 10px; }
+  html.mobile-app-theme #salesCustomerCatalogModal.customer-picker-short #salesCustomerCatalogCount { display: none; }
 }

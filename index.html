@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=124" />
+    <link rel="manifest" href="manifest.webmanifest?v=125" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=124" />
+    <link rel="stylesheet" href="styles.css?v=125" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -1061,7 +1061,7 @@
         <div class="sales-catalog-list customer-catalog-list" id="salesCustomerCatalogList"></div>
         </div>
         <div class="modal-actions">
-          <button class="ghost-button" id="closeSalesCustomerCatalog" type="button">Đóng</button>
+          <button class="ghost-button" id="closeSalesCustomerCatalog" type="button" aria-label="Đóng danh sách khách hàng"><span class="customer-picker-close-label">Đóng</span><span class="customer-picker-close-symbol" aria-hidden="true">×</span></button>
         </div>
       </section>
     </div>
@@ -1558,8 +1558,8 @@
         </form>
       </section>
     </div>
-    <script defer src="app.js?v=124"></script>
-    <script defer src="closing-book-core.js?v=124"></script>
-    <script defer src="closing-book.js?v=124"></script>
+    <script defer src="app.js?v=125"></script>
+    <script defer src="closing-book-core.js?v=125"></script>
+    <script defer src="closing-book.js?v=125"></script>
   </body>
 </html>

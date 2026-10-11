@@ -30,3 +30,9 @@ test('opening customer picker does not focus mobile inputs but retains desktop s
     assert.equal(context.els.salesCustomerCatalogModal.hidden,false);
   }
 });
+test('compact mobile customer picker reserves space for results without shrinking iOS input font', () => {
+  assert.match(html, /customer-picker-close-symbol" aria-hidden="true">×/);
+  assert.match(css, /html.mobile-app-theme #salesCustomerCatalogModal \.modal-actions\s*\{[^}]*position: absolute;[^}]*top: 13px;/);
+  assert.match(css, /html.mobile-app-theme #salesCustomerCatalogModal input\s*\{[^}]*min-height: 44px;[^}]*font-size: 16px;/);
+  assert.match(css, /html.mobile-app-theme #salesCustomerCatalogModal \.customer-catalog-item\s*\{[^}]*min-height: 64px;/);
+});

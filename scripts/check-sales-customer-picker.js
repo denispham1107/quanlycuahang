@@ -47,7 +47,18 @@ async function main() {
       const owners = await modal.evaluate(el => [el,...el.querySelectorAll('*')].filter(n => ['auto','scroll'].includes(getComputedStyle(n).overflowY) && n.scrollHeight > n.clientHeight + 2).map(n => n.id));
       assert.deepEqual(owners,['salesCustomerPickerBody']);
       const shell = await modal.locator('section').boundingBox(), region = await body.boundingBox();
-      assert.ok(region.x >= shell.x + 12 && region.x + region.width <= shell.x + shell.width - 12, 'scrollbar inset');
+      const inset = width < 700 ? 10 : 12;
+      assert.ok(region.x >= shell.x + inset && region.x + region.width <= shell.x + shell.width - inset, 'scrollbar inset');
+      if (width < 700) {
+        const heading=await modal.locator('header').boundingBox(); assert.ok(heading.height<=65, 'compact mobile heading');
+        assert.equal(await page.locator('#closeSalesCustomerCatalog').evaluate(el => getComputedStyle(el.parentElement).position),'absolute', 'close does not consume footer height');
+        assert.equal(await search.evaluate(el => getComputedStyle(el).fontSize),'16px','iOS search does not zoom');
+        if(height===400) {
+          const tools=await modal.locator('.sales-catalog-tools').boundingBox();
+          assert.ok(region.height-tools.height>=200,`keyboard results region: ${region.height-tools.height}`);
+          if(process.env.CUSTOMER_TEST_SHOTS) await page.screenshot({path:path.join(process.env.CUSTOMER_TEST_SHOTS,'customer-picker-compact-keyboard.png')});
+        }
+      }
       for (const selector of ['header','#closeSalesCustomerCatalog']) { const rect=await modal.locator(selector).boundingBox(); assert.ok(rect.y >= shell.y && rect.y + rect.height <= shell.y + shell.height + 1, 'fixed header/footer visible'); }
       await page.mouse.move(region.x + region.width/2, region.y + region.height/2); await page.mouse.wheel(0,400);
       await page.waitForFunction(() => document.getElementById('salesCustomerPickerBody').scrollTop > 0);
@@ -65,6 +76,25 @@ async function main() {
       assert.equal(await page.evaluate(() => window.__draftSnapshot()), await page.evaluate(() => window.__draftBefore),'sales items, date, discount and draft retained');
       await page.evaluate(() => openSalesCustomerCatalogModal());
       assert.equal(await search.evaluate(el => el === document.activeElement), width >= 700, 'reopening preserves platform focus policy');
+      if(width===375 && height===900) {
+        await search.click();
+        await page.evaluate(() => {
+          window.__nativeViewport=window.visualViewport;
+          Object.defineProperty(window,'visualViewport',{configurable:true,value:{height:400,width:375,offsetTop:40,offsetLeft:0,scale:1}});
+          updateSalesCustomerPickerViewport();
+        });
+        const keyboardShell=await modal.locator('section').boundingBox();
+        assert.ok(keyboardShell.y>=40 && keyboardShell.y+keyboardShell.height<=440,'popup fits visualViewport while layout viewport stays tall');
+        assert.equal(await modal.evaluate(el => el.classList.contains('customer-picker-short')),true);
+        assert.equal(await page.locator('#salesCustomerCatalogCount').isVisible(),false,'keyboard hides decorative count');
+        await search.fill('nguyen hong');
+        const result=page.locator('[data-select-sales-customer="c0"]'); const rect=await result.boundingBox();
+        assert.ok(rect.y>=keyboardShell.y && rect.y+rect.height<=keyboardShell.y+keyboardShell.height,'matching customer visible with keyboard');
+        if(process.env.CUSTOMER_TEST_SHOTS && platform==='ios') await page.screenshot({path:path.join(process.env.CUSTOMER_TEST_SHOTS,'customer-picker-compact-visual-viewport.png')});
+        await result.click(); assert.equal(await modal.isVisible(),false,'can select while keyboard is open');
+        await page.evaluate(() => {Object.defineProperty(window,'visualViewport',{configurable:true,value:window.__nativeViewport});openSalesCustomerCatalogModal();});
+        assert.equal(await search.evaluate(el => el===document.activeElement),false,'closing keyboard and reopening does not focus input');
+      }
       await search.press('Shift+Tab'); assert.equal(await page.evaluate(() => document.activeElement.id),'closeSalesCustomerCatalog');
       await page.locator('#closeSalesCustomerCatalog').press('Tab'); assert.equal(await page.evaluate(() => document.activeElement.id),'salesCustomerCatalogSearch');
       await search.press('Escape'); assert.equal(await modal.isVisible(),false);

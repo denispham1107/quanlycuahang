@@ -5053,6 +5053,7 @@ function closeSalesCustomerCatalogModal() {
 function updateSalesCustomerPickerViewport() {
   if (els.salesCustomerCatalogModal.hidden) return;
   const viewport = window.visualViewport;
+  els.salesCustomerCatalogModal.classList.toggle("customer-picker-short", USE_MOBILE_APP_THEME && (viewport?.height || window.innerHeight) <= 500);
   els.salesCustomerCatalogModal.style.setProperty("--customer-picker-height", `${Math.round(viewport?.height || window.innerHeight)}px`);
   els.salesCustomerCatalogModal.style.setProperty("--customer-picker-top", `${Math.round(viewport?.offsetTop || 0)}px`);
   const body = document.getElementById("salesCustomerPickerBody");

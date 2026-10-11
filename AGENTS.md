@@ -1,5 +1,7 @@
 # Quy tắc hồi quy giao diện
 
+- Popup chọn khách trong Tạo đơn trên mobile dùng bản gọn: tiêu đề nhỏ không banner/icon lớn, tìm kiếm 44px (font 16px tránh iOS zoom), bộ lọc nhỏ 34px, thẻ khách tối thiểu 64px; nút × 44px ở góc trên, không để hàng Đóng phía dưới chiếm vùng danh sách. Giữ nhãn tìm kiếm cho trình đọc màn hình. Kiểm tra visualViewport 375×400, vùng kết quả còn ít nhất khoảng 200px và chọn khách được khi bàn phím mở; desktop giữ nguyên thiết kế rộng. Không tự focus input khi mở.
+
 - Trên mobile (iOS/Android), mở popup “Danh sách khách hàng” không tự focus ô Tìm khách hàng hoặc select Phân loại: focus khung dialog có `tabindex="-1"` để không bật bàn phím/bảng lựa chọn. Chỉ khi người dùng chạm vào ô tìm kiếm mới cho nhập; desktop giữ autofocus tìm kiếm. Kiểm tra mở lần đầu/mở lại và vẫn chọn/lọc khách bình thường, không để timer sau mở chuyển focus về input.
 
 - Popup “Danh sách khách hàng” trong Tạo đơn: dùng riêng `.sales-customer-picker-card`, rộng tối đa 940px; desktop bộ lọc chia 2fr/1fr để ô tên/số điện thoại không bị ép bởi `.history-tools` chung. Mobile bộ lọc một cột và thẻ khách có avatar/tên/điện thoại/hạng riêng. Chỉ `#salesCustomerPickerBody` cuộn; khung/backdrop và đơn nền khóa cuộn, header/nút Đóng nằm ngoài vùng cuộn. Cập nhật chiều cao theo visualViewport khi bàn phím mở, kiểm tra 320/375/430px, ngang, chiều cao 400px và desktop 800/1024/1440px; chọn khách chỉ điền tên/điện thoại, không làm mất hàng hóa, giá, chiết khấu hoặc lưu đơn đang soạn.
