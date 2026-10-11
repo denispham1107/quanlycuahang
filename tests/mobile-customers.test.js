@@ -249,7 +249,7 @@ test("opening and leaving the customer page preserves browser history and backgr
     back() { backs += 1; }
   };
   const els = {
-    customersPage: { hidden: true, scrollTop: 0, style: { setProperty() {} }, contains: () => false },
+    customersPage: { hidden: true, scrollTop: 0, classList: { toggle() {} }, style: { setProperty() {} }, contains: () => false },
     appShell: { inert: false, setAttribute() {}, removeAttribute() {} },
     tabBar: { inert: false },
     closeCustomersTop: { focus() {} },

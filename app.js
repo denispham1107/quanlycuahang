@@ -1319,6 +1319,12 @@ els.toggleInventory.addEventListener("click", () => {
 });
 
 els.closeInventory.addEventListener("click", closeInventoryModal);
+window.visualViewport?.addEventListener("resize", updateInventoryViewport);
+window.visualViewport?.addEventListener("scroll", updateInventoryViewport);
+els.inventoryModal.addEventListener("focusin", (event) => {
+  if (!event.target.matches("input, select")) return;
+  [100, 350].forEach((delay) => window.setTimeout(updateInventoryViewport, delay));
+});
 
 els.inventoryModal.addEventListener("click", (event) => {
   if (event.target === els.inventoryModal) closeInventoryModal();
@@ -4901,6 +4907,7 @@ function hideSalesCatalogPage({ restoreFocus = true } = {}) {
 function updateSalesCatalogViewport() {
   if (!USE_MOBILE_APP_THEME || els.salesCatalogPage.hidden) return;
   const viewport = window.visualViewport;
+  els.salesCatalogPage.classList.toggle("mobile-list-short", (viewport?.height || window.innerHeight) <= 500);
   els.salesCatalogPage.style.setProperty("--sales-catalog-visual-height", `${Math.round(viewport?.height || window.innerHeight)}px`);
   els.salesCatalogPage.style.setProperty("--sales-catalog-visual-top", `${Math.round(viewport?.offsetTop || 0)}px`);
   ensureSalesCatalogFocusVisible(document.activeElement);
@@ -5429,6 +5436,7 @@ function hideCustomersPage({ restoreFocus = true } = {}) {
 function updateCustomersViewport() {
   if (!USE_MOBILE_APP_THEME || els.customersPage.hidden) return;
   const viewport = window.visualViewport;
+  els.customersPage.classList.toggle("mobile-list-short", (viewport?.height || window.innerHeight) <= 500);
   els.customersPage.style.setProperty("--customers-visual-height", `${Math.round(viewport?.height || window.innerHeight)}px`);
   els.customersPage.style.setProperty("--customers-visual-top", `${Math.round(viewport?.offsetTop || 0)}px`);
   ensureCustomerFocusVisible(document.activeElement);
@@ -5949,6 +5957,26 @@ function openInventoryModal() {
 
   renderInventory(store);
   els.inventoryModal.hidden = false;
+  els.inventoryModal.scrollTop = 0;
+  updateInventoryViewport();
+}
+
+function updateInventoryViewport() {
+  if (!USE_MOBILE_APP_THEME || els.inventoryModal.hidden) return;
+  const viewport = window.visualViewport;
+  const height = viewport?.height || window.innerHeight;
+  els.inventoryModal.classList.toggle("mobile-list-short", height <= 500);
+  els.inventoryModal.style.setProperty("--inventory-visual-height", `${Math.round(height)}px`);
+  els.inventoryModal.style.setProperty("--inventory-visual-top", `${Math.round(viewport?.offsetTop || 0)}px`);
+  const target = document.activeElement;
+  if (!els.inventoryModal.contains(target) || !target.matches("input, select")) return;
+  const region = els.inventoryModal.getBoundingClientRect();
+  const focused = target.getBoundingClientRect();
+  if (focused.bottom > region.bottom - 12) {
+    els.inventoryModal.scrollTop += focused.bottom - region.bottom + 12;
+  } else if (focused.top < region.top + 54) {
+    els.inventoryModal.scrollTop -= region.top + 54 - focused.top;
+  }
 }
 
 function closeInventoryModal() {

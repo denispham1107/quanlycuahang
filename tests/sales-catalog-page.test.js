@@ -148,6 +148,7 @@ test("catalog page scrolls a focused search control into the keyboard viewport",
   const page = {
     hidden: false,
     scrollTop: 0,
+    classList: { toggle(name, enabled) { assert.equal(name, "mobile-list-short"); assert.equal(enabled, true); } },
     style: { setProperty() {} },
     contains: (target) => target === input,
     getBoundingClientRect: () => ({ top: 0, bottom: 400 })
