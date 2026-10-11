@@ -3307,6 +3307,28 @@ body.customers-page-open > .quick-entry-fab {
   white-space: nowrap;
 }
 
+.sales-history-table { table-layout: fixed; min-width: 0; }
+html:not(.mobile-app-theme) .tab-panel table.sales-history-table { min-width: 0; }
+#salesOrderTable td.empty-list { display: table-cell; text-align: center; width: auto; }
+#salesOrderTable td.empty-list::before { content: none; }
+.sales-history-table th, .sales-history-table td { overflow-wrap: anywhere; }
+.sales-history-table .sales-bill-code { white-space: normal; }
+.sales-history-table .sales-employee-name { font-weight: 750; color: var(--accent-dark); }
+.sales-history-table .history-purge-button { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.sales-history-table th:first-child { width: 15%; }
+.sales-history-table th:nth-child(2) { width: 17%; }
+.sales-history-table th:nth-child(3) { width: 12%; }
+.sales-history-table th:nth-child(4) { width: 15%; }
+.sales-history-table th:nth-child(5) { width: 11%; }
+@media (min-width: 701px) and (max-width: 1050px) {
+  html:not(.mobile-app-theme) body[data-active-tab="sales"] .layout { grid-template-columns: minmax(0, 1fr); }
+  html:not(.mobile-app-theme) body[data-active-tab="sales"] .sidebar { position: static; }
+  html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-filter-rail { max-height: none; overflow: visible; }
+  html:not(.mobile-app-theme) .tab-panel .sales-history-table td,
+  html:not(.mobile-app-theme) .tab-panel .sales-history-table th { font-size: 12px; padding: 10px 6px; }
+  .sales-history-table .date-stack small { font-size: 11px; }
+}
+
 .sales-history-member-tier {
   padding: 4px 8px;
   font-size: 12px;
@@ -3431,7 +3453,7 @@ body.sales-order-detail-open {
 
 .order-detail-meta {
   display: grid;
-  grid-template-columns: minmax(150px, 0.8fr) minmax(170px, 0.9fr) minmax(180px, 1.25fr) minmax(160px, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   margin: 0;
   border: 1px solid rgba(8, 120, 247, 0.16);
   border-radius: 14px;
@@ -4518,9 +4540,9 @@ th:last-child {
   text-align: right;
 }
 
-.sales-table td:nth-child(6),
-.sales-table th:nth-child(6) {
-  width: 42px;
+.sales-table:not(.draft-order-table) td:nth-child(7),
+.sales-table:not(.draft-order-table) th:nth-child(7) {
+  width: 60px;
   text-align: right;
 }
 
@@ -6812,40 +6834,46 @@ html.mobile-app-theme tr.activity-target-highlight {
   }
 
   .sales-table:not(.draft-order-table) td:nth-child(1)::before {
-    content: "Mã bill";
+    content: "Nhân viên";
   }
 
   .sales-table:not(.draft-order-table) td:nth-child(2)::before {
-    content: "Ngày";
+    content: "Mã bill";
   }
 
   .sales-table:not(.draft-order-table) td:nth-child(3)::before {
-    content: "Khách hàng";
+    content: "Ngày";
   }
 
   .sales-table:not(.draft-order-table) td:nth-child(4)::before {
-    content: "Số điện thoại";
+    content: "Khách hàng";
   }
 
   .sales-table:not(.draft-order-table) td:nth-child(5)::before {
+    content: "Số điện thoại";
+  }
+
+  .sales-table:not(.draft-order-table) td:nth-child(6)::before {
     content: "Tổng bill";
   }
 
-  .sales-table:not(.draft-order-table) td:nth-child(5) {
+  .sales-table:not(.draft-order-table) td:nth-child(5),
+  .sales-table:not(.draft-order-table) td:nth-child(6) {
     display: grid;
     grid-template-columns: 92px minmax(0, 1fr);
     padding: 6px 0;
     text-align: left;
   }
 
-  .sales-table:not(.draft-order-table) td:nth-child(6) {
+  .sales-table:not(.draft-order-table) td:nth-child(7) {
     display: flex;
+    width: auto;
     gap: 8px;
     justify-content: flex-end;
     padding-top: 8px;
   }
 
-  .sales-table:not(.draft-order-table) td:nth-child(6)::before {
+  .sales-table:not(.draft-order-table) td:nth-child(7)::before {
     content: "";
   }
 
@@ -7019,6 +7047,9 @@ html.mobile-app-theme tr.activity-target-highlight {
   .order-detail-meta > div:nth-child(n + 3) {
     border-top: 1px solid var(--line);
   }
+
+  .order-detail-meta > div:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .sales-history-table th, .sales-history-table td { width: auto; }
 
   .order-detail-meta dt {
     margin-bottom: 2px;

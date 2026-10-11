@@ -5225,6 +5225,7 @@ function saveSalesOrder() {
   }));
   deductInventoryForSales(store, items);
   ensureCustomerFromSalesOrder(store, { customerName, customerPhone, createdAt });
+  const completedBy = getCurrentActor();
   const order = {
     id: orderId,
     ...bill,
@@ -5238,7 +5239,10 @@ function saveSalesOrder() {
     discountTotal,
     total,
     inventoryDeducted: true,
-    createdAt
+    createdAt,
+    createdByUid: completedBy.actorUid,
+    createdByName: String(completedBy.actorName || (completedBy.actorRole === "admin" ? "Quản trị viên" : "")).trim(),
+    createdByRole: completedBy.actorRole
   };
   store.orders.push(order);
 
@@ -7972,11 +7976,24 @@ function renderSalesGoodsFilter(rows) {
   els.salesGoodsFilter.value = uiState.salesGoodsFilter;
 }
 
+function getSalesOrderEmployeeName(order, store) {
+  const savedName = String(order?.createdByName || "").trim();
+  if (savedName) return savedName;
+  // Only the linked creation event identifies the seller, not an edit/cancellation or current user.
+  const creation = (store?.activityHistory || []).find(activity =>
+    activity.action === "create" && activity.targetType === "sales-order" && activity.targetId === order?.id
+  );
+  const historicalName = String(creation?.actorName || "").trim();
+  if (historicalName) return historicalName;
+  if (order?.createdByRole === "admin" || creation?.actorRole === "admin") return "Quản trị viên";
+  return "Chưa ghi nhận";
+}
+
 function renderSalesOrderTable(container, orders) {
   if (!container) return;
 
   if (!orders.length) {
-    container.innerHTML = '<tr><td colspan="6" class="empty-list">Chưa có đơn hàng trong khoảng thời gian này</td></tr>';
+    container.innerHTML = '<tr><td colspan="7" class="empty-list">Chưa có đơn hàng trong khoảng thời gian này</td></tr>';
     return;
   }
 
@@ -8010,6 +8027,7 @@ function renderSalesOrderTable(container, orders) {
 
       return `
         <tr class="sales-order-row ${cancelled ? "entry-cancelled" : ""}" data-open-sales-order="${order.id}">
+          <td class="sales-employee-name">${escapeHtml(getSalesOrderEmployeeName(order, store))}</td>
           <td class="sales-bill-code">${escapeHtml(order.billCode || "—")}</td>
           <td>
             <span class="date-stack">
@@ -8044,6 +8062,10 @@ function openSalesOrderDetail(orderId) {
   els.salesOrderDetailStatus.innerHTML = cancelled ? `<div class="history-purge-actions"><span class="cancelled-pill">Đã hủy</span>${renderHistoryPurgeButton("sales-order", order.id)}</div>` : '<span class="completed-pill">Hoàn thành</span>';
   els.salesOrderDetailContent.innerHTML = `
     <dl class="order-detail-meta" aria-label="Thông tin đơn hàng">
+      <div class="order-detail-employee">
+        <dt>Nhân viên</dt>
+        <dd>${escapeHtml(getSalesOrderEmployeeName(order, store))}</dd>
+      </div>
       <div>
         <dt>Mã bill</dt>
         <dd>${escapeHtml(order.billCode || "—")}</dd>

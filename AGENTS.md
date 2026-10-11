@@ -1,5 +1,7 @@
 # Quy tắc hồi quy giao diện
 
+- Lịch sử bán hàng và Chi tiết đơn hàng dùng cột Nhân viên trước Mã bill, chung desktop/mobile. Ghi `createdByUid/createdByName` từ tài khoản bấm hoàn thành, không dùng người tạo nháp hoặc tài khoản đang xem; Firebase nhân viên tự gán từ user đã xác thực. Giữ tên snapshot khi đổi tên/xóa nhân viên. Đơn cũ chỉ suy ra từ nhật ký `create` liên kết đúng `sales-order`/ID; không có căn cứ hiển thị Chưa ghi nhận, không suy từ thao tác hủy/sửa. Cập nhật nhãn mobile/nth-child, colspan và lưới meta 5 ô; kiểm tra tên dài/HTML, đơn hủy, nháp, 320/375/430px và desktop bằng `sales-order-employee.test.js`/`check-sales-order-employee.js`.
+
 - Xóa cửa hàng chỉ dành cho admin và phải dùng ô xác nhận tên để trống ban đầu; chỉ xóa khi chuỗi nhập khớp chính xác tên cửa hàng (hoa/thường, dấu, khoảng trắng). Hủy/nhập sai không đổi state và không gửi lưu Firebase; kiểm tra lại quyền, ID và tên cửa hàng sau xác nhận để không xóa nhầm nếu ngữ cảnh đã đổi. Không điền sẵn tên hoặc dùng confirm OK đơn thuần. Chạy `store-deletion-confirmation.test.js` và kiểm tra native prompt trên desktop/mobile bằng dữ liệu giả.
 
 - Kiểm kê “Tất cả” phải hiển thị đủ 5 nhóm POS/VCB/Momo/Zalop/Tiền két và tổng, danh sách ngày riêng cho từng nhóm theo bộ lọc Dư/Thiếu; tuyệt đối không cộng chéo loại vì có thể trùng nguồn tiền. Chuyển qua lại Tất cả/một loại, tháng rỗng và cloud cập nhật phải giữ đúng dữ liệu, không để tổng/list cũ sót lại. Kiểm thử tổng từng nhóm độc lập và bố cục mobile/desktop.
