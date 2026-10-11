@@ -10959,12 +10959,10 @@ body.closing-book-open .tab-bar { display: none !important; }
 }
 
 /* These dialogs scroll as a whole so short viewports cannot clip their lists. */
-#salesCustomerCatalogModal .sales-catalog-card,
 #inventoryHistoryModal .inventory-card {
   max-height: none;
   overflow: visible;
 }
-#salesCustomerCatalogModal .sales-catalog-list,
 #inventoryHistoryModal .inventory-list {
   max-height: none;
   overflow: visible;
@@ -10974,4 +10972,84 @@ body:has(> :is(#inventoryHistoryModal, #editInventoryModal, #exportInventoryModa
 body:has(> :is(#orderDiscountModal, #salesCustomerCatalogModal):not([hidden])) > #quickEntryModal,
 body:has(> :is(#customerHistoryModal, #memberTierModal):not([hidden])) > #customersPage {
   overflow: hidden;
+}
+
+/* Customer picker: one inset scroll region, never the rounded dialog shell. */
+#salesCustomerCatalogModal {
+  top: var(--customer-picker-top, 0px);
+  bottom: auto;
+  height: var(--customer-picker-height, 100dvh);
+  overflow: hidden;
+  padding: 24px;
+  background: rgba(26, 32, 64, .42);
+  backdrop-filter: blur(8px);
+}
+#salesCustomerCatalogModal .sales-customer-picker-card {
+  display: flex;
+  flex-direction: column;
+  width: min(940px, 100%);
+  max-height: calc(var(--customer-picker-height, 100dvh) - 48px);
+  min-height: 0;
+  gap: 18px;
+  padding: 24px;
+  overflow: hidden;
+  border: 1px solid #ffffffd9;
+  border-radius: 28px;
+  background: linear-gradient(145deg, #fff7fffa, #f0edfff5 48%, #e8f7fffa);
+  box-shadow: 0 28px 80px #24396640;
+}
+#salesCustomerCatalogModal .sales-customer-picker-heading {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 20px;
+  background: linear-gradient(115deg, #eadaff, #d6edff);
+  color: #203969;
+}
+.sales-customer-picker-icon { display: grid; place-items: center; width: 54px; height: 54px; border-radius: 17px; background: linear-gradient(135deg, #a53cf4, #108def); color: white; box-shadow: 0 8px 18px #7964cf30; }
+.sales-customer-picker-icon svg { width: 33px; height: 33px; }
+.sales-customer-picker-heading p { margin: 0 0 6px; font-size: 10px; letter-spacing: .12em; color: #6555a7; font-weight: 850; }
+.sales-customer-picker-heading h2 { margin: 0; font-size: 24px; line-height: 1.25; overflow-wrap: anywhere; }
+#salesCustomerCatalogCount { padding: 7px 11px; border-radius: 999px; background: #ffffffb3; color: #6250bc; font-size: 12px; font-weight: 800; white-space: nowrap; }
+#salesCustomerPickerBody { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-gutter: stable; padding-right: 8px; -webkit-overflow-scrolling: touch; }
+#salesCustomerPickerBody::-webkit-scrollbar { width: 10px; }
+#salesCustomerPickerBody::-webkit-scrollbar-thumb { background: #a8a0d5; border: 3px solid #f3f1ff; border-radius: 10px; }
+#salesCustomerCatalogModal .sales-catalog-tools { grid-template-columns: minmax(0, 2fr) minmax(180px, 1fr); gap: 16px; margin: 0 0 18px; padding: 16px; border: 1px solid #dce4fa; border-radius: 18px; background: #ffffffb3; }
+#salesCustomerCatalogModal .sales-catalog-tools > div { min-width: 0; width: 100%; }
+#salesCustomerCatalogModal label { color: #5b6f93; font-size: 12px; font-weight: 800; }
+#salesCustomerCatalogModal input, #salesCustomerCatalogModal select { width: 100%; min-width: 0; min-height: 48px; font-size: 16px; border: 1px solid #ccd9f9; border-radius: 13px; padding: 11px 13px; background: #fff; color: #234378; }
+#salesCustomerCatalogModal input:focus, #salesCustomerCatalogModal select:focus { outline: 2px solid #9672e3; outline-offset: 2px; }
+#salesCustomerCatalogModal .sales-catalog-list { grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; max-height: none; overflow: visible; padding: 0; gap: 12px; }
+#salesCustomerCatalogModal .customer-catalog-item { grid-template-columns: 42px minmax(0, 1fr) minmax(75px, auto); gap: 10px; min-height: 94px; padding: 14px; border-radius: 18px; background: linear-gradient(120deg, #ffffff, #f7faff); border: 1px solid #d8e3fc; color: #263b66; }
+#salesCustomerCatalogModal .customer-catalog-item:hover { border-color: #9e7be8; background: #f7f1ff; }
+#salesCustomerCatalogModal .customer-catalog-item:focus-visible { outline: 2px solid #8660d9; outline-offset: -3px; }
+#salesCustomerCatalogModal .customer-picker-avatar { display: grid; place-items: center; width: 42px; height: 42px; background: linear-gradient(135deg, #edddff, #dceeff); color: #7953bc; border-radius: 14px; font-size: 14px; font-weight: 850; }
+#salesCustomerCatalogModal .customer-picker-info strong { font-size: 15px; line-height: 1.4; }
+#salesCustomerCatalogModal .customer-picker-info small { font-size: 12px; color: #687c9c; overflow-wrap: anywhere; }
+#salesCustomerCatalogModal .sales-catalog-meta { justify-items: end; min-width: 0; gap: 7px; }
+#salesCustomerCatalogModal .sales-catalog-meta .customer-picker-tier { border-radius: 999px; padding: 4px 8px; font-size: 11px; background: #e7f1ff; color: #1674d3; }
+#salesCustomerCatalogModal .sales-catalog-meta .is-vip { background: linear-gradient(110deg, #9360e6, #e77ba3); color: white; }
+#salesCustomerCatalogModal .sales-catalog-meta small { font-size: 10px; color: #7c87a1; }
+#salesCustomerCatalogModal .empty-list { grid-column: 1 / -1; padding: 30px 14px; border: 1px dashed #c2cbea; border-radius: 18px; text-align: center; color: #667794; }
+#salesCustomerCatalogModal .modal-actions { flex: 0 0 auto; margin: 0; padding-top: 14px; border-top: 1px solid #d8e1f5; }
+#salesCustomerCatalogModal #closeSalesCustomerCatalog { width: auto; min-width: 140px; min-height: 44px; border: 0; border-radius: 14px; color: white; background: linear-gradient(110deg, #a440f1, #118dec); box-shadow: 0 8px 20px #7962cf25; }
+@media (max-width: 700px) {
+  #salesCustomerCatalogModal { padding: 12px; }
+  #salesCustomerCatalogModal .sales-customer-picker-card { max-height: calc(var(--customer-picker-height, 100dvh) - 24px); padding: 15px; gap: 13px; }
+  #salesCustomerCatalogModal .sales-customer-picker-heading { grid-template-columns: 42px minmax(0, 1fr); gap: 10px; padding: 14px; border-radius: 18px; }
+  .sales-customer-picker-icon { width: 42px; height: 46px; border-radius: 14px; grid-row: 1 / 3; }
+  .sales-customer-picker-icon svg { width: 28px; height: 28px; }
+  .sales-customer-picker-heading h2 { font-size: 19px; }
+  .sales-customer-picker-heading p { font-size: 8px; margin-bottom: 5px; }
+  #salesCustomerCatalogCount { grid-column: 2; justify-self: start; padding: 4px 9px; font-size: 10px; }
+  #salesCustomerCatalogModal .sales-catalog-tools { grid-template-columns: minmax(0, 1fr); padding: 13px; gap: 12px; margin-bottom: 13px; }
+  #salesCustomerCatalogModal .sales-catalog-list { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  #salesCustomerCatalogModal .customer-catalog-item { grid-template-columns: 36px minmax(0, 1fr) minmax(63px, auto); gap: 8px; padding: 12px 10px; min-height: 88px; }
+  #salesCustomerCatalogModal .customer-picker-avatar { width: 36px; height: 38px; font-size: 12px; border-radius: 12px; }
+  #salesCustomerCatalogModal .customer-picker-info strong { font-size: 14px; }
+  #salesCustomerCatalogModal .customer-picker-info small { font-size: 11px; }
+  #salesCustomerCatalogModal #closeSalesCustomerCatalog { width: 100%; }
 }

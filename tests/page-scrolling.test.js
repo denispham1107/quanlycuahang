@@ -10,8 +10,9 @@ test('all full-page/dialog classes share html and body scroll locking based on v
   assert.match(css,/\.modal-backdrop\[inert\]\s*\{\s*overflow:\s*hidden !important;/,'Covered non-interactive dialogs cannot add another scrollbar');
 });
 test('short dialog lists use their backdrop and covered parents do not scroll',()=> {
-  assert.match(css,/#salesCustomerCatalogModal \.sales-catalog-card,\s*#inventoryHistoryModal \.inventory-card\s*\{\s*max-height: none;\s*overflow: visible;/);
-  assert.match(css,/#salesCustomerCatalogModal \.sales-catalog-list,\s*#inventoryHistoryModal \.inventory-list\s*\{\s*max-height: none;\s*overflow: visible;/);
+  assert.match(css,/#inventoryHistoryModal \.inventory-card\s*\{\s*max-height: none;\s*overflow: visible;/);
+  assert.match(css,/#inventoryHistoryModal \.inventory-list\s*\{\s*max-height: none;\s*overflow: visible;/);
+  assert.match(css,/#salesCustomerPickerBody\s*\{[^}]*min-height: 0;[^}]*overflow-y: auto;/);
   for(const id of ['inventoryHistoryModal','editInventoryModal','exportInventoryModal','orderDiscountModal','salesCustomerCatalogModal','customerHistoryModal','memberTierModal'])assert.ok(css.includes('#'+id));
   assert.match(css,/body:has\(> :is\(#customerHistoryModal, #memberTierModal\):not\(\[hidden\]\)\) > #customersPage\s*\{\s*overflow: hidden;/);
   assert.match(css,/\.modal-backdrop\.customer-history-backdrop,\s*\.modal-backdrop\.member-tier-backdrop\s*\{\s*z-index: 190;/,'Child dialogs stay above their customer page');

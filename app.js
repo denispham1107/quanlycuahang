@@ -1347,6 +1347,21 @@ els.salesCatalogPage.addEventListener("focusin", (event) => {
 els.openSalesCustomerCatalog.addEventListener("click", openSalesCustomerCatalogModal);
 
 els.closeSalesCustomerCatalog.addEventListener("click", closeSalesCustomerCatalogModal);
+window.visualViewport?.addEventListener("resize", updateSalesCustomerPickerViewport);
+window.visualViewport?.addEventListener("scroll", updateSalesCustomerPickerViewport);
+els.salesCustomerCatalogModal.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeSalesCustomerCatalogModal();
+  if (event.key === "Tab") {
+    const controls = [...els.salesCustomerCatalogModal.querySelectorAll("input, select, button")].filter((control) => !control.disabled && control.getClientRects().length);
+    const first = controls[0], last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+  }
+});
+els.salesCustomerCatalogModal.addEventListener("focusin", (event) => {
+  if (!event.target.matches("input, select")) return;
+  [100, 350].forEach((delay) => window.setTimeout(updateSalesCustomerPickerViewport, delay));
+});
 
 els.salesCustomerCatalogModal.addEventListener("click", (event) => {
   if (event.target === els.salesCustomerCatalogModal) closeSalesCustomerCatalogModal();
@@ -5021,11 +5036,27 @@ function openSalesCustomerCatalogModal() {
   els.salesCustomerCatalogSearch.value = "";
   renderSalesCustomerCatalog();
   els.salesCustomerCatalogModal.hidden = false;
-  els.salesCustomerCatalogSearch.focus();
+  document.getElementById("salesCustomerPickerBody").scrollTop = 0;
+  updateSalesCustomerPickerViewport();
+  els.salesCustomerCatalogSearch.focus({ preventScroll: true });
 }
 
 function closeSalesCustomerCatalogModal() {
   els.salesCustomerCatalogModal.hidden = true;
+  if (!els.quickEntryModal.hidden) els.openSalesCustomerCatalog.focus({ preventScroll: true });
+}
+
+function updateSalesCustomerPickerViewport() {
+  if (els.salesCustomerCatalogModal.hidden) return;
+  const viewport = window.visualViewport;
+  els.salesCustomerCatalogModal.style.setProperty("--customer-picker-height", `${Math.round(viewport?.height || window.innerHeight)}px`);
+  els.salesCustomerCatalogModal.style.setProperty("--customer-picker-top", `${Math.round(viewport?.offsetTop || 0)}px`);
+  const body = document.getElementById("salesCustomerPickerBody");
+  const target = document.activeElement;
+  if (!body.contains(target) || !target.matches("input, select")) return;
+  const region = body.getBoundingClientRect(), focused = target.getBoundingClientRect();
+  if (focused.bottom > region.bottom - 6) body.scrollTop += focused.bottom - region.bottom + 6;
+  else if (focused.top < region.top + 6) body.scrollTop -= region.top + 6 - focused.top;
 }
 
 function renderSalesCustomerCatalog() {
@@ -5081,12 +5112,13 @@ function renderSalesCustomerCatalog() {
   els.salesCustomerCatalogList.innerHTML = rows
     .map((customer) => `
       <button class="sales-catalog-item customer-catalog-item" type="button" data-select-sales-customer="${escapeHtml(customer.id)}">
-        <span>
+        <span class="customer-picker-avatar" aria-hidden="true">${escapeHtml((customer.name || "KH").trim().split(/\s+/).slice(-2).map((part) => Array.from(part)[0] || "").join("").toLocaleUpperCase("vi"))}</span>
+        <span class="customer-picker-info">
           <strong>${escapeHtml(customer.name || "")}</strong>
           <small>${escapeHtml(customer.phone || "Chưa có số điện thoại")}</small>
         </span>
         <span class="sales-catalog-meta">
-          <strong>${escapeHtml(customer.memberTier || "Thường")}</strong>
+          <strong class="customer-picker-tier${normalizeSearchText(customer.memberTier || "Thường") === "vip" ? " is-vip" : ""}">${escapeHtml(customer.memberTier || "Thường")}</strong>
           <small>${formatDate(String(customer.createdAt || today).slice(0, 10))}</small>
         </span>
       </button>
