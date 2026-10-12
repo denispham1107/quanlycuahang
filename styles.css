@@ -11283,3 +11283,49 @@ html.mobile-app-theme #quickEntryButton:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   html.mobile-app-theme #quickEntryButton { transition: none; }
 }
+
+/* Mobile AI companion: robot face, same glass circle and size as quick-add. */
+.ai-fab .ai-fab-robot { display: none; }
+html.mobile-app-theme #aiButton {
+  width: 45.9px;
+  height: 45.9px;
+  min-width: 45.9px;
+  min-height: 45.9px;
+  padding: 0;
+  border: 1.275px solid rgba(255,255,255,.8);
+  border-radius: 50%;
+  background: linear-gradient(145deg,#8670cf 0%,#7565c8 48%,#4085c1 100%);
+  color: #fff;
+  box-shadow: 0 6.8px 17px rgba(74,85,157,.24), inset 0 .85px 0 rgba(255,255,255,.52);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+html.mobile-app-theme #aiButton::before {
+  inset: 1.7px;
+  border-radius: inherit;
+  background: linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 58%);
+  box-shadow: none;
+  pointer-events: none;
+}
+html.mobile-app-theme #aiButton .ai-fab-label { display: none; }
+html.mobile-app-theme #aiButton .ai-fab-robot {
+  display: block;
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 1px 1px rgba(34,46,105,.16));
+}
+html.mobile-app-theme #aiButton:active {
+  transform: translateY(.85px) scale(.95);
+  box-shadow: 0 4.25px 10.2px rgba(74,85,157,.22), inset 0 .85px 0 rgba(255,255,255,.42);
+}
+html.mobile-app-theme #aiButton:focus-visible {
+  outline: 3px solid rgba(55,94,165,.5);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  html.mobile-app-theme #aiButton { transition: none; }
+}

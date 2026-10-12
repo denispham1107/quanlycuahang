@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=132" />
+    <link rel="manifest" href="manifest.webmanifest?v=133" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=132" />
+    <link rel="stylesheet" href="styles.css?v=133" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -754,8 +754,16 @@
         <path d="M12 5v14M5 12h14" />
       </svg>
     </button>
-    <button class="quick-entry-fab ai-fab" id="aiButton" type="button" hidden aria-label="AI" title="AI">
-      <span aria-hidden="true">AI</span>
+    <button class="quick-entry-fab ai-fab" id="aiButton" type="button" hidden aria-label="Mở trợ lý AI" title="Mở trợ lý AI">
+      <span class="ai-fab-label" aria-hidden="true">AI</span>
+      <svg class="ai-fab-robot" aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M12 4v3M3 10v5M21 10v5" />
+        <circle cx="12" cy="3" r="1" fill="currentColor" stroke="none" />
+        <rect x="5" y="7" width="14" height="12" rx="4" />
+        <circle cx="9" cy="11.5" r="1.1" fill="currentColor" stroke="none" />
+        <circle cx="15" cy="11.5" r="1.1" fill="currentColor" stroke="none" />
+        <path d="M9 15c1.5 2 4.5 2 6 0" />
+      </svg>
     </button>
 
     <div class="modal-backdrop ai-chat-backdrop" id="aiChatModal" hidden>
@@ -1566,8 +1574,8 @@
         </form>
       </section>
     </div>
-    <script defer src="app.js?v=132"></script>
-    <script defer src="closing-book-core.js?v=132"></script>
-    <script defer src="closing-book.js?v=132"></script>
+    <script defer src="app.js?v=133"></script>
+    <script defer src="closing-book-core.js?v=133"></script>
+    <script defer src="closing-book.js?v=133"></script>
   </body>
 </html>

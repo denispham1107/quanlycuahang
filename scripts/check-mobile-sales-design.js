@@ -14,8 +14,8 @@ async function setup(page,baseline=false){
 async function main(){const browser=await chromium.launch({headless:true,executablePath:process.env.BULK_TEST_CHROME||'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'});
 try{
 for(const width of [800,1024,1440]){
- const page=await browser.newPage({viewport:{width,height:1000}});await setup(page,true);const baseline=await page.locator('.layout').screenshot();await page.close();
- const updated=await browser.newPage({viewport:{width,height:1000}});await setup(updated);assert.equal(await updated.locator('.mobile-sales-report').isVisible(),false);assert.equal(await updated.locator('.mobile-sales-heading').isVisible(),false);assert.deepEqual(await updated.locator('.layout').screenshot(),baseline,`desktop ${width} unchanged pixels`);await updated.close();console.log(`Desktop ${width}: exact layout screenshot unchanged`);
+ const page=await browser.newPage({viewport:{width,height:1000}});await setup(page,true);const baseline=await page.locator('.layout').screenshot();await page.evaluate(()=>{activateTab('overview');render();});const baselineAI=await page.locator('#aiButton').screenshot();await page.close();
+ const updated=await browser.newPage({viewport:{width,height:1000}});await setup(updated);assert.equal(await updated.locator('.mobile-sales-report').isVisible(),false);assert.equal(await updated.locator('.mobile-sales-heading').isVisible(),false);assert.deepEqual(await updated.locator('.layout').screenshot(),baseline,`desktop ${width} unchanged pixels`);await updated.evaluate(()=>{activateTab('overview');render();});assert.equal(await updated.locator('#aiButton .ai-fab-robot').isVisible(),false);assert.equal(await updated.locator('#aiButton .ai-fab-label').isVisible(),true);assert.deepEqual(await updated.locator('#aiButton').screenshot(),baselineAI,`desktop ${width} AI unchanged pixels`);await updated.close();console.log(`Desktop ${width}: exact layout and AI button screenshot unchanged`);
 }
 for(const [width,height,platform='ios'] of [[320,700],[375,900],[430,900],[667,375],[375,400],[375,900,'android']]){
  const page=await browser.newPage({viewport:{width,height},isMobile:true,hasTouch:true,userAgent:platform==='android'?'Mozilla/5.0 (Linux; Android 14) Chrome/130.0 Mobile Safari/537.36':'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1'}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.dismiss());await setup(page);
@@ -44,6 +44,15 @@ for(const [width,height,platform='ios'] of [[320,700],[375,900],[430,900],[667,3
   await page.evaluate(tab=>activateTab(tab),tab);assert.equal(await page.locator('#quickEntryButton').isVisible(),true);
   await page.locator('#quickEntryButton').click();assert.equal(await page.locator('#quickEntryModal').isVisible(),true);assert.equal(await page.locator('#quickEntryForm').getAttribute('data-type'),tab);await page.locator('#cancelQuickEntry').click();
  }
+ const plusDimensions=await page.locator('#quickEntryButton').boundingBox();
+ const plusBackground=await page.locator('#quickEntryButton').evaluate(el=>getComputedStyle(el).backgroundImage);
+ await page.evaluate(()=>{activateTab('overview');render();});
+ assert.equal(await page.locator('#aiButton').isVisible(),true);assert.equal(await page.locator('#aiButton .ai-fab-label').isVisible(),false);assert.equal(await page.locator('#aiButton .ai-fab-robot').isVisible(),true);
+ const aiDimensions=await page.locator('#aiButton').boundingBox();assert.equal(aiDimensions.width,plusDimensions.width);assert.equal(aiDimensions.height,plusDimensions.height);
+ assert.equal(await page.locator('#aiButton').evaluate(el=>getComputedStyle(el).backgroundImage),plusBackground);
+ if(width===375&&height===900&&process.env.SALES_DESIGN_SHOTS)await page.locator('#aiButton').screenshot({path:path.join(process.env.SALES_DESIGN_SHOTS,`ai-robot-${platform}.png`)});
+ await page.locator('#aiButton').click();assert.equal(await page.locator('#aiChatModal').isVisible(),true);await page.waitForTimeout(100);await page.locator('#aiChatClose').click();assert.equal(await page.locator('#aiChatModal').isVisible(),false);
+ await page.evaluate(()=>activateTab('sales'));
  if(width===375&&height===900&&process.env.SALES_DESIGN_SHOTS){await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:path.join(process.env.SALES_DESIGN_SHOTS,`sales-live-${platform}.png`),fullPage:true});}
  await page.evaluate(()=>{authState.role='employee';authState.profile={role:'employee',displayName:'Viewer',storeId:'a',permissions:{sales:{view:true,create:false,draft:false,customerManage:false}}};render();updateQuickEntryButton();});assert.equal(await page.locator('#mobileSalesCreate').isVisible(),false);assert.equal(await page.locator('#quickEntryButton').isVisible(),false);assert.equal(await page.locator('[data-delete-order]').count(),0);
  assert.deepEqual(errors,[]);await page.close();console.log(`${platform} ${width}x${height}: reports, filters, permissions, draft/detail/customer actions and long names/amounts OK`);
