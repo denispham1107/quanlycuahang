@@ -11168,14 +11168,14 @@ html.mobile-app-theme .mobile-sales-heading { display: flex; align-items: center
 html.mobile-app-theme .mobile-sales-heading h1 { margin: 0; font-size: 26px; line-height: 1.2; letter-spacing: -.6px; color: #18264c; }
 html.mobile-app-theme #mobileSalesHeadingCount { display: block; margin-top: 3px; font-size: 11px; color: #5c6b87; }
 html.mobile-app-theme #mobileSalesCreate { width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; border-radius: 14px; background: var(--accent-gradient); color: #fff; font-size: 27px; font-weight: 600; line-height: 1; }
-html.mobile-app-theme .mobile-sales-report { display: grid; gap: 10px; position: relative; isolation: isolate; overflow: hidden; padding: 20px 19px 16px; border-radius: 22px; color: #fff; background: linear-gradient(120deg,#aa32ee,#6348ee 50%,#008fdf); box-shadow: 0 10px 25px #7334d838; }
-html.mobile-app-theme .mobile-sales-report::before, html.mobile-app-theme .mobile-sales-report::after { content: ""; position: absolute; z-index: -1; pointer-events: none; border-radius: 50%; background: #ffffff20; }
+html.mobile-app-theme .mobile-sales-report { display: grid; gap: 10px; position: relative; isolation: isolate; overflow: hidden; padding: 20px 19px 16px; border-radius: 22px; color: #203d73; background: linear-gradient(120deg,#f0e2fb,#e6e9ff 50%,#d9f1ff); box-shadow: 0 7px 20px #536ba714, inset 0 0 0 1px #97aedb4d; }
+html.mobile-app-theme .mobile-sales-report::before, html.mobile-app-theme .mobile-sales-report::after { content: ""; position: absolute; z-index: -1; pointer-events: none; border-radius: 50%; background: #ffffff50; }
 html.mobile-app-theme .mobile-sales-report::before { width: 170px; height: 170px; right: -65px; top: -80px; }
-html.mobile-app-theme .mobile-sales-report::after { width: 160px; height: 160px; right: -80px; bottom: -80px; border-radius: 42px; transform: rotate(25deg); background: #ffffff14; }
+html.mobile-app-theme .mobile-sales-report::after { width: 160px; height: 160px; right: -80px; bottom: -80px; border-radius: 42px; transform: rotate(25deg); background: #ffffff33; }
 html.mobile-app-theme .mobile-sales-report-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; font-weight: 700; }
-html.mobile-app-theme .mobile-sales-report-symbol { display: grid; place-items: center; width: 33px; height: 33px; border-radius: 11px; background: #ffffff2e; font-size: 21px; }
-html.mobile-app-theme #mobileSalesReportTotal { font-size: clamp(26px,8vw,35px); line-height: 1.2; letter-spacing: -.7px; font-weight: 850; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-html.mobile-app-theme .mobile-sales-report-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #ffffff40; padding-top: 11px; font-size: 11px; }
+html.mobile-app-theme .mobile-sales-report-symbol { display: grid; place-items: center; width: 33px; height: 33px; border-radius: 11px; background: #ffffffa3; color: #7254bc; font-size: 21px; }
+html.mobile-app-theme #mobileSalesReportTotal { font-size: clamp(26px,8vw,35px); line-height: 1.2; letter-spacing: -.7px; font-weight: 850; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; color: #2559a6; }
+html.mobile-app-theme .mobile-sales-report-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #6279b338; padding-top: 11px; font-size: 11px; color: #4c648a; }
 html.mobile-app-theme #mobileSalesReportRange { min-width: 0; overflow-wrap: anywhere; }
 html.mobile-app-theme #mobileSalesReportCount { flex: 0 0 auto; }
 html.mobile-app-theme [data-tab-panel="sales"] > .panel { padding: 14px; border: 1px solid #dce4f4; border-radius: 22px; background: #ffffffef; box-shadow: 0 5px 15px #7334d80a; }
