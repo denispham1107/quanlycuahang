@@ -331,6 +331,9 @@ const els = {
   purchaseOrderTotal: document.querySelector("#purchaseOrderTotal"),
   purchaseGroupSuggestions: document.querySelector("#purchaseGroupSuggestions"),
   inventoryCount: document.querySelector("#inventoryCount"),
+  mobilePurchaseUpdateCount: document.querySelector("#mobilePurchaseUpdateCount"),
+  mobilePurchaseStockTotal: document.querySelector("#mobilePurchaseStockTotal"),
+  mobilePurchaseOverviewRange: document.querySelector("#mobilePurchaseOverviewRange"),
   inventoryLogPanel: document.querySelector("#inventoryLogPanel"),
   openBulkPurchase: document.querySelector("#openBulkPurchase"),
   bulkPurchaseFields: document.querySelector("#bulkPurchaseFields"),
@@ -1313,6 +1316,8 @@ els.purchaseItems.addEventListener("touchend", (event) => {
   event.preventDefault();
   applyQuantityStep(stepButton, '[data-purchase-item="quantity"]', "purchaseQuantityStep", updatePurchaseOrderTotal);
 }, { passive: false });
+
+if (USE_MOBILE_APP_THEME) els.openBulkPurchase.before(els.toggleInventory);
 
 els.openBulkPurchase.addEventListener("click", () => {
   openBulkPurchaseModal(getActiveStore());
@@ -7895,6 +7900,25 @@ function renderReports(store) {
   renderSalesOrderTable(els.salesOrderTable, salesOrders);
   renderMobileCashFlow(store, "income", range, activeIncomeEntries);
   renderMobileCashFlow(store, "expense", range, activeExpenseEntries);
+  renderMobilePurchaseOverview(store, range);
+}
+
+function getMobilePurchaseOverviewStats(store, range) {
+  return {
+    updates: (store.inventoryLogs || []).filter((log) => {
+      const date = getInventoryLogDate(log);
+      return date >= range.start && date <= range.end && !isCancelledEntry(log);
+    }).length,
+    stock: (store.inventory || []).reduce((total, item) => total + Number(item.quantity || 0), 0)
+  };
+}
+
+function renderMobilePurchaseOverview(store, range) {
+  if (!els.mobilePurchaseUpdateCount || !els.mobilePurchaseStockTotal) return;
+  const stats = getMobilePurchaseOverviewStats(store, range);
+  els.mobilePurchaseUpdateCount.textContent = stats.updates.toLocaleString("vi-VN");
+  els.mobilePurchaseStockTotal.textContent = stats.stock.toLocaleString("vi-VN");
+  if (els.mobilePurchaseOverviewRange) els.mobilePurchaseOverviewRange.textContent = range.label;
 }
 
 function renderMobileCashFlow(store, type, range, entries) {

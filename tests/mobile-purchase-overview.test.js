@@ -1,0 +1,34 @@
+const test = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), vm = require('node:vm');
+const root = path.resolve(__dirname, '..');
+const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
+const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+const start = app.indexOf('function getMobilePurchaseOverviewStats(');
+const end = app.indexOf('function renderMobileCashFlow(', start);
+test('mobile purchase overview uses real range updates and current inventory, not list filters', () => {
+  const els = {mobilePurchaseUpdateCount: {}, mobilePurchaseStockTotal: {}, mobilePurchaseOverviewRange: {}};
+  const ctx = {els, getInventoryLogDate: log => String(log.date || log.updatedAt).slice(0, 10), isCancelledEntry: log => log.status === 'cancelled'};
+  vm.createContext(ctx); vm.runInContext(app.slice(start, end), ctx);
+  const store = {inventoryLogs: [{date:'2026-10-12'}, {updatedAt:'2026-10-12T09:00:00'}, {date:'2026-10-11'}, {date:'2026-10-12',status:'cancelled'}], inventory:[{quantity:5},{quantity:2.5},{quantity:0}]};
+  const range = {start:'2026-10-12',end:'2026-10-12',label:'12/10/2026'};
+  const stats = ctx.getMobilePurchaseOverviewStats(store, range);
+  assert.equal(stats.updates,2); assert.equal(stats.stock,7.5);
+  ctx.renderMobilePurchaseOverview(store,range);
+  assert.equal(els.mobilePurchaseUpdateCount.textContent,'2');
+  assert.equal(els.mobilePurchaseStockTotal.textContent,'7,5');
+  assert.equal(els.mobilePurchaseOverviewRange.textContent,range.label);
+  ctx.renderMobilePurchaseOverview({},range);
+  assert.equal(els.mobilePurchaseUpdateCount.textContent,'0'); assert.equal(els.mobilePurchaseStockTotal.textContent,'0');
+  assert.doesNotMatch(app.slice(start,end),/inventoryLogSearch|inventoryLogFilter|inventorySearch|inventoryFilter/);
+  assert.match(app,/renderMobilePurchaseOverview\(store, range\);/);
+});
+test('mobile rearranges the existing warehouse action and hides only mobile helper/overview', () => {
+  assert.match(app,/if \(USE_MOBILE_APP_THEME\) els\.openBulkPurchase\.before\(els\.toggleInventory\);/);
+  assert.equal((html.match(/id="toggleInventory"/g)||[]).length,1);
+  assert.match(css,/\.mobile-purchase-overview \{ display: none; \}/);
+  assert.match(css,/html\.mobile-app-theme \.purchase-entry-hint \{ display: none; \}/);
+  assert.match(html,/mobile-purchase-overview mobile-flow-hero/);
+  const tab = html.slice(html.indexOf('data-tab-panel="purchase"'),html.indexOf('data-tab-panel="expense"',html.indexOf('data-tab-panel="purchase"')));
+  assert.ok(tab.indexOf('id="openBulkPurchase"') < tab.indexOf('id="toggleInventory"'),'desktop markup order remains unchanged');
+  assert.match(tab,/Lượt cập nhật kho/); assert.match(tab,/Tổng tồn kho/);
+});

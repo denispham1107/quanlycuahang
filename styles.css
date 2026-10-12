@@ -9282,6 +9282,13 @@ html.mobile-app-theme .mobile-flow-hero > span {
   font-weight: 800;
 }
 
+.mobile-purchase-overview { display: none; }
+html.mobile-app-theme .mobile-purchase-overview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; margin-bottom: 4px; }
+html.mobile-app-theme .mobile-purchase-overview > div { display: grid; gap: 5px; min-width: 0; }
+html.mobile-app-theme .mobile-purchase-overview > div > span { color: #4f617d; font-size: 13px; font-weight: 800; }
+html.mobile-app-theme .mobile-purchase-overview > small { grid-column: 1 / -1; }
+html.mobile-app-theme .purchase-entry-hint { display: none; }
+
 html.mobile-app-theme .mobile-flow-hero strong {
   color: #18377a;
   font-size: clamp(30px, 7vw, 38px);
