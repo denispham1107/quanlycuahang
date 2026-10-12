@@ -11335,3 +11335,68 @@ html.mobile-app-theme #aiButton:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   html.mobile-app-theme #aiButton { transition: none; }
 }
+
+/* Mobile purchase: clear hierarchy, glass metric tiles and compact full-detail history. */
+.purchase-action-icon, .purchase-action-chevron { display: none; }
+html.mobile-app-theme [data-tab-panel="purchase"] { gap: 14px; }
+html.mobile-app-theme .mobile-purchase-heading { display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin: 0; padding: 5px 4px; }
+html.mobile-app-theme .mobile-purchase-heading h2 { margin: 0; font-size: 26px; font-weight: 900; color: #18264c; }
+html.mobile-app-theme .mobile-purchase-heading #inventoryCount { padding: 6px 10px; border: 1px solid #ffffffc9; border-radius: 20px; background: #ffffffa8; color: #5b5c9c; font-size: 11px; font-weight: 750; }
+html.mobile-app-theme .mobile-purchase-overview { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; padding: 12px; background: linear-gradient(120deg,#f5e8fc,#e6eaff 55%,#dff2ff); }
+html.mobile-app-theme .mobile-purchase-overview > div { padding: 12px 9px; border: 1px solid #ffffffce; border-radius: 15px; background: #ffffff8a; gap: 6px; }
+html.mobile-app-theme .mobile-purchase-overview > div > span { font-size: 11px; color: #586580; }
+html.mobile-app-theme .mobile-purchase-overview > div > strong { font-size: 24px; line-height: 1.1; }
+html.mobile-app-theme .mobile-purchase-overview > .purchase-value-metric { grid-column: 1 / -1; padding: 15px; background: linear-gradient(115deg,#fffaffc9,#e4efffc7); }
+html.mobile-app-theme .purchase-value-metric > span { font-size: 12px; color: #59658b; }
+html.mobile-app-theme #mobilePurchaseStockValue { font-size: clamp(28px,7.6vw,36px); color: #244f96; }
+html.mobile-app-theme #mobilePurchaseImportCount { color: #6654b5; }
+html.mobile-app-theme #mobilePurchaseExportCount { color: #297e9c; }
+html.mobile-app-theme .mobile-purchase-overview > small { grid-column: 1 / -1; padding: 1px 3px; font-size: 11px; }
+html.mobile-app-theme .purchase-main-panel { display: grid; gap: 10px; padding: 0; border: 0; background: none; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+html.mobile-app-theme .purchase-main-panel > .purchase-action { display: grid; grid-template-columns: 38px minmax(0,1fr) 12px; align-items: center; gap: 10px; width: 100%; min-height: 64px; margin: 0; padding: 11px 15px; text-align: left; font-size: 14px; border-radius: 19px; }
+html.mobile-app-theme .purchase-action-icon { display: block; width: 34px; height: 34px; padding: 5px; border-radius: 11px; background: #ffffff25; }
+html.mobile-app-theme .purchase-action-chevron { display: block; font-size: 25px; line-height: 1; opacity: .75; }
+html.mobile-app-theme .purchase-main-panel > #toggleInventory { color: #4553a0; border: 1.5px solid #ffffffe6; background: linear-gradient(120deg,#ffffffdb,#e9e7fbc9 55%,#e0f1ffdc); box-shadow: 0 6px 16px #536ba714,inset 0 1px 0 #fff; }
+html.mobile-app-theme #toggleInventory .purchase-action-icon { background: linear-gradient(135deg,#e6d9fb,#d2e9ff); }
+html.mobile-app-theme .purchase-main-panel > #openBulkPurchase { background: linear-gradient(110deg,#925ee4,#6474dc 55%,#2095d8); color: #fff; border: 1px solid #ffffffbd; box-shadow: 0 7px 18px #635cc426,inset 0 1px 0 #ffffff66; }
+html.mobile-app-theme .purchase-main-panel > #inventoryLogPanel { display: grid; grid-template-columns: minmax(0,1fr); gap: 11px; margin: 4px 0 0; padding: 15px; border: 1px solid #ffffffe6; border-radius: 22px; background: #ffffffeb; box-shadow: 0 8px 24px #6763a710; }
+html.mobile-app-theme #inventoryLogPanel > * { grid-column: 1 / -1; grid-row: auto; min-width: 0; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-heading { font-size: 17px; color: #203459; padding-bottom: 5px; border-bottom: 1px solid #e8e6f5; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-filter { width: 100%; grid-template-columns: 78px minmax(0,1fr); align-items: center; gap: 8px; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-filter label { font-size: 11px; color: #67718b; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-filter input, html.mobile-app-theme #inventoryLogPanel .inventory-log-filter select { min-height: 44px; border-radius: 13px; font-size: 16px; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-search-filter { grid-template-columns: minmax(0,1fr); gap: 5px; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-summary { width: 100%; margin: 0; min-height: 44px; padding: 10px 12px; border: 1px solid #ccd9f0; border-radius: 14px; background: linear-gradient(110deg,#f0eafc,#e9f4ff); font-size: 12px; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-summary strong { font-size: 16px; overflow-wrap: anywhere; color: #2c66a7; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table-wrap { overflow: visible; border: 0; border-radius: 0; background: none; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table { display: block; min-width: 0; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table thead { display: none; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table tbody { display: grid; gap: 10px; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table tr { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); grid-template-areas: "date purpose" "name name" "group reason" "qty qty" "cost sale" "total action"; gap: 8px 12px; padding: 13px; border: 1px solid #dae3f2; border-radius: 17px; background: linear-gradient(145deg,#fff,#f7faff); box-shadow: 0 3px 10px #667aaf09; }
+html.mobile-app-theme #inventoryLogPanel.inventory-log-collapsed .inventory-log-extra { display: none; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td { display: grid; grid-template-columns: minmax(0,1fr); gap: 3px; padding: 0; min-width: 0; border: 0; font-size: 12px; line-height: 1.3; overflow-wrap: anywhere; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td::before { font-size: 10px; color: #738099; font-weight: 650; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td:nth-child(1)::before { content: "Ngày"; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td:nth-child(2)::before { content: "Hàng hóa"; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td:nth-child(3)::before { content: "Nhóm"; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td:nth-child(4)::before { content: "Mục đích"; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td:nth-child(5)::before { content: "Lý do xuất"; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td:nth-child(6)::before { content: "Số lượng"; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td:nth-child(7)::before { content: "Giá vốn"; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td:nth-child(8)::before { content: "Giá bán"; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td:nth-child(9)::before { content: "Tổng tiền"; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td:nth-child(10)::before { content: "Thao tác"; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td:nth-child(1) { grid-area: date; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td:nth-child(2) { grid-area: name; font-size: 16px; font-weight: 850; color: #243656; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td:nth-child(3) { grid-area: group; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td:nth-child(4) { grid-area: purpose; justify-items: end; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td:nth-child(5) { grid-area: reason; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td:nth-child(6) { grid-area: qty; grid-template-columns: 70px minmax(0,1fr); align-items: center; padding: 8px 0; border-top: 1px solid #e8edf6; border-bottom: 1px solid #e8edf6; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td:nth-child(7) { grid-area: cost; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td:nth-child(8) { grid-area: sale; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td:nth-child(9) { grid-area: total; align-content: center; font-size: 15px; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-table td:nth-child(10) { grid-area: action; align-content: center; justify-items: end; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-change { display: flex; flex-wrap: wrap; gap: 3px; min-width: 0; font-size: 12px; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-change > span { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+html.mobile-app-theme #inventoryLogPanel .inventory-log-total { overflow-wrap: anywhere; color: #2b6cab; }
+html.mobile-app-theme #inventoryLogPanel .history-purge-button { min-height: 44px; max-width: 100%; padding: 6px 8px; font-size: 11px; white-space: normal; overflow-wrap: anywhere; justify-self: end; }

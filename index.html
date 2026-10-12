@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=139" />
+    <link rel="manifest" href="manifest.webmanifest?v=140" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=139" />
+    <link rel="stylesheet" href="styles.css?v=140" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -652,21 +652,21 @@
 
             <section class="tab-panel" data-tab-panel="purchase" hidden>
               <div class="mobile-purchase-overview mobile-flow-hero" aria-label="Tổng quan kho hàng">
+                <div class="purchase-value-metric"><span>Tổng giá trị kho</span><strong id="mobilePurchaseStockValue" aria-live="polite">0 ₫</strong></div>
                 <div><span>Nhập kho</span><strong id="mobilePurchaseImportCount" aria-live="polite">0</strong></div>
                 <div><span>Xuất kho</span><strong id="mobilePurchaseExportCount" aria-live="polite">0</strong></div>
                 <div><span>Tổng tồn kho</span><strong id="mobilePurchaseStockTotal" aria-live="polite">0</strong></div>
-                <div><span>Tổng giá trị kho</span><strong id="mobilePurchaseStockValue" aria-live="polite">0 ₫</strong></div>
                 <small id="mobilePurchaseOverviewRange"></small>
               </div>
               <article class="panel purchase-main-panel">
-                <div class="panel-heading">
+                <div class="panel-heading mobile-purchase-heading">
                   <h2>Nhập hàng</h2>
                   <span id="inventoryCount">0 mặt hàng</span>
                 </div>
                 <div class="empty-list purchase-entry-hint">Bấm nút + để nhập hàng hóa mới vào kho.</div>
-                <button class="ghost-button inventory-toggle" id="openBulkPurchase" type="button">Nhập hàng từ Danh Sách</button>
+                <button class="ghost-button inventory-toggle purchase-action" id="openBulkPurchase" type="button"><svg class="purchase-action-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="4" width="20" height="24" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M11 10h10M11 15h6M11 20h5M23 19v8m-3-3 3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Nhập hàng từ Danh Sách</span><span class="purchase-action-chevron" aria-hidden="true">›</span></button>
                 <div class="inventory-log-panel" id="inventoryLogPanel"></div>
-                <button class="ghost-button inventory-toggle" id="toggleInventory" type="button">Kho hàng</button>
+                <button class="ghost-button inventory-toggle purchase-action" id="toggleInventory" type="button"><svg class="purchase-action-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="m4 12 12-7 12 7v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V12Z" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 17h14v11M9 21h14M9 25h14M13 10h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Kho hàng</span><span class="purchase-action-chevron" aria-hidden="true">›</span></button>
               </article>
             </section>
 
@@ -1599,8 +1599,8 @@
         </form>
       </section>
     </div>
-    <script defer src="app.js?v=139"></script>
-    <script defer src="closing-book-core.js?v=139"></script>
-    <script defer src="closing-book.js?v=139"></script>
+    <script defer src="app.js?v=140"></script>
+    <script defer src="closing-book-core.js?v=140"></script>
+    <script defer src="closing-book.js?v=140"></script>
   </body>
 </html>

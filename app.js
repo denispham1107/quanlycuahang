@@ -1319,7 +1319,12 @@ els.purchaseItems.addEventListener("touchend", (event) => {
   applyQuantityStep(stepButton, '[data-purchase-item="quantity"]', "purchaseQuantityStep", updatePurchaseOrderTotal);
 }, { passive: false });
 
-if (USE_MOBILE_APP_THEME) els.openBulkPurchase.before(els.toggleInventory);
+if (USE_MOBILE_APP_THEME) {
+  els.openBulkPurchase.before(els.toggleInventory);
+  const heading = document.querySelector(".mobile-purchase-heading");
+  const overview = document.querySelector(".mobile-purchase-overview");
+  if (heading && overview) overview.before(heading);
+}
 
 els.openBulkPurchase.addEventListener("click", () => {
   openBulkPurchaseModal(getActiveStore());

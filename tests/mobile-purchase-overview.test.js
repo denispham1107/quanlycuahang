@@ -26,7 +26,7 @@ test('mobile purchase overview splits import/export counts and current stock val
   assert.match(app,/renderMobilePurchaseOverview\(store, range\);/);
 });
 test('mobile rearranges the existing warehouse action and hides only mobile helper/overview', () => {
-  assert.match(app,/if \(USE_MOBILE_APP_THEME\) els\.openBulkPurchase\.before\(els\.toggleInventory\);/);
+  assert.match(app,/if \(USE_MOBILE_APP_THEME\) \{\s*els\.openBulkPurchase\.before\(els\.toggleInventory\);/);
   assert.equal((html.match(/id="toggleInventory"/g)||[]).length,1);
   assert.match(css,/\.mobile-purchase-overview \{ display: none; \}/);
   assert.match(css,/html\.mobile-app-theme \.purchase-entry-hint \{ display: none; \}/);
@@ -36,4 +36,12 @@ test('mobile rearranges the existing warehouse action and hides only mobile help
   const tab = html.slice(html.indexOf('data-tab-panel="purchase"'),html.indexOf('data-tab-panel="expense"',html.indexOf('data-tab-panel="purchase"')));
   assert.ok(tab.indexOf('id="openBulkPurchase"') < tab.indexOf('id="toggleInventory"'),'desktop markup order remains unchanged');
   assert.doesNotMatch(tab,/Lượt cập nhật kho/);for(const label of ['Nhập kho','Xuất kho','Tổng tồn kho','Tổng giá trị kho'])assert.ok(tab.includes(label));
+});
+test('mobile purchase redesign retains a final full-detail history and shared round FAB', () => {
+  assert.match(app,/if \(heading && overview\) overview\.before\(heading\)/);
+  assert.match(css,/html\.mobile-app-theme \.purchase-main-panel \{ display: grid;/);
+  assert.match(css,/html\.mobile-app-theme #inventoryLogPanel\.inventory-log-collapsed \.inventory-log-extra \{ display: none; \}/);
+  for(const label of ['Ngày','Hàng hóa','Nhóm','Mục đích','Lý do xuất','Số lượng','Giá vốn','Giá bán','Tổng tiền','Thao tác'])assert.ok(css.includes(`content: "${label}"`));
+  assert.doesNotMatch(css,/data-active-tab="purchase"[^}]*#quickEntryButton[^}]*display:\s*none/);
+  for(const id of ['toggleInventory','openBulkPurchase','inventoryLogPanel','mobilePurchaseImportCount','mobilePurchaseExportCount','mobilePurchaseStockTotal','mobilePurchaseStockValue'])assert.equal((html.match(new RegExp(`id="${id}"`,'g'))||[]).length,1);
 });
