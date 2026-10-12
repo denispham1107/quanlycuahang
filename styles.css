@@ -11406,13 +11406,13 @@ html.mobile-app-theme #mobilePurchaseExportCount { color: #ae4b77; }
 html.mobile-app-theme #mobilePurchaseStockTotal { color: #24776b; }
 html.mobile-app-theme .mobile-purchase-overview > small { grid-column: 1 / -1; padding: 1px 3px; font-size: 11px; }
 html.mobile-app-theme .purchase-main-panel { display: grid; gap: 10px; padding: 0; border: 0; background: none; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
-html.mobile-app-theme .purchase-main-panel > .purchase-action { display: grid; grid-template-columns: 38px minmax(0,1fr) 12px; align-items: center; gap: 10px; width: 100%; min-height: 64px; margin: 0; padding: 11px 15px; text-align: left; font-size: 14px; border-radius: 19px; }
-html.mobile-app-theme .purchase-action-icon { display: block; width: 34px; height: 34px; padding: 5px; border-radius: 11px; background: #ffffff25; }
+html.mobile-app-theme .purchase-main-panel > .purchase-action { display: grid; grid-template-columns: 42px minmax(0,1fr) 12px; align-items: center; gap: 10px; width: 100%; min-height: 64px; margin: 0; padding: 9px 15px; text-align: left; font-size: 14px; border-radius: 19px; }
+html.mobile-app-theme .purchase-action-icon { display: block; width: 42px; height: 42px; padding: 3px; border: 1px solid #ffffffb3; border-radius: 13px; box-shadow: 0 3px 7px #24485d1a,inset 0 1px 0 #ffffffd9; }
 html.mobile-app-theme .purchase-action-chevron { display: block; font-size: 25px; line-height: 1; opacity: .75; }
 html.mobile-app-theme .purchase-main-panel > #toggleInventory { color: #fff; border: 1.5px solid #ffffffd9; background: linear-gradient(110deg,#7450c9,#4e65bd 55%,#247ba8); box-shadow: 0 8px 20px #5262ae36,inset 0 1px 0 #ffffff66; }
-html.mobile-app-theme #toggleInventory .purchase-action-icon { background: #ffffff24; }
-html.mobile-app-theme .purchase-main-panel > #openBulkPurchase { background: linear-gradient(110deg,#fff2f8,#eee5fa); color: #71569e; border: 1px solid #d8c8e6; box-shadow: 0 4px 12px #80639112,inset 0 1px 0 #ffffffdd; }
-html.mobile-app-theme #openBulkPurchase .purchase-action-icon { background: #e6d7f5; }
+html.mobile-app-theme #toggleInventory .purchase-action-icon { background: linear-gradient(135deg,#fff4ff,#d5e8fa); }
+html.mobile-app-theme .purchase-main-panel > #openBulkPurchase { background: radial-gradient(ellipse at 10% 0%,#ffffff66,transparent 65%),linear-gradient(110deg,#c5eee1,#97d4ca 48%,#a6cde7); color: #235a6a; border: 1px solid #8bbdbb; box-shadow: 0 5px 14px #397b851f,inset 0 1px 0 #ffffffb3; }
+html.mobile-app-theme #openBulkPurchase .purchase-action-icon { background: linear-gradient(135deg,#f7fff7,#d4eaf3); }
 html.mobile-app-theme .purchase-main-panel > :is(#toggleInventory,#openBulkPurchase):focus-visible { outline: 3px solid #8272c5; outline-offset: 3px; }
 html.mobile-app-theme .purchase-main-panel > #inventoryLogPanel { display: grid; grid-template-columns: minmax(0,1fr); gap: 11px; margin: 4px 0 0; padding: 15px; border: 1px solid #ffffffe6; border-radius: 22px; background: #ffffffeb; box-shadow: 0 8px 24px #6763a710; }
 html.mobile-app-theme #inventoryLogPanel > * { grid-column: 1 / -1; grid-row: auto; min-width: 0; }

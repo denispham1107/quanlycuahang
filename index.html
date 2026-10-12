@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=147" />
+    <link rel="manifest" href="manifest.webmanifest?v=148" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=147" />
+    <link rel="stylesheet" href="styles.css?v=148" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -664,9 +664,9 @@
                   <span id="inventoryCount">0 mặt hàng</span>
                 </div>
                 <div class="empty-list purchase-entry-hint">Bấm nút + để nhập hàng hóa mới vào kho.</div>
-                <button class="ghost-button inventory-toggle purchase-action" id="openBulkPurchase" type="button"><svg class="purchase-action-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="4" width="20" height="24" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M11 10h10M11 15h6M11 20h5M23 19v8m-3-3 3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Nhập hàng từ Danh Sách</span><span class="purchase-action-chevron" aria-hidden="true">›</span></button>
+                <button class="ghost-button inventory-toggle purchase-action" id="openBulkPurchase" type="button"><svg class="purchase-action-icon" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="bulkListPaper" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffdf5"/><stop offset="1" stop-color="#dceef3"/></linearGradient><linearGradient id="bulkListArrow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#3f9991"/><stop offset="1" stop-color="#286a91"/></linearGradient></defs><rect x="9" y="7" width="23" height="28" rx="4" fill="#77adb8" fill-opacity=".65"/><rect x="5" y="3" width="24" height="30" rx="4" fill="url(#bulkListPaper)" stroke="#397583" stroke-width="1.5"/><rect x="12" y="1.5" width="10" height="6" rx="2" fill="#dcc399" stroke="#946f44" stroke-width="1.2"/><path d="M9 11h4v4H9zm0 8h4v4H9z" fill="#bedfdb" stroke="#478b8c" stroke-width="1.1"/><path d="m9.5 12.7 1 1 2-2M17 12h7M17 15h4M17 20h7M17 23h4M9 28h11" fill="none" stroke="#397583" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30" cy="29" r="9" fill="url(#bulkListArrow)" stroke="#f2fffc" stroke-width="1.5"/><path d="M30 24v9m-4-4 4 4 4-4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Nhập hàng từ Danh Sách</span><span class="purchase-action-chevron" aria-hidden="true">›</span></button>
                 <div class="inventory-log-panel" id="inventoryLogPanel"></div>
-                <button class="ghost-button inventory-toggle purchase-action" id="toggleInventory" type="button"><svg class="purchase-action-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="m4 12 12-7 12 7v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V12Z" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 17h14v11M9 21h14M9 25h14M13 10h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Kho hàng</span><span class="purchase-action-chevron" aria-hidden="true">›</span></button>
+                <button class="ghost-button inventory-toggle purchase-action" id="toggleInventory" type="button"><svg class="purchase-action-icon" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="warehouseFront" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff9ff"/><stop offset="1" stop-color="#c4dff4"/></linearGradient><linearGradient id="warehouseDoor" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#8b7ac6"/><stop offset="1" stop-color="#536cac"/></linearGradient></defs><ellipse cx="21" cy="36" rx="16" ry="2" fill="#355487" fill-opacity=".16"/><path d="m27 12 7 4v17h-7V12Z" fill="#89b5d9" stroke="#527aab" stroke-width="1.3" stroke-linejoin="round"/><rect x="7" y="13" width="22" height="21" rx="2" fill="url(#warehouseFront)" stroke="#5c70a6" stroke-width="1.4"/><path d="m4 14 14-9 16 9-5 3-11-7-10 7-4-3Z" fill="#eadffb" stroke="#73579f" stroke-width="1.4" stroke-linejoin="round"/><rect x="11" y="21" width="13" height="13" rx="1.5" fill="url(#warehouseDoor)"/><path d="M13 24h9M13 28h9M13 32h9M15 15h6" stroke="#f4f4ff" stroke-width="1.4" stroke-linecap="round"/><path d="m25 26 6-3 6 3-6 3-6-3Z" fill="#fbe1b4" stroke="#9d7246" stroke-width="1.2" stroke-linejoin="round"/><path d="M25 26v8l6 3v-8l-6-3Z" fill="#edc18a" stroke="#9d7246" stroke-width="1.2" stroke-linejoin="round"/><path d="m31 29 6-3v8l-6 3v-8Z" fill="#d7a470" stroke="#9d7246" stroke-width="1.2" stroke-linejoin="round"/><path d="m28 24.5 6 3M28 30v3" stroke="#fff4de" stroke-width="1.2" stroke-linecap="round"/></svg><span>Kho hàng</span><span class="purchase-action-chevron" aria-hidden="true">›</span></button>
               </article>
             </section>
 
@@ -1610,8 +1610,8 @@
         </form>
       </section>
     </div>
-    <script defer src="app.js?v=147"></script>
-    <script defer src="closing-book-core.js?v=147"></script>
-    <script defer src="closing-book.js?v=147"></script>
+    <script defer src="app.js?v=148"></script>
+    <script defer src="closing-book-core.js?v=148"></script>
+    <script defer src="closing-book.js?v=148"></script>
   </body>
 </html>
