@@ -13,9 +13,15 @@ test('desktop trade accents only change paint, scoped to sales/purchase and neve
 test('desktop trade text and primary warehouse button contrast on every gradient stop',()=>{
  const lum=hex=>hex.match(/../g).map(x=>parseInt(x,16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0);
  const contrast=(a,b)=>(Math.max(lum(a),lum(b))+.05)/(Math.min(lum(a),lum(b))+.05);
- const pairs=[['69509a',['eee3fa','e4eefa']],['24695f',['e0f3e8','e0eff8','def2e9','c3ebdc','cbe8f6','eaf6f1','f0f4ff']],['286c60',['f4fcf7','e8f5ef']],['955173',['fbe2ed','eee5f8']],['176992',['fff5fa','f1edfa']],['315e91',['e5ecff','def3ed']],['695980',['e9dff7']],['6a425c',['f9ddbf','edc5c9','e5d3f5']],['9b4167',['f9e3ed']],['58468e',['ded2f2','c8dcf1']],['853a5c',['f5ccdf','e9d8f6']],['223766',['ded2f2','c8dcf1','f5ccdf','e9d8f6','c3ebdc','cbe8f6']]];
+ const pairs=[['69509a',['eee3fa','e4eefa']],['24695f',['e0f3e8','e0eff8','def2e9','e5fbf7','faffff','eaf6f1','f0f4ff']],['286c60',['f4fcf7','e8f5ef']],['955173',['fbe2ed','eee5f8']],['176992',['fff5fa','f1edfa']],['315e91',['e5ecff','def3ed']],['695980',['e9dff7']],['6a425c',['f9ddbf','edc5c9','e5d3f5']],['9b4167',['f9e3ed']],['58468e',['fcfaff','e6e6ff']],['944567',['fff9ff','f8e9ff']],['223766',['fcfaff','e6e6ff','fff9ff','f8e9ff','faffff','e5fbf7']]];
  for(const [fg,bgs] of pairs)for(const bg of bgs)assert.ok(contrast(fg,bg)>=4.5,`${fg} on ${bg}`);
  for(const [a,b] of [['7450c9','4e65bd'],['4e65bd','247ba8'],['7251a8','436fa8'],['27816e','306e91'],['994c75','70599e'],['9c4f78','715d9f'],['6550a0','376f9f'],['55549a','2a769b']])for(let i=0;i<=20;i++){const ah=a.match(/../g).map(x=>parseInt(x,16)),bh=b.match(/../g).map(x=>parseInt(x,16));const bg=ah.map((v,j)=>Math.round(v+(bh[j]-v)*i/20).toString(16).padStart(2,'0')).join('');assert.ok(contrast('ffffff',bg)>=4.5,`white on ${bg}`);}
+});
+test('sales/purchase overview cards retain their restored v151 light paint, not v152 strong fills',()=>{
+ assert.doesNotMatch(block,/\.desktop-insight\.(total|category-one|category-two) \{/);
+ assert.doesNotMatch(block,/\.desktop-insight-icon \{/);
+ assert.ok(block.includes('.desktop-insight.category-one strong { color: #944567; }'));
+ assert.match(css,/\.desktop-insight\.category-one \{\s*border-color: rgba\(245, 183, 249, 0\.7\);\s*background: linear-gradient\(135deg, #fff9ff, #f8e9ff\)/);
 });
 test('desktop trade uses rich headers, colored totals and alternating rows rather than near-white accents',()=>{
  for(const [selector,palette] of [['.draft-order-table thead','#7251a8,#436fa8'],['.sales-history-table thead','#9c4f78,#715d9f'],['.inventory-log-table thead','#55549a,#2a769b']])assert.ok(block.includes(`${selector} { background: linear-gradient(110deg,${palette}); }`));
