@@ -3376,12 +3376,24 @@ html:not(.mobile-app-theme) .tab-panel table.sales-history-table { min-width: 0;
 .sales-history-table th:nth-child(3) { width: 12%; }
 .sales-history-table th:nth-child(4) { width: 15%; }
 .sales-history-table th:nth-child(5) { width: 11%; }
+/* Align both Desktop sales total headers at the same 80% table anchor. */
+html:not(.mobile-app-theme) .tab-panel table.draft-order-table { table-layout: fixed; min-width: 0; }
+html:not(.mobile-app-theme) .draft-order-table :is(th,td) { overflow-wrap: anywhere; }
+html:not(.mobile-app-theme) .draft-order-table th:nth-child(1) { width: 22%; }
+html:not(.mobile-app-theme) .draft-order-table th:nth-child(2) { width: 32%; }
+html:not(.mobile-app-theme) .draft-order-table th:nth-child(3) { width: 26%; }
+html:not(.mobile-app-theme) .draft-order-table th:nth-child(4) { width: 20%; text-align: left; }
+html:not(.mobile-app-theme) .draft-order-table:has(th:nth-child(5)) th:nth-child(4) { width: calc(20% - 60px); }
+html:not(.mobile-app-theme) .draft-order-table :is(th,td):nth-child(5) { width: 60px; text-align: right; }
+html:not(.mobile-app-theme) .sales-history-table th:nth-child(5) { width: 21%; }
+html:not(.mobile-app-theme) .sales-history-table th:nth-child(6) { width: calc(20% - 60px); text-align: left; }
 @media (min-width: 701px) and (max-width: 1050px) {
   html:not(.mobile-app-theme) body[data-active-tab="sales"] .layout { grid-template-columns: minmax(0, 1fr); }
   html:not(.mobile-app-theme) body[data-active-tab="sales"] .sidebar { position: static; }
   html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-filter-rail { max-height: none; overflow: visible; }
   html:not(.mobile-app-theme) .tab-panel .sales-history-table td,
   html:not(.mobile-app-theme) .tab-panel .sales-history-table th { font-size: 12px; padding: 10px 6px; }
+  html:not(.mobile-app-theme) .tab-panel .sales-history-table th:nth-child(6) { padding-left: 12px; }
   .sales-history-table .date-stack small { font-size: 11px; }
 }
 

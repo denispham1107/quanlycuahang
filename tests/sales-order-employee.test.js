@@ -1,6 +1,13 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const app=fs.readFileSync(path.join(__dirname,'../app.js'),'utf8'),server=fs.readFileSync(path.join(__dirname,'../functions/index.js'),'utf8');
 const context={};vm.runInNewContext(app.slice(app.indexOf('function getSalesOrderEmployeeName('),app.indexOf('function renderSalesOrderTable(')),context);
+test('desktop draft and history total headers use a common column anchor without changing mobile',()=>{
+ const css=fs.readFileSync(path.join(__dirname,'../styles.css'),'utf8');
+ for(const [n,p] of [[1,22],[2,32],[3,26]])assert.ok(css.includes(`html:not(.mobile-app-theme) .draft-order-table th:nth-child(${n}) { width: ${p}%; }`));
+ assert.match(css,/html:not\(\.mobile-app-theme\) \.sales-history-table th:nth-child\(5\) \{ width: 21%; \}/);
+ assert.match(css,/html:not\(\.mobile-app-theme\) \.sales-history-table th:nth-child\(6\) \{ width: calc\(20% - 60px\); text-align: left; \}/);
+ assert.match(css,/html:not\(\.mobile-app-theme\) \.draft-order-table th:nth-child\(4\) \{ width: 20%; text-align: left; \}/);
+});
 test('seller uses immutable snapshot, then only linked creation activity, never current viewer or cancellation',()=>{
  const order={id:'a',createdByName:'Tuấn Anh'},store={activityHistory:[{action:'delete',targetType:'sales-order',targetId:'a',actorName:'Người hủy'},{action:'create',targetType:'sales-order',targetId:'other',actorName:'Người khác'},{action:'create',targetType:'sales-order',targetId:'a',actorName:'Tên trước đây'}]};
  assert.equal(context.getSalesOrderEmployeeName(order,store),'Tuấn Anh');delete order.createdByName;assert.equal(context.getSalesOrderEmployeeName(order,store),'Tên trước đây');store.activityHistory.pop();assert.equal(context.getSalesOrderEmployeeName(order,store),'Chưa ghi nhận');order.createdByRole='admin';assert.equal(context.getSalesOrderEmployeeName(order,store),'Quản trị viên');
