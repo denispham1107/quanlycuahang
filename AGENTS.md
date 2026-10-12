@@ -1,5 +1,7 @@
 # Quy tắc hồi quy giao diện
 
+- Màu Desktop Bán hàng/Nhập hàng: chỉ thêm color/background/border-color/box-shadow dưới html:not(.mobile-app-theme) và scope đúng hai tab. Bán hàng dùng tím cho nháp, xanh ngọc cho hàng bán, hồng–tím cho lịch sử; Nhập hàng xanh lam/xanh ngọc với đầu bảng tím nhạt, Kho hàng đậm hơn Nhập danh sách. Giữ số liệu thật, bố cục/cột Tổng bill đã căn, bộ lọc/handler/quyền và trạng thái hủy; không đổi Mobile, không tô mất cảnh báo hay nét nút. Kiểm tra tương phản4.5:1, Desktop800/1024/1440/1920, tên/số dài, rỗng, hover/focus/disabled và ảnh Mobile trước/sau bằng check-desktop-trade-colors.js.
+
 - Desktop Bán hàng: tiêu đề cột Tổng bill của lịch sử và đơn đang lưu phải thẳng hàng tại mốc80% chiều rộng bảng, cả khi lịch sử rỗng và khi nháp không có quyền xóa. Dùng table-layout fixed, ba cột đầu nháp22/32/26%, năm cột đầu lịch sử15/17/12/15/21%; tổng dùng phần còn lại trừ60px thao tác. Giữ đủ cột/nội dung/quyền/handler, số tiền căn phải, không đổi Mobile; kiểm tra800/1024/1440/1920 với tên/số dài, không có nháp và các quyền khác nhau.
 
 - Bán hàng Mobile thêm điểm nhấn pastel theo khối: đơn đang lưu tím/xanh ngọc/hồng luân phiên, Tổng hàng hóa bán ra xanh ngọc, Lịch sử bán hàng hồng–tím với thẻ hóa đơn riêng. Chữ/số giữ tương phản4.5:1; không đổi màu/trạng thái đơn hủy, không đổi ô Tổng bán hàng dùng chung tab Chi. Chỉ scope html.mobile-app-theme, không thêm/bỏ nội dung/handler/bộ lọc, giữ lịch sử cuối và FAB. Kiểm tra tên/số dài, rỗng, quyền,320/375/430/ngang/keyboard và Desktop pixel trước/sau.
