@@ -34,7 +34,9 @@ for(const [width,height,platform='ios'] of [[320,700],[375,900],[430,900],[667,3
  await page.locator('#mobileSalesCreate').click();assert.equal(await page.locator('#quickEntryModal').isVisible(),true);assert.equal(await page.locator('.mobile-time-filter-shell').isVisible(),false);await page.locator('#cancelQuickEntry').click();
  await page.locator('[data-open-sales-draft="draft"]').click();assert.equal(await page.locator('#salesCustomerName').inputValue(),'THINH');await page.locator('#cancelQuickEntry').click();
  await page.locator('[data-open-sales-order="one"] .sales-bill-code').click();assert.equal(await page.locator('#salesOrderDetailModal').isVisible(),true);await page.locator('#closeSalesOrderDetail').click();
- await page.locator('#openCustomers').click();assert.equal(await page.locator('#customersPage').isVisible(),true);await page.locator('#closeCustomersTop').click();await page.waitForFunction(()=>els.customersPage.hidden);
+ assert.equal(await page.locator('#openCustomers').isVisible(),false);assert.equal(await page.locator('.sales-main-panel > .empty-list').isVisible(),false);
+ const customerBounds=await page.locator('#mobileSalesCustomers').boundingBox(),createBounds=await page.locator('#mobileSalesCreate').boundingBox();assert.ok(customerBounds.x+customerBounds.width<=createBounds.x&&customerBounds.width>=44&&customerBounds.x>=0,'customer icon is left of create, with a 44px touch target');
+ await page.locator('#mobileSalesCustomers').click();assert.equal(await page.locator('#customersPage').isVisible(),true);await page.locator('#closeCustomersTop').click();await page.waitForFunction(()=>els.customersPage.hidden);assert.equal(await page.evaluate(()=>document.activeElement.id),'mobileSalesCustomers');
  await page.evaluate(()=>{getActiveStore().orders[0].createdByName='Tên rất dài '+ 'NhânViên'.repeat(15);getActiveStore().orders[0].customerName='Khách dài '+ 'KháchHàng'.repeat(14);getActiveStore().orders[0].total=12345678901234;render();});
  for(const cell of await page.locator('#salesOrderTable td,#salesDraftList td').all()){const m=await cell.evaluate(el=>({width:el.clientWidth,scroll:el.scrollWidth,text:el.textContent}));assert.ok(m.scroll<=m.width+1,`${width} ${JSON.stringify(m)}`);}
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
@@ -55,6 +57,8 @@ for(const [width,height,platform='ios'] of [[320,700],[375,900],[430,900],[667,3
  await page.evaluate(()=>activateTab('sales'));
  if(width===375&&height===900&&process.env.SALES_DESIGN_SHOTS){await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:path.join(process.env.SALES_DESIGN_SHOTS,`sales-live-${platform}.png`),fullPage:true});}
  await page.evaluate(()=>{authState.role='employee';authState.profile={role:'employee',displayName:'Viewer',storeId:'a',permissions:{sales:{view:true,create:false,draft:false,customerManage:false}}};render();updateQuickEntryButton();});assert.equal(await page.locator('#mobileSalesCreate').isVisible(),false);assert.equal(await page.locator('#quickEntryButton').isVisible(),false);assert.equal(await page.locator('[data-delete-order]').count(),0);
+ assert.equal(await page.locator('#mobileSalesCustomers').isVisible(),false);
+ await page.evaluate(()=>{authState.profile.permissions.sales.customerManage=true;render();updateQuickEntryButton();});assert.equal(await page.locator('#mobileSalesCustomers').isVisible(),true);assert.equal(await page.locator('#mobileSalesCreate').isVisible(),false);await page.locator('#mobileSalesCustomers').click();assert.equal(await page.locator('#customersPage').isVisible(),true);await page.locator('#closeCustomersTop').click();await page.waitForFunction(()=>els.customersPage.hidden);
  assert.deepEqual(errors,[]);await page.close();console.log(`${platform} ${width}x${height}: reports, filters, permissions, draft/detail/customer actions and long names/amounts OK`);
 }
 }finally{await browser.close();}}

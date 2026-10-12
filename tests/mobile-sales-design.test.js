@@ -31,3 +31,13 @@ test('mobile report shares selected-range totals and excludes cancelled orders a
  vm.runInNewContext(code,ctx);assert.equal(els.mobileSalesReportTotal.textContent,'253500 ₫');assert.equal(els.mobileSalesReportRange.textContent,'11/10/2026');assert.equal(els.mobileSalesReportCount.textContent,'2 đơn');assert.equal(els.mobileSalesHeadingCount.textContent,'3 đơn');
  ctx.store.orders=[];vm.runInNewContext(code,{...ctx});assert.equal(els.mobileSalesReportTotal.textContent,'0 ₫');assert.equal(els.mobileSalesReportCount.textContent,'0 đơn');
 });
+test('mobile customer icon precedes create in heading, removes helper row and keeps existing permission/handler',()=>{
+ const header=html.match(/<header class="mobile-sales-heading">[\s\S]*?<\/header>/)[0];
+ assert.ok(header.indexOf('id="mobileSalesCustomers"')<header.indexOf('id="mobileSalesCreate"'));
+ assert.match(header,/id="mobileSalesCustomers"[^>]*aria-label="Khách hàng"/);assert.match(header,/<svg aria-hidden="true" viewBox="0 0 28 28"/);
+ assert.match(css,/html\.mobile-app-theme \.sales-main-panel > \.empty-list,\s*html\.mobile-app-theme #openCustomers \{ display: none; \}/);
+ assert.match(app,/if \(USE_MOBILE_APP_THEME && !els\.openCustomers\.disabled\) els\.openCustomers\.click\(\)/);
+ assert.match(app,/mobileSalesCustomers\.disabled = els\.openCustomers\.disabled/);
+ assert.match(app,/mobileSalesCustomers\.dataset\.roleHidden = els\.openCustomers\.dataset\.roleHidden/);
+ assert.match(app,/els\.mobileSalesCustomers\.focus\(\{ preventScroll: true \}\)/);
+});

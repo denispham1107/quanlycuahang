@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=133" />
+    <link rel="manifest" href="manifest.webmanifest?v=134" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=133" />
+    <link rel="stylesheet" href="styles.css?v=134" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -578,7 +578,18 @@
             <section class="tab-panel" data-tab-panel="sales" hidden>
               <header class="mobile-sales-heading">
                 <div><h1>Bán hàng</h1><span id="mobileSalesHeadingCount">0 đơn</span></div>
-                <button id="mobileSalesCreate" type="button" aria-label="Tạo đơn bán hàng" hidden>+</button>
+                <div class="mobile-sales-heading-actions">
+                  <button id="mobileSalesCustomers" type="button" aria-label="Khách hàng" title="Khách hàng">
+                    <svg aria-hidden="true" viewBox="0 0 28 28" fill="none">
+                      <rect x="5.5" y="3.5" width="18" height="21" rx="5" fill="#f5f1ff" stroke="#9f8de0" stroke-width="1.7" />
+                      <path d="M5.5 9H3M5.5 14H3M5.5 19H3" stroke="#8e74ce" stroke-width="2" stroke-linecap="round" />
+                      <circle cx="14.5" cy="10.5" r="3.1" fill="#cbdfff" stroke="#4284ba" stroke-width="1.7" />
+                      <path d="M9.5 21v-1.2a5 5 0 0 1 10 0V21" fill="#d8ceff" stroke="#7063c6" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                      <path d="M20 4.3v2.5h2.5" stroke="#c6b7ef" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </button>
+                  <button id="mobileSalesCreate" type="button" aria-label="Tạo đơn bán hàng" hidden>+</button>
+                </div>
               </header>
               <article class="mobile-sales-report" aria-label="Báo cáo tổng bán hàng">
                 <div class="mobile-sales-report-heading"><span class="mobile-sales-report-symbol" aria-hidden="true">₫</span><span>Tổng bán hàng</span></div>
@@ -1574,8 +1585,8 @@
         </form>
       </section>
     </div>
-    <script defer src="app.js?v=133"></script>
-    <script defer src="closing-book-core.js?v=133"></script>
-    <script defer src="closing-book.js?v=133"></script>
+    <script defer src="app.js?v=134"></script>
+    <script defer src="closing-book-core.js?v=134"></script>
+    <script defer src="closing-book.js?v=134"></script>
   </body>
 </html>

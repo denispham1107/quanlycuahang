@@ -266,6 +266,7 @@ const els = {
   salesItemSuggestions: document.querySelector("#salesItemSuggestions"),
   salesOrderCount: document.querySelector("#salesOrderCount"),
   mobileSalesCreate: document.querySelector("#mobileSalesCreate"),
+  mobileSalesCustomers: document.querySelector("#mobileSalesCustomers"),
   mobileSalesHeadingCount: document.querySelector("#mobileSalesHeadingCount"),
   mobileSalesReportTotal: document.querySelector("#mobileSalesReportTotal"),
   mobileSalesReportRange: document.querySelector("#mobileSalesReportRange"),
@@ -1023,6 +1024,9 @@ els.quickEntryButton.addEventListener("click", () => {
 });
 els.mobileSalesCreate.addEventListener("click", () => {
   if (USE_MOBILE_APP_THEME && !els.quickEntryButton.hidden) els.quickEntryButton.click();
+});
+els.mobileSalesCustomers.addEventListener("click", () => {
+  if (USE_MOBILE_APP_THEME && !els.openCustomers.disabled) els.openCustomers.click();
 });
 
 document.addEventListener("click", (event) => {
@@ -2254,6 +2258,10 @@ function applyRoleAccess() {
   document.querySelector(".sidebar")?.setAttribute("data-role-hidden", employee && USE_MOBILE_APP_THEME ? "true" : "false");
   els.openCustomers.dataset.roleHidden = employee && !employeeCan("sales", "customerManage") ? "true" : "false";
   els.openCustomers.disabled = employee && !employeeCan("sales", "customerManage");
+  if (els.mobileSalesCustomers) {
+    els.mobileSalesCustomers.dataset.roleHidden = els.openCustomers.dataset.roleHidden;
+    els.mobileSalesCustomers.disabled = els.openCustomers.disabled;
+  }
   els.openBulkPurchase.dataset.roleHidden = employee && !purchaseCreate ? "true" : "false";
   els.toggleInventory.dataset.roleHidden = employee && !inventoryView ? "true" : "false";
   els.toggleInventory.disabled = employee && !inventoryView;
@@ -5430,7 +5438,9 @@ function hideCustomersPage({ restoreFocus = true } = {}) {
   closeMemberTierModal();
   updateTimeFiltersVisibility();
   closeCustomerForm();
-  if (restoreFocus) els.openCustomers.focus({ preventScroll: true });
+  if (restoreFocus && USE_MOBILE_APP_THEME && els.mobileSalesCustomers && !els.mobileSalesCustomers.disabled) {
+    els.mobileSalesCustomers.focus({ preventScroll: true });
+  } else if (restoreFocus) els.openCustomers.focus({ preventScroll: true });
 }
 
 function updateCustomersViewport() {
