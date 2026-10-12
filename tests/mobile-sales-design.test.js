@@ -13,6 +13,7 @@ test('approved sales mobile additions are hidden on desktop and history remains 
  for(const id of ['salesGoodsFilter','salesOrderTable','salesDraftList','openCustomers'])assert.ok(tab.includes(`id="${id}"`));
  assert.match(app,/if \(USE_MOBILE_APP_THEME && !els\.quickEntryButton\.hidden\) els\.quickEntryButton\.click\(\)/);
  assert.match(app,/mobileSalesCreate\.hidden = !\(showButton && type === "sales"\)/);
+ assert.doesNotMatch(css,/body:has\(\[data-tab-panel="sales"\]:not\(\[hidden\]\)\) #quickEntryButton \{ display: none/,'sales must keep the shared circular quick-entry FAB');
 });
 test('mobile report shares selected-range totals and excludes cancelled orders and drafts',()=>{
  const start=app.indexOf('  const salesOrders = (store.orders || [])',app.indexOf('function renderReports(store)'));

@@ -19,7 +19,12 @@ for(const width of [800,1024,1440]){
 for(const [width,height,platform='ios'] of [[320,700],[375,900],[430,900],[667,375],[375,400],[375,900,'android']]){
  const page=await browser.newPage({viewport:{width,height},isMobile:true,hasTouch:true,userAgent:platform==='android'?'Mozilla/5.0 (Linux; Android 14) Chrome/130.0 Mobile Safari/537.36':'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1'}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.dismiss());await setup(page);
  assert.equal(await page.locator('.mobile-sales-report').isVisible(),true);assert.match(await page.locator('#mobileSalesReportTotal').textContent(),/253.500/);assert.equal(await page.locator('#mobileSalesReportCount').textContent(),'2 đơn');assert.equal(await page.locator('[data-tab-panel="sales"]').evaluate(el=>el.lastElementChild.classList.contains('sales-history-panel')),true);
- assert.equal(await page.locator('#quickEntryButton').isVisible(),false);
+ assert.equal(await page.locator('#quickEntryButton').isVisible(),true);
+ await page.evaluate(()=>scrollTo(0,document.documentElement.scrollHeight));
+ const fab=await page.locator('#quickEntryButton').boundingBox(),dock=await page.locator('#tabBar').boundingBox();
+ assert.ok(fab.x>=0&&fab.x+fab.width<=width+1&&fab.y>=0&&fab.y+fab.height<=dock.y,'round add button stays visible above dock at the end of history');
+ await page.locator('#quickEntryButton').click();assert.equal(await page.locator('#quickEntryModal').isVisible(),true);await page.locator('#cancelQuickEntry').click();
+ await page.evaluate(()=>scrollTo(0,0));
  for(const amount of await page.locator('#salesGoodsReport .report-amount').all())assert.ok(await amount.evaluate(el=>el.clientHeight<32),'normal amounts remain on one line');
  assert.equal(await page.locator('#rangeMode option').count(),9);assert.equal(await page.locator('[data-time-preset]').count(),6);
  await page.locator('#salesGoodsFilter').selectOption({label:'Spa'});assert.match(await page.locator('#salesGoodsReport').textContent(),/142.500/);assert.match(await page.locator('#mobileSalesReportTotal').textContent(),/253.500/);
@@ -33,7 +38,7 @@ for(const [width,height,platform='ios'] of [[320,700],[375,900],[430,900],[667,3
  await page.evaluate(()=>{state.activeStoreId='b';render();});assert.match(await page.locator('#mobileSalesReportTotal').textContent(),/^0/);assert.equal(await page.locator('#mobileSalesReportCount').textContent(),'0 đơn');
  await page.evaluate(()=>{state.activeStoreId='a';getActiveStore().orders[0].createdByName='Bán Hàng';getActiveStore().orders[0].customerName='BIN BIN';getActiveStore().orders[0].total=53000;uiState.salesGoodsFilter='all';render();});
  if(width===375&&height===900&&process.env.SALES_DESIGN_SHOTS){await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:path.join(process.env.SALES_DESIGN_SHOTS,`sales-live-${platform}.png`),fullPage:true});}
- await page.evaluate(()=>{authState.role='employee';authState.profile={role:'employee',displayName:'Viewer',storeId:'a',permissions:{sales:{view:true,create:false,draft:false,customerManage:false}}};render();updateQuickEntryButton();});assert.equal(await page.locator('#mobileSalesCreate').isVisible(),false);assert.equal(await page.locator('[data-delete-order]').count(),0);
+ await page.evaluate(()=>{authState.role='employee';authState.profile={role:'employee',displayName:'Viewer',storeId:'a',permissions:{sales:{view:true,create:false,draft:false,customerManage:false}}};render();updateQuickEntryButton();});assert.equal(await page.locator('#mobileSalesCreate').isVisible(),false);assert.equal(await page.locator('#quickEntryButton').isVisible(),false);assert.equal(await page.locator('[data-delete-order]').count(),0);
  assert.deepEqual(errors,[]);await page.close();console.log(`${platform} ${width}x${height}: reports, filters, permissions, draft/detail/customer actions and long names/amounts OK`);
 }
 }finally{await browser.close();}}

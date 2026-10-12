@@ -11168,7 +11168,6 @@ html.mobile-app-theme .mobile-sales-heading { display: flex; align-items: center
 html.mobile-app-theme .mobile-sales-heading h1 { margin: 0; font-size: 26px; line-height: 1.2; letter-spacing: -.6px; color: #18264c; }
 html.mobile-app-theme #mobileSalesHeadingCount { display: block; margin-top: 3px; font-size: 11px; color: #5c6b87; }
 html.mobile-app-theme #mobileSalesCreate { width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; border-radius: 14px; background: var(--accent-gradient); color: #fff; font-size: 27px; font-weight: 600; line-height: 1; }
-html.mobile-app-theme body:has([data-tab-panel="sales"]:not([hidden])) #quickEntryButton { display: none !important; }
 html.mobile-app-theme .mobile-sales-report { display: grid; gap: 10px; position: relative; isolation: isolate; overflow: hidden; padding: 20px 19px 16px; border-radius: 22px; color: #fff; background: linear-gradient(120deg,#aa32ee,#6348ee 50%,#008fdf); box-shadow: 0 10px 25px #7334d838; }
 html.mobile-app-theme .mobile-sales-report::before, html.mobile-app-theme .mobile-sales-report::after { content: ""; position: absolute; z-index: -1; pointer-events: none; border-radius: 50%; background: #ffffff20; }
 html.mobile-app-theme .mobile-sales-report::before { width: 170px; height: 170px; right: -65px; top: -80px; }
