@@ -1,0 +1,40 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const app=fs.readFileSync('app.js','utf8'),server=fs.readFileSync('functions/index.js','utf8');
+const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLowerCase().trim();
+const functionCode=(source,name)=>{const start=source.indexOf(`function ${name}(`),end=source.indexOf('\nfunction ',start+1);return source.slice(start,end<0?source.length:end);};
+function frontend(){const alerts=[],ctx={normalizeSearchText:norm,window:{alert:s=>alerts.push(s)},createId:()=>String(Math.random()),getInventorySalePrice:item=>Number(item.salePrice||0)};vm.createContext(ctx);for(const name of ['isServiceItem','getSalesItemType','getInventoryAvailableByName','validateSalesInventory','deductInventoryForSales','restoreInventoryFromSales','addInventoryLog','applyPurchaseItemsToInventory','validatePurchaseItemTypes'])vm.runInContext(functionCode(app,name),ctx);return {ctx,alerts};}
+test('services have no stock, mixed sales still enforce and deduct goods, cancellation skips service snapshots',()=>{
+ const {ctx}=frontend(),store={inventory:[{id:'g',name:'Cát',groupName:'Nhóm',quantity:4,totalCost:40,salePrice:20},{id:'s',name:'Tắm',groupName:'Spa',itemType:'service',quantity:0,totalCost:0,salePrice:50}]};
+ const items=[{name:'Cát',quantity:2},{name:'Tắm',quantity:100,itemType:'service'}];assert.equal(ctx.validateSalesInventory(store,items),true);ctx.deductInventoryForSales(store,items);assert.equal(store.inventory[0].quantity,2);assert.equal(store.inventory[1].quantity,0);assert.equal(store.inventory[1].totalCost,0);ctx.restoreInventoryFromSales(store,items);assert.equal(store.inventory[0].quantity,4);assert.equal(store.inventory[1].quantity,0);
+ assert.equal(ctx.validateSalesInventory(store,[{name:'Cát',quantity:99,itemType:'service'}]),false,'forged type cannot bypass goods');
+ store.inventory=store.inventory.filter(item=>item.id!=='s');ctx.restoreInventoryFromSales(store,[{name:'Tắm',quantity:100,itemType:'service'}]);assert.equal(store.inventory.length,1,'removed services are not recreated as goods on cancellation');
+});
+test('purchase creates service metadata without assets and keeps old goods calculation; type conflicts are rejected',()=>{
+ const {ctx}=frontend(),store={inventory:[],inventoryLogs:[]};ctx.applyPurchaseItemsToInventory(store,'2026-10-12',[{name:'Tắm',groupName:'Spa',itemType:'service',quantity:999,price:0,salePrice:150000,total:999},{name:'Cát',groupName:'Hàng',quantity:3,price:10,salePrice:20,total:30}],'2026-10-12T10:00:00Z');
+ assert.equal(store.inventory[0].quantity,0);assert.equal(store.inventory[0].totalCost,0);assert.equal(store.inventory[0].itemType,'service');assert.equal(store.inventory[1].quantity,3);assert.equal(store.inventory[1].totalCost,30);assert.equal(ctx.validatePurchaseItemTypes(store,[{name:'Cát',itemType:'service'}]),false);
+ ctx.applyPurchaseItemsToInventory(store,'2026-10-12',[{name:'Tắm',groupName:'Spa',itemType:'service',quantity:1,price:5,salePrice:160000,total:5}],'2026-10-12T11:00:00Z');assert.equal(store.inventory[0].quantity,0);assert.equal(store.inventory[0].salePrice,160000);
+});
+test('bulk input accepts new six columns and legacy four/five columns, ignoring service quantity',()=>{
+ const ctx={els:{bulkPurchaseText:{value:''}},normalizeSearchText:norm,parseAmountInput:s=>Number(s||0),window:{alert(){}}};vm.createContext(ctx);vm.runInContext(functionCode(app,'parseBulkPurchaseItems'),ctx);
+ ctx.els.bulkPurchaseText.value='Cát,3,Nhóm,Hàng hóa,10,20\nTắm,,Spa,Dịch vụ,0,150000\nCũ,2,Nhóm,10,20\nCũ 4,2,Nhóm,10';const items=ctx.parseBulkPurchaseItems();assert.equal(items.length,4);assert.equal(items[0].itemType,'goods');assert.equal(items[1].quantity,0);assert.equal(items[1].total,0);assert.equal(items[1].itemType,'service');assert.equal(items[2].total,20);assert.equal(items[3].salePrice,10);
+ ctx.els.bulkPurchaseText.value='Sai,1,Nhóm,Không rõ,10,20';assert.equal(ctx.parseBulkPurchaseItems(),null);
+});
+function backend(){const ctx={employeeDate:s=>s,employeeText:(s,max)=>String(s||'').slice(0,max),employeeNumber:(v,min)=>{const n=Number(v);if(!Number.isFinite(n)||n<min)throw Object.assign(new Error('INVALID_NUMBER'),{status:400});return n;},employeeKey:norm,employeeId:()=>String(Math.random()),createEmployeeActivity:()=>({}),allocateEmployeeSalesBillCode:()=>({billCode:'HD01'})};vm.createContext(ctx);for(const name of ['applyEmployeePurchaseMutation','applyEmployeeSalesMutation','applyEmployeeSalesDraftMutation'])vm.runInContext(functionCode(server,name),ctx);return ctx;}
+const worker={uid:'worker',profile:{displayName:'Nhân viên'},email:'fake@test.invalid'};
+test('employee server derives service status from trusted inventory and never trusts forged sales type',()=>{
+ const ctx=backend(),store={inventory:[],categories:{income:[]},activityHistory:[],customers:[],orders:[]};ctx.applyEmployeePurchaseMutation(store,{id:'p',date:'2026-10-12',items:[{name:'Tắm',groupName:'Spa',itemType:'service',quantity:100,price:0,salePrice:50},{name:'Cát',groupName:'Hàng',quantity:2,price:10,salePrice:20}]},worker);assert.equal(store.inventory[0].quantity,0);assert.equal(store.inventory[0].totalCost,0);assert.equal(store.purchaseOrders[0].total,20);
+ ctx.applyEmployeeSalesMutation(store,{id:'o',date:'2026-10-12',customerName:'Khách',items:[{name:'Tắm',quantity:100,price:50,itemType:'goods'},{name:'Cát',quantity:1,price:20,itemType:'service'}]},worker);assert.equal(store.inventory[0].quantity,0);assert.equal(store.inventory[1].quantity,1);assert.equal(store.orders[0].items[0].itemType,'service');assert.equal(store.orders[0].items[1].itemType,'goods');
+ assert.throws(()=>ctx.applyEmployeeSalesMutation(store,{id:'bad',date:'2026-10-12',customerName:'Khách',items:[{name:'Cát',quantity:50,price:20,itemType:'service'}]},worker),/OUT_OF_STOCK/);
+ const before=JSON.stringify(store);assert.throws(()=>ctx.applyEmployeePurchaseMutation(store,{id:'conflict',date:'2026-10-12',items:[{name:'Cát',groupName:'Spa',itemType:'service',price:0,salePrice:50}]},worker),/ITEM_TYPE_CONFLICT/);assert.equal(JSON.stringify(store),before);
+});
+test('employee export rejects services even if the request forges stock quantity',()=>{
+ const {applyEmployeeInventoryExport}=require('../functions/employee-managed-mutations');const store={id:'a',inventory:[{id:'service',name:'Tắm',itemType:'service',quantity:999,totalCost:0,lastPrice:0,salePrice:50}]};assert.throws(()=>applyEmployeeInventoryExport(store,{requestId:'r',inventoryId:'service',date:'2026-10-12',quantity:1,reason:''},{uid:'w',profile:{role:'employee',storeId:'a',permissions:{purchase:{inventoryExport:true}}}},()=> 'id',()=>({})),/SERVICE_NOT_STOCK_TRACKED/);assert.equal(store.inventory[0].quantity,999);
+});
+test('historical inventory snapshots never restore service sales as physical stock',()=>{
+ const {ctx}=frontend();ctx.isCancelledEntry=item=>item.status==='cancelled';for(const name of ['getInventorySnapshotKey','buildInventorySnapshotAtStartOfDay'])vm.runInContext(functionCode(app,name),ctx);
+ const store={inventory:[{name:'Tắm',groupName:'Spa',itemType:'service',quantity:0,totalCost:0,lastPrice:0,salePrice:50},{name:'Cát',groupName:'Hàng',quantity:3,totalCost:30,lastPrice:10,salePrice:20}],inventoryLogs:[],orders:[{date:'2026-10-13',items:[{name:'Tắm',itemType:'service',quantity:100},{name:'Cát',quantity:2}]}]};
+ const rows=ctx.buildInventorySnapshotAtStartOfDay(store,'2026-10-12');assert.equal(rows.find(row=>row.name==='Tắm').quantity,0);assert.equal(rows.find(row=>row.name==='Cát').quantity,5);
+});
+test('employee draft keeps trusted service metadata for later completion',()=>{
+ const ctx=backend(),store={inventory:[{name:'Tắm',itemType:'service',quantity:0}],draftOrders:[]};ctx.applyEmployeeSalesDraftMutation(store,{id:'draft',date:'2026-10-12',items:[{name:'Tắm',quantity:2,price:50,itemType:'goods'}]},worker);assert.equal(store.draftOrders[0].items[0].itemType,'service');assert.equal(store.draftOrders[0].items[0].quantity,2);assert.equal(store.inventory[0].quantity,0);
+});

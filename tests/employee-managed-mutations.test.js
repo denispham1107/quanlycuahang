@@ -54,5 +54,5 @@ test('customer rights cannot delete, target other stores or pass invalid data',(
   const allowed=server.match(/if \(!\[([^\]]+)\]\.includes\(type\)\)/)[1];assert.ok(allowed.includes('"inventory-export"'));assert.ok(allowed.includes('"customer-save"'));assert.ok(!allowed.includes('"customer-delete"'));
   assert.match(server,/hasEmployeePermission\(user, "purchase", "inventoryExport"\)/);assert.match(server,/hasEmployeePermission\(user, "sales", "customerManage"\)/);
   assert.match(server,/transaction\.set\(stateRef/);assert.match(fs.readFileSync('firestore.rules','utf8'),/match \/quanlycuahang\/shared-state \{\s*allow read, write: if isAdmin\(\);/);
-  assert.match(app,/const canManageInventory = !isEmployeeUser\(\);/);assert.match(app,/canExportInventory\s*\? `<button class="inventory-export-button"/);
+  assert.match(app,/const canManageInventory = !isEmployeeUser\(\);/);assert.match(app,/canExportInventory && !isServiceItem\(item\)\s*\? `<button class="inventory-export-button"/);
 });

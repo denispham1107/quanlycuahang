@@ -491,6 +491,10 @@ function applyEmployeeSalesMutation(store, rawOrder, user) {
 
   store.inventory = Array.isArray(store.inventory) ? store.inventory : [];
   for (const item of items) {
+    const matching = store.inventory.filter((stock) => employeeKey(stock.name) === employeeKey(item.name));
+    const service = matching.length > 0 && matching.every((stock) => stock.itemType === "service");
+    item.itemType = service ? "service" : "goods";
+    if (service) continue;
     let remaining = item.quantity;
     const stocks = store.inventory.filter(
       (stock) => employeeKey(stock.name) === employeeKey(item.name) && Number(stock.quantity || 0) > 0
@@ -584,6 +588,7 @@ function applyEmployeeSalesDraftMutation(store, rawDraft, user) {
       const discountAmount = employeeNumber(item.discountAmount || 0, 0);
       return {
         name,
+        itemType: (store.inventory || []).filter(stock => employeeKey(stock.name) === employeeKey(name)).length > 0 && (store.inventory || []).filter(stock => employeeKey(stock.name) === employeeKey(name)).every(stock => stock.itemType === "service") ? "service" : "goods",
         price,
         originalPrice,
         discountPercent,
@@ -639,13 +644,22 @@ function applyEmployeePurchaseMutation(store, rawOrder, user) {
   const items = (Array.isArray(rawOrder.items) ? rawOrder.items : []).slice(0, 50).map((item) => {
     const name = employeeText(item.name, 160);
     const groupName = employeeText(item.groupName, 120);
-    const quantity = Math.floor(employeeNumber(item.quantity, 1));
+    if (item.itemType !== undefined && !["goods", "service"].includes(item.itemType)) throw Object.assign(new Error("INVALID_ITEM_TYPE"), { status: 400 });
+    const itemType = item.itemType === "service" ? "service" : "goods";
+    const quantity = itemType === "service" ? 0 : Math.floor(employeeNumber(item.quantity, 1));
     const price = employeeNumber(item.price, 0);
     const salePrice = employeeNumber(item.salePrice, 0);
     if (!name || !groupName) throw Object.assign(new Error("INVALID_ITEM"), { status: 400 });
-    return { name, groupName, quantity, price, salePrice, total: quantity * price };
+    return { name, groupName, itemType, quantity, price, salePrice, total: quantity * price };
   });
   if (!items.length) throw Object.assign(new Error("EMPTY_ORDER"), { status: 400 });
+
+  const itemTypes = new Map();
+  for (const item of [...(store.inventory || []), ...items]) {
+    const key = employeeKey(item.name), type = item.itemType === "service" ? "service" : "goods";
+    if (itemTypes.has(key) && itemTypes.get(key) !== type) throw Object.assign(new Error("ITEM_TYPE_CONFLICT"), { status: 409 });
+    itemTypes.set(key, type);
+  }
 
   store.purchaseCategories = Array.isArray(store.purchaseCategories) ? store.purchaseCategories : [];
   store.inventory = Array.isArray(store.inventory) ? store.inventory : [];
@@ -668,6 +682,7 @@ function applyEmployeePurchaseMutation(store, rawOrder, user) {
         name: item.name,
         groupId: category.id,
         groupName: category.name,
+        itemType: item.itemType,
         quantity: 0,
         totalCost: 0,
         lastPrice: item.price,
@@ -677,8 +692,9 @@ function applyEmployeePurchaseMutation(store, rawOrder, user) {
       };
       store.inventory.push(stock);
     }
-    stock.quantity = oldQuantity + item.quantity;
-    stock.totalCost = Number(stock.totalCost || 0) + item.total;
+    stock.itemType = item.itemType;
+    stock.quantity = item.itemType === "service" ? 0 : oldQuantity + item.quantity;
+    stock.totalCost = item.itemType === "service" ? 0 : Number(stock.totalCost || 0) + item.total;
     stock.lastPrice = item.price;
     stock.salePrice = item.salePrice;
     stock.updatedAt = createdAt;
@@ -688,6 +704,7 @@ function applyEmployeePurchaseMutation(store, rawOrder, user) {
       type: "purchase",
       inventoryId: stock.id,
       itemName: stock.name,
+      itemType: stock.itemType,
       groupName: stock.groupName,
       oldQuantity,
       newQuantity: stock.quantity,

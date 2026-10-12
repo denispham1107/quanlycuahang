@@ -28,6 +28,7 @@ function applyEmployeeInventoryExport(store,mutation,user,createId,createActivit
   }
   const item=(store.inventory||[]).find(item=>item.id===inventoryId);
   if(!item)fail("INVENTORY_NOT_FOUND",404);
+  if(item.itemType==="service")fail("SERVICE_NOT_STOCK_TRACKED",400);
   const oldQuantity=Number(item.quantity),oldCost=Number(item.totalCost||0),price=Number(item.lastPrice||0),salePrice=Number(item.salePrice??item.lastPrice??0);
   if(!Number.isSafeInteger(oldQuantity)||oldQuantity<0||![oldCost,price,salePrice].every(value=>Number.isFinite(value)&&value>=0))fail("INVALID_STOCK");
   if(quantity>oldQuantity)fail("OUT_OF_STOCK:"+item.name,409);

@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=142" />
+    <link rel="manifest" href="manifest.webmanifest?v=143" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=142" />
+    <link rel="stylesheet" href="styles.css?v=143" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -943,7 +943,8 @@
           </div>
           <div class="field">
             <label for="bulkPurchaseText">Danh sách hàng hóa</label>
-            <textarea id="bulkPurchaseText" name="bulkPurchaseText" rows="18" maxlength="12000" placeholder="Coca,30,Nước ngọt,18000,20000&#10;Bò húc,30,Nước ngọt,25000,30000&#10;Mì cay,30,Mì,40000,49000"></textarea>
+            <textarea id="bulkPurchaseText" name="bulkPurchaseText" rows="18" maxlength="12000" placeholder="Coca,30,Nước ngọt,Hàng hóa,18000,20000&#10;Tắm VS,0,Spa,Dịch vụ,0,150000"></textarea>
+            <small class="bulk-purchase-format">Tên,Số lượng,Nhóm hàng,Loại hàng,Giá vốn,Giá bán. Loại hàng: Hàng hóa hoặc Dịch vụ; dịch vụ không cần số lượng (có thể nhập 0). Danh sách cũ 4–5 cột vẫn là Hàng hóa.</small>
           </div>
           <div class="bulk-purchase-summary" id="bulkPurchaseSummary">0 dòng hợp lệ</div>
         </div>
@@ -1600,8 +1601,8 @@
         </form>
       </section>
     </div>
-    <script defer src="app.js?v=142"></script>
-    <script defer src="closing-book-core.js?v=142"></script>
-    <script defer src="closing-book.js?v=142"></script>
+    <script defer src="app.js?v=143"></script>
+    <script defer src="closing-book-core.js?v=143"></script>
+    <script defer src="closing-book.js?v=143"></script>
   </body>
 </html>

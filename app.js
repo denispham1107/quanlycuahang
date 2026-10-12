@@ -1294,6 +1294,11 @@ els.purchaseItems.addEventListener("input", (event) => {
 });
 
 els.purchaseItems.addEventListener("change", (event) => {
+  if (event.target.matches('[data-purchase-item="itemType"]')) {
+    updatePurchaseRowType(event.target.closest(".purchase-item-row"));
+    updatePurchaseOrderTotal();
+    return;
+  }
   if (!event.target.matches('[data-purchase-item="name"]')) return;
   applyPurchaseProductSuggestion(event.target.closest(".purchase-item-row"));
 });
@@ -2098,6 +2103,8 @@ function normalizeState(data) {
       exportReasons: normalizeExportReasons(store),
       inventory: (store.inventory || []).map((item) => ({
         ...item,
+        itemType: item.itemType === "service" ? "service" : "goods",
+        ...(item.itemType === "service" ? { quantity: 0, totalCost: 0 } : {}),
         salePrice: Number(item.salePrice ?? item.lastPrice ?? 0)
       })),
       createdAt: store.createdAt || getEarliestEntryDate(store.entries || []) || today
@@ -3956,9 +3963,9 @@ function renderInventorySuggestionList(store) {
   if (!els.salesItemSuggestions) return;
 
   els.salesItemSuggestions.innerHTML = (store.inventory || [])
-    .filter((item) => Number(item.quantity || 0) > 0)
+    .filter((item) => isServiceItem(item) || Number(item.quantity || 0) > 0)
     .map((item) => {
-      const label = `${item.name} - tồn ${Number(item.quantity || 0).toLocaleString("vi-VN")} - ${formatAmountInput(getInventorySalePrice(item))} đ`;
+      const label = `${item.name} - ${isServiceItem(item) ? "Dịch vụ" : `tồn ${Number(item.quantity || 0).toLocaleString("vi-VN")}`} - ${formatAmountInput(getInventorySalePrice(item))} đ`;
       return `<option value="${escapeHtml(item.name)}" label="${escapeHtml(label)}"></option>`;
     })
     .join("");
@@ -3980,6 +3987,7 @@ function getPurchaseProductSuggestions(store) {
     suggestions.set(key, {
       name,
       groupName: String(item?.groupName || "").trim(),
+      itemType: item?.itemType === "service" ? "service" : "goods",
       price,
       salePrice,
       updatedAt
@@ -3992,6 +4000,7 @@ function getPurchaseProductSuggestions(store) {
       remember(
         {
           name: item.name,
+          itemType: item.itemType,
           groupName: item.groupName,
           price: item.lastPrice,
           salePrice: getInventorySalePrice(item)
@@ -4049,6 +4058,9 @@ function applyPurchaseProductSuggestion(row) {
   const salePriceInput = row.querySelector('[data-purchase-item="salePrice"]');
 
   if (groupInput) groupInput.value = suggestion.groupName || "";
+  const typeInput = row.querySelector('[data-purchase-item="itemType"]');
+  if (typeInput) typeInput.value = suggestion.itemType || "goods";
+  updatePurchaseRowType(row);
   if (priceInput) priceInput.value = suggestion.price > 0 ? formatAmountInput(suggestion.price) : "";
   if (salePriceInput) salePriceInput.value = suggestion.salePrice > 0 ? formatAmountInput(suggestion.salePrice) : "";
   updatePurchaseOrderTotal();
@@ -4713,6 +4725,7 @@ function getSalesOrderItems() {
       const quantity = Math.max(1, Number.parseInt(row.querySelector('[data-sales-item="quantity"]')?.value, 10) || 1);
       return {
         name,
+        itemType: getSalesItemType(getActiveStore(), name),
         price: pricing.price,
         originalPrice: pricing.originalPrice,
         discountPercent: pricing.discountPercent,
@@ -4732,6 +4745,7 @@ function getSalesDraftItems() {
       const quantity = Math.max(1, Number.parseInt(row.querySelector('[data-sales-item="quantity"]')?.value, 10) || 1);
       return {
         name,
+        itemType: getSalesItemType(getActiveStore(), name),
         price: pricing.price,
         originalPrice: pricing.originalPrice,
         discountPercent: pricing.discountPercent,
@@ -4863,7 +4877,7 @@ function applySalesItemSuggestion(row) {
   const name = String(nameInput.value || "").trim().toLowerCase();
   if (!name || priceInput.value) return;
 
-  const suggestion = (store.inventory || []).find((item) => item.name.toLowerCase() === name && Number(item.quantity || 0) > 0);
+  const suggestion = (store.inventory || []).find((item) => item.name.toLowerCase() === name && (isServiceItem(item) || Number(item.quantity || 0) > 0));
   if (!suggestion) return;
 
   const salePrice = getInventorySalePrice(suggestion);
@@ -4962,7 +4976,7 @@ function renderSalesCatalog() {
   ].sort((a, b) => a[1].localeCompare(b[1], "vi"));
   const validFilters = new Set(["all", ...groups.map(([key]) => `group:${key}`)]);
   els.salesCatalogTotalCount.textContent = String(inventory.length);
-  els.salesCatalogAvailableCount.textContent = String(inventory.filter((item) => Number(item.quantity || 0) > 0).length);
+  els.salesCatalogAvailableCount.textContent = String(inventory.filter((item) => isServiceItem(item) || Number(item.quantity || 0) > 0).length);
   els.salesCatalogGroupCount.textContent = String(groups.length);
 
   if (!validFilters.has(uiState.salesCatalogFilter)) {
@@ -5003,7 +5017,8 @@ function renderSalesCatalog() {
   els.salesCatalogList.innerHTML = rows
     .map((item) => {
       const quantity = Number(item.quantity || 0);
-      const disabled = quantity <= 0;
+      const service = isServiceItem(item);
+      const disabled = !service && quantity <= 0;
       return `
         <button
           class="sales-catalog-item goods-catalog-item ${disabled ? "is-disabled" : ""}"
@@ -5020,7 +5035,7 @@ function renderSalesCatalog() {
           </span>
           <span class="goods-catalog-bottom">
             <span class="goods-catalog-price"><small>Giá bán</small><strong>${formatCurrency(getInventorySalePrice(item))}</strong></span>
-            <span class="goods-catalog-select">${disabled ? "Hết hàng" : `Còn ${quantity.toLocaleString("vi-VN")} · Chọn →`}</span>
+            <span class="goods-catalog-select">${service ? "Dịch vụ · Chọn →" : disabled ? "Hết hàng" : `Còn ${quantity.toLocaleString("vi-VN")} · Chọn →`}</span>
           </span>
         </button>
       `;
@@ -5034,7 +5049,7 @@ function selectSalesCatalogItem(itemId) {
   if (!store || !row || !itemId) return;
 
   const item = (store.inventory || []).find((inventoryItem) => inventoryItem.id === itemId);
-  if (!item || Number(item.quantity || 0) <= 0) return;
+  if (!item || (!isServiceItem(item) && Number(item.quantity || 0) <= 0)) return;
 
   const nameInput = row.querySelector('[data-sales-item="name"]');
   const priceInput = row.querySelector('[data-sales-item="price"]');
@@ -5170,6 +5185,13 @@ function selectSalesCustomer(customerId) {
   closeSalesCustomerCatalogModal();
 }
 
+function isServiceItem(item) { return item?.itemType === "service"; }
+
+function getSalesItemType(store, rawName) {
+  const stocks = (store?.inventory || []).filter((item) => normalizeSearchText(item.name) === normalizeSearchText(rawName));
+  return stocks.length && stocks.every(isServiceItem) ? "service" : "goods";
+}
+
 function getInventoryAvailableByName(store, rawName) {
   const key = normalizeSearchText(rawName);
   return (store.inventory || [])
@@ -5180,6 +5202,7 @@ function getInventoryAvailableByName(store, rawName) {
 function validateSalesInventory(store, items) {
   const requested = new Map();
   items.forEach((item) => {
+    if (getSalesItemType(store, item.name) === "service") return;
     const key = normalizeSearchText(item.name);
     requested.set(key, {
       name: item.name,
@@ -5205,6 +5228,7 @@ function validateSalesInventory(store, items) {
 
 function deductInventoryForSales(store, items) {
   items.forEach((item) => {
+    if (getSalesItemType(store, item.name) === "service") return;
     let remaining = item.quantity;
     const key = normalizeSearchText(item.name);
     const stocks = (store.inventory || []).filter((stock) => normalizeSearchText(stock.name) === key && Number(stock.quantity || 0) > 0);
@@ -5225,6 +5249,7 @@ function deductInventoryForSales(store, items) {
 function restoreInventoryFromSales(store, items) {
   const now = new Date().toISOString();
   items.forEach((item) => {
+    if (isServiceItem(item) || getSalesItemType(store, item.name) === "service") return;
     const key = normalizeSearchText(item.name);
     const stock = (store.inventory || []).find((current) => normalizeSearchText(current.name) === key);
     if (stock) {
@@ -6024,6 +6049,8 @@ function openEditInventoryModal(inventoryId) {
   els.editInventoryName.value = item.name || "";
   els.editInventoryGroup.value = item.groupName || "";
   els.editInventoryQuantity.value = Number(item.quantity || 0);
+  els.editInventoryQuantity.closest(".field").hidden = isServiceItem(item);
+  els.editInventoryQuantity.disabled = isServiceItem(item);
   els.editInventoryPrice.value = formatAmountInput(item.lastPrice || 0);
   els.editInventorySalePrice.value = formatAmountInput(getInventorySalePrice(item));
   els.editInventoryModal.hidden = false;
@@ -6038,7 +6065,7 @@ function openExportInventoryModal(inventoryId) {
   if (isEmployeeUser() && !employeeCan("purchase", "inventoryExport")) return;
   const store = getActiveStore();
   const item = (store?.inventory || []).find((stock) => stock.id === inventoryId);
-  if (!item) return;
+  if (!item || isServiceItem(item)) return;
 
   els.exportInventoryForm.elements.inventoryId.value = item.id;
   els.exportInventoryName.textContent = item.name || "Kho hàng";
@@ -6073,6 +6100,8 @@ function openEditInventoryLogModal(logId) {
   els.editInventoryLogName.textContent = log.itemName || "Lịch sử kho";
   els.editInventoryLogDate.value = getInventoryLogDate(log);
   els.editInventoryLogQuantity.value = Number(log.newQuantity || 0);
+  els.editInventoryLogQuantity.closest(".field").hidden = isServiceItem(log);
+  els.editInventoryLogQuantity.disabled = isServiceItem(log);
   els.editInventoryLogPrice.value = formatAmountInput(log.newPrice || 0);
   els.editInventoryLogSalePrice.value = formatAmountInput(getInventoryLogNewSalePrice(log));
   renderEditInventoryLogReasonSuggestions(getInventoryLogReason(log));
@@ -6185,7 +6214,7 @@ function saveEditedInventory(formData) {
 
   const name = String(formData.get("name") || "").trim();
   const groupName = String(formData.get("groupName") || "").trim();
-  const quantity = Number.parseInt(formData.get("quantity"), 10);
+  const quantity = isServiceItem(item) ? 0 : Number.parseInt(formData.get("quantity"), 10);
   const lastPrice = parseAmountInput(formData.get("lastPrice"));
   const salePrice = parseAmountInput(formData.get("salePrice"));
 
@@ -6193,6 +6222,7 @@ function saveEditedInventory(formData) {
     window.alert("Vui lòng nhập đầy đủ tên hàng hóa, nhóm, số lượng, giá vốn và giá bán.");
     return false;
   }
+  if (!validatePurchaseItemTypes({ inventory: store.inventory.filter(stock => stock.id !== item.id) }, [{ name, itemType: item.itemType }])) return false;
 
   const oldQuantity = Number(item.quantity || 0);
   const oldPrice = Number(item.lastPrice || 0);
@@ -6205,13 +6235,14 @@ function saveEditedInventory(formData) {
   item.quantity = quantity;
   item.lastPrice = lastPrice;
   item.salePrice = salePrice;
-  item.totalCost = Math.max(0, quantity * lastPrice);
+  item.totalCost = isServiceItem(item) ? 0 : Math.max(0, quantity * lastPrice);
   item.updatedAt = updatedAt;
   const inventoryLog = addInventoryLog(store, {
     date: updatedAt.slice(0, 10),
     type: "edit",
     inventoryId: item.id,
     itemName: item.name,
+    itemType: item.itemType || "goods",
     groupName: item.groupName,
     oldQuantity,
     newQuantity: Number(item.quantity || 0),
@@ -6249,7 +6280,7 @@ function exportInventoryItem(formData) {
   if (!store) return false;
 
   const item = (store.inventory || []).find((stock) => stock.id === formData.get("inventoryId"));
-  if (!item) return false;
+  if (!item || isServiceItem(item)) return false;
 
   const date = String(formData.get("date") || today);
   const quantity = Number(formData.get("quantity"));
@@ -6326,7 +6357,7 @@ function saveEditedInventoryLog(formData) {
   const previousItemName = String(log.itemName || "Không rõ hàng hóa");
 
   const date = String(formData.get("date") || "").trim();
-  const newQuantity = Number.parseInt(formData.get("newQuantity"), 10);
+  const newQuantity = isServiceItem(log) ? 0 : Number.parseInt(formData.get("newQuantity"), 10);
   const newPrice = parseAmountInput(formData.get("newPrice"));
   const newSalePrice = parseAmountInput(formData.get("newSalePrice"));
   const exportReason = String(formData.get("exportReason") || "").trim();
@@ -6405,16 +6436,31 @@ function addPurchaseItemRow(item = {}) {
   row.innerHTML = `
     <input type="text" data-purchase-item="name" placeholder="Hàng hóa" autocomplete="off" list="purchaseItemSuggestions" value="${escapeHtml(item.name || "")}" />
     <input type="text" data-purchase-item="group" placeholder="Nhóm hàng hóa" autocomplete="off" list="purchaseGroupSuggestions" value="${escapeHtml(item.groupName || "")}" />
+    <select data-purchase-item="itemType" aria-label="Loại hàng"><option value="goods" ${item.itemType !== "service" ? "selected" : ""}>Hàng hóa</option><option value="service" ${item.itemType === "service" ? "selected" : ""}>Dịch vụ</option></select>
     <div class="quantity-stepper" aria-label="Số lượng">
       <button class="quantity-step" type="button" data-purchase-quantity-step="-1" aria-label="Giảm số lượng">-</button>
       <input type="number" data-purchase-item="quantity" min="1" step="1" placeholder="SL" value="${item.quantity || 1}" />
       <button class="quantity-step" type="button" data-purchase-quantity-step="1" aria-label="Tăng số lượng">+</button>
     </div>
+    <small class="service-stock-note" hidden>Dịch vụ không theo dõi tồn kho</small>
     <input type="text" data-purchase-item="price" inputmode="numeric" placeholder="Giá vốn" autocomplete="off" value="${item.price ? formatAmountInput(item.price) : ""}" />
     <input type="text" data-purchase-item="salePrice" inputmode="numeric" placeholder="Giá bán" autocomplete="off" value="${item.salePrice ? formatAmountInput(item.salePrice) : ""}" />
     <button class="delete-small" type="button" data-remove-purchase-item title="Xóa hàng hóa" aria-label="Xóa hàng hóa">×</button>
   `;
   els.purchaseItems.append(row);
+  updatePurchaseRowType(row);
+}
+
+function updatePurchaseRowType(row) {
+  if (!row) return;
+  const service = row.querySelector('[data-purchase-item="itemType"]')?.value === "service";
+  row.dataset.itemType = service ? "service" : "goods";
+  const stepper = row.querySelector(".quantity-stepper");
+  const quantity = row.querySelector('[data-purchase-item="quantity"]');
+  if (stepper) stepper.hidden = service;
+  if (quantity) quantity.disabled = service;
+  const note = row.querySelector(".service-stock-note");
+  if (note) note.hidden = !service;
 }
 
 function getPurchaseOrderItems() {
@@ -6422,12 +6468,14 @@ function getPurchaseOrderItems() {
     .map((row) => {
       const name = String(row.querySelector('[data-purchase-item="name"]')?.value || "").trim();
       const groupName = String(row.querySelector('[data-purchase-item="group"]')?.value || "").trim();
-      const quantity = Math.max(1, Number.parseInt(row.querySelector('[data-purchase-item="quantity"]')?.value, 10) || 1);
+      const itemType = row.querySelector('[data-purchase-item="itemType"]')?.value === "service" ? "service" : "goods";
+      const quantity = itemType === "service" ? 0 : Math.max(1, Number.parseInt(row.querySelector('[data-purchase-item="quantity"]')?.value, 10) || 1);
       const price = parseAmountInput(row.querySelector('[data-purchase-item="price"]')?.value);
       const salePrice = parseAmountInput(row.querySelector('[data-purchase-item="salePrice"]')?.value);
       return {
         name,
         groupName,
+        itemType,
         quantity,
         price,
         salePrice,
@@ -6438,7 +6486,7 @@ function getPurchaseOrderItems() {
       item.name &&
       item.groupName &&
       Number.isFinite(item.price) &&
-      item.price > 0 &&
+      (item.itemType === "service" ? item.price >= 0 : item.price > 0) &&
       Number.isFinite(item.salePrice) &&
       item.salePrice > 0
     );
@@ -6479,14 +6527,16 @@ function applyPurchaseItemsToInventory(store, date, items, createdAt) {
   const inventoryLogs = [];
 
   items.forEach((item) => {
+    const service = isServiceItem(item);
     const key = normalizeSearchText(`${item.groupName} ${item.name}`);
     const current = store.inventory.find((stock) => normalizeSearchText(`${stock.groupName} ${stock.name}`) === key);
     if (current) {
       const oldQuantity = Number(current.quantity || 0);
       const oldPrice = Number(current.lastPrice || 0);
       const oldSalePrice = getInventorySalePrice(current);
-      current.quantity = Number(current.quantity || 0) + item.quantity;
-      current.totalCost = Number(current.totalCost || 0) + item.total;
+      current.itemType = service ? "service" : "goods";
+      current.quantity = service ? 0 : Number(current.quantity || 0) + item.quantity;
+      current.totalCost = service ? 0 : Number(current.totalCost || 0) + item.total;
       current.lastPrice = item.price;
       current.salePrice = item.salePrice;
       current.updatedAt = createdAt;
@@ -6495,6 +6545,7 @@ function applyPurchaseItemsToInventory(store, date, items, createdAt) {
         type: "purchase",
         inventoryId: current.id,
         itemName: current.name,
+        itemType: current.itemType,
         groupName: current.groupName,
         oldQuantity,
         newQuantity: Number(current.quantity || 0),
@@ -6509,8 +6560,9 @@ function applyPurchaseItemsToInventory(store, date, items, createdAt) {
         name: item.name,
         groupId: item.groupId,
         groupName: item.groupName,
-        quantity: item.quantity,
-        totalCost: item.total,
+        itemType: service ? "service" : "goods",
+        quantity: service ? 0 : item.quantity,
+        totalCost: service ? 0 : item.total,
         lastPrice: item.price,
         salePrice: item.salePrice,
         createdAt,
@@ -6522,6 +6574,7 @@ function applyPurchaseItemsToInventory(store, date, items, createdAt) {
         type: "purchase",
         inventoryId: stock.id,
         itemName: stock.name,
+        itemType: stock.itemType,
         groupName: stock.groupName,
         oldQuantity: 0,
         newQuantity: Number(stock.quantity || 0),
@@ -6552,6 +6605,7 @@ function savePurchaseOrder() {
     window.alert("Vui lòng nhập hàng hóa, nhóm hàng hóa, số lượng, giá vốn và giá bán.");
     return false;
   }
+  if (!validatePurchaseItemTypes(store, items)) return false;
 
   const createdAt = new Date().toISOString();
   const orderId = createId();
@@ -6590,6 +6644,20 @@ function savePurchaseOrder() {
   return true;
 }
 
+function validatePurchaseItemTypes(store, items) {
+  const names = new Map();
+  for (const item of [...(store.inventory || []), ...items]) {
+    const key = normalizeSearchText(item.name);
+    const type = isServiceItem(item) ? "service" : "goods";
+    if (names.has(key) && names.get(key) !== type) {
+      window.alert(`Tên "${item.name}" đang dùng cho loại hàng khác. Vui lòng dùng tên khác để không thay đổi tồn kho hiện có.`);
+      return false;
+    }
+    names.set(key, type);
+  }
+  return true;
+}
+
 function parseBulkPurchaseItems({ silent = false } = {}) {
   const lines = String(els.bulkPurchaseText.value || "")
     .split(/\r?\n/)
@@ -6605,16 +6673,24 @@ function parseBulkPurchaseItems({ silent = false } = {}) {
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
     const parts = line.split(",").map((part) => part.trim());
-    if (parts.length !== 4 && parts.length !== 5) {
-      if (!silent) window.alert(`Dòng ${index + 1} chưa đúng định dạng: Tên,Số lượng,Nhóm,Giá vốn,Giá bán.`);
+    if (![4, 5, 6].includes(parts.length)) {
+      if (!silent) window.alert(`Dòng ${index + 1} chưa đúng định dạng: Tên,Số lượng,Nhóm,Loại,Giá vốn,Giá bán.`);
       return null;
     }
 
-    const [name, rawQuantity, groupName, rawPrice, rawSalePrice] = parts;
-    const quantity = Number.parseInt(rawQuantity, 10);
+    const [name, rawQuantity, groupName] = parts;
+    const typed = parts.length === 6 || (parts.length === 5 && ["hang hoa", "dich vu"].includes(normalizeSearchText(parts[3])));
+    const rawType = typed ? normalizeSearchText(parts[3]) : "hang hoa";
+    if (!["hang hoa", "dich vu"].includes(rawType)) {
+      if (!silent) window.alert(`Dòng ${index + 1}: Loại hàng phải là Hàng hóa hoặc Dịch vụ.`);
+      return null;
+    }
+    const itemType = rawType === "dich vu" ? "service" : "goods";
+    const rawPrice = parts[typed ? 4 : 3], rawSalePrice = parts[typed ? 5 : 4];
+    const quantity = itemType === "service" ? 0 : Number.parseInt(rawQuantity, 10);
     const price = parseAmountInput(rawPrice);
     const salePrice = parseAmountInput(rawSalePrice || rawPrice);
-    if (!name || !groupName || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price) || price <= 0 || !Number.isFinite(salePrice) || salePrice <= 0) {
+    if (!name || !groupName || !Number.isFinite(quantity) || (itemType === "goods" && quantity <= 0) || !Number.isFinite(price) || (itemType === "service" ? price < 0 : price <= 0) || !Number.isFinite(salePrice) || salePrice <= 0) {
       if (!silent) window.alert(`Dòng ${index + 1} chưa hợp lệ. Vui lòng kiểm tra tên, số lượng, nhóm, giá vốn và giá bán.`);
       return null;
     }
@@ -6622,6 +6698,7 @@ function parseBulkPurchaseItems({ silent = false } = {}) {
     items.push({
       name,
       groupName,
+      itemType,
       quantity,
       price,
       salePrice,
@@ -6649,6 +6726,7 @@ function saveBulkPurchaseOrder() {
   }
 
   const items = parseBulkPurchaseItems();
+  if (items && !validatePurchaseItemTypes(store, items)) return false;
   if (!items || !items.length) {
     window.alert("Vui lòng nhập ít nhất 1 dòng hàng hóa.");
     return false;
@@ -8420,7 +8498,7 @@ function renderInventory(store) {
     const matchesSearch = !query || normalizeSearchText(item.name || "").includes(query);
     const matchesFilter =
       uiState.inventoryFilter === "all" ||
-      (uiState.inventoryFilter === "out-of-stock" && quantity <= 0) ||
+      (uiState.inventoryFilter === "out-of-stock" && !isServiceItem(item) && quantity <= 0) ||
       (uiState.inventoryFilter.startsWith("group:") &&
         normalizeSearchText(item.groupName || "") === uiState.inventoryFilter.slice(6));
     return matchesSearch && matchesFilter;
@@ -8462,15 +8540,15 @@ function renderInventory(store) {
               </div>
             </div>
             <div class="inventory-meta">
-              <div><span>Số lượng</span><strong>${quantity.toLocaleString("vi-VN")}</strong></div>
+              <div><span>${isServiceItem(item) ? "Loại hàng" : "Số lượng"}</span><strong>${isServiceItem(item) ? "Dịch vụ" : quantity.toLocaleString("vi-VN")}</strong></div>
               <div><span>Giá vốn</span><strong>${formatCurrency(item.lastPrice || 0)}</strong></div>
               <div><span>Giá bán</span><strong>${formatCurrency(getInventorySalePrice(item))}</strong></div>
-              <div><span>Tổng giá trị</span><strong>${formatCurrency(item.totalCost || 0)}</strong></div>
+              <div><span>${isServiceItem(item) ? "Tồn kho" : "Tổng giá trị"}</span><strong>${isServiceItem(item) ? "Không theo dõi" : formatCurrency(item.totalCost || 0)}</strong></div>
             </div>
             <div class="inventory-product-footer">
               <span class="inventory-date">Cập nhật: ${formatDate(String(item.updatedAt || item.createdAt || today).slice(0, 10))}</span>
               ${
-                canExportInventory
+                canExportInventory && !isServiceItem(item)
                   ? `<button class="inventory-export-button" type="button" data-export-inventory="${escapeHtml(item.id || "")}" ${quantity <= 0 ? "disabled" : ""}>Xuất <span aria-hidden="true">→</span></button>`
                   : ""
               }
@@ -8560,6 +8638,7 @@ function buildInventorySnapshotAtStartOfDay(store, targetDate) {
     .filter((order) => !isCancelledEntry(order) && String(order.date || order.createdAt || today).slice(0, 10) > targetDate)
     .forEach((order) => {
       (order.items || []).forEach((soldItem) => {
+        if (isServiceItem(soldItem) || getSalesItemType(store, soldItem.name) === "service") return;
         const matchedItem =
           [...itemsByKey.values()].find(
             (item) => normalizeSearchText(item.name || "") === normalizeSearchText(soldItem.name || "")
@@ -8670,10 +8749,10 @@ function findLatestInventoryLogForItem(store, referenceLog, excludeId = "") {
 function applyInventoryLogValuesToItem(item, log) {
   if (!item || !log) return;
 
-  item.quantity = Number(log.newQuantity ?? log.oldQuantity ?? item.quantity ?? 0);
+  item.quantity = isServiceItem(item) ? 0 : Number(log.newQuantity ?? log.oldQuantity ?? item.quantity ?? 0);
   item.lastPrice = Number(log.newPrice ?? log.oldPrice ?? item.lastPrice ?? 0);
   item.salePrice = Number(getInventoryLogNewSalePrice(log));
-  item.totalCost = Math.max(0, Number(item.quantity || 0) * Number(item.lastPrice || 0));
+  item.totalCost = isServiceItem(item) ? 0 : Math.max(0, Number(item.quantity || 0) * Number(item.lastPrice || 0));
   item.updatedAt = log.updatedAt || log.date || new Date().toISOString();
 }
 
@@ -8793,11 +8872,11 @@ function renderInventoryLogs(store) {
                     <td><span class="inventory-log-purpose ${purpose.value}">${purpose.label}</span></td>
                     <td>${purpose.value === "export" ? escapeHtml(reason || "Chưa ghi") : "—"}</td>
                     <td>
-                      <span class="inventory-log-change">
+                      ${isServiceItem(log) ? '<span>Không theo dõi tồn kho</span>' : `<span class="inventory-log-change">
                         <span class="old-value">${Number(log.oldQuantity || 0).toLocaleString("vi-VN")}</span>
                         <span class="change-arrow">→</span>
                         <span class="new-value">${Number(log.newQuantity || 0).toLocaleString("vi-VN")}</span>
-                      </span>
+                      </span>`}
                     </td>
                     <td>${renderInventoryLogPrice(log.oldPrice, log.newPrice)}</td>
                     <td>${renderInventoryLogPrice(getInventoryLogOldSalePrice(log), getInventoryLogNewSalePrice(log))}</td>

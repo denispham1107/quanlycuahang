@@ -36,7 +36,7 @@ async function main() {
       function employeeCan(area, action) { return area === 'purchase' && (action === 'inventoryView' || (action === 'inventoryExport' && inventoryExportAllowed)); }
       function openExportInventoryModal(id) { actions.push(['export', id]); }
       function openEditInventoryModal(id) { actions.push(['edit', id]); }
-      ${['renderInventory', 'normalizeSearchText', 'formatCurrency', 'formatDate', 'getInventorySalePrice', 'escapeHtml'].map(functionSource).join('\n')}
+      ${['isServiceItem', 'renderInventory', 'normalizeSearchText', 'formatCurrency', 'formatDate', 'getInventorySalePrice', 'escapeHtml'].map(functionSource).join('\n')}
       ${app.slice(clickStart, clickEnd)}
       const store = { inventory: [
         {id:'cat', name:'Cát nhật', groupName:'Cát vệ sinh', quantity:5, lastPrice:44000, salePrice:58000, totalCost:88000, updatedAt:today},

@@ -92,7 +92,8 @@ test("catalog shows real stock totals and never enables out-of-stock items", () 
     normalizeSearchText: (value) => String(value).toLowerCase(),
     escapeHtml: (value) => String(value),
     formatCurrency: (value) => `${value} đ`,
-    getInventorySalePrice: (item) => item.salePrice
+    getInventorySalePrice: (item) => item.salePrice,
+    isServiceItem: item => item?.itemType === "service"
   };
   vm.createContext(context);
   vm.runInContext(app.slice(start, end), context);
@@ -124,7 +125,8 @@ test("choosing goods updates only the current sales row and keeps the order draf
     formatAmountInput: (amount) => String(amount),
     updateSalesOrderTotal: () => { totals++; },
     closeSalesCatalogPage: () => { closed++; },
-    customer
+    customer,
+    isServiceItem: item => item?.itemType === "service"
   };
   vm.createContext(context);
   vm.runInContext(app.slice(start, end), context);
