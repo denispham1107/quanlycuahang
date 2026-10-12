@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=144" />
+    <link rel="manifest" href="manifest.webmanifest?v=145" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=144" />
+    <link rel="stylesheet" href="styles.css?v=145" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -1249,9 +1249,10 @@
     </div>
 
     <div class="modal-backdrop inventory-history-backdrop" id="inventoryHistoryModal" hidden>
-      <section class="modal-card inventory-card inventory-history-card">
+      <section class="modal-card inventory-card inventory-history-card inventory-pastel-card" role="dialog" aria-modal="true" aria-labelledby="inventoryHistoryTitle">
         <div class="panel-heading">
-          <h2>Lịch sử Kho</h2>
+          <svg class="inventory-dialog-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="5" width="20" height="23" rx="5" fill="#d8cbf3" stroke="#7461bc" stroke-width="1.5"/><path d="M10 11h10M10 16h7M10 21h5" stroke="#7461bc" stroke-width="2" stroke-linecap="round"/><circle cx="23" cy="23" r="7" fill="#b8dcf3" stroke="#6389be" stroke-width="1.5"/><path d="M23 19v4l3 2" fill="none" stroke="#426caa" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <h2 id="inventoryHistoryTitle">Lịch sử Kho</h2>
           <span id="inventoryHistoryCount">0 mặt hàng</span>
         </div>
         <div class="history-tools inventory-tools">
@@ -1273,9 +1274,10 @@
     </div>
 
     <div class="modal-backdrop" id="editInventoryModal" hidden>
-      <form class="modal-card" id="editInventoryForm">
+      <form class="modal-card inventory-pastel-card" id="editInventoryForm" role="dialog" aria-modal="true" aria-labelledby="editInventoryTitle">
         <div class="panel-heading">
-          <h2>Sửa hàng hóa</h2>
+          <svg class="inventory-dialog-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="m4 10 11-6 11 6-11 6L4 10Z" fill="#e3dcfa" stroke="#7461bc" stroke-width="1.5" stroke-linejoin="round"/><path d="M4 10v13l11 6V16L4 10Z" fill="#cdbdee" stroke="#7461bc" stroke-width="1.5" stroke-linejoin="round"/><path d="m15 16 11-6v13l-11 6V16Z" fill="#b7daf3" stroke="#6389be" stroke-width="1.5" stroke-linejoin="round"/><path d="m18 21 8-8 3 3-8 8-4 1 1-4Z" fill="#faf6ff" stroke="#7561b8" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          <h2 id="editInventoryTitle">Sửa hàng hóa</h2>
           <span>Kho hàng</span>
         </div>
         <input type="hidden" name="inventoryId" />
@@ -1288,8 +1290,13 @@
           <input id="editInventoryGroup" name="groupName" type="text" autocomplete="off" required />
         </div>
         <div class="field">
+          <label for="editInventoryType">Loại hàng</label>
+          <select id="editInventoryType" name="itemType"><option value="goods">Hàng hóa</option><option value="service">Dịch vụ</option></select>
+          <small id="editInventoryTypeNote">Dịch vụ không theo dõi số lượng tồn kho.</small>
+        </div>
+        <div class="field">
           <label for="editInventoryQuantity">Số lượng tồn kho</label>
-          <input id="editInventoryQuantity" name="quantity" type="number" step="1" autocomplete="off" required />
+          <input id="editInventoryQuantity" name="quantity" type="number" min="0" step="1" autocomplete="off" required />
         </div>
         <div class="field">
           <label for="editInventoryPrice">Giá vốn</label>
@@ -1349,9 +1356,10 @@
     </div>
 
     <div class="modal-backdrop" id="editInventoryLogModal" hidden>
-      <form class="modal-card" id="editInventoryLogForm">
+      <form class="modal-card inventory-pastel-card" id="editInventoryLogForm" role="dialog" aria-modal="true" aria-labelledby="editInventoryLogTitle">
         <div class="panel-heading">
-          <h2>Sửa lịch sử kho</h2>
+          <svg class="inventory-dialog-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="4" width="20" height="24" rx="5" fill="#d8cbf3" stroke="#7461bc" stroke-width="1.5"/><path d="M10 10h10M10 15h8M10 20h5" stroke="#7461bc" stroke-width="2" stroke-linecap="round"/><path d="m18 23 8-8 3 3-8 8-4 1 1-4Z" fill="#e9f7ff" stroke="#6389be" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          <h2 id="editInventoryLogTitle">Sửa lịch sử kho</h2>
           <span id="editInventoryLogName">Kho hàng</span>
         </div>
         <input type="hidden" name="logId" />
@@ -1454,6 +1462,7 @@
               <label><input name="purchaseCreate" type="checkbox" checked /> Tạo mới trong Nhập hàng</label>
               <label><input name="purchaseInventoryView" type="checkbox" /> Xem Kho hàng</label>
               <label><input name="purchaseInventoryExport" type="checkbox" /> Xuất hàng trong Kho hàng</label>
+              <label><input name="purchaseInventoryTypeManage" type="checkbox" /> Đổi loại hàng trong kho</label>
               <label><input name="salesView" type="checkbox" checked /> Xem tab Bán hàng</label>
               <label><input name="salesCreate" type="checkbox" checked /> Tạo mới trong Bán hàng</label>
               <label><input name="salesDraft" type="checkbox" /> Lưu và mở đơn đang lưu</label>
@@ -1601,8 +1610,8 @@
         </form>
       </section>
     </div>
-    <script defer src="app.js?v=144"></script>
-    <script defer src="closing-book-core.js?v=144"></script>
-    <script defer src="closing-book.js?v=144"></script>
+    <script defer src="app.js?v=145"></script>
+    <script defer src="closing-book-core.js?v=145"></script>
+    <script defer src="closing-book.js?v=145"></script>
   </body>
 </html>

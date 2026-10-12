@@ -340,7 +340,7 @@ function allocateEmployeeSalesBillCode(store, date) {
 
 const DEFAULT_EMPLOYEE_PERMISSIONS = Object.freeze({
   closingBook: Object.freeze({ manage: false }),
-  purchase: Object.freeze({ view: true, create: true, inventoryView: false, inventoryExport: false }),
+  purchase: Object.freeze({ view: true, create: true, inventoryView: false, inventoryExport: false, inventoryTypeManage: false }),
   sales: Object.freeze({ view: true, create: true, draft: false, customerManage: false }),
   history: Object.freeze({ viewOwn: true })
 });
@@ -356,7 +356,8 @@ function normalizeEmployeePermissions(profile = {}) {
       view: source.purchase?.view === true,
       create: source.purchase?.create === true,
       inventoryView: source.purchase?.inventoryView === true,
-      inventoryExport: source.purchase?.inventoryExport === true
+      inventoryExport: source.purchase?.inventoryExport === true,
+      inventoryTypeManage: source.purchase?.inventoryTypeManage === true
     },
     sales: {
       view: source.sales?.view === true,
@@ -370,6 +371,7 @@ function normalizeEmployeePermissions(profile = {}) {
   };
   if (permissions.purchase.create) permissions.purchase.view = true;
   if (permissions.purchase.inventoryExport) permissions.purchase.inventoryView = true;
+  if (permissions.purchase.inventoryTypeManage) permissions.purchase.inventoryView = true;
   if (permissions.purchase.inventoryView) permissions.purchase.view = true;
   if (permissions.sales.customerManage) permissions.sales.view = true;
   if (permissions.sales.create) permissions.sales.view = true;
@@ -404,7 +406,7 @@ function getEmployeeStoreIds(state, profile) {
 
 const { getEmployeeOverviewSales } = require("./employee-overview");
 const { getCashEntrySuggestions } = require("./cash-entry-suggestions");
-const { applyEmployeeInventoryExport, applyEmployeeCustomerSave } = require("./employee-managed-mutations");
+const { applyEmployeeInventoryExport, applyEmployeeCustomerSave, applyEmployeeInventoryTypeChange } = require("./employee-managed-mutations");
 
 function sanitizeEmployeeState(state, user) {
   const permissions = normalizeEmployeePermissions(user.profile);
@@ -439,7 +441,7 @@ function sanitizeEmployeeState(state, user) {
         exportReasons: permissions.purchase.inventoryExport && Array.isArray(store.exportReasons) ? store.exportReasons : [],
         activityHistory: permissions.history.viewOwn
           ? (Array.isArray(store.activityHistory) ? store.activityHistory : []).filter(
-              (activity) => activity.actorUid === user.uid && ["Nhập hàng", "Bán hàng", "Chốt sổ", "Xuất kho", "Khách hàng"].includes(activity.area)
+              (activity) => activity.actorUid === user.uid && ["Nhập hàng", "Bán hàng", "Chốt sổ", "Xuất kho", "Khách hàng", "Kho hàng"].includes(activity.area)
             )
           : [],
         createdAt: store.createdAt || ""
@@ -679,6 +681,9 @@ function applyEmployeePurchaseMutation(store, rawOrder, user) {
         return !change || fields.some((field) => change[field] !== expected[field]);
       })) {
     throw Object.assign(new Error("ITEM_TYPE_CONFIRMATION_REQUIRED"), { status: 409 });
+  }
+  if (typeChanges.length && !hasEmployeePermission(user, "purchase", "inventoryTypeManage")) {
+    throw Object.assign(new Error("ITEM_TYPE_PERMISSION_REQUIRED"), { status: 403 });
   }
   if ((store.purchaseOrders || []).some((current) => current.id === rawOrder.id)) throw Object.assign(new Error("DUPLICATE_ORDER"), { status: 409 });
 
@@ -2529,7 +2534,7 @@ exports.saveEmployeeMutation = onRequest(
       const user = await requireUserProfile(req, "employee");
       const mutation = req.body?.mutation || {};
       const type = employeeText(mutation.type, 40);
-      if (!["sales-create", "sales-draft-save", "purchase-create", "closing-book-save", "inventory-export", "customer-save"].includes(type)) {
+      if (!["sales-create", "sales-draft-save", "purchase-create", "closing-book-save", "inventory-export", "customer-save", "inventory-type-change"].includes(type)) {
         return sendError(res, 403, "Thao tác này không được phép cho nhân viên.");
       }
       if (type === "sales-create" && !hasEmployeePermission(user, "sales", "create")) {
@@ -2546,6 +2551,9 @@ exports.saveEmployeeMutation = onRequest(
       }
       if (type === "inventory-export" && !hasEmployeePermission(user, "purchase", "inventoryExport")) {
         return sendError(res, 403, "Bạn chưa được cấp quyền Xuất hàng trong Kho hàng.");
+      }
+      if (type === "inventory-type-change" && !hasEmployeePermission(user, "purchase", "inventoryTypeManage")) {
+        return sendError(res, 403, "Bạn chưa được cấp quyền Đổi loại hàng trong kho.");
       }
       if (type === "customer-save" && !hasEmployeePermission(user, "sales", "customerManage")) {
         return sendError(res, 403, "Bạn chưa được cấp quyền thêm, chỉnh sửa thông tin khách hàng.");
@@ -2572,8 +2580,9 @@ exports.saveEmployeeMutation = onRequest(
         if (type === "purchase-create") applyEmployeePurchaseMutation(store, mutation.order, user);
         if (type === "closing-book-save") applyClosingBookMutation(store, mutation, user, employeeId);
         if (type === "inventory-export") applyEmployeeInventoryExport(store, mutation, user, employeeId, createEmployeeActivity);
+        if (type === "inventory-type-change") applyEmployeeInventoryTypeChange(store, mutation, user, employeeId, createEmployeeActivity);
         if (type === "customer-save") applyEmployeeCustomerSave(store, mutation.customer, user, employeeId, createEmployeeActivity);
-        if (["closing-book-save", "inventory-export", "customer-save"].includes(type) && Buffer.byteLength(JSON.stringify(state),"utf8")>900000) throw Object.assign(new Error("STATE_TOO_LARGE"),{status:400});
+        if (["closing-book-save", "inventory-export", "customer-save", "inventory-type-change"].includes(type) && Buffer.byteLength(JSON.stringify(state),"utf8")>900000) throw Object.assign(new Error("STATE_TOO_LARGE"),{status:400});
         transaction.set(stateRef, { state, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
         resultState = sanitizeEmployeeState(state, user);
       });
@@ -2587,6 +2596,8 @@ exports.saveEmployeeMutation = onRequest(
           ? "Chốt sổ đã thay đổi trên thiết bị khác. Vui lòng tải lại và thử lại."
         : error?.message === "ITEM_TYPE_CONFIRMATION_REQUIRED"
           ? "Kho hàng đã thay đổi hoặc chưa xác nhận đổi loại. Vui lòng tải lại kho, kiểm tra và xác nhận lần nữa."
+        : error?.message === "ITEM_TYPE_PERMISSION_REQUIRED"
+          ? "Bạn chưa được cấp quyền Đổi loại hàng trong kho."
         : error?.message === "ITEM_TYPE_CONFLICT"
           ? "Cùng một tên hàng trong lần nhập chỉ được dùng một loại: Hàng hóa hoặc Dịch vụ."
         : knownStatus < 500

@@ -70,4 +70,45 @@ function applyEmployeeCustomerSave(store,raw,user,createId,createActivity) {
   store.customers=existing?customers.map(item=>item.id===newId?customer:item):[...customers,customer];
   store.activityHistory=[activity,...(store.activityHistory||[])];return customer;
 }
-module.exports={applyEmployeeInventoryExport,applyEmployeeCustomerSave};
+function applyEmployeeInventoryTypeChange(store,mutation,user,createId,createActivity) {
+  authorize(store,user,"purchase","inventoryTypeManage");
+  const allowed=new Set(["type","storeId","requestId","inventoryId","itemType","date","typeChanges"]);
+  if(Object.keys(mutation).some(field=>!allowed.has(field)))fail("INVALID_TYPE_CHANGE");
+  const requestId=text(mutation.requestId,80,true),inventoryId=text(mutation.inventoryId,100,true);
+  const itemType=mutation.itemType,date=text(mutation.date,10,true);
+  if(!["goods","service"].includes(itemType)||!validDate(date))fail("INVALID_TYPE_CHANGE");
+  const previous=(store.inventoryLogs||[]).find(log=>log.requestId===requestId);
+  if(previous) {
+    if(previous.type!=="type-change"||previous.createdByUid!==user.uid||previous.requestInventoryId!==inventoryId||previous.itemType!==itemType||previous.date!==date)fail("TYPE_CHANGE_REQUEST_CONFLICT",409);
+    return previous;
+  }
+  const item=(store.inventory||[]).find(stock=>stock.id===inventoryId);
+  if(!item)fail("INVENTORY_NOT_FOUND",404);
+  if((item.itemType||"goods")===itemType)fail("NO_TYPE_CHANGE");
+  const typeKey=name=>key(name).replace(/[^a-z0-9]+/g," ").trim();
+  const changes=(store.inventory||[]).filter(stock=>typeKey(stock.name)===typeKey(item.name)&&(stock.itemType||"goods")!==itemType).map(stock=>({
+    inventoryId:stock.id,name:stock.name,groupName:stock.groupName||"",fromType:stock.itemType==="service"?"service":"goods",toType:itemType,
+    quantity:Number(stock.quantity||0),totalCost:Number(stock.totalCost||0),lastPrice:Number(stock.lastPrice||0),salePrice:Number(stock.salePrice??stock.lastPrice??0),updatedAt:String(stock.updatedAt||"")
+  }));
+  const confirmed=Array.isArray(mutation.typeChanges)?mutation.typeChanges:[];
+  const fields=["inventoryId","name","groupName","fromType","toType","quantity","totalCost","lastPrice","salePrice","updatedAt"];
+  if(confirmed.length!==changes.length||new Set(confirmed.map(change=>change?.inventoryId)).size!==confirmed.length||changes.some(expected=>{
+    const change=confirmed.find(current=>current?.inventoryId===expected.inventoryId);
+    return !change||fields.some(field=>change[field]!==expected[field]);
+  }))fail("ITEM_TYPE_CONFIRMATION_REQUIRED",409);
+  if(changes.some(change=>![change.quantity,change.totalCost,change.lastPrice,change.salePrice].every(value=>Number.isFinite(value)&&value>=0)))fail("INVALID_STOCK");
+  const now=new Date().toISOString(),logs=[];
+  for(const change of changes) {
+    const stock=store.inventory.find(current=>current.id===change.inventoryId);
+    Object.assign(stock,{itemType,quantity:0,totalCost:0,updatedAt:now});
+    logs.push({id:createId(),requestId,requestInventoryId:inventoryId,type:"type-change",date,inventoryId:stock.id,itemName:stock.name,groupName:stock.groupName||"",
+      itemType,oldItemType:change.fromType,oldQuantity:change.quantity,newQuantity:0,oldTotalCost:change.totalCost,newTotalCost:0,
+      oldPrice:change.lastPrice,newPrice:change.lastPrice,oldSalePrice:change.salePrice,newSalePrice:change.salePrice,updatedAt:now,
+      createdByUid:user.uid,createdByName:String(user.profile.displayName||user.email||"").slice(0,120)});
+  }
+  store.inventoryLogs=[...logs.reverse(),...(store.inventoryLogs||[])];
+  const activity=createActivity(user,"Kho hàng",`Đổi "${item.name}" thành ${itemType==="service"?"Dịch vụ":"Hàng hóa"}.`,{createdAt:now,tab:"purchase",targetType:"inventory-log",targetId:logs[0].id,targetDate:date});
+  activity.action="update";store.activityHistory=[activity,...(store.activityHistory||[])];
+  return logs[0];
+}
+module.exports={applyEmployeeInventoryExport,applyEmployeeCustomerSave,applyEmployeeInventoryTypeChange};

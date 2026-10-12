@@ -362,6 +362,8 @@ const els = {
   editInventoryForm: document.querySelector("#editInventoryForm"),
   editInventoryName: document.querySelector("#editInventoryName"),
   editInventoryGroup: document.querySelector("#editInventoryGroup"),
+  editInventoryType: document.querySelector("#editInventoryType"),
+  editInventoryTypeNote: document.querySelector("#editInventoryTypeNote"),
   editInventoryQuantity: document.querySelector("#editInventoryQuantity"),
   editInventoryPrice: document.querySelector("#editInventoryPrice"),
   editInventorySalePrice: document.querySelector("#editInventorySalePrice"),
@@ -544,7 +546,7 @@ function isEmployeeUser() {
 
 const DEFAULT_EMPLOYEE_PERMISSIONS = Object.freeze({
   closingBook: Object.freeze({ manage: false }),
-  purchase: Object.freeze({ view: true, create: true, inventoryView: false, inventoryExport: false }),
+  purchase: Object.freeze({ view: true, create: true, inventoryView: false, inventoryExport: false, inventoryTypeManage: false }),
   sales: Object.freeze({ view: true, create: true, draft: false, customerManage: false }),
   history: Object.freeze({ viewOwn: true })
 });
@@ -560,7 +562,8 @@ function normalizeEmployeePermissions(profile = {}) {
       view: source.purchase?.view === true,
       create: source.purchase?.create === true,
       inventoryView: source.purchase?.inventoryView === true,
-      inventoryExport: source.purchase?.inventoryExport === true
+      inventoryExport: source.purchase?.inventoryExport === true,
+      inventoryTypeManage: source.purchase?.inventoryTypeManage === true
     },
     sales: {
       view: source.sales?.view === true,
@@ -574,6 +577,7 @@ function normalizeEmployeePermissions(profile = {}) {
   };
   if (permissions.purchase.create) permissions.purchase.view = true;
   if (permissions.purchase.inventoryExport) permissions.purchase.inventoryView = true;
+  if (permissions.purchase.inventoryTypeManage) permissions.purchase.inventoryView = true;
   if (permissions.purchase.inventoryView) permissions.purchase.view = true;
   if (permissions.sales.customerManage) permissions.sales.view = true;
   if (permissions.sales.create) permissions.sales.view = true;
@@ -1620,10 +1624,18 @@ els.inventoryList.addEventListener("click", (event) => {
     return;
   }
 
-  if (isEmployeeUser()) return;
+  if (isEmployeeUser() && !employeeCan("purchase", "inventoryTypeManage")) return;
 
   const item = event.target.closest("[data-edit-inventory]");
   if (!item) return;
+  openEditInventoryModal(item.dataset.editInventory);
+});
+
+els.inventoryList.addEventListener("keydown", (event) => {
+  if (!["Enter", " "].includes(event.key) || event.target.closest("button,input,select")) return;
+  const item = event.target.closest("[data-edit-inventory]");
+  if (!item) return;
+  event.preventDefault();
   openEditInventoryModal(item.dataset.editInventory);
 });
 
@@ -1674,6 +1686,8 @@ els.exportInventoryForm.addEventListener("touchend", (event) => {
 els.editInventoryPrice.addEventListener("input", () => {
   els.editInventoryPrice.value = formatAmountInput(els.editInventoryPrice.value);
 });
+
+els.editInventoryType.addEventListener("change", updateEditInventoryTypeFields);
 
 els.editInventorySalePrice.addEventListener("input", () => {
   els.editInventorySalePrice.value = formatAmountInput(els.editInventorySalePrice.value);
@@ -2290,6 +2304,7 @@ function applyRoleAccess() {
   els.openActivityHistory.disabled = employee && !historyViewOwn;
   if (employee && !employeeCan("sales", "customerManage") && els.customersPage?.hidden === false) hideCustomersPage({restoreFocus:false});
   if (employee && !employeeCan("purchase", "inventoryExport") && els.exportInventoryModal?.hidden === false) closeExportInventoryModal();
+  if (employee && !employeeCan("purchase", "inventoryTypeManage") && els.editInventoryModal?.hidden === false) closeEditInventoryModal();
 }
 
 async function loadUserProfile(db, user) {
@@ -2578,7 +2593,8 @@ function getPermissionsFromContainer(container) {
       view: checked("purchaseView"),
       create: checked("purchaseCreate"),
       inventoryView: checked("purchaseInventoryView"),
-      inventoryExport: checked("purchaseInventoryExport")
+      inventoryExport: checked("purchaseInventoryExport"),
+      inventoryTypeManage: checked("purchaseInventoryTypeManage")
     },
     sales: {
       view: checked("salesView"),
@@ -2592,6 +2608,7 @@ function getPermissionsFromContainer(container) {
   };
   if (permissions.purchase.create) permissions.purchase.view = true;
   if (permissions.purchase.inventoryExport) permissions.purchase.inventoryView = true;
+  if (permissions.purchase.inventoryTypeManage) permissions.purchase.inventoryView = true;
   if (permissions.purchase.inventoryView) permissions.purchase.view = true;
   if (permissions.sales.customerManage) permissions.sales.view = true;
   if (permissions.sales.create) permissions.sales.view = true;
@@ -2608,6 +2625,7 @@ function enforceEmployeePermissionDependencies(container, changedInput) {
   const purchaseCreate = container.querySelector('[name="purchaseCreate"]');
   const purchaseInventoryView = container.querySelector('[name="purchaseInventoryView"]');
   const purchaseInventoryExport = container.querySelector('[name="purchaseInventoryExport"]');
+  const purchaseInventoryTypeManage = container.querySelector('[name="purchaseInventoryTypeManage"]');
   const salesCustomerManage = container.querySelector('[name="salesCustomerManage"]');
   const salesView = container.querySelector('[name="salesView"]');
   const salesCreate = container.querySelector('[name="salesCreate"]');
@@ -2618,12 +2636,18 @@ function enforceEmployeePermissionDependencies(container, changedInput) {
     if (purchaseInventoryView) purchaseInventoryView.checked = true;
     if (purchaseView) purchaseView.checked = true;
   }
+  if (changedInput.name === "purchaseInventoryTypeManage" && changedInput.checked) {
+    if (purchaseInventoryView) purchaseInventoryView.checked = true;
+    if (purchaseView) purchaseView.checked = true;
+  }
   if (changedInput.name === "purchaseInventoryView" && !changedInput.checked && purchaseInventoryExport) purchaseInventoryExport.checked = false;
+  if (changedInput.name === "purchaseInventoryView" && !changedInput.checked && purchaseInventoryTypeManage) purchaseInventoryTypeManage.checked = false;
   if (changedInput.name === "salesCustomerManage" && changedInput.checked && salesView) salesView.checked = true;
   if (changedInput.name === "purchaseView" && !changedInput.checked) {
     if (purchaseCreate) purchaseCreate.checked = false;
     if (purchaseInventoryView) purchaseInventoryView.checked = false;
     if (purchaseInventoryExport) purchaseInventoryExport.checked = false;
+    if (purchaseInventoryTypeManage) purchaseInventoryTypeManage.checked = false;
   }
   if (changedInput.name === "salesCreate" && changedInput.checked && salesView) salesView.checked = true;
   if (changedInput.name === "salesDraft" && changedInput.checked) {
@@ -2658,6 +2682,7 @@ function employeePermissionFields(permissions) {
     field("purchaseCreate", normalized.purchase.create, "Tạo mới trong Nhập hàng"),
     field("purchaseInventoryView", normalized.purchase.inventoryView, "Xem Kho hàng"),
     field("purchaseInventoryExport", normalized.purchase.inventoryExport, "Xuất hàng trong Kho hàng"),
+    field("purchaseInventoryTypeManage", normalized.purchase.inventoryTypeManage, "Đổi loại hàng trong kho"),
     field("salesView", normalized.sales.view, "Xem tab Bán hàng"),
     field("salesCreate", normalized.sales.create, "Tạo mới trong Bán hàng"),
     field("salesDraft", normalized.sales.draft, "Lưu và mở đơn đang lưu"),
@@ -2978,7 +3003,7 @@ async function saveEmployeeManagedMutation(mutation, form, onSaved) {
     form.dataset.mutationSignature=signature;
     form.dataset.mutationId=createId();
   }
-  if (mutation.type === "inventory-export") mutation.requestId=form.dataset.mutationId;
+  if (["inventory-export", "inventory-type-change"].includes(mutation.type)) mutation.requestId=form.dataset.mutationId;
   if (mutation.type === "customer-save" && !mutation.customer.customerId) mutation.customer.newId=form.dataset.mutationId;
   const button=form.querySelector('[type="submit"]');
   employeeManagedFormsSaving.add(form);
@@ -6040,20 +6065,31 @@ function closeInventoryHistoryModal() {
 }
 
 function openEditInventoryModal(inventoryId) {
-  if (isEmployeeUser()) return;
+  if (isEmployeeUser() && !employeeCan("purchase", "inventoryTypeManage")) return;
   const store = getActiveStore();
   const item = (store?.inventory || []).find((stock) => stock.id === inventoryId);
   if (!item) return;
 
   els.editInventoryForm.elements.inventoryId.value = item.id;
+  els.editInventoryForm.dataset.storeId = store.id;
   els.editInventoryName.value = item.name || "";
   els.editInventoryGroup.value = item.groupName || "";
   els.editInventoryQuantity.value = Number(item.quantity || 0);
-  els.editInventoryQuantity.closest(".field").hidden = isServiceItem(item);
-  els.editInventoryQuantity.disabled = isServiceItem(item);
+  els.editInventoryType.value = isServiceItem(item) ? "service" : "goods";
   els.editInventoryPrice.value = formatAmountInput(item.lastPrice || 0);
   els.editInventorySalePrice.value = formatAmountInput(getInventorySalePrice(item));
+  [els.editInventoryName, els.editInventoryGroup, els.editInventoryQuantity, els.editInventoryPrice, els.editInventorySalePrice].forEach((input) => { input.readOnly = isEmployeeUser(); });
+  updateEditInventoryTypeFields();
   els.editInventoryModal.hidden = false;
+}
+
+function updateEditInventoryTypeFields() {
+  const service = els.editInventoryType.value === "service";
+  els.editInventoryQuantity.closest(".field").hidden = service;
+  els.editInventoryQuantity.disabled = service;
+  els.editInventoryTypeNote.textContent = isEmployeeUser()
+    ? "Bạn chỉ được đổi loại hàng. Tên, nhóm, giá và số tồn được giữ nguyên; đổi loại cần xác nhận."
+    : "Dịch vụ không theo dõi tồn kho. Đổi loại hàng cần xác nhận trước khi lưu.";
 }
 
 function closeEditInventoryModal() {
@@ -6131,7 +6167,7 @@ function updateEditInventoryLogReasonVisibility() {
   const store = getActiveStore();
   const log = findInventoryLogById(store, uiState.editingInventoryLogId);
   const newQuantity = Number.parseInt(els.editInventoryLogQuantity.value, 10);
-  const isExport = Boolean(log) && Number.isFinite(newQuantity) && newQuantity < Number(log.oldQuantity || 0);
+  const isExport = Boolean(log) && log.type !== "type-change" && Number.isFinite(newQuantity) && newQuantity < Number(log.oldQuantity || 0);
 
   els.editInventoryLogReasonField.hidden = !isExport;
   els.editInventoryLogReason.disabled = !isExport;
@@ -6205,30 +6241,48 @@ function deleteSelectedExportInventoryReason() {
 }
 
 function saveEditedInventory(formData) {
-  if (isEmployeeUser()) return false;
+  if (isEmployeeUser() && !employeeCan("purchase", "inventoryTypeManage")) return false;
   const store = getActiveStore();
-  if (!store) return false;
+  if (!store || els.editInventoryForm.dataset.storeId !== store.id) return false;
 
   const item = (store.inventory || []).find((stock) => stock.id === formData.get("inventoryId"));
   if (!item) return false;
 
+  const itemType = String(formData.get("itemType") || "");
+  if (!["goods", "service"].includes(itemType)) return false;
+  if (isEmployeeUser()) {
+    if (itemType === (item.itemType || "goods")) { closeEditInventoryModal(); return true; }
+    const typeChanges = confirmPurchaseTypeChanges(store, [{ name: item.name, itemType }]);
+    if (typeChanges === null) return false;
+    return saveEmployeeManagedMutation({ type: "inventory-type-change", storeId: store.id, inventoryId: item.id, itemType,
+      date: new Date().toISOString().slice(0, 10), typeChanges }, els.editInventoryForm,
+      () => { renderInventory(getActiveStore()); closeEditInventoryModal(); });
+  }
+
   const name = String(formData.get("name") || "").trim();
   const groupName = String(formData.get("groupName") || "").trim();
-  const quantity = isServiceItem(item) ? 0 : Number.parseInt(formData.get("quantity"), 10);
+  const quantity = itemType === "service" ? 0 : Number.parseInt(formData.get("quantity"), 10);
   const lastPrice = parseAmountInput(formData.get("lastPrice"));
   const salePrice = parseAmountInput(formData.get("salePrice"));
 
-  if (!name || !groupName || !Number.isFinite(quantity) || !Number.isFinite(lastPrice) || lastPrice < 0 || !Number.isFinite(salePrice) || salePrice < 0) {
+  if (!name || !groupName || !Number.isFinite(quantity) || quantity < 0 || !Number.isFinite(lastPrice) || lastPrice < 0 || !Number.isFinite(salePrice) || salePrice < 0) {
     window.alert("Vui lòng nhập đầy đủ tên hàng hóa, nhóm, số lượng, giá vốn và giá bán.");
     return false;
   }
-  if (!validatePurchaseItemTypes({ inventory: store.inventory.filter(stock => stock.id !== item.id) }, [{ name, itemType: item.itemType }])) return false;
+  const proposed = getPurchaseTypeChanges(store, [{ name: item.name, itemType }]);
+  const projected = store.inventory.filter(stock => stock.id !== item.id).map(stock => ({ ...stock,
+    itemType: proposed.some(change => change.inventoryId === stock.id) ? itemType : stock.itemType }));
+  if (!validatePurchaseItemTypes({ inventory: projected }, [{ name, itemType }])) return false;
+  const typeChanges = confirmPurchaseTypeChanges(store, [{ name: item.name, itemType }]);
+  if (typeChanges === null) return false;
 
-  const oldQuantity = Number(item.quantity || 0);
+  const oldQuantity = typeChanges.some(change => change.inventoryId === item.id) ? 0 : Number(item.quantity || 0);
   const oldPrice = Number(item.lastPrice || 0);
   const oldSalePrice = getInventorySalePrice(item);
   const category = ensurePurchaseCategory(store, groupName);
   const updatedAt = new Date().toISOString();
+  applyPurchaseItemsToInventory(store, updatedAt.slice(0, 10), [], updatedAt, typeChanges);
+  item.itemType = itemType;
   item.name = name;
   item.groupId = category.id;
   item.groupName = category.name;
@@ -6383,7 +6437,7 @@ function saveEditedInventoryLog(formData) {
   log.newPrice = newPrice;
   log.newSalePrice = newSalePrice;
   if (log.newTotalCost !== undefined) log.newTotalCost = isServiceItem(log) ? 0 : Math.max(0, newQuantity * newPrice);
-  if (newQuantity < Number(log.oldQuantity || 0)) {
+  if (log.type !== "type-change" && newQuantity < Number(log.oldQuantity || 0)) {
     log.exportReason = exportReason;
     delete log.reason;
     if (exportReason) {
@@ -6710,12 +6764,16 @@ function confirmPurchaseTypeChanges(store, items) {
     return null;
   }
   if (!changes.length) return changes;
+  if (isEmployeeUser() && !employeeCan("purchase", "inventoryTypeManage")) {
+    window.alert("Bạn chưa được cấp quyền Đổi loại hàng trong kho.");
+    return null;
+  }
   const label = (type) => type === "service" ? "Dịch vụ" : "Hàng hóa";
   const details = changes.map((change) =>
     `• ${change.name} (${change.groupName}): ${label(change.fromType)} → ${label(change.toType)}.\n` +
     (change.toType === "service"
       ? `  Ngừng theo dõi ${change.quantity.toLocaleString("vi-VN")} tồn kho và ${formatCurrency(change.totalCost)} giá trị kho hiện có.`
-      : "  Bắt đầu theo dõi tồn kho từ số lượng của lần nhập mới.")
+      : "  Bắt đầu theo dõi tồn kho từ số lượng mới được lưu.")
   ).join("\n\n");
   if (!window.confirm(`Xác nhận đổi loại hàng?\n\n${details}\n\nĐổi loại áp dụng cho tất cả nhóm có cùng tên hàng. Đơn hàng và nhật ký cũ được giữ nguyên. Bạn có đồng ý không?`)) return null;
   const activeStore = getActiveStore();
@@ -8528,6 +8586,7 @@ function renderInventory(store) {
   }
 
   const canManageInventory = !isEmployeeUser();
+  const canEditInventoryType = canManageInventory || employeeCan("purchase", "inventoryTypeManage");
   const canExportInventory = !isEmployeeUser() || employeeCan("purchase", "inventoryExport");
 
   const allInventory = [...(store.inventory || [])].sort((a, b) =>
@@ -8600,7 +8659,7 @@ function renderInventory(store) {
           const quantity = Number(item.quantity || 0);
           return `
           <div class="inventory-item" ${
-            canManageInventory
+            canEditInventoryType
               ? `data-edit-inventory="${escapeHtml(item.id || "")}" role="button" tabindex="0"`
               : ""
           }>

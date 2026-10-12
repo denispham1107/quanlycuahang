@@ -11443,3 +11443,41 @@ html.mobile-app-theme #exportInventoryForm > .modal-actions button { min-width: 
 html.mobile-app-theme #exportInventoryForm #cancelExportInventory { background: #ffffffcf; color: #52688a; border: 1px solid #c6d3e9; box-shadow: none; }
 html.mobile-app-theme #exportInventoryForm button[type="submit"] { color: #fff; background: linear-gradient(110deg,#9160d4,#617ddd 55%,#278fc3); border: 1px solid #ffffffa6; box-shadow: 0 5px 13px #667cc626; }
 html.mobile-app-theme #exportInventoryForm > button[hidden], html.mobile-app-theme #exportInventoryReasonPanel[hidden] { display: none; }
+
+/* Inventory edit/history dialogs share Export's mobile pastel visual language. */
+.inventory-dialog-icon { display: none; }
+html.mobile-app-theme :is(#editInventoryModal,#editInventoryLogModal,#inventoryHistoryModal) { background: #29334e66; backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); }
+html.mobile-app-theme .inventory-pastel-card { gap: 10px; padding: 14px; border: 1.5px solid #ffffffeb; border-radius: 26px; background: linear-gradient(145deg,#fff8fc,#f2efff 48%,#edf8ff); box-shadow: 0 24px 60px #2438683b,inset 0 1px 0 #fff; }
+html.mobile-app-theme .inventory-pastel-card > .panel-heading { display: grid; grid-template-columns: 46px minmax(0,1fr); grid-template-rows: auto auto; gap: 3px 11px; padding: 13px; margin: 0 0 2px; border: 1px solid #ffffffd9; border-radius: 19px; background: linear-gradient(110deg,#eadbfc,#dcefff); }
+html.mobile-app-theme .inventory-pastel-card .inventory-dialog-icon { display: block; grid-column: 1; grid-row: 1 / 3; width: 46px; height: 46px; padding: 5px; border: 1px solid #fff; border-radius: 15px; background: #ffffffb3; box-shadow: 0 4px 10px #7565b714; }
+html.mobile-app-theme .inventory-pastel-card > .panel-heading h2 { grid-column: 2; margin: 0; font-size: 20px; line-height: 1.2; color: #283d69; text-align: left; }
+html.mobile-app-theme .inventory-pastel-card > .panel-heading > span { grid-column: 2; min-width: 0; white-space: normal; overflow-wrap: anywhere; text-align: left; color: #626f90; font-size: 12px; }
+html.mobile-app-theme .inventory-pastel-card > .field, html.mobile-app-theme .inventory-pastel-card .history-tools > div { min-width: 0; gap: 7px; padding: 11px; border: 1px solid #ffffffd9; border-radius: 17px; background: linear-gradient(120deg,#eee7fc,#f4f0ff); box-shadow: 0 3px 10px #586aa408; }
+html.mobile-app-theme .inventory-pastel-card :is(.field,.history-filter):has(input[type="date"]) { background: linear-gradient(120deg,#fff3f5,#fbedf3); }
+html.mobile-app-theme .inventory-pastel-card .field:has(input[type="number"]) { background: linear-gradient(120deg,#eaf3ff,#e9f7fa); }
+html.mobile-app-theme .inventory-pastel-card .field:has(#editInventoryPrice,#editInventoryLogPrice) { background: linear-gradient(120deg,#e7f5f1,#eff9f5); }
+html.mobile-app-theme .inventory-pastel-card .field:has(#editInventorySalePrice,#editInventoryLogSalePrice) { background: linear-gradient(120deg,#fff0f5,#f9eaf3); }
+html.mobile-app-theme .inventory-pastel-card label { color: #586583; font-size: 12px; font-weight: 800; }
+html.mobile-app-theme .inventory-pastel-card input:not([type="hidden"]), html.mobile-app-theme .inventory-pastel-card select { display: block; width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; min-height: 44px; border: 1px solid #cbd7ec; border-radius: 12px; background: #ffffffdf; color: #253b61; font-size: 16px; box-shadow: inset 0 1px 0 #fff; }
+html.mobile-app-theme .inventory-pastel-card input[readonly] { background: #f7f8fc; color: #63718b; }
+html.mobile-app-theme #editInventoryTypeNote { font-size: 11px; color: #62528d; line-height: 1.5; }
+html.mobile-app-theme .inventory-pastel-card > .modal-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; margin: 3px 0 0; }
+html.mobile-app-theme .inventory-pastel-card > .modal-actions button { min-width: 0; min-height: 46px; padding: 8px; border-radius: 14px; font-size: 13px; }
+html.mobile-app-theme .inventory-pastel-card :is(#cancelEditInventory,#cancelEditInventoryLog,#closeInventoryHistory) { background: #ffffffcf; color: #52688a; border: 1px solid #c6d3e9; box-shadow: none; }
+html.mobile-app-theme .inventory-pastel-card button[type="submit"] { color: #fff; background: linear-gradient(110deg,#9160d4,#617ddd 55%,#278fc3); border: 1px solid #ffffffa6; box-shadow: 0 5px 13px #667cc626; }
+html.mobile-app-theme .inventory-pastel-card #deleteInventoryLog { grid-column: 1 / -1; color: #ad315f; background: #fcecf2; border: 1px solid #e8b7c8; box-shadow: none; }
+html.mobile-app-theme #inventoryHistoryModal .history-tools { display: grid; grid-template-columns: minmax(0,1fr); gap: 10px; margin: 0; }
+html.mobile-app-theme #inventoryHistorySummary .report-total { border: 1px solid #c6d8ec; background: linear-gradient(110deg,#e8e1f8,#e4f2fa); border-radius: 16px; padding: 13px; }
+html.mobile-app-theme #inventoryHistorySummary .report-amount { color: #335f98; overflow-wrap: anywhere; }
+html.mobile-app-theme #inventoryHistoryList { gap: 10px; }
+html.mobile-app-theme #inventoryHistoryList .inventory-history-item { display: grid; grid-template-columns: minmax(0,1fr); gap: 11px; padding: 14px; border: 1px solid #d5def0; border-radius: 18px; background: #ffffffcc; box-shadow: 0 4px 12px #6475ac0d; }
+html.mobile-app-theme #inventoryHistoryList .inventory-main { min-width: 0; }
+html.mobile-app-theme #inventoryHistoryList .inventory-main strong { color: #2d426c; font-size: 16px; overflow-wrap: anywhere; }
+html.mobile-app-theme #inventoryHistoryList .inventory-date { color: #75809a; font-size: 11px; }
+html.mobile-app-theme #inventoryHistoryList .inventory-meta { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; min-width: 0; text-align: left; border-top: 1px solid #e1e5f2; padding-top: 10px; }
+html.mobile-app-theme #inventoryHistoryList .inventory-meta span { min-width: 0; padding: 8px; border-radius: 9px; background: #f2effc; color: #62549c; font-size: 12px; overflow-wrap: anywhere; }
+html.mobile-app-theme #inventoryHistoryList .inventory-meta span:nth-child(2) { background: #eaf6f2; color: #2c7874; }
+html.mobile-app-theme #inventoryHistoryList .inventory-meta span:nth-child(3) { background: #fbedf3; color: #a84e76; }
+html.mobile-app-theme #inventoryHistoryList .inventory-meta span:nth-child(4) { background: #e9f2ff; color: #346ba0; font-weight: 800; }
+html.mobile-app-theme #inventoryHistoryModal .modal-actions { grid-template-columns: minmax(0,1fr); }
+html.mobile-app-theme .inventory-pastel-card .field[hidden] { display: none; }
