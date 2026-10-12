@@ -5,7 +5,7 @@ const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
 const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
 const start = app.indexOf('function getMobilePurchaseOverviewStats(');
 const end = app.indexOf('function renderMobileCashFlow(', start);
-test('mobile purchase overview splits import/export counts and current stock value, not quantities or list filters', () => {
+test('mobile purchase overview sums import/export quantities and current stock value, not counts or list filters', () => {
   const els = {mobilePurchaseImportCount: {}, mobilePurchaseExportCount: {}, mobilePurchaseStockTotal: {}, mobilePurchaseStockValue: {}, mobilePurchaseOverviewRange: {}};
   const ctx = {els, getInventoryLogDate: log => String(log.date || log.updatedAt).slice(0, 10), isCancelledEntry: log => log.status === 'cancelled', formatCurrency: value => `${value.toLocaleString('vi-VN')} ₫`};
   vm.createContext(ctx); vm.runInContext(app.slice(start, end), ctx);
@@ -14,16 +14,25 @@ test('mobile purchase overview splits import/export counts and current stock val
   const store = {inventoryLogs: [{date:'2026-10-12',oldQuantity:0,newQuantity:50}, {updatedAt:'2026-10-12T09:00:00',oldQuantity:50,newQuantity:40}, {date:'2026-10-12',oldQuantity:40,newQuantity:45}, {date:'2026-10-12',oldQuantity:45,newQuantity:45,newPrice:100}, {date:'2026-10-11',oldQuantity:0,newQuantity:500}, {date:'2026-10-12',oldQuantity:0,newQuantity:60,status:'cancelled'}], inventory:[{quantity:5,totalCost:17600},{quantity:2.5,totalCost:70000},{quantity:0,totalCost:0}]};
   const range = {start:'2026-10-12',end:'2026-10-12',label:'12/10/2026'};
   const stats = ctx.getMobilePurchaseOverviewStats(store, range);
-  assert.equal(stats.imports,2); assert.equal(stats.exports,1); assert.equal(stats.stock,7.5); assert.equal(stats.value,87600);
+  assert.equal(stats.imports,55); assert.equal(stats.exports,10); assert.equal(stats.stock,7.5); assert.equal(stats.value,87600);
   ctx.renderMobilePurchaseOverview(store,range);
-  assert.equal(els.mobilePurchaseImportCount.textContent,'2'); assert.equal(els.mobilePurchaseExportCount.textContent,'1');
+  assert.equal(els.mobilePurchaseImportCount.textContent,'55'); assert.equal(els.mobilePurchaseExportCount.textContent,'10');
   assert.equal(els.mobilePurchaseStockTotal.textContent,'7,5');
   assert.equal(els.mobilePurchaseStockValue.textContent,'87.600 ₫');
   assert.equal(els.mobilePurchaseOverviewRange.textContent,range.label);
+  store.inventoryLogs.push({date:'2026-10-12',oldQuantity:45,newQuantity:45.25},{date:'2026-10-12',oldQuantity:45.25,newQuantity:44.75},{date:'2026-10-12',oldQuantity:'bad',newQuantity:10});
+  ctx.renderMobilePurchaseOverview(store,range);
+  assert.equal(els.mobilePurchaseImportCount.textContent,'55,25');assert.equal(els.mobilePurchaseExportCount.textContent,'10,5');
   ctx.renderMobilePurchaseOverview({},range);
   assert.equal(els.mobilePurchaseImportCount.textContent,'0'); assert.equal(els.mobilePurchaseExportCount.textContent,'0'); assert.equal(els.mobilePurchaseStockTotal.textContent,'0'); assert.equal(els.mobilePurchaseStockValue.textContent,'0 ₫');
   assert.doesNotMatch(app.slice(start,end),/inventoryLogSearch|inventoryLogFilter|inventorySearch|inventoryFilter/);
   assert.match(app,/renderMobilePurchaseOverview\(store, range\);/);
+});
+test('all four mobile purchase metric colors are distinct and readable on pastel tiles', () => {
+  const colors=['mobilePurchaseStockValue','mobilePurchaseImportCount','mobilePurchaseExportCount','mobilePurchaseStockTotal'].map(id=>[...css.matchAll(new RegExp(`html\\.mobile-app-theme #${id} \\{([^}]+)\\}`,'g'))].at(-1)[1].match(/color: (#[a-f0-9]{6})/)[1]);
+  assert.equal(new Set(colors).size,4);
+  const luminance=hex=>{const rgb=hex.slice(1).match(/../g).map(x=>parseInt(x,16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);return .2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];};
+  for(const color of colors)for(const background of ['#f5effb','#edf1ff'])assert.ok((luminance(background)+.05)/(luminance(color)+.05)>=4.5,`${color} is readable`);
 });
 test('mobile rearranges the existing warehouse action and hides only mobile helper/overview', () => {
   assert.match(app,/if \(USE_MOBILE_APP_THEME\) \{\s*els\.openBulkPurchase\.before\(els\.toggleInventory\);/);

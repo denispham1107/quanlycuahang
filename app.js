@@ -7915,9 +7915,17 @@ function getMobilePurchaseOverviewStats(store, range) {
     const date = getInventoryLogDate(log);
     return date >= range.start && date <= range.end && !isCancelledEntry(log);
   });
+  const quantities = logs.reduce((totals, log) => {
+    const change = Number(log.newQuantity || 0) - Number(log.oldQuantity || 0);
+    if (Number.isFinite(change)) {
+      if (change > 0) totals.imports += change;
+      if (change < 0) totals.exports -= change;
+    }
+    return totals;
+  }, { imports: 0, exports: 0 });
   return {
-    imports: logs.filter((log) => getInventoryLogPurpose(log).value === "purchase").length,
-    exports: logs.filter((log) => getInventoryLogPurpose(log).value === "export").length,
+    imports: quantities.imports,
+    exports: quantities.exports,
     stock: (store.inventory || []).reduce((total, item) => total + Number(item.quantity || 0), 0),
     value: (store.inventory || []).reduce((total, item) => total + Number(item.totalCost || 0), 0)
   };
