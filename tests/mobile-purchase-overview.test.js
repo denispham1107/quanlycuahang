@@ -28,6 +28,8 @@ test('mobile rearranges the existing warehouse action and hides only mobile help
   assert.match(css,/\.mobile-purchase-overview \{ display: none; \}/);
   assert.match(css,/html\.mobile-app-theme \.purchase-entry-hint \{ display: none; \}/);
   assert.match(html,/mobile-purchase-overview mobile-flow-hero/);
+  assert.match(html,/<section class="tab-panel" data-tab-panel="purchase" hidden>\s*<div class="mobile-purchase-overview mobile-flow-hero"/);
+  assert.ok(html.indexOf('id="mobilePurchaseOverviewRange"') < html.indexOf('class="panel purchase-main-panel"'),'overview is a separate card above purchase panel');
   const tab = html.slice(html.indexOf('data-tab-panel="purchase"'),html.indexOf('data-tab-panel="expense"',html.indexOf('data-tab-panel="purchase"')));
   assert.ok(tab.indexOf('id="openBulkPurchase"') < tab.indexOf('id="toggleInventory"'),'desktop markup order remains unchanged');
   assert.match(tab,/Lượt cập nhật kho/); assert.match(tab,/Tổng tồn kho/);

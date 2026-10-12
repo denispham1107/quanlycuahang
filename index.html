@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=137" />
+    <link rel="manifest" href="manifest.webmanifest?v=138" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=137" />
+    <link rel="stylesheet" href="styles.css?v=138" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -651,15 +651,15 @@
             </section>
 
             <section class="tab-panel" data-tab-panel="purchase" hidden>
+              <div class="mobile-purchase-overview mobile-flow-hero" aria-label="Tổng quan kho hàng">
+                <div><span>Lượt cập nhật kho</span><strong id="mobilePurchaseUpdateCount" aria-live="polite">0</strong></div>
+                <div><span>Tổng tồn kho</span><strong id="mobilePurchaseStockTotal" aria-live="polite">0</strong></div>
+                <small id="mobilePurchaseOverviewRange"></small>
+              </div>
               <article class="panel purchase-main-panel">
                 <div class="panel-heading">
                   <h2>Nhập hàng</h2>
                   <span id="inventoryCount">0 mặt hàng</span>
-                </div>
-                <div class="mobile-purchase-overview mobile-flow-hero" aria-label="Tổng quan kho hàng">
-                  <div><span>Lượt cập nhật kho</span><strong id="mobilePurchaseUpdateCount" aria-live="polite">0</strong></div>
-                  <div><span>Tổng tồn kho</span><strong id="mobilePurchaseStockTotal" aria-live="polite">0</strong></div>
-                  <small id="mobilePurchaseOverviewRange"></small>
                 </div>
                 <div class="empty-list purchase-entry-hint">Bấm nút + để nhập hàng hóa mới vào kho.</div>
                 <button class="ghost-button inventory-toggle" id="openBulkPurchase" type="button">Nhập hàng từ Danh Sách</button>
@@ -1597,8 +1597,8 @@
         </form>
       </section>
     </div>
-    <script defer src="app.js?v=137"></script>
-    <script defer src="closing-book-core.js?v=137"></script>
-    <script defer src="closing-book.js?v=137"></script>
+    <script defer src="app.js?v=138"></script>
+    <script defer src="closing-book-core.js?v=138"></script>
+    <script defer src="closing-book.js?v=138"></script>
   </body>
 </html>

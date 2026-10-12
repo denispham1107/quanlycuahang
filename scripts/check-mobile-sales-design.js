@@ -50,6 +50,7 @@ for(const [width,height,platform='ios'] of [[320,700],[375,900],[430,900],[667,3
  const plusDimensions=await page.locator('#quickEntryButton').boundingBox();
  await page.evaluate(()=>{activateTab('purchase');render();});
  assert.equal(await page.locator('.purchase-entry-hint').isVisible(),false);assert.equal(await page.locator('.mobile-purchase-overview').isVisible(),true);
+ assert.equal(await page.locator('.mobile-purchase-overview').evaluate(el=>el.parentElement.dataset.tabPanel),'purchase');const overviewBounds=await page.locator('.mobile-purchase-overview').boundingBox(),purchaseBounds=await page.locator('.purchase-main-panel').boundingBox();assert.ok(overviewBounds.y+overviewBounds.height<=purchaseBounds.y,'overview is outside and above the purchase card');
  const warehouse=await page.locator('#toggleInventory').boundingBox(),bulk=await page.locator('#openBulkPurchase').boundingBox();assert.ok(warehouse.y+warehouse.height<=bulk.y,'warehouse button is immediately above bulk import');
  assert.equal(await page.locator('#mobilePurchaseStockTotal').textContent(),'20');assert.equal(await page.locator('#mobilePurchaseUpdateCount').textContent(),'0');
  await page.locator('#toggleInventory').click();assert.equal(await page.locator('#inventoryModal').isVisible(),true);await page.locator('#closeInventory').click();

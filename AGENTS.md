@@ -1,5 +1,7 @@
 # Quy tắc hồi quy giao diện
 
+- Ô tổng quan Lượt cập nhật kho/Tổng tồn kho trên Mobile phải là thẻ riêng, con trực tiếp của tab purchase và đứng trên `.purchase-main-panel`, không lồng trong khung Nhập hàng. Giữ dữ liệu/chức năng và Desktop không đổi.
+
 - Tab Nhập hàng Mobile bỏ dòng hướng dẫn, chuyển chính nút `#toggleInventory` lên ngay trước `#openBulkPurchase` (không nhân đôi, giữ quyền/handler); Desktop giữ thứ tự cũ. Ô tổng quan Mobile dùng nền/viền/bóng `.mobile-flow-hero` của Chi, gồm Lượt cập nhật kho trong kỳ (không cộng bản hủy) và Tổng tồn kho hiện tại toàn cửa hàng (không phụ thuộc tìm kiếm/phân loại lịch sử), lấy dữ liệu thật và cập nhật khi đổi cửa hàng/kỳ/cloud. Giữ toàn bộ bộ lọc lịch sử và FAB; kiểm tra số 0, nhiều dòng, tên/số lớn, quyền và 320/375/430px, ngang/keyboard cùng đối chiếu Desktop.
 
 - Ô Tổng bán hàng Mobile và nút + vuông đầu tab dùng chung `.mobile-flow-hero`/`.mobile-flow-add` với tab Chi: cùng nền pastel, viền trắng, bo góc, bóng, chữ và kích thước nút. Tiêu đề Tổng bán hàng nằm trên số tiền, bỏ icon tiền/trang trí và đường chia; vẫn giữ ngày/kỳ và số đơn thật ở dòng nhỏ bên dưới. Không đổi nút khách hàng, FAB tròn, handler, bộ lọc hay Desktop. Kiểm tra computed style khớp tab Chi và số liệu hiện có.
