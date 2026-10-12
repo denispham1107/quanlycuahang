@@ -11291,6 +11291,24 @@ html.mobile-app-theme [data-tab-panel="sales"] .sales-table tr:has(.empty-list) 
 html.mobile-app-theme [data-tab-panel="sales"] .sales-table .empty-list { display: block; width: 100%; padding: 12px; text-align: center; }
 html.mobile-app-theme [data-tab-panel="sales"] .sales-table .empty-list::before { content: none; }
 html.mobile-app-theme [data-tab-panel="sales"] .sales-table .delete-small { min-width: 34px; width: 34px; min-height: 34px; height: 34px; padding: 5px; background: #fff0f6; color: #c83578; border: 0; border-radius: 10px; box-shadow: none; }
+/* Soft section accents for Mobile sales; keep the shared cash-flow hero unchanged. */
+html.mobile-app-theme [data-tab-panel="sales"] > .sales-main-panel { background: linear-gradient(135deg,#fcf7ff,#f7f9ff); border-color: #e0d6f1; }
+html.mobile-app-theme .sales-main-panel .draft-order-heading { color: #69509a; }
+html.mobile-app-theme [data-tab-panel="sales"] > .sales-goods-panel { background: linear-gradient(135deg,#f2fbf8,#fbfdff); border-color: #cfe5df; }
+html.mobile-app-theme [data-tab-panel="sales"] .sales-goods-panel .panel-heading h2 { color: #24695f; }
+html.mobile-app-theme [data-tab-panel="sales"] > .sales-history-panel { background: linear-gradient(135deg,#fff5fa,#fcfbff); border-color: #ead5e2; }
+html.mobile-app-theme [data-tab-panel="sales"] .sales-history-panel .panel-heading h2 { color: #955173; }
+html.mobile-app-theme #salesGoodsReport .report-total { background: linear-gradient(110deg,#dcf2e9,#e8f3fb); border-color: #bad9d0; color: #285f56; }
+html.mobile-app-theme #salesGoodsReport .report-amount { color: #286c60; }
+html.mobile-app-theme #salesGoodsReport .item-group { color: #67509b; background: #ede5fa; }
+html.mobile-app-theme #salesRangeLabel { background: linear-gradient(110deg,#f8e3ee,#eee8fa); border-color: #e5c7d9; color: #824361; }
+html.mobile-app-theme #salesRangeLabel .report-amount { color: #824361; }
+html.mobile-app-theme [data-tab-panel="sales"] .sales-history-table tr:not(.entry-cancelled) td:nth-child(6) { color: #176992; }
+html.mobile-app-theme [data-tab-panel="sales"] .draft-order-table tr:nth-child(3n+1) { background: linear-gradient(120deg,#eee4fa,#e8f0fc); border-color: #d9cbed; box-shadow: inset 3px 0 #a78aca; }
+html.mobile-app-theme [data-tab-panel="sales"] .draft-order-table tr:nth-child(3n+2) { background: linear-gradient(120deg,#e2f3ec,#ebf6fc); border-color: #c2ded4; box-shadow: inset 3px 0 #6cae9b; }
+html.mobile-app-theme [data-tab-panel="sales"] .draft-order-table tr:nth-child(3n) { background: linear-gradient(120deg,#f9e8ee,#f5edf9); border-color: #ead1dd; box-shadow: inset 3px 0 #cb8eab; }
+html.mobile-app-theme [data-tab-panel="sales"] .sales-history-table tr:not(.entry-cancelled):not(:has(.empty-list)) { padding: 11px; border: 1px solid #ead9e5; border-radius: 14px; background: #ffffffb3; box-shadow: inset 3px 0 #cca0ba; }
+html.mobile-app-theme [data-tab-panel="sales"] .sales-history-table tr:not(.entry-cancelled):nth-child(even):not(:has(.empty-list)) { border-color: #ded5ed; background: #f5f0fbb3; box-shadow: inset 3px 0 #a994c8; }
 @media (max-width: 360px) {
   html.mobile-app-theme [data-tab-panel="sales"] > .panel { padding: 11px; }
   html.mobile-app-theme [data-tab-panel="sales"] .panel-heading h2 { font-size: 14px; }

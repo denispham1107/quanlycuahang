@@ -1,5 +1,15 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const root=path.resolve(__dirname,'..'),html=fs.readFileSync(path.join(root,'index.html'),'utf8'),css=fs.readFileSync(path.join(root,'styles.css'),'utf8'),app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+test('mobile sales uses distinct soft section accents without changing cancelled orders or the shared hero',()=>{
+ const accents=css.slice(css.indexOf('/* Soft section accents for Mobile sales;'),css.indexOf('@media (max-width: 360px)',css.indexOf('/* Soft section accents for Mobile sales;')));
+ for(const selector of accents.split('{').slice(0,-1).map(x=>x.split('}').at(-1).replace(/\/\*[\s\S]*?\*\//g,'').trim()))assert.ok(selector.startsWith('html.mobile-app-theme'),selector);
+ assert.match(accents,/sales-goods-panel[^}]*#f2fbf8/);assert.match(accents,/sales-history-panel[^}]*#fff5fa/);
+ for(const n of ['3n+1','3n+2','3n'])assert.ok(accents.includes(`nth-child(${n})`));
+ assert.match(accents,/tr:not\(\.entry-cancelled\):not\(:has\(\.empty-list\)\)/);
+ assert.doesNotMatch(accents,/\.mobile-sales-report\s*\{|\.mobile-flow-hero\s*\{/);
+ const lum=hex=>hex.match(/../g).map(x=>parseInt(x,16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0);
+ for(const [fg,bgs] of [['24695f',['f2fbf8','fbfdff']],['955173',['fff5fa','fcfbff']],['285f56',['dcf2e9','e8f3fb']],['286c60',['dcf2e9','e8f3fb','f2fbf8']],['824361',['f8e3ee','eee8fa']],['69509a',['fcf7ff','f7f9ff']],['67509b',['ede5fa']],['176992',['fff5fa','f5f0fb']]])for(const bg of bgs)assert.ok((lum(bg)+.05)/(lum(fg)+.05)>=4.5,`${fg} on ${bg}`);
+});
 test('mobile sales report and header add reuse the approved cash-flow design',()=>{
  assert.match(html,/<article class="mobile-sales-report mobile-flow-hero"/);
  assert.match(html,/<button class="mobile-flow-add" id="mobileSalesCreate"/);
