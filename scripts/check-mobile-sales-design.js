@@ -21,8 +21,8 @@ for(const [width,height,platform='ios'] of [[320,700],[375,900],[430,900],[667,3
  const page=await browser.newPage({viewport:{width,height},isMobile:true,hasTouch:true,userAgent:platform==='android'?'Mozilla/5.0 (Linux; Android 14) Chrome/130.0 Mobile Safari/537.36':'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1'}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.dismiss());await setup(page);
  assert.equal(await page.locator('.mobile-sales-report').isVisible(),true);assert.match(await page.locator('#mobileSalesReportTotal').textContent(),/253.500/);assert.equal(await page.locator('#mobileSalesReportCount').textContent(),'2 đơn');assert.equal(await page.locator('[data-tab-panel="sales"]').evaluate(el=>el.lastElementChild.classList.contains('sales-history-panel')),true);
  assert.equal(await page.locator('#quickEntryButton').isVisible(),true);
- const fabStyle=await page.locator('#quickEntryButton').evaluate(el=>({width:el.clientWidth,height:el.clientHeight,stroke:getComputedStyle(el.querySelector('svg')).stroke,disc:getComputedStyle(el,'::before').backgroundImage}));
- assert.ok(fabStyle.width>=50&&fabStyle.width===fabStyle.height);assert.equal(fabStyle.stroke,'rgb(255, 255, 255)');assert.ok(fabStyle.disc.includes('linear-gradient'));
+ const fabStyle=await page.locator('#quickEntryButton').evaluate(el=>({width:el.getBoundingClientRect().width,height:el.getBoundingClientRect().height,stroke:getComputedStyle(el.querySelector('svg')).stroke,disc:getComputedStyle(el,'::before').backgroundImage}));
+ assert.ok(Math.abs(fabStyle.width-45.9)<.1&&fabStyle.width===fabStyle.height);assert.equal(fabStyle.stroke,'rgb(255, 255, 255)');assert.ok(fabStyle.disc.includes('linear-gradient'));
  await page.evaluate(()=>scrollTo(0,document.documentElement.scrollHeight));
  const fab=await page.locator('#quickEntryButton').boundingBox(),dock=await page.locator('#tabBar').boundingBox();
  assert.ok(fab.x>=0&&fab.x+fab.width<=width+1&&fab.y>=0&&fab.y+fab.height<=dock.y,'round add button stays visible above dock at the end of history');

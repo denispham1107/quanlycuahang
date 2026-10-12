@@ -1,6 +1,6 @@
 # Quy tắc hồi quy giao diện
 
-- Nút + tròn dùng chung trên Mobile là `#quickEntryButton`: dùng nền kính tím–xanh dịu, dấu + trắng 3px, không có đĩa trắng bên trong hay vòng hồng/cam. Chỉ CSS `html.mobile-app-theme #quickEntryButton`, không đổi nút AI hay Desktop. Giữ vị trí phía trên dock, vùng chạm 54px, trạng thái nhấn/focus và reduced-motion. Kiểm tra cả Thu/Chi/Nhập/Bán và quyền tạo mới; không thêm thư viện icon hay nhân đôi nút theo từng tab.
+- Nút + tròn dùng chung trên Mobile là `#quickEntryButton`: dùng nền kính tím–xanh dịu, dấu + trắng 3px, không có đĩa trắng bên trong hay vòng hồng/cam. Chỉ CSS `html.mobile-app-theme #quickEntryButton`, không đổi nút AI hay Desktop. Giữ vị trí phía trên dock, kích thước 45.9px (giảm 15% từ 54px, vẫn trên 44px), icon 22.1px và các chi tiết viền/bóng thu nhỏ cùng tỷ lệ, trạng thái nhấn/focus và reduced-motion. Kiểm tra cả Thu/Chi/Nhập/Bán và quyền tạo mới; không thêm thư viện icon hay nhân đôi nút theo từng tab.
 
 - Tab Bán hàng Mobile phải giữ nút FAB tròn dấu + giống Thu/Chi, luôn nhìn thấy phía trên dock kể cả khi cuộn tới cuối Lịch sử bán hàng. Không ẩn FAB để thay bằng nút + ở tiêu đề; cả hai dùng quyền tạo đơn và handler cũ. Kiểm tra vị trí nút trong viewport, nhấn để mở đơn mới, cùng trường hợp nhân viên chỉ có quyền xem phải không thấy nút.
 

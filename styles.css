@@ -11246,35 +11246,35 @@ html.mobile-app-theme [data-tab-panel="sales"] .sales-table .delete-small { min-
 
 /* One shared mobile quick-add button: soft glass, clear plus, no inner white disc. */
 html.mobile-app-theme #quickEntryButton {
-  width: 54px;
-  height: 54px;
-  min-width: 54px;
-  min-height: 54px;
+  width: 45.9px;
+  height: 45.9px;
+  min-width: 45.9px;
+  min-height: 45.9px;
   padding: 0;
-  border: 1.5px solid rgba(255,255,255,.8);
+  border: 1.275px solid rgba(255,255,255,.8);
   border-radius: 50%;
   background: linear-gradient(145deg,#8670cf 0%,#7565c8 48%,#4085c1 100%);
   color: #fff;
-  box-shadow: 0 8px 20px rgba(74,85,157,.24), inset 0 1px 0 rgba(255,255,255,.52);
+  box-shadow: 0 6.8px 17px rgba(74,85,157,.24), inset 0 .85px 0 rgba(255,255,255,.52);
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
 html.mobile-app-theme #quickEntryButton::before {
-  inset: 2px;
+  inset: 1.7px;
   border-radius: inherit;
   background: linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 58%);
   box-shadow: none;
   pointer-events: none;
 }
 html.mobile-app-theme #quickEntryButton svg {
-  width: 26px;
-  height: 26px;
+  width: 22.1px;
+  height: 22.1px;
   stroke: #fff;
   stroke-width: 3;
   filter: drop-shadow(0 1px 1px rgba(34,46,105,.16));
 }
 html.mobile-app-theme #quickEntryButton:active {
-  transform: translateY(1px) scale(.95);
-  box-shadow: 0 5px 12px rgba(74,85,157,.22), inset 0 1px 0 rgba(255,255,255,.42);
+  transform: translateY(.85px) scale(.95);
+  box-shadow: 0 4.25px 10.2px rgba(74,85,157,.22), inset 0 .85px 0 rgba(255,255,255,.42);
 }
 html.mobile-app-theme #quickEntryButton:focus-visible {
   outline: 3px solid rgba(55,94,165,.5);
