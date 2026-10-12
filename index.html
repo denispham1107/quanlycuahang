@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=135" />
+    <link rel="manifest" href="manifest.webmanifest?v=136" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=135" />
+    <link rel="stylesheet" href="styles.css?v=136" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -595,13 +595,13 @@
                       <path d="M10.7 9.6a3.5 3.5 0 0 1 2.8-2.3M7.7 24.7v-1.1" stroke="#ffffff" stroke-opacity=".8" stroke-width="1.5" stroke-linecap="round" />
                     </svg>
                   </button>
-                  <button id="mobileSalesCreate" type="button" aria-label="Tạo đơn bán hàng" hidden>+</button>
+                  <button class="mobile-flow-add" id="mobileSalesCreate" type="button" aria-label="Tạo đơn bán hàng" hidden>+</button>
                 </div>
               </header>
-              <article class="mobile-sales-report" aria-label="Báo cáo tổng bán hàng">
-                <div class="mobile-sales-report-heading"><span class="mobile-sales-report-symbol" aria-hidden="true">₫</span><span>Tổng bán hàng</span></div>
+              <article class="mobile-sales-report mobile-flow-hero" aria-label="Báo cáo tổng bán hàng">
+                <span class="mobile-sales-report-heading">Tổng bán hàng</span>
                 <strong id="mobileSalesReportTotal" aria-live="polite">0 ₫</strong>
-                <div class="mobile-sales-report-footer"><span id="mobileSalesReportRange"></span><span id="mobileSalesReportCount">0 đơn</span></div>
+                <small class="mobile-sales-report-footer"><span id="mobileSalesReportRange"></span><span id="mobileSalesReportCount">0 đơn</span></small>
               </article>
               <article class="panel sales-main-panel">
                 <div class="panel-heading">
@@ -1592,8 +1592,8 @@
         </form>
       </section>
     </div>
-    <script defer src="app.js?v=135"></script>
-    <script defer src="closing-book-core.js?v=135"></script>
-    <script defer src="closing-book.js?v=135"></script>
+    <script defer src="app.js?v=136"></script>
+    <script defer src="closing-book-core.js?v=136"></script>
+    <script defer src="closing-book.js?v=136"></script>
   </body>
 </html>

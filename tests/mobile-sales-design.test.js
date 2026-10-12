@@ -1,12 +1,16 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const root=path.resolve(__dirname,'..'),html=fs.readFileSync(path.join(root,'index.html'),'utf8'),css=fs.readFileSync(path.join(root,'styles.css'),'utf8'),app=fs.readFileSync(path.join(root,'app.js'),'utf8');
-test('mobile sales report uses a low-saturation pastel surface with readable dark text',()=>{
- const rule=css.match(/html\.mobile-app-theme \.mobile-sales-report \{([^}]+)\}/)[1];
- assert.match(rule,/linear-gradient\(120deg,#f0e2fb,#e6e9ff 50%,#d9f1ff\)/);
- assert.match(rule,/color: #203d73/);
- assert.doesNotMatch(rule,/#aa32ee|#6348ee|#008fdf/);
+test('mobile sales report and header add reuse the approved cash-flow design',()=>{
+ assert.match(html,/<article class="mobile-sales-report mobile-flow-hero"/);
+ assert.match(html,/<button class="mobile-flow-add" id="mobileSalesCreate"/);
+ assert.match(html,/<span class="mobile-sales-report-heading">Tổng bán hàng<\/span>/);
+ assert.doesNotMatch(html,/mobile-sales-report-symbol/);
+ assert.doesNotMatch(css,/html\.mobile-app-theme #mobileSalesCreate \{|mobile-sales-report::before|mobile-sales-report::after/);
+ const rule=css.match(/html\.mobile-app-theme \.mobile-flow-hero \{([^}]+)\}/)[1];
+ assert.match(rule,/linear-gradient\(115deg, rgba\(246, 222, 255, 0\.94\), rgba\(217, 239, 255, 0\.95\)\)/);
+ assert.match(rule,/border: 1\.5px solid rgba\(255, 255, 255, 0\.91\)/);
  const luminance=hex=>{const rgb=hex.match(/[a-f0-9]{2}/gi).map(x=>parseInt(x,16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;};
- for(const foreground of ['203d73','2559a6','4c648a'])for(const background of ['f0e2fb','e6e9ff','d9f1ff'])assert.ok((luminance(background)+.05)/(luminance(foreground)+.05)>=4.5,`${foreground} on ${background} is readable`);
+ for(const foreground of ['18377a','4f617d'])for(const background of ['f6deff','d9efff'])assert.ok((luminance(background)+.05)/(luminance(foreground)+.05)>=4.5,`${foreground} on ${background} is readable`);
 });
 test('approved sales mobile additions are hidden on desktop and history remains last',()=>{
  const tab=html.slice(html.indexOf('<section class="tab-panel" data-tab-panel="sales"'),html.indexOf('<section class="tab-panel" data-tab-panel="purchase"'));
