@@ -7,6 +7,7 @@ async function setup(page,baseline=false){
  await page.goto('http://sales-design.test/');await page.evaluate(()=>{
   const base={date:today,createdAt:today+'T14:08:00',customerName:'BIN BIN',customerPhone:'012345698',createdByName:'Bán Hàng',subtotal:53000};
   state=normalizeState({activeStoreId:'a',stores:[{id:'a',name:'Cửa hàng thử',categories:{income:[],expense:[]},orders:[{...base,id:'one',billCode:'HD02-11102026',total:53000,items:[{name:'Cát nhật',groupName:'Cát vệ sinh',quantity:1,price:53000,total:53000}]},{...base,id:'two',billCode:'HD01-11102026',total:200500,items:[{name:'Tắm VS 3kg',groupName:'Spa',quantity:1,price:142500,total:142500},{name:'Cát nhật',groupName:'Cát vệ sinh',quantity:1,price:58000,total:58000}]},{...base,id:'cancelled',total:999000,status:'cancelled',items:[]}],draftOrders:[{id:'draft',date:today,customerName:'THINH',customerPhone:'0123456789',createdAt:today+'T06:24:00',total:0,items:[]}],inventory:[{id:'stock',name:'Cát nhật',groupName:'Cát vệ sinh',quantity:20,salePrice:58000,lastPrice:44000,totalCost:880000}]},{id:'b',name:'Khác',categories:{income:[],expense:[]},orders:[],draftOrders:[]}]});
+  getActiveStore().categories.income=[{id:'cash-test',name:'Mục thu thử'}];getActiveStore().categories.expense=[{id:'expense-test',name:'Mục chi thử'}];
   authState.role='admin';authState.ready=true;authState.profile={role:'admin',displayName:'Admin'};authState.user={uid:'admin'};cloudStore.enabled=false;els.authScreen.hidden=true;els.appShell.hidden=false;document.body.classList.remove('auth-pending');els.rangeMode.value='today';uiState.rangeMode='today';activateTab('sales');render();
  });await page.waitForTimeout(250);
 }
@@ -20,6 +21,8 @@ for(const [width,height,platform='ios'] of [[320,700],[375,900],[430,900],[667,3
  const page=await browser.newPage({viewport:{width,height},isMobile:true,hasTouch:true,userAgent:platform==='android'?'Mozilla/5.0 (Linux; Android 14) Chrome/130.0 Mobile Safari/537.36':'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1'}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.dismiss());await setup(page);
  assert.equal(await page.locator('.mobile-sales-report').isVisible(),true);assert.match(await page.locator('#mobileSalesReportTotal').textContent(),/253.500/);assert.equal(await page.locator('#mobileSalesReportCount').textContent(),'2 đơn');assert.equal(await page.locator('[data-tab-panel="sales"]').evaluate(el=>el.lastElementChild.classList.contains('sales-history-panel')),true);
  assert.equal(await page.locator('#quickEntryButton').isVisible(),true);
+ const fabStyle=await page.locator('#quickEntryButton').evaluate(el=>({width:el.clientWidth,height:el.clientHeight,stroke:getComputedStyle(el.querySelector('svg')).stroke,disc:getComputedStyle(el,'::before').backgroundImage}));
+ assert.ok(fabStyle.width>=50&&fabStyle.width===fabStyle.height);assert.equal(fabStyle.stroke,'rgb(255, 255, 255)');assert.ok(fabStyle.disc.includes('linear-gradient'));
  await page.evaluate(()=>scrollTo(0,document.documentElement.scrollHeight));
  const fab=await page.locator('#quickEntryButton').boundingBox(),dock=await page.locator('#tabBar').boundingBox();
  assert.ok(fab.x>=0&&fab.x+fab.width<=width+1&&fab.y>=0&&fab.y+fab.height<=dock.y,'round add button stays visible above dock at the end of history');
@@ -37,6 +40,10 @@ for(const [width,height,platform='ios'] of [[320,700],[375,900],[430,900],[667,3
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
  await page.evaluate(()=>{state.activeStoreId='b';render();});assert.match(await page.locator('#mobileSalesReportTotal').textContent(),/^0/);assert.equal(await page.locator('#mobileSalesReportCount').textContent(),'0 đơn');
  await page.evaluate(()=>{state.activeStoreId='a';getActiveStore().orders[0].createdByName='Bán Hàng';getActiveStore().orders[0].customerName='BIN BIN';getActiveStore().orders[0].total=53000;uiState.salesGoodsFilter='all';render();});
+ for(const tab of ['income','expense','purchase','sales']){
+  await page.evaluate(tab=>activateTab(tab),tab);assert.equal(await page.locator('#quickEntryButton').isVisible(),true);
+  await page.locator('#quickEntryButton').click();assert.equal(await page.locator('#quickEntryModal').isVisible(),true);assert.equal(await page.locator('#quickEntryForm').getAttribute('data-type'),tab);await page.locator('#cancelQuickEntry').click();
+ }
  if(width===375&&height===900&&process.env.SALES_DESIGN_SHOTS){await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:path.join(process.env.SALES_DESIGN_SHOTS,`sales-live-${platform}.png`),fullPage:true});}
  await page.evaluate(()=>{authState.role='employee';authState.profile={role:'employee',displayName:'Viewer',storeId:'a',permissions:{sales:{view:true,create:false,draft:false,customerManage:false}}};render();updateQuickEntryButton();});assert.equal(await page.locator('#mobileSalesCreate').isVisible(),false);assert.equal(await page.locator('#quickEntryButton').isVisible(),false);assert.equal(await page.locator('[data-delete-order]').count(),0);
  assert.deepEqual(errors,[]);await page.close();console.log(`${platform} ${width}x${height}: reports, filters, permissions, draft/detail/customer actions and long names/amounts OK`);
