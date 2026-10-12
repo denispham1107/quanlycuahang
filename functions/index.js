@@ -655,16 +655,53 @@ function applyEmployeePurchaseMutation(store, rawOrder, user) {
   if (!items.length) throw Object.assign(new Error("EMPTY_ORDER"), { status: 400 });
 
   const itemTypes = new Map();
-  for (const item of [...(store.inventory || []), ...items]) {
+  for (const item of items) {
     const key = employeeKey(item.name), type = item.itemType === "service" ? "service" : "goods";
     if (itemTypes.has(key) && itemTypes.get(key) !== type) throw Object.assign(new Error("ITEM_TYPE_CONFLICT"), { status: 409 });
     itemTypes.set(key, type);
   }
 
+  const typeChanges = (store.inventory || []).filter((stock) => {
+    const nextType = itemTypes.get(employeeKey(stock.name));
+    return nextType && nextType !== (stock.itemType === "service" ? "service" : "goods");
+  }).map((stock) => ({
+    inventoryId: stock.id, name: stock.name, groupName: stock.groupName || "",
+    fromType: stock.itemType === "service" ? "service" : "goods", toType: itemTypes.get(employeeKey(stock.name)),
+    quantity: Number(stock.quantity || 0), totalCost: Number(stock.totalCost || 0),
+    lastPrice: Number(stock.lastPrice || 0), salePrice: Number(stock.salePrice ?? stock.lastPrice ?? 0),
+    updatedAt: String(stock.updatedAt || "")
+  }));
+  const confirmed = Array.isArray(rawOrder.typeChanges) ? rawOrder.typeChanges : [];
+  const fields = ["inventoryId", "name", "groupName", "fromType", "toType", "quantity", "totalCost", "lastPrice", "salePrice", "updatedAt"];
+  if (confirmed.length !== typeChanges.length || new Set(confirmed.map((change) => change?.inventoryId)).size !== confirmed.length ||
+      typeChanges.some((expected) => {
+        const change = confirmed.find((current) => current?.inventoryId === expected.inventoryId);
+        return !change || fields.some((field) => change[field] !== expected[field]);
+      })) {
+    throw Object.assign(new Error("ITEM_TYPE_CONFIRMATION_REQUIRED"), { status: 409 });
+  }
+  if ((store.purchaseOrders || []).some((current) => current.id === rawOrder.id)) throw Object.assign(new Error("DUPLICATE_ORDER"), { status: 409 });
+
   store.purchaseCategories = Array.isArray(store.purchaseCategories) ? store.purchaseCategories : [];
   store.inventory = Array.isArray(store.inventory) ? store.inventory : [];
   store.inventoryLogs = Array.isArray(store.inventoryLogs) ? store.inventoryLogs : [];
   const logs = [];
+  for (const change of typeChanges) {
+    const stock = store.inventory.find((item) => item.id === change.inventoryId);
+    stock.itemType = change.toType;
+    stock.quantity = 0;
+    stock.totalCost = 0;
+    stock.updatedAt = createdAt;
+    logs.push({
+      id: employeeId(), date, type: "type-change", inventoryId: stock.id,
+      itemName: stock.name, groupName: stock.groupName, itemType: stock.itemType,
+      oldItemType: change.fromType, oldQuantity: change.quantity, newQuantity: 0,
+      oldTotalCost: change.totalCost, newTotalCost: 0,
+      oldPrice: change.lastPrice, newPrice: change.lastPrice,
+      oldSalePrice: change.salePrice, newSalePrice: change.salePrice, updatedAt: createdAt,
+      createdByUid: user.uid, createdByName: employeeText(user.profile.displayName || user.email, 120)
+    });
+  }
   const normalizedItems = items.map((item) => {
     let category = store.purchaseCategories.find((current) => employeeKey(current.name) === employeeKey(item.groupName));
     if (!category) {
@@ -676,6 +713,7 @@ function applyEmployeePurchaseMutation(store, rawOrder, user) {
     const oldQuantity = Number(stock?.quantity || 0);
     const oldPrice = Number(stock?.lastPrice || 0);
     const oldSalePrice = Number(stock?.salePrice ?? stock?.lastPrice ?? 0);
+    const oldTotalCost = Number(stock?.totalCost || 0);
     if (!stock) {
       stock = {
         id: employeeId(),
@@ -707,6 +745,8 @@ function applyEmployeePurchaseMutation(store, rawOrder, user) {
       itemType: stock.itemType,
       groupName: stock.groupName,
       oldQuantity,
+      oldTotalCost,
+      newTotalCost: stock.totalCost,
       newQuantity: stock.quantity,
       oldPrice,
       newPrice: item.price,
@@ -728,6 +768,7 @@ function applyEmployeePurchaseMutation(store, rawOrder, user) {
     total: normalizedItems.reduce((sum, item) => sum + item.total, 0),
     createdAt,
     source: rawOrder.source === "bulk" ? "bulk" : "manual",
+    typeChanges,
     createdByUid: user.uid,
     createdByName: employeeText(user.profile.displayName || user.email, 120)
   };
@@ -2544,6 +2585,10 @@ exports.saveEmployeeMutation = onRequest(
         ? `Không đủ tồn kho cho ${String(error.message).split(":").slice(1).join(":")}.`
         : error?.message === "CLOSING_BOOK_CONFLICT"
           ? "Chốt sổ đã thay đổi trên thiết bị khác. Vui lòng tải lại và thử lại."
+        : error?.message === "ITEM_TYPE_CONFIRMATION_REQUIRED"
+          ? "Kho hàng đã thay đổi hoặc chưa xác nhận đổi loại. Vui lòng tải lại kho, kiểm tra và xác nhận lần nữa."
+        : error?.message === "ITEM_TYPE_CONFLICT"
+          ? "Cùng một tên hàng trong lần nhập chỉ được dùng một loại: Hàng hóa hoặc Dịch vụ."
         : knownStatus < 500
           ? "Dữ liệu không hợp lệ hoặc bạn không có quyền thực hiện thao tác này."
           : "Không thể lưu dữ liệu nhân viên.";

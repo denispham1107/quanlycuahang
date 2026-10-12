@@ -6382,6 +6382,7 @@ function saveEditedInventoryLog(formData) {
   log.newQuantity = newQuantity;
   log.newPrice = newPrice;
   log.newSalePrice = newSalePrice;
+  if (log.newTotalCost !== undefined) log.newTotalCost = isServiceItem(log) ? 0 : Math.max(0, newQuantity * newPrice);
   if (newQuantity < Number(log.oldQuantity || 0)) {
     log.exportReason = exportReason;
     delete log.reason;
@@ -6522,9 +6523,25 @@ function addInventoryLog(store, log) {
   return inventoryLog;
 }
 
-function applyPurchaseItemsToInventory(store, date, items, createdAt) {
+function applyPurchaseItemsToInventory(store, date, items, createdAt, typeChanges = []) {
   store.inventory = [...(store.inventory || [])];
   const inventoryLogs = [];
+
+  typeChanges.forEach((change) => {
+    const stock = store.inventory.find((item) => item.id === change.inventoryId);
+    stock.itemType = change.toType;
+    stock.quantity = 0;
+    stock.totalCost = 0;
+    stock.updatedAt = createdAt;
+    inventoryLogs.push(addInventoryLog(store, {
+      date, type: "type-change", inventoryId: stock.id,
+      itemName: stock.name, groupName: stock.groupName, itemType: stock.itemType,
+      oldItemType: change.fromType, oldQuantity: change.quantity, newQuantity: 0,
+      oldTotalCost: change.totalCost, newTotalCost: 0,
+      oldPrice: change.lastPrice, newPrice: change.lastPrice,
+      oldSalePrice: change.salePrice, newSalePrice: change.salePrice, updatedAt: createdAt
+    }));
+  });
 
   items.forEach((item) => {
     const service = isServiceItem(item);
@@ -6534,6 +6551,7 @@ function applyPurchaseItemsToInventory(store, date, items, createdAt) {
       const oldQuantity = Number(current.quantity || 0);
       const oldPrice = Number(current.lastPrice || 0);
       const oldSalePrice = getInventorySalePrice(current);
+      const oldTotalCost = Number(current.totalCost || 0);
       current.itemType = service ? "service" : "goods";
       current.quantity = service ? 0 : Number(current.quantity || 0) + item.quantity;
       current.totalCost = service ? 0 : Number(current.totalCost || 0) + item.total;
@@ -6548,11 +6566,14 @@ function applyPurchaseItemsToInventory(store, date, items, createdAt) {
         itemType: current.itemType,
         groupName: current.groupName,
         oldQuantity,
+        oldTotalCost,
+        newTotalCost: current.totalCost,
         newQuantity: Number(current.quantity || 0),
         oldPrice,
         newPrice: Number(current.lastPrice || 0),
         oldSalePrice,
-        newSalePrice: getInventorySalePrice(current)
+        newSalePrice: getInventorySalePrice(current),
+        updatedAt: createdAt
       }));
     } else {
       const stock = {
@@ -6577,11 +6598,14 @@ function applyPurchaseItemsToInventory(store, date, items, createdAt) {
         itemType: stock.itemType,
         groupName: stock.groupName,
         oldQuantity: 0,
+        oldTotalCost: 0,
+        newTotalCost: stock.totalCost,
         newQuantity: Number(stock.quantity || 0),
         oldPrice: 0,
         newPrice: Number(stock.lastPrice || 0),
         oldSalePrice: 0,
-        newSalePrice: getInventorySalePrice(stock)
+        newSalePrice: getInventorySalePrice(stock),
+        updatedAt: createdAt
       }));
     }
   });
@@ -6605,7 +6629,8 @@ function savePurchaseOrder() {
     window.alert("Vui lòng nhập hàng hóa, nhóm hàng hóa, số lượng, giá vốn và giá bán.");
     return false;
   }
-  if (!validatePurchaseItemTypes(store, items)) return false;
+  const typeChanges = confirmPurchaseTypeChanges(store, items);
+  if (typeChanges === null) return false;
 
   const createdAt = new Date().toISOString();
   const orderId = createId();
@@ -6618,13 +6643,13 @@ function savePurchaseOrder() {
     };
   });
 
-  const purchaseOrder = { id: orderId, date, items: normalizedItems, total, createdAt };
+  const purchaseOrder = { id: orderId, date, items: normalizedItems, total, createdAt, typeChanges };
   store.purchaseOrders = [
     ...(store.purchaseOrders || []),
     purchaseOrder
   ];
 
-  const inventoryLogs = applyPurchaseItemsToInventory(store, date, normalizedItems, createdAt);
+  const inventoryLogs = applyPurchaseItemsToInventory(store, date, normalizedItems, createdAt, typeChanges);
 
   recordActivity(
     store,
@@ -6656,6 +6681,50 @@ function validatePurchaseItemTypes(store, items) {
     names.set(key, type);
   }
   return true;
+}
+
+function getPurchaseTypeChanges(store, items) {
+  const kinds = new Map();
+  const keyFor = (name) => normalizeSearchText(name).replace(/[^a-z0-9]+/g, " ").trim();
+  for (const item of items) {
+    const key = keyFor(item.name), type = isServiceItem(item) ? "service" : "goods";
+    if (kinds.has(key) && kinds.get(key) !== type) return null;
+    kinds.set(key, type);
+  }
+  return (store.inventory || []).filter((stock) => {
+    const nextType = kinds.get(keyFor(stock.name));
+    return nextType && nextType !== (isServiceItem(stock) ? "service" : "goods");
+  }).map((stock) => ({
+    inventoryId: stock.id, name: stock.name, groupName: stock.groupName || "",
+    fromType: isServiceItem(stock) ? "service" : "goods", toType: kinds.get(keyFor(stock.name)),
+    quantity: Number(stock.quantity || 0), totalCost: Number(stock.totalCost || 0),
+    lastPrice: Number(stock.lastPrice || 0), salePrice: getInventorySalePrice(stock),
+    updatedAt: String(stock.updatedAt || "")
+  })).sort((a, b) => String(a.inventoryId).localeCompare(String(b.inventoryId)));
+}
+
+function confirmPurchaseTypeChanges(store, items) {
+  const changes = getPurchaseTypeChanges(store, items);
+  if (changes === null) {
+    window.alert("Cùng một tên hàng trong lần nhập chỉ được dùng một loại: Hàng hóa hoặc Dịch vụ.");
+    return null;
+  }
+  if (!changes.length) return changes;
+  const label = (type) => type === "service" ? "Dịch vụ" : "Hàng hóa";
+  const details = changes.map((change) =>
+    `• ${change.name} (${change.groupName}): ${label(change.fromType)} → ${label(change.toType)}.\n` +
+    (change.toType === "service"
+      ? `  Ngừng theo dõi ${change.quantity.toLocaleString("vi-VN")} tồn kho và ${formatCurrency(change.totalCost)} giá trị kho hiện có.`
+      : "  Bắt đầu theo dõi tồn kho từ số lượng của lần nhập mới.")
+  ).join("\n\n");
+  if (!window.confirm(`Xác nhận đổi loại hàng?\n\n${details}\n\nĐổi loại áp dụng cho tất cả nhóm có cùng tên hàng. Đơn hàng và nhật ký cũ được giữ nguyên. Bạn có đồng ý không?`)) return null;
+  const activeStore = getActiveStore();
+  const latest = activeStore ? getPurchaseTypeChanges(activeStore, items) : null;
+  if (activeStore !== store || JSON.stringify(latest) !== JSON.stringify(changes)) {
+    window.alert("Kho hàng đã thay đổi. Vui lòng kiểm tra lại và xác nhận đổi loại lần nữa.");
+    return null;
+  }
+  return changes;
 }
 
 function parseBulkPurchaseItems({ silent = false } = {}) {
@@ -6726,11 +6795,13 @@ function saveBulkPurchaseOrder() {
   }
 
   const items = parseBulkPurchaseItems();
-  if (items && !validatePurchaseItemTypes(store, items)) return false;
   if (!items || !items.length) {
     window.alert("Vui lòng nhập ít nhất 1 dòng hàng hóa.");
     return false;
   }
+
+  const typeChanges = confirmPurchaseTypeChanges(store, items);
+  if (typeChanges === null) return false;
 
   const createdAt = new Date().toISOString();
   const orderId = createId();
@@ -6744,12 +6815,12 @@ function saveBulkPurchaseOrder() {
   });
   const total = normalizedItems.reduce((sum, item) => sum + item.total, 0);
 
-  const purchaseOrder = { id: orderId, date, items: normalizedItems, total, createdAt, source: "bulk" };
+  const purchaseOrder = { id: orderId, date, items: normalizedItems, total, createdAt, source: "bulk", typeChanges };
   store.purchaseOrders = [
     ...(store.purchaseOrders || []),
     purchaseOrder
   ];
-  const inventoryLogs = applyPurchaseItemsToInventory(store, date, normalizedItems, createdAt);
+  const inventoryLogs = applyPurchaseItemsToInventory(store, date, normalizedItems, createdAt, typeChanges);
   recordActivity(
     store,
     "create",
@@ -7994,6 +8065,7 @@ function getMobilePurchaseOverviewStats(store, range) {
     return date >= range.start && date <= range.end && !isCancelledEntry(log);
   });
   const quantities = logs.reduce((totals, log) => {
+    if (log.type === "type-change") return totals;
     const change = Number(log.newQuantity || 0) - Number(log.oldQuantity || 0);
     if (Number.isFinite(change)) {
       if (change > 0) totals.imports += change;
@@ -8681,16 +8753,17 @@ function buildInventorySnapshotAtStartOfDay(store, targetDate) {
         salePrice: getInventoryLogNewSalePrice(log)
       };
 
-      item.quantity = Number(log.oldQuantity || 0);
+      item.itemType = log.oldItemType || log.itemType || "goods";
+      item.quantity = isServiceItem(item) ? 0 : Number(log.oldQuantity || 0);
       item.lastPrice = Number(log.oldPrice || 0);
       item.salePrice = getInventoryLogOldSalePrice(log);
-      item.totalCost = Math.max(0, item.quantity * item.lastPrice);
+      item.totalCost = isServiceItem(item) ? 0 : Math.max(0, Number(log.oldTotalCost ?? item.quantity * item.lastPrice));
       itemsByKey.set(key, item);
     });
 
   return [...itemsByKey.values()].map((item) => ({
     ...item,
-    totalCost: Math.max(0, Number(item.quantity || 0) * Number(item.lastPrice || 0))
+    totalCost: isServiceItem(item) ? 0 : Math.max(0, Number(item.totalCost ?? Number(item.quantity || 0) * Number(item.lastPrice || 0)))
   }));
 }
 
@@ -8749,10 +8822,11 @@ function findLatestInventoryLogForItem(store, referenceLog, excludeId = "") {
 function applyInventoryLogValuesToItem(item, log) {
   if (!item || !log) return;
 
+  item.itemType = log.itemType === "service" ? "service" : "goods";
   item.quantity = isServiceItem(item) ? 0 : Number(log.newQuantity ?? log.oldQuantity ?? item.quantity ?? 0);
   item.lastPrice = Number(log.newPrice ?? log.oldPrice ?? item.lastPrice ?? 0);
   item.salePrice = Number(getInventoryLogNewSalePrice(log));
-  item.totalCost = isServiceItem(item) ? 0 : Math.max(0, Number(item.quantity || 0) * Number(item.lastPrice || 0));
+  item.totalCost = isServiceItem(item) ? 0 : Math.max(0, Number(log.newTotalCost ?? Number(item.quantity || 0) * Number(item.lastPrice || 0)));
   item.updatedAt = log.updatedAt || log.date || new Date().toISOString();
 }
 
@@ -8774,10 +8848,11 @@ function syncInventoryItemAfterLogDelete(store, deletedLog) {
     return;
   }
 
-  item.quantity = Number(deletedLog.oldQuantity || 0);
+  item.itemType = deletedLog.oldItemType || deletedLog.itemType || "goods";
+  item.quantity = isServiceItem(item) ? 0 : Number(deletedLog.oldQuantity || 0);
   item.lastPrice = Number(deletedLog.oldPrice || 0);
   item.salePrice = Number(getInventoryLogOldSalePrice(deletedLog));
-  item.totalCost = Math.max(0, Number(item.quantity || 0) * Number(item.lastPrice || 0));
+  item.totalCost = isServiceItem(item) ? 0 : Math.max(0, Number(deletedLog.oldTotalCost ?? Number(item.quantity || 0) * Number(item.lastPrice || 0)));
   item.updatedAt = new Date().toISOString();
 }
 
@@ -9059,6 +9134,7 @@ function getInventoryExportReasons(store) {
 }
 
 function getInventoryLogPurpose(log) {
+  if (log?.type === "type-change") return { value: "edit", label: log.itemType === "service" ? "Hàng hóa → Dịch vụ" : "Dịch vụ → Hàng hóa" };
   const oldQuantity = Number(log?.oldQuantity || 0);
   const newQuantity = Number(log?.newQuantity || 0);
   if (newQuantity > oldQuantity) return { value: "purchase", label: "Nhập kho" };
@@ -9067,6 +9143,7 @@ function getInventoryLogPurpose(log) {
 }
 
 function getInventoryLogTotal(log) {
+  if (log?.type === "type-change") return 0;
   const oldQuantity = Number(log?.oldQuantity || 0);
   const newQuantity = Number(log?.newQuantity || 0);
   const changedQuantity = Math.abs(newQuantity - oldQuantity);
