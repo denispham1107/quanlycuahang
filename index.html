@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=141" />
+    <link rel="manifest" href="manifest.webmanifest?v=142" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=141" />
+    <link rel="stylesheet" href="styles.css?v=142" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -1306,9 +1306,10 @@
     </div>
 
     <div class="modal-backdrop" id="exportInventoryModal" hidden>
-      <form class="modal-card export-inventory-card" id="exportInventoryForm">
+      <form class="modal-card export-inventory-card" id="exportInventoryForm" role="dialog" aria-modal="true" aria-labelledby="exportInventoryTitle">
         <div class="panel-heading">
-          <h2>Xuất hàng hóa</h2>
+          <svg class="export-dialog-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="m5 10 10-5 10 5-10 5-10-5Z" fill="#e3dcfa" stroke="#7461bc" stroke-width="1.5" stroke-linejoin="round"/><path d="M5 10v11l10 6V15L5 10Z" fill="#cdbdee" stroke="#7461bc" stroke-width="1.5" stroke-linejoin="round"/><path d="m15 15 10-5v11l-10 6V15Z" fill="#b7daf3" stroke="#6389be" stroke-width="1.5" stroke-linejoin="round"/><path d="m10 7.5 10 5" stroke="#8d78cb" stroke-width="1.4"/><circle cx="24" cy="23" r="6" fill="#5a87c5" stroke="#f5f8ff" stroke-width="1.2"/><path d="M21 23h6m-2.5-2.5L27 23l-2.5 2.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <h2 id="exportInventoryTitle">Xuất hàng hóa</h2>
           <span id="exportInventoryName">Kho hàng</span>
         </div>
         <input type="hidden" name="inventoryId" />
@@ -1599,8 +1600,8 @@
         </form>
       </section>
     </div>
-    <script defer src="app.js?v=141"></script>
-    <script defer src="closing-book-core.js?v=141"></script>
-    <script defer src="closing-book.js?v=141"></script>
+    <script defer src="app.js?v=142"></script>
+    <script defer src="closing-book-core.js?v=142"></script>
+    <script defer src="closing-book.js?v=142"></script>
   </body>
 </html>
