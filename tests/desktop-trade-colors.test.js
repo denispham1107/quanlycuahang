@@ -15,6 +15,7 @@ test('desktop trade text and primary warehouse button contrast on every gradient
  const contrast=(a,b)=>(Math.max(lum(a),lum(b))+.05)/(Math.min(lum(a),lum(b))+.05);
  const pairs=[['69509a',['eee3fa','e4eefa']],['24695f',['e0f3e8','e0eff8','def2e9','e5fbf7','faffff','eaf6f1','f0f4ff']],['286c60',['f4fcf7','e8f5ef']],['955173',['fbe2ed','eee5f8']],['176992',['fff5fa','f1edfa']],['315e91',['e5ecff','def3ed']],['695980',['e9dff7']],['6a425c',['f9ddbf','edc5c9','e5d3f5']],['9b4167',['f9e3ed']],['58468e',['fcfaff','e6e6ff']],['944567',['fff9ff','f8e9ff']],['223766',['fcfaff','e6e6ff','fff9ff','f8e9ff','faffff','e5fbf7']]];
  for(const [fg,bgs] of pairs)for(const bg of bgs)assert.ok(contrast(fg,bg)>=4.5,`${fg} on ${bg}`);
+ for(const bg of ['d7eee6','dcecfb'])assert.ok(contrast('285f56',bg)>=4.5,'separate mint-blue history total is readable');
  for(const [a,b] of [['7450c9','4e65bd'],['4e65bd','247ba8'],['7251a8','436fa8'],['27816e','306e91'],['6550a0','376f9f'],['55549a','2a769b']])for(let i=0;i<=20;i++){const ah=a.match(/../g).map(x=>parseInt(x,16)),bh=b.match(/../g).map(x=>parseInt(x,16));const bg=ah.map((v,j)=>Math.round(v+(bh[j]-v)*i/20).toString(16).padStart(2,'0')).join('');assert.ok(contrast('ffffff',bg)>=4.5,`white on ${bg}`);}
  for(const [a,b] of [['f9ddbf','edc5c9'],['edc5c9','e5d3f5']])for(let i=0;i<=20;i++){const ah=a.match(/../g).map(x=>parseInt(x,16)),bh=b.match(/../g).map(x=>parseInt(x,16));const bg=ah.map((v,j)=>Math.round(v+(bh[j]-v)*i/20).toString(16).padStart(2,'0')).join('');assert.ok(contrast('6a425c',bg)>=4.5,`dark history text on ${bg}`);assert.ok(lum(bg)>lum('994c75')&&lum(bg)>lum('715d9f'),'history bands brighter than previous dark colors');}
 });
@@ -29,9 +30,10 @@ test('desktop trade keeps colorful tables while sales history exactly matches th
  for(const table of ['draft-order-table','inventory-log-table'])assert.ok(block.includes(`.${table} th { color: #fff; }`));
  assert.ok(block.includes('.sales-history-table th { color: #6a425c; }'));
  assert.ok(block.includes('.sales-history-panel .panel-heading > span { color: #6a425c; }'));
- assert.ok(block.includes('#salesRangeLabel .report-amount { color: #6a425c; }'));
+ assert.ok(block.includes('#salesRangeLabel .report-amount { color: #285f56; }'));
  const reference=block.match(/#openBulkPurchase \{ background: ([^;]+)/)[1];
- for(const selector of ['> .sales-history-panel','#salesRangeLabel','.sales-history-table thead'])assert.equal(block.slice(block.indexOf(`${selector} { background:`)).match(/background: ([^;]+)/)[1],reference);
+ for(const selector of ['> .sales-history-panel','.sales-history-table thead'])assert.equal(block.slice(block.indexOf(`${selector} { background:`)).match(/background: ([^;]+)/)[1],reference);
+ const total=block.slice(block.indexOf('#salesRangeLabel { background:')).match(/background: ([^;]+)/)[1];assert.notEqual(total,reference);assert.equal(total,'linear-gradient(110deg,#d7eee6,#dcecfb)');
  assert.ok(block.includes('report-total .report-amount { color: #fff; }'));assert.ok(block.includes('inventory-log-summary strong { color: #fff; }'));
  assert.ok(block.includes('#f9ddbf,#edc5c9 50%,#e5d3f5'));assert.ok(block.includes('tbody tr:not(.entry-cancelled):nth-child(even)'));
 });
