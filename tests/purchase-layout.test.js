@@ -29,3 +29,16 @@ test("mobile purchase fields never share the sales action-button column", () => 
   assert.match(layout, /\.purchase-item-row > \.quantity-stepper\s*\{\s*grid-column: 1 \/ -1;\s*grid-row: 4;/);
   assert.match(layout, /\.purchase-item-row > \.delete-small\s*\{\s*grid-column: 3;\s*grid-row: 1;/);
 });
+
+test("desktop purchase stays on one compact row with room for native arrows", () => {
+  assert.match(css, /@media \(min-width: 701px\)[\s\S]*grid-template-columns: minmax\(92px,1\.3fr\) minmax\(124px,1\.3fr\) minmax\(104px,\.8fr\)/);
+  assert.match(css, /purchase-item-row > \* \{ grid-column: auto; grid-row: 1; \}/);
+  assert.match(css, /padding-inline: 8px; font-size: clamp\(11px,1\.05vw,13px\)/);
+  assert.match(css, /padding-inline: 8px 24px/);
+});
+
+test("valid-line badge has automatic height and an accented-text-safe line box", () => {
+  const rule=css.match(/\.bulk-purchase-summary\s*\{([^}]+)\}/)[1];
+  for(const expected of ['display: inline-flex','align-items: center','justify-content: center','height: auto','min-height: 40px','line-height: 1.5','padding: 9px 14px','overflow: visible'])assert.ok(rule.includes(expected),expected);
+  assert.doesNotMatch(rule,/overflow:\s*hidden/);
+});

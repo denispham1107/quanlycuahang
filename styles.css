@@ -5903,13 +5903,25 @@ html.mobile-app-theme tr.activity-target-highlight {
 }
 
 .bulk-purchase-summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   justify-self: end;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 100%;
+  min-height: 40px;
+  height: auto;
   border-radius: 999px;
-  padding: 8px 12px;
+  padding: 9px 14px;
   background: rgba(8, 120, 247, 0.1);
   color: var(--accent);
   font-size: 13px;
   font-weight: 900;
+  line-height: 1.5;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  overflow: visible;
 }
 
 .sales-items {
@@ -11180,6 +11192,33 @@ body:has(> :is(#customerHistoryModal, #memberTierModal):not([hidden])) > #custom
   html.mobile-app-theme #customersPage .customer-mobile-history { min-height: 30px; font-size: 10px; padding: 4px 6px; }
   html.mobile-app-theme #customersPage .customer-mobile-edit { width: 32px; height: 34px; min-height: 34px; font-size: 18px; }
   html.mobile-app-theme #customersPage.mobile-list-short .customers-card:not(.customer-form-open) > .panel-heading { display: none; }
+}
+
+/* Keep native dropdown/datalist arrows clear of purchase text on Desktop. */
+.sales-page-mode #purchaseItems .purchase-item-row > :is(input,select) {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  line-height: 1.5;
+}
+.sales-page-mode #purchaseItems .purchase-item-row > [data-purchase-item="itemType"] {
+  padding-inline: 12px 32px;
+}
+@media (min-width: 701px) {
+  html:not(.mobile-app-theme) .sales-page-mode #purchaseItems .purchase-item-row {
+    grid-template-columns: minmax(92px,1.3fr) minmax(124px,1.3fr) minmax(104px,.8fr) minmax(96px,.7fr) minmax(66px,.65fr) minmax(66px,.65fr) 30px;
+    gap: 4px;
+    padding: 8px;
+  }
+  html:not(.mobile-app-theme) .sales-page-mode #purchaseItems .purchase-item-row > * { grid-column: auto; grid-row: 1; }
+  html:not(.mobile-app-theme) .sales-page-mode #purchaseItems .purchase-item-row > :is(input,select) { min-height: 40px; padding-inline: 8px; font-size: clamp(11px,1.05vw,13px); }
+  html:not(.mobile-app-theme) .sales-page-mode #purchaseItems .purchase-item-row > [data-purchase-item="itemType"] { padding-inline: 8px 24px; }
+  html:not(.mobile-app-theme) .sales-page-mode #purchaseItems .quantity-stepper { grid-template-columns: 28px minmax(28px,1fr) 28px; gap: 4px; }
+  html:not(.mobile-app-theme) .sales-page-mode #purchaseItems .quantity-stepper input { min-height: 40px; padding: 4px; font-size: clamp(11px,1.05vw,13px); }
+  html:not(.mobile-app-theme) .sales-page-mode #purchaseItems .quantity-step { width: 28px; min-width: 28px; min-height: 40px; height: 40px; padding: 0; font-size: 16px; }
+  html:not(.mobile-app-theme) .sales-page-mode #purchaseItems .delete-small { width: 30px; min-width: 30px; min-height: 40px; height: 40px; padding: 0; }
+  html:not(.mobile-app-theme) .sales-page-mode #purchaseItems .service-stock-note { padding: 4px; font-size: 11px; line-height: 1.4; }
 }
 
 /* Approved "Nổi bật gradient" sales design. Keep the shared desktop DOM/handlers. */
