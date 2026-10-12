@@ -13,7 +13,13 @@ test('desktop trade accents only change paint, scoped to sales/purchase and neve
 test('desktop trade text and primary warehouse button contrast on every gradient stop',()=>{
  const lum=hex=>hex.match(/../g).map(x=>parseInt(x,16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0);
  const contrast=(a,b)=>(Math.max(lum(a),lum(b))+.05)/(Math.min(lum(a),lum(b))+.05);
- const pairs=[['69509a',['faf6ff','f5f8ff']],['604b8d',['eee4fa','e7ecfb','eee1fb','dce9fb']],['24695f',['f0faf6','f8fcff','e3f4ec','e8f2fd','def2e9']],['286c60',['dcf2e9','e8f3fb']],['955173',['fff3f8','faf7ff']],['824361',['f8e3ee','eee8fa','f5e5ef','eee7f9']],['176992',['faf6fc','ffffff']],['315e91',['f4f8ff','f5fbf9']],['695980',['f4edfb']],['235a6a',['d3f1e5','b1ded7','c1ddf0']],['55497f',['e8e2f7','e0effb']],['9b4167',['f9e3ed']],['58468e',['fcfaff','e6e6ff']],['944567',['fff9ff','f8e9ff']]];
+ const pairs=[['69509a',['eee3fa','e4eefa']],['24695f',['e0f3e8','e0eff8','def2e9','c3ebdc','cbe8f6','eaf6f1','f0f4ff']],['286c60',['f4fcf7','e8f5ef']],['955173',['fbe2ed','eee5f8']],['176992',['fff5fa','f1edfa']],['315e91',['e5ecff','def3ed']],['695980',['e9dff7']],['6a425c',['f9ddbf','edc5c9','e5d3f5']],['9b4167',['f9e3ed']],['58468e',['ded2f2','c8dcf1']],['853a5c',['f5ccdf','e9d8f6']],['223766',['ded2f2','c8dcf1','f5ccdf','e9d8f6','c3ebdc','cbe8f6']]];
  for(const [fg,bgs] of pairs)for(const bg of bgs)assert.ok(contrast(fg,bg)>=4.5,`${fg} on ${bg}`);
- for(const [a,b] of [['7450c9','4e65bd'],['4e65bd','247ba8']])for(let i=0;i<=20;i++){const ah=a.match(/../g).map(x=>parseInt(x,16)),bh=b.match(/../g).map(x=>parseInt(x,16));const bg=ah.map((v,j)=>Math.round(v+(bh[j]-v)*i/20).toString(16).padStart(2,'0')).join('');assert.ok(contrast('ffffff',bg)>=4.5);}
+ for(const [a,b] of [['7450c9','4e65bd'],['4e65bd','247ba8'],['7251a8','436fa8'],['27816e','306e91'],['994c75','70599e'],['9c4f78','715d9f'],['6550a0','376f9f'],['55549a','2a769b']])for(let i=0;i<=20;i++){const ah=a.match(/../g).map(x=>parseInt(x,16)),bh=b.match(/../g).map(x=>parseInt(x,16));const bg=ah.map((v,j)=>Math.round(v+(bh[j]-v)*i/20).toString(16).padStart(2,'0')).join('');assert.ok(contrast('ffffff',bg)>=4.5,`white on ${bg}`);}
+});
+test('desktop trade uses rich headers, colored totals and alternating rows rather than near-white accents',()=>{
+ for(const [selector,palette] of [['.draft-order-table thead','#7251a8,#436fa8'],['.sales-history-table thead','#9c4f78,#715d9f'],['.inventory-log-table thead','#55549a,#2a769b']])assert.ok(block.includes(`${selector} { background: linear-gradient(110deg,${palette}); }`));
+ for(const table of ['draft-order-table','sales-history-table','inventory-log-table'])assert.ok(block.includes(`.${table} th { color: #fff; }`));
+ assert.ok(block.includes('report-total .report-amount { color: #fff; }'));assert.ok(block.includes('inventory-log-summary strong { color: #fff; }'));
+ assert.ok(block.includes('#f9ddbf,#edc5c9 50%,#e5d3f5'));assert.ok(block.includes('tbody tr:not(.entry-cancelled):nth-child(even)'));
 });
