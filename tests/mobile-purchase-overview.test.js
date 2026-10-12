@@ -54,3 +54,19 @@ test('mobile purchase redesign retains a final full-detail history and shared ro
   assert.doesNotMatch(css,/data-active-tab="purchase"[^}]*#quickEntryButton[^}]*display:\s*none/);
   for(const id of ['toggleInventory','openBulkPurchase','inventoryLogPanel','mobilePurchaseImportCount','mobilePurchaseExportCount','mobilePurchaseStockTotal','mobilePurchaseStockValue'])assert.equal((html.match(new RegExp(`id="${id}"`,'g'))||[]).length,1);
 });
+
+test('warehouse is the primary mobile action and bulk import has a distinct softer accessible palette', () => {
+  const primary=css.match(/html\.mobile-app-theme \.purchase-main-panel > #toggleInventory \{([^}]+)\}/)[1];
+  const secondary=css.match(/html\.mobile-app-theme \.purchase-main-panel > #openBulkPurchase \{([^}]+)\}/)[1];
+  assert.match(primary,/color: #fff;/);assert.match(secondary,/color: #71569e;/);
+  assert.match(primary,/#7450c9,#4e65bd 55%,#247ba8/);assert.match(secondary,/#fff2f8,#eee5fa/);
+  const rgb=hex=>hex.replace('#','').match(/../g).map(v=>parseInt(v,16));
+  const lum=rgb=>{const c=rgb.map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);return .2126*c[0]+.7152*c[1]+.0722*c[2];};
+  const ratio=(a,b)=>(Math.max(lum(a),lum(b))+.05)/(Math.min(lum(a),lum(b))+.05);
+  const mix=(a,b,p)=>a.map((c,i)=>c*(1-p)+b[i]*p);
+  const gradients=[[['#7450c9','#4e65bd','#247ba8'],'#ffffff'],[['#fff2f8','#eee5fa'],'#71569e']];
+  for(const [stops,fg] of gradients)for(let i=0;i<stops.length-1;i++)for(let step=0;step<=20;step++){const bg=mix(rgb(stops[i]),rgb(stops[i+1]),step/20);assert.ok(ratio(rgb(fg),bg)>=4.5,`${fg} contrast with gradient`);}
+  for(const stop of gradients[0][0])assert.ok(ratio(rgb('#ffffff'),mix(rgb(stop),rgb('#ffffff'),36/255))>=3,'white warehouse icon remains visible on translucent tile');
+  assert.ok(ratio(rgb('#71569e'),rgb('#e6d7f5'))>=3,'bulk icon stays readable');
+  assert.ok(lum(rgb('#eee5fa'))>lum(rgb('#247ba8')),'secondary has a lighter visual weight');
+});

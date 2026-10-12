@@ -11409,9 +11409,11 @@ html.mobile-app-theme .purchase-main-panel { display: grid; gap: 10px; padding: 
 html.mobile-app-theme .purchase-main-panel > .purchase-action { display: grid; grid-template-columns: 38px minmax(0,1fr) 12px; align-items: center; gap: 10px; width: 100%; min-height: 64px; margin: 0; padding: 11px 15px; text-align: left; font-size: 14px; border-radius: 19px; }
 html.mobile-app-theme .purchase-action-icon { display: block; width: 34px; height: 34px; padding: 5px; border-radius: 11px; background: #ffffff25; }
 html.mobile-app-theme .purchase-action-chevron { display: block; font-size: 25px; line-height: 1; opacity: .75; }
-html.mobile-app-theme .purchase-main-panel > #toggleInventory { color: #4553a0; border: 1.5px solid #ffffffe6; background: linear-gradient(120deg,#ffffffdb,#e9e7fbc9 55%,#e0f1ffdc); box-shadow: 0 6px 16px #536ba714,inset 0 1px 0 #fff; }
-html.mobile-app-theme #toggleInventory .purchase-action-icon { background: linear-gradient(135deg,#e6d9fb,#d2e9ff); }
-html.mobile-app-theme .purchase-main-panel > #openBulkPurchase { background: linear-gradient(110deg,#925ee4,#6474dc 55%,#2095d8); color: #fff; border: 1px solid #ffffffbd; box-shadow: 0 7px 18px #635cc426,inset 0 1px 0 #ffffff66; }
+html.mobile-app-theme .purchase-main-panel > #toggleInventory { color: #fff; border: 1.5px solid #ffffffd9; background: linear-gradient(110deg,#7450c9,#4e65bd 55%,#247ba8); box-shadow: 0 8px 20px #5262ae36,inset 0 1px 0 #ffffff66; }
+html.mobile-app-theme #toggleInventory .purchase-action-icon { background: #ffffff24; }
+html.mobile-app-theme .purchase-main-panel > #openBulkPurchase { background: linear-gradient(110deg,#fff2f8,#eee5fa); color: #71569e; border: 1px solid #d8c8e6; box-shadow: 0 4px 12px #80639112,inset 0 1px 0 #ffffffdd; }
+html.mobile-app-theme #openBulkPurchase .purchase-action-icon { background: #e6d7f5; }
+html.mobile-app-theme .purchase-main-panel > :is(#toggleInventory,#openBulkPurchase):focus-visible { outline: 3px solid #8272c5; outline-offset: 3px; }
 html.mobile-app-theme .purchase-main-panel > #inventoryLogPanel { display: grid; grid-template-columns: minmax(0,1fr); gap: 11px; margin: 4px 0 0; padding: 15px; border: 1px solid #ffffffe6; border-radius: 22px; background: #ffffffeb; box-shadow: 0 8px 24px #6763a710; }
 html.mobile-app-theme #inventoryLogPanel > * { grid-column: 1 / -1; grid-row: auto; min-width: 0; }
 html.mobile-app-theme #inventoryLogPanel .inventory-log-heading { font-size: 17px; color: #203459; padding-bottom: 5px; border-bottom: 1px solid #e8e6f5; }
