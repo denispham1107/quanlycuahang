@@ -34,7 +34,9 @@ test('mobile report shares selected-range totals and excludes cancelled orders a
 test('mobile customer icon precedes create in heading, removes helper row and keeps existing permission/handler',()=>{
  const header=html.match(/<header class="mobile-sales-heading">[\s\S]*?<\/header>/)[0];
  assert.ok(header.indexOf('id="mobileSalesCustomers"')<header.indexOf('id="mobileSalesCreate"'));
- assert.match(header,/id="mobileSalesCustomers"[^>]*aria-label="Khách hàng"/);assert.match(header,/<svg aria-hidden="true" viewBox="0 0 28 28"/);
+ assert.match(header,/id="mobileSalesCustomers"[^>]*aria-label="Khách hàng"/);assert.match(header,/<svg class="sales-customers-icon" aria-hidden="true" viewBox="0 0 32 32"/);
+ for(const id of ['salesCustomerBody','salesCustomerFace','salesCustomerCompanion'])assert.match(header,new RegExp(`linearGradient id="${id}"`));
+ assert.match(css,/html\.mobile-app-theme #mobileSalesCustomers svg \{ width: 32px; height: 32px;/);
  assert.match(css,/html\.mobile-app-theme \.sales-main-panel > \.empty-list,\s*html\.mobile-app-theme #openCustomers \{ display: none; \}/);
  assert.match(app,/if \(USE_MOBILE_APP_THEME && !els\.openCustomers\.disabled\) els\.openCustomers\.click\(\)/);
  assert.match(app,/mobileSalesCustomers\.disabled = els\.openCustomers\.disabled/);

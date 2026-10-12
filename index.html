@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=134" />
+    <link rel="manifest" href="manifest.webmanifest?v=135" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=134" />
+    <link rel="stylesheet" href="styles.css?v=135" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -580,12 +580,19 @@
                 <div><h1>Bán hàng</h1><span id="mobileSalesHeadingCount">0 đơn</span></div>
                 <div class="mobile-sales-heading-actions">
                   <button id="mobileSalesCustomers" type="button" aria-label="Khách hàng" title="Khách hàng">
-                    <svg aria-hidden="true" viewBox="0 0 28 28" fill="none">
-                      <rect x="5.5" y="3.5" width="18" height="21" rx="5" fill="#f5f1ff" stroke="#9f8de0" stroke-width="1.7" />
-                      <path d="M5.5 9H3M5.5 14H3M5.5 19H3" stroke="#8e74ce" stroke-width="2" stroke-linecap="round" />
-                      <circle cx="14.5" cy="10.5" r="3.1" fill="#cbdfff" stroke="#4284ba" stroke-width="1.7" />
-                      <path d="M9.5 21v-1.2a5 5 0 0 1 10 0V21" fill="#d8ceff" stroke="#7063c6" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
-                      <path d="M20 4.3v2.5h2.5" stroke="#c6b7ef" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                    <svg class="sales-customers-icon" aria-hidden="true" viewBox="0 0 32 32" fill="none">
+                      <defs>
+                        <linearGradient id="salesCustomerBody" x1="5" y1="17" x2="25" y2="29" gradientUnits="userSpaceOnUse"><stop stop-color="#9b6de0" /><stop offset=".5" stop-color="#7968d8" /><stop offset="1" stop-color="#4899d9" /></linearGradient>
+                        <linearGradient id="salesCustomerFace" x1="9" y1="5" x2="20" y2="17" gradientUnits="userSpaceOnUse"><stop stop-color="#ffffff" /><stop offset="1" stop-color="#e1dcfb" /></linearGradient>
+                        <linearGradient id="salesCustomerCompanion" x1="19" y1="8" x2="30" y2="25" gradientUnits="userSpaceOnUse"><stop stop-color="#8cc7eb" /><stop offset="1" stop-color="#578bc6" /></linearGradient>
+                      </defs>
+                      <circle cx="16" cy="16" r="14" fill="#e9e4fa" fill-opacity=".55" />
+                      <path d="M22 16c4.5 0 7.5 3 7.5 6.4v1.1c0 1.1-.9 2-2 2H21l-3-7.7 4-1.8Z" fill="url(#salesCustomerCompanion)" stroke="#729dcf" stroke-width=".7" />
+                      <circle cx="23" cy="11.3" r="4" fill="#c9e7f8" stroke="#6e9fd0" stroke-width=".9" />
+                      <path d="M5 24.1c0-4.4 3.6-8 8-8h2c4.4 0 8 3.6 8 8v1.4a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 5 25.5v-1.4Z" fill="url(#salesCustomerBody)" stroke="#7467bc" stroke-width=".8" />
+                      <path d="M9.5 18.6c1.3 1.1 2.8 1.7 4.5 1.7s3.2-.6 4.5-1.7" stroke="#dcd4fa" stroke-opacity=".75" stroke-width="1.2" stroke-linecap="round" />
+                      <circle cx="14" cy="10.8" r="5.4" fill="url(#salesCustomerFace)" stroke="#8e79cb" stroke-width="1.1" />
+                      <path d="M10.7 9.6a3.5 3.5 0 0 1 2.8-2.3M7.7 24.7v-1.1" stroke="#ffffff" stroke-opacity=".8" stroke-width="1.5" stroke-linecap="round" />
                     </svg>
                   </button>
                   <button id="mobileSalesCreate" type="button" aria-label="Tạo đơn bán hàng" hidden>+</button>
@@ -1585,8 +1592,8 @@
         </form>
       </section>
     </div>
-    <script defer src="app.js?v=134"></script>
-    <script defer src="closing-book-core.js?v=134"></script>
-    <script defer src="closing-book.js?v=134"></script>
+    <script defer src="app.js?v=135"></script>
+    <script defer src="closing-book-core.js?v=135"></script>
+    <script defer src="closing-book.js?v=135"></script>
   </body>
 </html>

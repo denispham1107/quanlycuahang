@@ -11167,8 +11167,8 @@ html.mobile-app-theme [data-tab-panel="sales"] { gap: 12px; }
 html.mobile-app-theme .mobile-sales-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px; }
 html.mobile-app-theme .mobile-sales-heading h1 { margin: 0; font-size: 26px; line-height: 1.2; letter-spacing: -.6px; color: #18264c; }
 html.mobile-app-theme .mobile-sales-heading-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
-html.mobile-app-theme #mobileSalesCustomers { display: grid; place-items: center; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 7px; border: 1px solid #d0d8f3; border-radius: 14px; background: linear-gradient(145deg,#fffaff,#e8eaff 58%,#dcf0ff); color: #7566c4; box-shadow: 0 4px 12px #536ba714, inset 0 1px 0 #ffffffcc; }
-html.mobile-app-theme #mobileSalesCustomers svg { width: 28px; height: 28px; filter: drop-shadow(0 1px 1px #7964be14); }
+html.mobile-app-theme #mobileSalesCustomers { display: grid; place-items: center; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 5px; border: 1px solid #d0d8f3; border-radius: 14px; background: linear-gradient(145deg,#fffaff,#e8eaff 58%,#dcf0ff); color: #7566c4; box-shadow: 0 4px 12px #536ba714, inset 0 1px 0 #ffffffcc; }
+html.mobile-app-theme #mobileSalesCustomers svg { width: 32px; height: 32px; flex: 0 0 auto; overflow: visible; filter: drop-shadow(0 2px 1px #7964be24); }
 html.mobile-app-theme #mobileSalesCustomers:active { transform: translateY(1px); box-shadow: 0 2px 7px #536ba714, inset 0 1px 0 #ffffffcc; }
 html.mobile-app-theme #mobileSalesHeadingCount { display: block; margin-top: 3px; font-size: 11px; color: #5c6b87; }
 html.mobile-app-theme #mobileSalesCreate { width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; border-radius: 14px; background: var(--accent-gradient); color: #fff; font-size: 27px; font-weight: 600; line-height: 1; }
