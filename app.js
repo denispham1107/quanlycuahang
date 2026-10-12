@@ -331,8 +331,10 @@ const els = {
   purchaseOrderTotal: document.querySelector("#purchaseOrderTotal"),
   purchaseGroupSuggestions: document.querySelector("#purchaseGroupSuggestions"),
   inventoryCount: document.querySelector("#inventoryCount"),
-  mobilePurchaseUpdateCount: document.querySelector("#mobilePurchaseUpdateCount"),
+  mobilePurchaseImportCount: document.querySelector("#mobilePurchaseImportCount"),
+  mobilePurchaseExportCount: document.querySelector("#mobilePurchaseExportCount"),
   mobilePurchaseStockTotal: document.querySelector("#mobilePurchaseStockTotal"),
+  mobilePurchaseStockValue: document.querySelector("#mobilePurchaseStockValue"),
   mobilePurchaseOverviewRange: document.querySelector("#mobilePurchaseOverviewRange"),
   inventoryLogPanel: document.querySelector("#inventoryLogPanel"),
   openBulkPurchase: document.querySelector("#openBulkPurchase"),
@@ -7904,20 +7906,25 @@ function renderReports(store) {
 }
 
 function getMobilePurchaseOverviewStats(store, range) {
+  const logs = (store.inventoryLogs || []).filter((log) => {
+    const date = getInventoryLogDate(log);
+    return date >= range.start && date <= range.end && !isCancelledEntry(log);
+  });
   return {
-    updates: (store.inventoryLogs || []).filter((log) => {
-      const date = getInventoryLogDate(log);
-      return date >= range.start && date <= range.end && !isCancelledEntry(log);
-    }).length,
-    stock: (store.inventory || []).reduce((total, item) => total + Number(item.quantity || 0), 0)
+    imports: logs.filter((log) => getInventoryLogPurpose(log).value === "purchase").length,
+    exports: logs.filter((log) => getInventoryLogPurpose(log).value === "export").length,
+    stock: (store.inventory || []).reduce((total, item) => total + Number(item.quantity || 0), 0),
+    value: (store.inventory || []).reduce((total, item) => total + Number(item.totalCost || 0), 0)
   };
 }
 
 function renderMobilePurchaseOverview(store, range) {
-  if (!els.mobilePurchaseUpdateCount || !els.mobilePurchaseStockTotal) return;
+  if (!els.mobilePurchaseImportCount || !els.mobilePurchaseExportCount || !els.mobilePurchaseStockTotal || !els.mobilePurchaseStockValue) return;
   const stats = getMobilePurchaseOverviewStats(store, range);
-  els.mobilePurchaseUpdateCount.textContent = stats.updates.toLocaleString("vi-VN");
+  els.mobilePurchaseImportCount.textContent = stats.imports.toLocaleString("vi-VN");
+  els.mobilePurchaseExportCount.textContent = stats.exports.toLocaleString("vi-VN");
   els.mobilePurchaseStockTotal.textContent = stats.stock.toLocaleString("vi-VN");
+  els.mobilePurchaseStockValue.textContent = formatCurrency(stats.value);
   if (els.mobilePurchaseOverviewRange) els.mobilePurchaseOverviewRange.textContent = range.label;
 }
 

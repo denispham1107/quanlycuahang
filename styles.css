@@ -9283,10 +9283,11 @@ html.mobile-app-theme .mobile-flow-hero > span {
 }
 
 .mobile-purchase-overview { display: none; }
-html.mobile-app-theme .mobile-purchase-overview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; }
+html.mobile-app-theme .mobile-purchase-overview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
 html.mobile-app-theme .mobile-purchase-overview > div { display: grid; gap: 5px; min-width: 0; }
 html.mobile-app-theme .mobile-purchase-overview > div > span { color: #4f617d; font-size: 13px; font-weight: 800; }
 html.mobile-app-theme .mobile-purchase-overview > small { grid-column: 1 / -1; }
+html.mobile-app-theme #mobilePurchaseStockValue { font-size: clamp(20px, 5.6vw, 28px); align-self: center; }
 html.mobile-app-theme .purchase-entry-hint { display: none; }
 
 html.mobile-app-theme .mobile-flow-hero strong {

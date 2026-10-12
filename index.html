@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=138" />
+    <link rel="manifest" href="manifest.webmanifest?v=139" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=138" />
+    <link rel="stylesheet" href="styles.css?v=139" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -652,8 +652,10 @@
 
             <section class="tab-panel" data-tab-panel="purchase" hidden>
               <div class="mobile-purchase-overview mobile-flow-hero" aria-label="Tổng quan kho hàng">
-                <div><span>Lượt cập nhật kho</span><strong id="mobilePurchaseUpdateCount" aria-live="polite">0</strong></div>
+                <div><span>Nhập kho</span><strong id="mobilePurchaseImportCount" aria-live="polite">0</strong></div>
+                <div><span>Xuất kho</span><strong id="mobilePurchaseExportCount" aria-live="polite">0</strong></div>
                 <div><span>Tổng tồn kho</span><strong id="mobilePurchaseStockTotal" aria-live="polite">0</strong></div>
+                <div><span>Tổng giá trị kho</span><strong id="mobilePurchaseStockValue" aria-live="polite">0 ₫</strong></div>
                 <small id="mobilePurchaseOverviewRange"></small>
               </div>
               <article class="panel purchase-main-panel">
@@ -1597,8 +1599,8 @@
         </form>
       </section>
     </div>
-    <script defer src="app.js?v=138"></script>
-    <script defer src="closing-book-core.js?v=138"></script>
-    <script defer src="closing-book.js?v=138"></script>
+    <script defer src="app.js?v=139"></script>
+    <script defer src="closing-book-core.js?v=139"></script>
+    <script defer src="closing-book.js?v=139"></script>
   </body>
 </html>
