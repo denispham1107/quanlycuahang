@@ -265,6 +265,11 @@ const els = {
   salesOrderRemainingTotal: document.querySelector("#salesOrderRemainingTotal"),
   salesItemSuggestions: document.querySelector("#salesItemSuggestions"),
   salesOrderCount: document.querySelector("#salesOrderCount"),
+  mobileSalesCreate: document.querySelector("#mobileSalesCreate"),
+  mobileSalesHeadingCount: document.querySelector("#mobileSalesHeadingCount"),
+  mobileSalesReportTotal: document.querySelector("#mobileSalesReportTotal"),
+  mobileSalesReportRange: document.querySelector("#mobileSalesReportRange"),
+  mobileSalesReportCount: document.querySelector("#mobileSalesReportCount"),
   salesDraftList: document.querySelector("#salesDraftList"),
   salesGoodsFilter: document.querySelector("#salesGoodsFilter"),
   salesGoodsRangeLabel: document.querySelector("#salesGoodsRangeLabel"),
@@ -1015,6 +1020,9 @@ els.editEntryAmount.addEventListener("input", () => {
 
 els.quickEntryButton.addEventListener("click", () => {
   openQuickEntryModal(els.quickEntryButton.dataset.type);
+});
+els.mobileSalesCreate.addEventListener("click", () => {
+  if (USE_MOBILE_APP_THEME && !els.quickEntryButton.hidden) els.quickEntryButton.click();
 });
 
 document.addEventListener("click", (event) => {
@@ -7234,6 +7242,7 @@ function updateQuickEntryButton() {
   const showButton = Boolean(store && type && employeeCreateAllowed);
 
   els.quickEntryButton.hidden = !showButton;
+  if (els.mobileSalesCreate) els.mobileSalesCreate.hidden = !(showButton && type === "sales");
   if (!showButton) {
     closeQuickEntryModal();
     return;
@@ -7860,6 +7869,10 @@ function renderReports(store) {
     <span class="report-amount sales-range-total">${formatCurrency(totalSalesAmount)}</span>
   `;
   els.salesOrderCount.textContent = `${salesOrders.length} đơn`;
+  if (els.mobileSalesHeadingCount) els.mobileSalesHeadingCount.textContent = els.salesOrderCount.textContent;
+  if (els.mobileSalesReportTotal) els.mobileSalesReportTotal.textContent = formatCurrency(totalSalesAmount);
+  if (els.mobileSalesReportRange) els.mobileSalesReportRange.textContent = range.label;
+  if (els.mobileSalesReportCount) els.mobileSalesReportCount.textContent = `${activeSalesOrders.length} đơn`;
   renderSalesDraftList(store.draftOrders || []);
 
   renderHistorySearchSuggestions(els.incomeHistorySearchSuggestions, incomeEntries);
