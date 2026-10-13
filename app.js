@@ -437,6 +437,21 @@ const desktopUi = !USE_MOBILE_APP_THEME ? {
 
 if (desktopUi) {
   document.querySelector("#desktopNavHost").appendChild(els.tabBar);
+  // Reuse the Mobile artwork; rename paint-server IDs to avoid duplicate SVG IDs.
+  const mobileCustomerIcon = els.mobileSalesCustomers?.querySelector(".sales-customers-icon");
+  if (mobileCustomerIcon && !els.openCustomers.querySelector(".sales-customers-icon")) {
+    const desktopCustomerIcon = mobileCustomerIcon.cloneNode(true);
+    desktopCustomerIcon.setAttribute("focusable", "false");
+    for (const definition of desktopCustomerIcon.querySelectorAll("[id]")) {
+      const originalId = definition.id;
+      const desktopId = `${originalId}Desktop`;
+      definition.id = desktopId;
+      for (const shape of desktopCustomerIcon.querySelectorAll(`[fill="url(#${originalId})"]`)) {
+        shape.setAttribute("fill", `url(#${desktopId})`);
+      }
+    }
+    els.openCustomers.prepend(desktopCustomerIcon);
+  }
   document.querySelector("#desktopFilterControls").append(els.timeFilterToggle, els.timeFilters);
   document.querySelector("#desktopAddStoreShortcut").addEventListener("click", () => {
     els.storeName.scrollIntoView({ behavior: "smooth", block: "center" });

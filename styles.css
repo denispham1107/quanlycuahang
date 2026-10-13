@@ -11302,7 +11302,8 @@ html:not(.mobile-app-theme) [data-tab-panel="purchase"] .inventory-log-purpose.e
 /* Desktop sales button skin follows Mobile; preserve sizes, handlers and filter rail. */
 html:not(.mobile-app-theme) body[data-active-tab="sales"] #desktopPrimaryAction { border-radius: 15px; }
 html:not(.mobile-app-theme) [data-tab-panel="sales"] > .panel { border-radius: 22px; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] #openCustomers { border-radius: 14px; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] #openCustomers { display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 14px; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] #openCustomers .sales-customers-icon { width: 32px; height: 32px; flex: 0 0 auto; overflow: visible; filter: drop-shadow(0 2px 1px #7964be24); }
 html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-table .delete-small { display: inline-grid; place-items: center; padding: 0; font-size: 0; border-radius: 10px; }
 html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-table .delete-small::before {
   content: "";
