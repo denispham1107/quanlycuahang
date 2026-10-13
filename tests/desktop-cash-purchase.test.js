@@ -1,5 +1,13 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const root=path.resolve(__dirname,'..'),app=fs.readFileSync(path.join(root,'app.js'),'utf8'),css=fs.readFileSync(path.join(root,'styles.css'),'utf8'),html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+test('desktop bulk purchase uses the exact Mobile palette without changing its layout',()=>{
+ const rule=selector=>[...css.matchAll(/([^{}]+)\{([^}]+)\}/g)].find(m=>m[1].trim()===selector)[2];
+ const desktop=rule('html:not(.mobile-app-theme) [data-tab-panel="purchase"] #openBulkPurchase'),mobile=rule('html.mobile-app-theme .purchase-main-panel > #openBulkPurchase');
+ for(const property of ['background','color','box-shadow']){const value=body=>body.match(new RegExp(`(?:^|;)\\s*${property}: ([^;]+)`))[1];assert.equal(value(desktop),value(mobile),property);}
+ assert.match(desktop,/border-color: #8bbdbb/);assert.match(mobile,/border: 1px solid #8bbdbb/);
+ const luminance=h=>h.match(/../g).map(x=>parseInt(x,16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0);
+ for(const bg of ['c5eee1','97d4ca','a6cde7','ffffff'])assert.ok((luminance(bg)+.05)/(luminance('235a6a')+.05)>=4.5);
+});
 test('desktop purchase relocates the existing warehouse action, retaining one shared SVG and permission target',()=>{
  assert.equal((html.match(/id="toggleInventory"/g)||[]).length,1);
  assert.match(app,/desktopUi\.inventoryAnchor = document\.createComment/);
