@@ -11234,38 +11234,54 @@ body:has(> :is(#customerHistoryModal, #memberTierModal):not([hidden])) > #custom
 }
 
 /* Desktop trade accents: color only, no layout or behavior changes. */
-html:not(.mobile-app-theme) body:is([data-active-tab="sales"],[data-active-tab="purchase"]) .desktop-insight.total strong { color: #58468e; }
-html:not(.mobile-app-theme) body:is([data-active-tab="sales"],[data-active-tab="purchase"]) .desktop-insight.category-one strong { color: #944567; }
-html:not(.mobile-app-theme) body:is([data-active-tab="sales"],[data-active-tab="purchase"]) .desktop-insight.category-two strong { color: #24695f; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] > .sales-main-panel { background: linear-gradient(135deg,#eee3fa,#e4eefa); border-color: #c8b3e3; box-shadow: 0 10px 25px #6b519d1c; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] .desktop-insight.total strong { color: #58468e; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] .desktop-insight.category-one strong { color: #944567; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] .desktop-insight.category-two strong { color: #24695f; }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-insight { background: linear-gradient(115deg, rgba(246, 222, 255, 0.94), rgba(217, 239, 255, 0.95)); border-color: rgba(255, 255, 255, 0.91); box-shadow: 0 12px 25px rgba(83, 88, 160, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.88); }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-insight.category-one { background: linear-gradient(135deg,#fff5fa,#fcfbff); }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-insight.category-two { background: linear-gradient(135deg,#f2fbf8,#fbfdff); }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-insight div span { color: #4f617d; }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-insight.total strong { color: #18377a; }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-insight.category-one strong { color: #955173; }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-insight.category-two strong { color: #24695f; }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-insight-icon { background: #ffffff80; color: #7566c4; box-shadow: inset 0 1px 0 #ffffffcc; }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-insight.category-one .desktop-insight-icon { background: #f8e3ee; color: #955173; }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-insight.category-two .desktop-insight-icon { background: #dcf2e9; color: #286c60; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] > .sales-main-panel { background: linear-gradient(135deg,#fcf7ff,#f7f9ff); border-color: #e0d6f1; box-shadow: 0 5px 15px #7334d80a; }
 html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-main-panel h2,
 html:not(.mobile-app-theme) [data-tab-panel="sales"] .draft-order-heading { color: #69509a; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] .draft-order-table thead { background: linear-gradient(110deg,#7251a8,#436fa8); }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] .draft-order-table th { color: #fff; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] .draft-order-table tbody tr { background: #faf4ff; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] .draft-order-table tbody tr:nth-child(even) { background: #edf4ff; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] > .sales-goods-panel { background: linear-gradient(135deg,#e0f3e8,#e0eff8); border-color: #a9cebb; box-shadow: 0 10px 25px #387c631c; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .draft-order-table thead { background: linear-gradient(110deg,#e5dcf7,#dcecfb); }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .draft-order-table th { color: #69509a; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .draft-order-table tbody tr:nth-child(3n+1) { background: linear-gradient(120deg,#eee4fa,#e8f0fc); border-color: #d9cbed; box-shadow: inset 3px 0 #a78aca; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .draft-order-table tbody tr:nth-child(3n+2) { background: linear-gradient(120deg,#e2f3ec,#ebf6fc); border-color: #c2ded4; box-shadow: inset 3px 0 #6cae9b; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .draft-order-table tbody tr:nth-child(3n) { background: linear-gradient(120deg,#f9e8ee,#f5edf9); border-color: #ead1dd; box-shadow: inset 3px 0 #cb8eab; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .draft-order-table td { border-color: #dce4f4; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] > .sales-goods-panel { background: linear-gradient(135deg,#f2fbf8,#fbfdff); border-color: #cfe5df; box-shadow: 0 5px 15px #7334d80a; }
 html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-goods-panel h2 { color: #24695f; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] #salesGoodsReport .report-item:not(.report-total) { background: #f4fcf7; border-color: #c3dfd2; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] #salesGoodsReport .report-item:not(.report-total):nth-child(even) { background: #e8f5ef; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] #salesGoodsReport .report-total { background: linear-gradient(110deg,#27816e,#306e91); border-color: #397d76; color: #fff; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] #salesGoodsReport .report-item:not(.report-total) { background: #f9fdfb; border-color: #dce4f4; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] #salesGoodsReport .report-item:not(.report-total):nth-child(even) { background: #f2faf7; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] #salesGoodsReport .report-total { background: linear-gradient(110deg,#dcf2e9,#e8f3fb); border-color: #bad9d0; color: #285f56; }
 html:not(.mobile-app-theme) [data-tab-panel="sales"] #salesGoodsReport .report-amount { color: #286c60; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] #salesGoodsReport .report-total .report-amount { color: #fff; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] > .sales-history-panel { background: linear-gradient(115deg,#f3e8fa,#e4f0fd); border-color: #c8b7e2; box-shadow: 0 10px 25px #53638416; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-panel h2 { color: #635286; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-panel .panel-heading > span { color: #5d6481; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] #salesRangeLabel { background: linear-gradient(110deg,#6d55a5,#3e78a1); border-color: #7867b2; color: #fff; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] #salesRangeLabel .report-amount { color: #fff; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table thead { background: linear-gradient(110deg,#d6bee9,#c0d8ed); }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table th { color: #514173; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tbody tr:not(.entry-cancelled) { background: #fefbff; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tbody tr:not(.entry-cancelled):nth-child(even) { background: #edf0fa; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tr:not(.entry-cancelled) td { color: #2e345b; border-color: #dcd4eb; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tr:not(.entry-cancelled) .sales-employee-name { color: #2e345b; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tr:not(.entry-cancelled) .sales-bill-code { color: #57518e; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tr:not(.entry-cancelled) .date-stack small { color: #5d6481; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tr:not(.entry-cancelled) .amount-cell { color: #256b80; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] #openCustomers { background: linear-gradient(110deg,#6550a0,#376f9f); border-color: #7163a4; color: #fff; box-shadow: 0 5px 14px #6d5c9a30; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] #salesGoodsReport .report-total .report-amount { color: #286c60; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] #salesGoodsReport .item-group { background: #ede5fa; color: #67509b; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] > .sales-history-panel { background: linear-gradient(135deg,#fff5fa,#fcfbff); border-color: #ead5e2; box-shadow: 0 5px 15px #7334d80a; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-panel h2 { color: #955173; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .panel-heading > span { color: #5c6b87; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] #salesRangeLabel { background: linear-gradient(110deg,#f8e3ee,#eee8fa); border-color: #e5c7d9; color: #824361; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] #salesRangeLabel .report-amount { color: #824361; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table thead { background: linear-gradient(110deg,#f5e6ef,#ece5f8); }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table th { color: #824361; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tbody tr:not(.entry-cancelled) { background: #ffffffb3; box-shadow: inset 3px 0 #cca0ba; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tbody tr:not(.entry-cancelled):nth-child(even) { background: #f5f0fbb3; box-shadow: inset 3px 0 #a994c8; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .table-wrap { background: transparent; border-color: #dce4f4; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tr:not(.entry-cancelled) td { color: #18264c; border-color: #ead9e5; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tr:not(.entry-cancelled) .sales-employee-name { color: #075fd4; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tr:not(.entry-cancelled) .sales-bill-code { color: #075fd4; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tr:not(.entry-cancelled) .date-stack small { color: #5c6b87; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tr:not(.entry-cancelled) .amount-cell { color: #176992; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] #openCustomers { background: linear-gradient(145deg,#fffaff,#e8eaff 58%,#dcf0ff); border-color: #d0d8f3; color: #584a91; box-shadow: 0 4px 12px #536ba714, inset 0 1px 0 #ffffffcc; }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] #desktopPrimaryAction { background: linear-gradient(110deg,#9b36d6,#6358cf 48%,#1678b6); color: #fff; box-shadow: 0 8px 18px rgba(75, 91, 226, 0.22), inset 0 0 0 1.5px #ffffffe6; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-table .delete-small { background: #fff0f6; color: #c83578; border-color: #f4dce7; box-shadow: none; }
 html:not(.mobile-app-theme) [data-tab-panel="purchase"] > .purchase-main-panel { background: linear-gradient(135deg,#e5ecff,#def3ed); border-color: #afc7dd; box-shadow: 0 10px 25px #3f78981c; }
 html:not(.mobile-app-theme) [data-tab-panel="purchase"] .panel-heading h2 { color: #315e91; }
 html:not(.mobile-app-theme) [data-tab-panel="purchase"] .purchase-entry-hint { background: #e9dff7; border-color: #cbb7e5; color: #695980; }
@@ -11282,6 +11298,21 @@ html:not(.mobile-app-theme) [data-tab-panel="purchase"] .inventory-log-table tbo
 html:not(.mobile-app-theme) [data-tab-panel="purchase"] .inventory-log-purpose.purchase { background: #def2e9; color: #24695f; }
 html:not(.mobile-app-theme) [data-tab-panel="purchase"] .inventory-log-purpose.export { background: #f9e3ed; color: #9b4167; }
 /* End Desktop trade accents. */
+
+/* Desktop sales button skin follows Mobile; preserve sizes, handlers and filter rail. */
+html:not(.mobile-app-theme) body[data-active-tab="sales"] #desktopPrimaryAction { border-radius: 15px; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] > .panel { border-radius: 22px; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] #openCustomers { border-radius: 14px; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-table .delete-small { display: inline-grid; place-items: center; padding: 0; font-size: 0; border-radius: 10px; }
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-table .delete-small::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 7h14M9 7V4h6v3m2 0-1 13H8L7 7m4 4v5m3-5v5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 7h14M9 7V4h6v3m2 0-1 13H8L7 7m4 4v5m3-5v5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+/* End Desktop sales button skin. */
 
 /* Approved "Nổi bật gradient" sales design. Keep the shared desktop DOM/handlers. */
 .mobile-sales-heading, .mobile-sales-report { display: none; }
