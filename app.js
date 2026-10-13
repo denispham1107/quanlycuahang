@@ -452,6 +452,10 @@ if (desktopUi) {
     }
     els.openCustomers.prepend(desktopCustomerIcon);
   }
+  desktopUi.purchaseActions = document.createElement("div");
+  desktopUi.purchaseActions.id = "desktopPurchaseActions";
+  desktopUi.inventoryAnchor = document.createComment("Desktop warehouse action home");
+  els.toggleInventory.before(desktopUi.inventoryAnchor);
   document.querySelector("#desktopFilterControls").append(els.timeFilterToggle, els.timeFilters);
   document.querySelector("#desktopAddStoreShortcut").addEventListener("click", () => {
     els.storeName.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1055,7 +1059,7 @@ els.mobileSalesCustomers.addEventListener("click", () => {
 
 document.addEventListener("click", (event) => {
   const button = event.target.closest("[data-mobile-flow-action]");
-  if (!button || !USE_MOBILE_APP_THEME) return;
+  if (!button) return;
   const type = button.dataset.flowType;
   const action = button.dataset.mobileFlowAction;
   if (type !== "income" && type !== "expense") return;
@@ -7598,6 +7602,20 @@ function updateDesktopPageChrome(tabName = getActiveTabName()) {
   };
   const [title, subtitle, action] = pages[tabName] || pages.stores;
   document.body.dataset.activeTab = tabName;
+  if (desktopUi.purchaseActions && desktopUi.inventoryAnchor) {
+    if (tabName === "purchase") {
+      if (!desktopUi.purchaseActions.isConnected) {
+        desktopUi.primaryAction.before(desktopUi.purchaseActions);
+        desktopUi.purchaseActions.append(desktopUi.primaryAction, els.toggleInventory);
+      }
+    } else {
+      if (desktopUi.purchaseActions.isConnected) {
+        desktopUi.purchaseActions.before(desktopUi.primaryAction);
+        desktopUi.purchaseActions.remove();
+      }
+      if (desktopUi.inventoryAnchor.nextSibling !== els.toggleInventory) desktopUi.inventoryAnchor.after(els.toggleInventory);
+    }
+  }
   desktopUi.title.textContent = title;
   desktopUi.subtitle.textContent = subtitle;
   desktopUi.primaryActionLabel.textContent = action;
@@ -8205,7 +8223,7 @@ function renderMobileCashFlow(store, type, range, entries) {
 }
 
 function setMobileCashFlowPanel(type, view, innerTarget = null, { scroll = true } = {}) {
-  if (!USE_MOBILE_APP_THEME) return;
+  if (type !== "income" && type !== "expense") return;
   const panel = document.querySelector(`[data-tab-panel="${type}"]`);
   if (!panel) return;
   const current = panel.dataset.mobileFlowView || "";

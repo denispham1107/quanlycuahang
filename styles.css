@@ -11315,6 +11315,68 @@ html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-table .delete-small:
 }
 /* End Desktop sales button skin. */
 
+/* Desktop purchase actions reuse the original Mobile SVG/buttons and permissions. */
+html:not(.mobile-app-theme) #desktopPurchaseActions { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+html:not(.mobile-app-theme) #desktopPurchaseActions #toggleInventory { display: inline-flex; width: auto; margin: 0; padding: 0 16px; gap: 8px; background: linear-gradient(110deg,#7450c9,#4e65bd 55%,#247ba8); color: #fff; border-color: #ffffffd9; box-shadow: 0 8px 20px #5262ae36,inset 0 1px 0 #ffffff66; }
+html:not(.mobile-app-theme) #desktopPurchaseActions #toggleInventory[data-role-hidden="true"] { display: none; }
+html:not(.mobile-app-theme) [data-tab-panel="purchase"] #openBulkPurchase { display: flex; align-items: center; justify-content: center; gap: 8px; }
+html:not(.mobile-app-theme) :is(#desktopPurchaseActions #toggleInventory,[data-tab-panel="purchase"] #openBulkPurchase) .purchase-action-icon { display: block; width: 32px; height: 32px; flex: 0 0 auto; padding: 2px; border: 1px solid #ffffffb3; border-radius: 10px; box-shadow: 0 3px 7px #24485d1a,inset 0 1px 0 #ffffffd9; }
+html:not(.mobile-app-theme) #desktopPurchaseActions #toggleInventory .purchase-action-icon { background: linear-gradient(135deg,#fff4ff,#d5e8fa); }
+html:not(.mobile-app-theme) [data-tab-panel="purchase"] #openBulkPurchase .purchase-action-icon { background: linear-gradient(135deg,#f7fff7,#d4eaf3); }
+@media (max-width: 800px) {
+  html:not(.mobile-app-theme) body[data-active-tab="purchase"] #desktopPageHeading { flex-wrap: wrap; }
+  html:not(.mobile-app-theme) #desktopPurchaseActions { flex-wrap: wrap; }
+}
+/* End Desktop purchase actions. */
+
+/* Desktop Thu/Chi: reuse the live Mobile cash-flow DOM and its independent disclosures. */
+html:not(.mobile-app-theme) body:is([data-active-tab="income"],[data-active-tab="expense"]) :is(#desktopPageHeading,#desktopInsights) { display: none; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) { gap: 16px; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) > [data-mobile-flow-panel] { display: none; order: initial; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"])[data-mobile-flow-view="manage"] > [data-mobile-flow-panel="manage"],
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"])[data-mobile-flow-view="report"] > [data-mobile-flow-panel="report"],
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"])[data-mobile-flow-view="history"] > [data-mobile-flow-panel="history"],
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"])[data-mobile-flow-view="report-history"] > :is([data-mobile-flow-panel="report"],[data-mobile-flow-panel="history"]) { display: block; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) :is(.mobile-cash-flow,.mobile-flow-history-overview) { display: grid; min-width: 0; gap: 14px; scroll-margin-top: 110px; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-width: 0; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-heading > div { min-width: 0; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-context { display: block; color: #586987; font-size: 14px; font-weight: 750; overflow-wrap: anywhere; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-heading h2 { margin: 4px 0 0; color: #123b77; font-size: clamp(28px,2.5vw,36px); line-height: 1.15; font-weight: 900; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-add { flex: 0 0 52px; width: 52px; height: 52px; border: 1.5px solid #ffffffe6; border-radius: 15px; background: linear-gradient(110deg,#9b36d6,#6358cf 48%,#1678b6); color: #fff; font-size: 30px; line-height: 1; box-shadow: 0 8px 18px #4b5be238; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-hero { display: grid; gap: 7px; min-width: 0; padding: 24px 26px; border: 1.5px solid rgba(255,255,255,.91); border-radius: 23px; background: linear-gradient(115deg, rgba(246, 222, 255, 0.94), rgba(217, 239, 255, 0.95)); box-shadow: 0 12px 25px rgba(83,88,160,.13),inset 0 1px 0 rgba(255,255,255,.88); }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-hero > span { color: #4f617d; font-size: 17px; font-weight: 800; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-hero strong { color: #18377a; font-size: clamp(34px,3.4vw,48px); line-height: 1.15; font-weight: 900; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-hero small { color: #4f617d; font-size: 14px; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-facts { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-facts > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; padding: 16px 18px; border: 1px solid #ffffffd6; border-radius: 16px; background: #ffffffcf; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-facts span { color: #586987; font-size: 14px; font-weight: 750; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-facts strong { color: #18377a; font-size: 22px; overflow-wrap: anywhere; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 5px 3px 0; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-section-heading h3 { margin: 0; color: #163869; font-size: 22px; font-weight: 900; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) :is(.mobile-flow-section-heading button,.mobile-flow-more,.mobile-flow-close) { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 6px 9px; border: 0; border-radius: 10px; background: transparent; color: #075fd4; font-size: 14px; font-weight: 850; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) :is(.mobile-flow-section-heading button,.mobile-flow-more) span { font-size: 22px; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-more { justify-self: start; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-more[hidden] { display: none; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) :is(.mobile-flow-categories,.mobile-flow-history-preview) { display: grid; gap: 10px; min-width: 0; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) :is(.mobile-flow-category,.mobile-flow-history-row,.mobile-flow-empty) { min-width: 0; border: 1px solid #7784b229; border-radius: 15px; background: #ffffffdb; box-shadow: 0 5px 13px #4856a00e; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-category { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; min-height: 54px; padding: 12px 18px; color: #1b2945; text-align: left; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-category span { min-width: 0; overflow-wrap: anywhere; font-size: 16px; font-weight: 750; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-category strong { flex: none; max-width: 50%; overflow-wrap: anywhere; font-size: 16px; font-weight: 900; text-align: right; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-history-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 18px; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-history-row > div { display: grid; gap: 4px; min-width: 0; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-history-row strong { color: #18264c; font-size: 16px; font-weight: 850; overflow-wrap: anywhere; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-history-row span { color: #68748b; font-size: 13px; overflow-wrap: anywhere; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-history-row b { flex: none; max-width: 50%; color: #1259b7; font-size: 16px; overflow-wrap: anywhere; text-align: right; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .mobile-flow-empty { padding: 18px; color: #68748b; font-size: 14px; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) > .panel[data-mobile-flow-panel] { padding: 18px; border-color: #ffffffd6; border-radius: 23px; background: #ffffffcf; box-shadow: 0 15px 36px #504faa24,inset 0 1px 0 #fffffff0; scroll-margin-top: 110px; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .entry-section { background: #eef6ffe6; border-color: #d5e1f2; border-radius: 20px; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .category-section { background: #fff6fde6; border-color: #ead5ee; border-radius: 20px; scroll-margin-top: 110px; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) :is(.history-total,.report-total) { background: linear-gradient(110deg,#f0e4fa,#e1effc); color: #584a91; border-color: #d8d6ee; border-radius: 12px; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) :is(.history-total,.report-total) .report-amount { color: #18377a; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) .table-wrap { background: #ffffffb3; border-color: #dce4f4; }
+html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) thead { background: linear-gradient(110deg,#e5dcf7,#dcecfb); }
+/* End Desktop Thu/Chi. */
+
 /* Approved "Nổi bật gradient" sales design. Keep the shared desktop DOM/handlers. */
 .mobile-sales-heading, .mobile-sales-report { display: none; }
 html.mobile-app-theme [data-tab-panel="sales"] { gap: 12px; }
