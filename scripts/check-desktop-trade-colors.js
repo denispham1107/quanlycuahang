@@ -35,7 +35,8 @@ async function main(){const browser=await chromium.launch({headless:true,executa
  for(const width of [800,1024,1440,1920]){
   const before=await browser.newPage({viewport:{width,height:1000}});await setup(before,true);const oldSales=await geometry(before,salesSelectors),cancelColor=await before.locator('.entry-cancelled .amount-cell').evaluate(e=>getComputedStyle(e).color),filterPixels=await before.locator('#desktopFilterRail').screenshot(),filterGeometry=await geometry(before,['.sidebar','#desktopFilterRail']),filterPaint=await filterStyles(before);await before.evaluate(()=>{activateTab('purchase');render();});const oldPurchase=await geometry(before,purchaseSelectors),oldPurchaseIcons=await purchaseIconSnapshot(before);await setup(before,'overview');await before.evaluate(()=>{activateTab('purchase');render();});const oldOverviewPurchase=await overviewPaint(before);await before.close();
   const page=await browser.newPage({viewport:{width,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.dismiss());await setup(page);
-  assert.deepEqual(await geometry(page,salesSelectors),oldSales,'sales layout/text unchanged');
+  const comparableSales=rows=>rows.map(({h,...row})=>row.s==='.sales-history-panel'?row:{...row,h});
+  assert.deepEqual(comparableSales(await geometry(page,salesSelectors)),comparableSales(oldSales),'sales layout/text unchanged except compact cancelled-row height');
   assert.equal(await page.locator('.sales-main-panel > .empty-list, .purchase-entry-hint').count(),0,'only static plus instructions removed');
   assert.deepEqual(await geometry(page,['.sidebar','#desktopFilterRail']),filterGeometry,'left filter position and size unchanged');
   assert.deepEqual(await filterStyles(page),filterPaint,'every filter element retains its original paint and dimensions');
@@ -78,4 +79,5 @@ async function main(){const browser=await chromium.launch({headless:true,executa
   const page=await browser.newPage(options);await setup(page);assert.ok((await page.locator('.layout').screenshot()).equals(sales),`mobile sales ${width}x${height} pixels unchanged`);await page.evaluate(()=>{activateTab('purchase');render();});assert.ok((await page.locator('.layout').screenshot()).equals(purchase),`mobile purchase ${width}x${height} pixels unchanged`);await page.close();console.log(`Mobile ${width}x${height}: both tabs pixel-identical`);
  }
 }finally{await browser.close();}}
-main().catch(e=>{console.error(e);process.exitCode=1;});
+if(require.main===module)main().catch(e=>{console.error(e);process.exitCode=1;});
+module.exports={setup,geometry,filterStyles,samePixels};

@@ -11315,6 +11315,14 @@ html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-table .delete-small:
 }
 /* End Desktop sales button skin. */
 
+/* Desktop cancelled-sale purge label: reserve a lower action lane within the last two columns. */
+html:not(.mobile-app-theme) .sales-history-table .entry-cancelled td:last-child { position: relative; vertical-align: top; padding-bottom: 54px; }
+html:not(.mobile-app-theme) .sales-history-table .entry-cancelled .amount-cell { vertical-align: top; padding-bottom: 54px; }
+html:not(.mobile-app-theme) .sales-history-table .entry-cancelled .history-purge-actions { flex-direction: column; flex-wrap: nowrap; align-items: flex-end; }
+html:not(.mobile-app-theme) .sales-history-table .entry-cancelled .muted-action { white-space: nowrap; }
+html:not(.mobile-app-theme) .sales-history-table .entry-cancelled .history-purge-button { position: absolute; right: 10px; bottom: 10px; display: inline-flex; align-items: center; justify-content: center; width: max-content; min-width: 110px; max-width: none; min-height: 34px; padding: 8px 10px; font-size: 12px; line-height: 1.3; white-space: nowrap; overflow-wrap: normal; word-break: normal; }
+/* End Desktop cancelled-sale purge label. */
+
 /* Desktop purchase actions reuse the original Mobile SVG/buttons and permissions. */
 html:not(.mobile-app-theme) #desktopPurchaseActions { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
 html:not(.mobile-app-theme) #desktopPurchaseActions #toggleInventory { display: inline-flex; width: auto; margin: 0; padding: 0 16px; gap: 8px; background: linear-gradient(110deg,#227969,#2b7480 50%,#356d96); color: #fff; border-color: #ffffffbf; box-shadow: 0 8px 18px #4e61a23b,inset 0 1px 0 #ffffff55; }
