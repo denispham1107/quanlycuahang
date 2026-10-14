@@ -1,5 +1,7 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process'),{chromium}=require('playwright'),{PNG}=require('pngjs');
 const root=path.resolve(__dirname,'..'),old=Object.fromEntries(['app.js','index.html','styles.css'].map(f=>[f,execFileSync('git',['-c',`safe.directory=${root.replaceAll('\\','/')}`,'show',`HEAD:${f}`],{cwd:root})]));
+// Expected layout excludes only the two user-approved static instruction boxes.
+old['index.html']=old['index.html'].toString().replace(/<div class="empty-list(?: purchase-entry-hint)?">Bấm nút \+ để (?:tạo đơn hàng mới cho khách|nhập hàng hóa mới vào kho)\.<\/div>/g,'');
 // Chrome can round glass/shadow compositing by 1–2 RGB levels after scrolling.
 // Geometry and computed filter styles are still compared exactly below.
 function pixelsSame(a,b){const x=PNG.sync.read(a),y=PNG.sync.read(b);if(x.width!==y.width||x.height!==y.height)return false;let count=0;for(let i=0;i<x.data.length;i+=4){let d=0;for(let j=0;j<4;j++)d=Math.max(d,Math.abs(x.data[i+j]-y.data[i+j]));if(d>2)return false;if(d)count++;}return count<=x.width*x.height*.01;}

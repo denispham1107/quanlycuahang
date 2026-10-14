@@ -1,5 +1,10 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const root=path.resolve(__dirname,'..'),app=fs.readFileSync(path.join(root,'app.js'),'utf8'),css=fs.readFileSync(path.join(root,'styles.css'),'utf8'),html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+test('sales and purchase omit static plus instructions while retaining action targets',()=>{
+ assert.doesNotMatch(html,/Bấm nút \+ để (?:tạo đơn hàng mới cho khách|nhập hàng hóa mới vào kho)/);
+ for(const id of ['openCustomers','openBulkPurchase','toggleInventory'])assert.equal((html.match(new RegExp(`id="${id}"`,'g'))||[]).length,1);
+ assert.match(html,/id="salesDraftList"/);assert.match(html,/id="inventoryLogPanel"/);
+});
 test('desktop bulk purchase uses the exact Mobile palette without changing its layout',()=>{
  const rule=selector=>[...css.matchAll(/([^{}]+)\{([^}]+)\}/g)].find(m=>m[1].trim()===selector)[2];
  const desktop=rule('html:not(.mobile-app-theme) [data-tab-panel="purchase"] #openBulkPurchase'),mobile=rule('html.mobile-app-theme .purchase-main-panel > #openBulkPurchase');
