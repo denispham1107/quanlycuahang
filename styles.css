@@ -11286,7 +11286,7 @@ html:not(.mobile-app-theme) [data-tab-panel="purchase"] > .purchase-main-panel {
 html:not(.mobile-app-theme) [data-tab-panel="purchase"] .panel-heading h2 { color: #315e91; }
 html:not(.mobile-app-theme) [data-tab-panel="purchase"] .purchase-entry-hint { background: #e9dff7; border-color: #cbb7e5; color: #695980; }
 html:not(.mobile-app-theme) [data-tab-panel="purchase"] #toggleInventory { background: linear-gradient(110deg,#7450c9,#4e65bd 55%,#247ba8); color: #fff; border-color: #7774b8; box-shadow: 0 6px 16px #5262ae26; }
-html:not(.mobile-app-theme) [data-tab-panel="purchase"] #openBulkPurchase { background: radial-gradient(ellipse at 10% 0%,#ffffff66,transparent 65%),linear-gradient(110deg,#c5eee1,#97d4ca 48%,#a6cde7); color: #235a6a; border-color: #8bbdbb; box-shadow: 0 5px 14px #397b851f,inset 0 1px 0 #ffffffb3; }
+html:not(.mobile-app-theme) [data-tab-panel="purchase"] #openBulkPurchase { background: radial-gradient(ellipse at 10% 0%,#ffffff66,transparent 65%),linear-gradient(110deg,#eed5ed,#ded3ef 50%,#cfcff0); color: #5c4478; border-color: #bda7cc; box-shadow: 0 5px 14px #5d6e9b24,inset 0 1px 0 #ffffffb3; }
 html:not(.mobile-app-theme) [data-tab-panel="purchase"] .inventory-log-heading { color: #24695f; }
 html:not(.mobile-app-theme) [data-tab-panel="purchase"] .inventory-log-summary { background: linear-gradient(110deg,#27816e,#306e91); border-color: #397d76; color: #fff; }
 html:not(.mobile-app-theme) [data-tab-panel="purchase"] .inventory-log-summary strong { color: #fff; }
@@ -11317,7 +11317,7 @@ html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-table .delete-small:
 
 /* Desktop purchase actions reuse the original Mobile SVG/buttons and permissions. */
 html:not(.mobile-app-theme) #desktopPurchaseActions { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
-html:not(.mobile-app-theme) #desktopPurchaseActions #toggleInventory { display: inline-flex; width: auto; margin: 0; padding: 0 16px; gap: 8px; background: linear-gradient(110deg,#7450c9,#4e65bd 55%,#247ba8); color: #fff; border-color: #ffffffd9; box-shadow: 0 8px 20px #5262ae36,inset 0 1px 0 #ffffff66; }
+html:not(.mobile-app-theme) #desktopPurchaseActions #toggleInventory { display: inline-flex; width: auto; margin: 0; padding: 0 16px; gap: 8px; background: linear-gradient(110deg,#227969,#2b7480 50%,#356d96); color: #fff; border-color: #ffffffbf; box-shadow: 0 8px 18px #4e61a23b,inset 0 1px 0 #ffffff55; }
 html:not(.mobile-app-theme) #desktopPurchaseActions #toggleInventory[data-role-hidden="true"] { display: none; }
 html:not(.mobile-app-theme) [data-tab-panel="purchase"] #openBulkPurchase { display: flex; align-items: center; justify-content: center; gap: 8px; }
 html:not(.mobile-app-theme) :is(#desktopPurchaseActions #toggleInventory,[data-tab-panel="purchase"] #openBulkPurchase) .purchase-action-icon { display: block; width: 32px; height: 32px; flex: 0 0 auto; padding: 2px; border: 1px solid #ffffffb3; border-radius: 10px; box-shadow: 0 3px 7px #24485d1a,inset 0 1px 0 #ffffffd9; }
