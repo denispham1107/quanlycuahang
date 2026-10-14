@@ -1,14 +1,17 @@
-const CACHE_VERSION = "quanlycuahang-pwa-v165";
+const CACHE_VERSION = "quanlycuahang-pwa-v166";
+const SDK_CACHE = "quanlycuahang-firebase-sdk-10.12.5";
 const FIREBASE_SDK_PREFIX = "https://www.gstatic.com/firebasejs/10.12.5/";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=165",
-  "./app.js?v=165",
-  "./closing-book-core.js?v=165",
-  "./closing-book.js?v=165",
+  "./styles.css?v=166",
+  "./firebase-loader.js?v=166",
+  "./cloud-sync-core.js?v=166",
+  "./app.js?v=166",
+  "./closing-book-core.js?v=166",
+  "./closing-book.js?v=166",
   "./firebase-config.js",
-  "./manifest.webmanifest?v=165",
+  "./manifest.webmanifest?v=166",
   "./icons/settings-flat-v1.webp",
   "./icons/icon-v3.svg",
   "./icons/icon-v3-192.png",
@@ -27,7 +30,20 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_VERSION).map((key) => caches.delete(key))))
+      .then(async keys => {
+        const sdk = await caches.open(SDK_CACHE);
+        const oldKeys = keys.filter(key => key.startsWith("quanlycuahang-pwa-") && key !== CACHE_VERSION);
+        // Retain SDK downloads across app releases, including migration from older shell caches.
+        for (const key of oldKeys) {
+          const old = await caches.open(key);
+          for (const request of await old.keys()) {
+            if (!request.url.startsWith(FIREBASE_SDK_PREFIX)) continue;
+            const response = await old.match(request);
+            if (response) await sdk.put(request, response);
+          }
+        }
+        await Promise.all(oldKeys.map(key => caches.delete(key)));
+      })
       .then(() => self.clients.claim())
   );
 });
@@ -51,12 +67,14 @@ self.addEventListener("fetch", (event) => {
 
   const requestUrl = new URL(request.url);
   if (request.destination === "script" && requestUrl.href.startsWith(FIREBASE_SDK_PREFIX)) {
+    // Retry query strings bypass a hung HTTP request but all attempts share the pinned SDK cache.
+    const sdkCacheUrl = requestUrl.origin + requestUrl.pathname;
     event.respondWith(
-      caches.match(request).then((cached) => cached || fetch(request).then((response) => {
+      caches.match(sdkCacheUrl).then((cached) => cached || fetch(request).then((response) => {
         if (response.ok || response.type === "opaque") {
           const responseCopy = response.clone();
-          return caches.open(CACHE_VERSION)
-            .then((cache) => cache.put(request, responseCopy))
+          return caches.open(SDK_CACHE)
+            .then((cache) => cache.put(sdkCacheUrl, responseCopy))
             .catch(() => {})
             .then(() => response);
         }

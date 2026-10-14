@@ -1,4 +1,5 @@
 const STORAGE_KEY = "store-cashbook-v1";
+const CACHE_OWNER_KEY = `${STORAGE_KEY}-owner`;
 const AI_CHAT_STORAGE_KEY = "store-cashbook-ai-chat-v1";
 const AI_CLIENT_STATE_MAX_CHARS = 900000;
 const AI_FILE_MAX_BYTES = 8 * 1024 * 1024;
@@ -22,6 +23,11 @@ let cloudStore = {
   status: "starting"
 };
 const pendingAdminCloudWrites = new Set();
+const configuredFirestoreDatabases = new WeakSet();
+let cloudSyncGeneration = 0;
+let cloudMutationVersion = 0;
+let employeeLoadAttempt = 0;
+let authObserverUnsubscribe = null;
 
 let authState = {
   ready: false,
@@ -39,6 +45,7 @@ const defaultData = {
   stores: []
 };
 
+const today = toDateInputValue(new Date());
 let state = loadCachedState();
 let timeFiltersAutoCollapseTimer = null;
 const historySearchRenderTimers = {
@@ -51,10 +58,9 @@ const historySearchSuggestionCache = {
 };
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js").catch(() => {
-      // Website vẫn hoạt động bình thường nếu trình duyệt không cho phép đăng ký PWA.
-    });
+  // Do not defer PWA recovery/update behind a stalled external SDK download.
+  navigator.serviceWorker.register("./service-worker.js").catch(() => {
+    // Website vẫn hoạt động bình thường nếu trình duyệt không cho phép đăng ký PWA.
   });
 }
 
@@ -548,7 +554,6 @@ if (els.aiChatMode) {
   els.aiChatMode.value = "general";
 }
 
-const today = toDateInputValue(new Date());
 els.rangeMode.value = "today";
 els.singleDate.value = today;
 els.monthDate.value = today.slice(0, 7);
@@ -2158,8 +2163,11 @@ function saveAndRender(employeeMutation = null) {
 }
 
 function saveStateToCache() {
+  // Invalidate older reads after any committed/local update, including transaction handlers.
+  ++cloudMutationVersion;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    if (authState.user?.uid) localStorage.setItem(CACHE_OWNER_KEY, authState.user.uid);
   } catch (error) {
     console.warn("Cannot write local cache", error);
   }
@@ -2268,6 +2276,10 @@ function showLoginScreen(message = "") {
 }
 
 function stopCloudStorage() {
+  ++cloudSyncGeneration;
+  ++employeeLoadAttempt;
+  window.clearTimeout(cloudStore.readTimer);
+  window.clearTimeout(cloudStore.retryTimer);
   cloudStore.unsubscribe?.();
   cloudStore = {
     enabled: false,
@@ -2327,7 +2339,10 @@ function applyRoleAccess() {
 }
 
 async function loadUserProfile(db, user) {
-  const snapshot = await db.collection("users").doc(user.uid).get();
+  const snapshot = await window.CloudSyncCore.readWithFallback(
+    () => db.collection("users").doc(user.uid).get({ source: "server" }),
+    () => window.CloudSyncCore.readDocument(getFirebaseConfig(), user, "users", user.uid)
+  );
   if (!snapshot.exists) throw new Error("PROFILE_NOT_FOUND");
   const profile = snapshot.data() || {};
   if (!["admin", "employee"].includes(profile.role) || profile.active === false) {
@@ -2338,7 +2353,7 @@ async function loadUserProfile(db, user) {
 
 function isProfileAccessDenied(error) {
   return ["PROFILE_NOT_FOUND", "PROFILE_DISABLED"].includes(error?.message) ||
-    ["permission-denied", "auth/user-disabled"].includes(error?.code);
+    ["permission-denied", "unauthenticated", "auth/user-disabled", "auth/user-token-expired", "auth/invalid-user-token"].includes(error?.code);
 }
 
 async function restoreAuthenticatedUser(db, user) {
@@ -2358,7 +2373,9 @@ async function restoreAuthenticatedUser(db, user) {
     window.clearTimeout(authSlowTimer);
     authSlowTimer = null;
     authState = { ready: true, user, profile, role: profile.role };
-    if (profile.role === "employee") state = cloneDefaultData();
+    let cacheOwner = null;
+    try { cacheOwner = localStorage.getItem(CACHE_OWNER_KEY); } catch (_) {}
+    if (profile.role === "employee" || (cacheOwner && cacheOwner !== user.uid)) state = cloneDefaultData();
     applyRoleAccess();
     showAuthenticatedApp(profile);
     initCloudStorage();
@@ -2382,6 +2399,10 @@ async function restoreAuthenticatedUser(db, user) {
 }
 
 async function initAuthentication() {
+  if (window.ensureFirebaseSdk) {
+    try { await window.ensureFirebaseSdk(); }
+    catch (error) { showAuthProblem(error.message || "Không tải được Firebase. Hãy thử lại."); return; }
+  }
   const config = getFirebaseConfig();
   if (!config || !window.firebase?.auth || !window.firebase?.firestore) {
     showAuthProblem("Không tải được Firebase Authentication. Hãy kiểm tra kết nối và thử lại.");
@@ -2390,7 +2411,7 @@ async function initAuthentication() {
 
   try {
     const app = window.firebase.apps?.length ? window.firebase.app() : window.firebase.initializeApp(config);
-    authDb = window.firebase.firestore(app);
+    authDb = getConfiguredFirestore(app);
     firebaseAuthInstance = window.firebase.auth(app);
   } catch (error) {
     console.error("Cannot initialize Firebase Authentication", error);
@@ -2399,7 +2420,8 @@ async function initAuthentication() {
   }
 
   try {
-    firebaseAuthInstance.onAuthStateChanged((user) => {
+    if (authObserverUnsubscribe) return;
+    authObserverUnsubscribe = firebaseAuthInstance.onAuthStateChanged((user) => {
       if (!user) {
         ++authRestoreAttempt;
         stopCloudStorage();
@@ -2407,6 +2429,7 @@ async function initAuthentication() {
         state = cloneDefaultData();
         try {
           localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(CACHE_OWNER_KEY);
         } catch (error) {
           console.warn("Cannot clear local cache", error);
         }
@@ -2427,6 +2450,10 @@ async function initAuthentication() {
 window.retryAuthStartup = () => {
   const user = firebaseAuthInstance?.currentUser;
   if (authDb && user) restoreAuthenticatedUser(authDb, user);
+  else if (window.ensureFirebaseSdk) {
+    authObserverUnsubscribe?.(); authObserverUnsubscribe = null;
+    showAuthLoading(); initAuthentication();
+  }
   else window.location.reload();
 };
 
@@ -2434,7 +2461,26 @@ window.addEventListener("online", () => {
   if (!els.authScreen.hidden && !els.authStartup.hidden && !els.authStartupRetry.hidden) {
     window.retryAuthStartup();
   }
+  else if (authState.ready && authState.user) refreshCloudFromServer(true);
 });
+
+window.addEventListener("pageshow", event => { if (event.persisted) refreshCloudFromServer(true); });
+window.addEventListener("offline", () => { if (authState.ready && authState.user) refreshCloudFromServer(true); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshCloudFromServer(); });
+window.addEventListener("focus", () => refreshCloudFromServer());
+
+function getConfiguredFirestore(app) {
+  const db = window.firebase.firestore(app);
+  if (!configuredFirestoreDatabases.has(db)) {
+    try {
+      db.settings?.(USE_MOBILE_APP_THEME
+        ? { experimentalForceLongPolling: true, experimentalAutoDetectLongPolling: false }
+        : { experimentalAutoDetectLongPolling: true });
+      configuredFirestoreDatabases.add(db);
+    } catch (error) { console.warn("Firestore transport already initialized", error.code || "settings"); }
+  }
+  return db;
+}
 
 function getFirestorePath() {
   const options = window.appCloudOptions || {};
@@ -2461,42 +2507,36 @@ function initCloudStorage() {
 
   try {
     const app = window.firebase.apps?.length ? window.firebase.app() : window.firebase.initializeApp(config);
-    cloudStore.db = window.firebase.firestore(app);
+    stopCloudStorage();
+    cloudStore.db = getConfiguredFirestore(app);
     const path = getFirestorePath();
     cloudStore.docRef = cloudStore.db.collection(path.collection).doc(path.document);
     cloudStore.enabled = true;
+    cloudStore.initialLoadPending = true;
+    cloudStore.generation = cloudSyncGeneration;
+    cloudStore.uid = authState.user?.uid;
+    cloudStore.lastServerAt = 0;
+    cloudStore.retryCount = 0;
     cloudStore.status = "ready";
+    render(); // Show this account's cached data immediately, without enabling writes yet.
     updateSyncStatus("Đang tải dữ liệu cloud...", "loading");
 
     if (isEmployeeUser()) {
-      loadEmployeeState();
+      refreshCloudFromServer(true);
       return;
     }
 
+    const session = cloudStore;
+    // Schedule recovery before subscribing, so a synchronous SDK failure cannot strand startup.
+    session.readTimer = window.setTimeout(() => refreshCloudFromServer(true), 1200);
     cloudStore.unsubscribe = cloudStore.docRef.onSnapshot(
       { includeMetadataChanges: true },
       (snapshot) => {
-        if (!snapshot.exists) {
-          if (snapshot.metadata?.fromCache) {
-            updateSyncStatus("Đang kiểm tra dữ liệu cloud...", "loading");
-            return;
-          }
-          saveStateToCloud();
-          updateSyncStatus("Đã tạo dữ liệu cloud", "ok");
-          return;
-        }
-
-        const remote = snapshot.data()?.state || snapshot.data();
-        state = normalizeState(remote);
-        saveStateToCache();
-        render();
-        updateSyncStatus(snapshot.metadata?.fromCache ? "Đang cập nhật từ cloud..." : "Đã đồng bộ cloud", snapshot.metadata?.fromCache ? "loading" : "ok");
+        try { applyCloudSnapshot(session, snapshot, "sdk"); }
+        catch (error) { handleCloudReadFailure(session, error); }
       },
       (error) => {
-        cloudStore.lastError = error;
-        cloudStore.status = "sync-error";
-        updateSyncStatus("Lỗi đồng bộ cloud", "error");
-        console.error("Firestore sync error", error);
+        handleCloudReadFailure(session, error);
       }
     );
   } catch (error) {
@@ -2507,6 +2547,130 @@ function initCloudStorage() {
   }
 }
 
+function isCurrentCloudSession(session) {
+  return session === cloudStore && session.enabled && session.generation === cloudSyncGeneration &&
+    session.uid === authState.user?.uid && authState.ready;
+}
+
+function queueCloudRefresh(session, delay) {
+  if (!isCurrentCloudSession(session)) return;
+  window.clearTimeout(session.retryTimer);
+  session.retryTimer = window.setTimeout(() => refreshCloudFromServer(true), delay);
+}
+
+function applyCloudSnapshot(session, snapshot, source) {
+  if (!isCurrentCloudSession(session)) return false;
+  const cached = snapshot.metadata?.fromCache;
+  if (snapshot.metadata?.hasPendingWrites || pendingAdminCloudWrites.size) return false;
+  if (!snapshot.exists) {
+    if (cached) return false;
+    // A read is never authorization to seed/overwrite a missing cloud document.
+    session.ready = state.stores.length === 0;
+    session.initialLoadPending = !session.ready;
+    session.status = "missing-document";
+    updateSyncStatus("Cloud chưa có dữ liệu. Dữ liệu cục bộ được giữ nguyên.", "warning");
+    window.clearTimeout(session.readTimer);
+    return false;
+  }
+  const data = snapshot.data(), remote = data?.state || data;
+  if (!remote || !Array.isArray(remote.stores)) {
+    const error = new Error("Dữ liệu cloud không hợp lệ; bản cục bộ được giữ nguyên.");
+    error.code = "invalid-cloud-data";
+    throw error;
+  }
+  if (cached) {
+    if (!session.ready && !state.stores.length) { state = normalizeState(remote); render(); }
+    return false;
+  }
+  const stamp = data.updatedAt;
+  const revision = Math.floor(stamp?.toMillis?.() || Date.parse(typeof stamp === "string" ? stamp : "") || 0);
+  if (revision && session.serverRevision && revision < session.serverRevision) return false;
+  session.serverRevision = Math.max(revision, session.serverRevision || 0);
+  state = normalizeState(remote);
+  session.ready = true;
+  session.initialLoadPending = false;
+  session.lastServerAt = Date.now();
+  session.mode = source;
+  if (source === "sdk") session.sdkReadVersion = (session.sdkReadVersion || 0) + 1;
+  session.retryCount = 0;
+  session.lastError = null;
+  session.status = "ready";
+  window.clearTimeout(session.readTimer);
+  window.clearTimeout(session.retryTimer);
+  saveStateToCache();
+  render();
+  updateSyncStatus(source === "rest" ? "Đã tải dữ liệu cloud" : "Đã đồng bộ cloud", "ok");
+  if (source === "rest") {
+    // Reopen a stalled SDK transport without clearing its cache or pending writes.
+    if (!pendingAdminCloudWrites.size && session.db.disableNetwork && Date.now() - (session.networkResetAt || 0) > 30000) {
+      session.networkResetAt = Date.now();
+      Promise.resolve().then(() => session.db.disableNetwork()).finally(() => session.db.enableNetwork()).catch(() => {});
+    }
+    queueCloudRefresh(session, 30000); // Read-only fallback until realtime recovers.
+  }
+  return true;
+}
+
+function handleCloudReadFailure(session, error) {
+  if (!isCurrentCloudSession(session)) return;
+  session.lastError = error;
+  session.status = "sync-error";
+  if (["permission-denied", "unauthenticated", "auth/user-disabled", "auth/user-token-expired", "auth/invalid-user-token"].includes(error?.code)) {
+    session.ready = false;
+    session.initialLoadPending = true;
+    window.clearTimeout(session.readTimer);
+    window.clearTimeout(session.retryTimer);
+    showAuthProblem("Không thể xác nhận quyền đọc dữ liệu cloud. Hãy thử lại hoặc kiểm tra tài khoản.");
+    return;
+  }
+  updateSyncStatus(session.ready ? "Kết nối gián đoạn · đang thử lại" : "Chưa tải được cloud · đang thử lại", "warning");
+  if (error?.code !== "invalid-cloud-data") queueCloudRefresh(session, Math.min(30000, 3000 * 2 ** Math.min(session.retryCount++ || 0, 4)));
+}
+
+async function refreshCloudFromServer(force = false) {
+  const session = cloudStore;
+  if (!isCurrentCloudSession(session) || document.hidden) return false;
+  if (session.readPromise) return session.readPromise;
+  if (!force && session.ready && Date.now() - session.lastServerAt < 10000) return true;
+  if (navigator.onLine === false) {
+    updateSyncStatus("Đang ngoại tuyến · chờ kết nối để đồng bộ", "warning");
+    queueCloudRefresh(session, 15000);
+    return false;
+  }
+  const mutationVersion = cloudMutationVersion, sdkReadVersion = session.sdkReadVersion || 0;
+  session.readPromise = (async () => {
+    try {
+      if (isEmployeeUser()) return await loadEmployeeState();
+      const path = getFirestorePath();
+      const snapshot = await window.CloudSyncCore.readDocument(getFirebaseConfig(), authState.user, path.collection, path.document);
+      if (!isCurrentCloudSession(session)) return false;
+      if (mutationVersion !== cloudMutationVersion || pendingAdminCloudWrites.size) {
+        if ((session.sdkReadVersion || 0) === sdkReadVersion) queueCloudRefresh(session, 1000);
+        return false;
+      }
+      return applyCloudSnapshot(session, snapshot, "rest");
+    } catch (error) {
+      if (isCurrentCloudSession(session) && (session.sdkReadVersion || 0) === sdkReadVersion) handleCloudReadFailure(session, error);
+      return false;
+    } finally { if (isCurrentCloudSession(session)) session.readPromise = null; }
+  })();
+  return session.readPromise;
+}
+
+// Guard user mutations before their handlers can alter local state during the initial read.
+for (const type of ["click", "submit"]) document.addEventListener(type, event => {
+  if (!authState.user || cloudStore.initialLoadPending !== true || els.appShell.hidden) return;
+  if (type === "click" && (!event.target.closest("button") || event.target.closest('#syncRetryButton,#signOutButton,#settingsToggle,[data-tab],[id^="close"],[id^="cancel"]'))) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  updateSyncStatus("Chờ đồng bộ xong trước khi thay đổi dữ liệu", "warning");
+}, true);
+
+document.querySelector("#syncRetryButton")?.addEventListener("click", () => {
+  if (cloudStore.enabled) refreshCloudFromServer(true);
+  else if (authState.ready && authState.user) initCloudStorage();
+});
+
 function getEmployeeFunctionUrl(name) {
   const config = window.employeeFunctionConfig || {};
   return String(config[name] || "").trim();
@@ -2515,18 +2679,27 @@ function getEmployeeFunctionUrl(name) {
 async function callEmployeeFunction(name, body = {}) {
   const url = getEmployeeFunctionUrl(name);
   if (!url) throw new Error("EMPLOYEE_FUNCTION_MISSING");
-  const token = await authState.user.getIdToken();
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify(body)
-  });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result.error || "EMPLOYEE_REQUEST_FAILED");
-  return result;
+  const request = async signal => {
+    const token = await authState.user.getIdToken();
+    if (signal?.aborted) throw new Error("Yêu cầu đã hết thời gian chờ.");
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(body),
+      ...(signal ? { signal } : {})
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(result.error || "EMPLOYEE_REQUEST_FAILED");
+      error.code = response.status === 403 ? "permission-denied" : response.status === 401 ? "unauthenticated" : "unavailable";
+      throw error;
+    }
+    return result;
+  };
+  return name === "getStateUrl" ? window.CloudSyncCore.withDeadline(request, 15000) : request();
 }
 
 const employeeManagerState = {
@@ -2938,25 +3111,47 @@ document.addEventListener('focusin', event => {
 });
 
 async function loadEmployeeState() {
+  const session = cloudStore, uid = authState.user?.uid, attempt = ++employeeLoadAttempt, mutationVersion = cloudMutationVersion;
   try {
     const result = await callEmployeeFunction("getStateUrl");
+    if (!isCurrentCloudSession(session) || uid !== authState.user?.uid || attempt !== employeeLoadAttempt) return false;
+    if (mutationVersion !== cloudMutationVersion) { queueCloudRefresh(session, 1000); return false; }
+    if (!result.state || !Array.isArray(result.state.stores)) {
+      const error = new Error("Dữ liệu nhân viên không hợp lệ.");
+      error.code = "invalid-cloud-data";
+      throw error;
+    }
     if (result.profile) authState.profile={...authState.profile,...result.profile};
     state = normalizeState(result.state || cloneDefaultData());
     if (authState.profile?.storeId && state.stores.some((store) => store.id === authState.profile.storeId)) {
       state.activeStoreId = authState.profile.storeId;
     }
     saveStateToCache();
-    activateTab(getFirstEmployeeTab());
+    if (session.initialLoadPending) activateTab(getFirstEmployeeTab());
+    session.ready = true;
+    session.initialLoadPending = false;
+    session.lastServerAt = Date.now();
+    session.retryCount = 0;
+    session.lastError = null;
+    session.mode = "employee";
+    session.status = "ready";
     render();
     updateSyncStatus("Đã đồng bộ cloud", "ok");
+    queueCloudRefresh(session, 30000);
+    return true;
   } catch (error) {
-    cloudStore.lastError = error;
-    updateSyncStatus("Không tải được dữ liệu nhân viên", "error");
-    console.error("Cannot load employee state", error);
+    if (session !== cloudStore || uid !== authState.user?.uid || attempt !== employeeLoadAttempt) return false;
+    handleCloudReadFailure(session, error);
+    return false;
   }
 }
 
 async function saveStateToCloud(employeeMutation = null) {
+  const session = cloudStore, uid = authState.user?.uid;
+  if (cloudStore.initialLoadPending === true) {
+    updateSyncStatus("Chưa tải xong cloud · chưa ghi thay đổi", "warning");
+    return false;
+  }
   if (!cloudStore.enabled || !cloudStore.docRef) {
     if (cloudStore.status === "missing-config") {
       updateSyncStatus("Chưa cấu hình cloud", "warning");
@@ -2969,6 +3164,7 @@ async function saveStateToCloud(employeeMutation = null) {
   }
 
   try {
+    const mutationVersion = ++cloudMutationVersion;
     updateSyncStatus("Đang lưu cloud...", "loading");
     if (isEmployeeUser()) {
       if (!employeeMutation) {
@@ -2977,6 +3173,8 @@ async function saveStateToCloud(employeeMutation = null) {
         return;
       }
       const result = await callEmployeeFunction("saveMutationUrl", { mutation: employeeMutation });
+      if (session !== cloudStore || uid !== authState.user?.uid) return false;
+      if (mutationVersion !== cloudMutationVersion) { queueCloudRefresh(session, 1000); return true; }
       state = normalizeState(result.state || state);
       saveStateToCache();
       render();
@@ -2992,9 +3190,11 @@ async function saveStateToCloud(employeeMutation = null) {
     );
     pendingAdminCloudWrites.add(write);
     try { await write; } finally { pendingAdminCloudWrites.delete(write); }
+    if (session !== cloudStore || uid !== authState.user?.uid) return false;
     updateSyncStatus("Đã lưu cloud", "ok");
     return true;
   } catch (error) {
+    if (session !== cloudStore || uid !== authState.user?.uid) return false;
     cloudStore.lastError = error;
     updateSyncStatus("Lưu cloud thất bại", "error");
     console.error("Cannot save cloud state", error);
@@ -3011,6 +3211,12 @@ function updateSyncStatus(message, status) {
   if (!els.syncStatus) return;
   els.syncStatus.textContent = message;
   els.syncStatus.dataset.status = status;
+  const retry = document.querySelector("#syncRetryButton");
+  if (retry) {
+    retry.hidden = !authState.user || !["warning", "error"].includes(status);
+    retry.title = message;
+    retry.setAttribute("aria-label", `${message}. Thử đồng bộ lại`);
+  }
   window.refreshClosingBookSync?.(message, status);
 }
 

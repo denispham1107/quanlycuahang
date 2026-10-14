@@ -11,9 +11,9 @@ function createWorker() {
   let offline = false;
   let slow = false;
   const caches = {
-    match: async (request) => stored.get(request.url),
+    match: async (request) => stored.get(typeof request === "string" ? request : request.url),
     open: async () => ({
-      put: async (request, response) => stored.set(request.url, response)
+      put: async (request, response) => stored.set(typeof request === "string" ? request : request.url, response)
     })
   };
   const context = {
@@ -55,6 +55,15 @@ test("Firebase SDK scripts are cached for later PWA launches", async () => {
   const worker = createWorker();
   const url = "https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js";
   assert.ok(await worker.request(url, "script"));
+  assert.ok(await worker.request(url, "script"));
+  assert.equal(worker.fetchCount, 1);
+});
+
+test("a successful SDK retry warms the normal launch URL as well", async () => {
+  const worker = createWorker();
+  const url = "https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js";
+  assert.ok(await worker.request(url + "?retry=2", "script"));
+  worker.goSlow();
   assert.ok(await worker.request(url, "script"));
   assert.equal(worker.fetchCount, 1);
 });

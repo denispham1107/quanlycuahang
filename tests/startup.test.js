@@ -30,6 +30,11 @@ function createHarness(loadUserProfile) {
   };
   const context = {
     window,
+    document: { hidden: false, addEventListener: () => {} },
+    configuredFirestoreDatabases: new WeakSet(),
+    USE_MOBILE_APP_THEME: false,
+    CACHE_OWNER_KEY: "store-cashbook-v1-owner",
+    authObserverUnsubscribe: null,
     console: { error: () => {}, warn: () => {} },
     authRestoreAttempt: 0,
     authSlowTimer: null,
@@ -38,7 +43,7 @@ function createHarness(loadUserProfile) {
     authState: { ready: false, user: null, profile: null, role: "" },
     state: { stores: [{ id: "cached" }] },
     STORAGE_KEY: "store-cashbook-v1",
-    localStorage: { removeItem: () => calls.push("clearCache") },
+    localStorage: { getItem: () => null, removeItem: () => calls.push("clearCache") },
     getFirebaseConfig: () => ({ apiKey: "key", projectId: "project" }),
     cloneDefaultData: () => ({ stores: [] }),
     loadUserProfile,
@@ -88,10 +93,27 @@ test("a disabled profile is denied and signed out", async () => {
   assert.equal(calls.some((call) => Array.isArray(call) && call[0] === "login"), true);
 });
 
+test("revoked or expired credentials return to login instead of an endless retry screen", async () => {
+  const { context, calls } = createHarness(async () => { throw Object.assign(new Error("revoked"),{code:"auth/user-token-expired"}); });
+  await context.restoreAuthenticatedUser({}, { uid: "user-1" });
+  assert.equal(calls.includes("signOut"),true);
+});
+
 test("employee startup does not reveal another account's cached store", async () => {
   const { context } = createHarness(async () => ({ role: "employee" }));
   await context.restoreAuthenticatedUser({}, { uid: "user-1" });
   assert.equal(context.state.stores.length, 0);
+});
+
+test("a different administrator account cannot see the previous owner's local cache", async () => {
+  const { context } = createHarness(async () => ({ role: "admin" }));
+  context.localStorage.getItem = () => "other-user";
+  await context.restoreAuthenticatedUser({}, { uid: "user-1" });
+  assert.equal(context.state.stores.length, 0);
+});
+
+test("the startup cache normalizer can use today's date before loading legacy stores", () => {
+  assert.ok(source.indexOf('const today = toDateInputValue(new Date());') < source.indexOf('let state = loadCachedState();'));
 });
 
 test("retry ignores an older profile response that arrives late", async () => {
@@ -127,40 +149,12 @@ test("a blocked localStorage clear cannot trap a signed-out user on startup", as
   assert.equal(calls.some((call) => Array.isArray(call) && call[0] === "login"), true);
 });
 
-test("an empty offline Firestore snapshot never overwrites cloud data", () => {
-  const begin = source.indexOf("function initCloudStorage(");
-  const end = source.indexOf("function getEmployeeFunctionUrl(", begin);
-  assert.ok(begin >= 0 && end > begin);
-  let onSnapshot;
-  let writes = 0;
-  const docRef = {
-    onSnapshot: (_options, callback) => {
-      onSnapshot = callback;
-      return () => {};
-    }
-  };
-  const db = { collection: () => ({ doc: () => docRef }) };
-  const context = {
-    cloudStore: {},
-    window: {
-      firebase: {
-        apps: [],
-        initializeApp: () => ({}),
-        firestore: () => db
-      }
-    },
-    console: { error: () => {} },
-    getFirebaseConfig: () => ({ apiKey: "key", projectId: "project" }),
-    getFirestorePath: () => ({ collection: "data", document: "shared" }),
-    updateSyncStatus: () => {},
-    isEmployeeUser: () => false,
-    saveStateToCloud: () => { writes += 1; }
-  };
-  vm.createContext(context);
-  vm.runInContext(source.slice(begin, end), context);
+test("neither an empty cache snapshot nor a missing server document automatically writes cloud data", () => {
+  const { createCloudHarness } = require("./helpers/cloud-sync-harness");
+  const { context, listeners, writes } = createCloudHarness();
   context.initCloudStorage();
-  onSnapshot({ exists: false, metadata: { fromCache: true } });
-  assert.equal(writes, 0);
-  onSnapshot({ exists: false, metadata: { fromCache: false } });
-  assert.equal(writes, 1);
+  listeners[0].next({ exists: false, metadata: { fromCache: true } });
+  assert.equal(writes.length, 0);
+  listeners[0].next({ exists: false, metadata: { fromCache: false } });
+  assert.equal(writes.length, 0);
 });

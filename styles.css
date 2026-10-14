@@ -2353,6 +2353,9 @@ button {
   text-transform: uppercase;
 }
 
+#syncRetryButton { margin: 4px 0 0; padding: 7px 12px; min-height: 36px; max-width: 100%; font-size: 13px; white-space: normal; }
+#syncRetryButton[hidden] { display: none; }
+html.mobile-app-theme #syncRetryButton { min-height: 44px; }
 .sync-status {
   display: inline-flex;
   align-items: center;
