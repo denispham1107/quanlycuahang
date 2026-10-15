@@ -4789,7 +4789,7 @@ th:last-child {
   letter-spacing: 0;
 }
 
-.ai-fab span {
+.ai-fab .ai-fab-label {
   position: relative;
   z-index: 1;
   color: #7654ff;
@@ -11610,7 +11610,7 @@ html #quickEntryButton:focus-visible {
   html #quickEntryButton { transition: none; }
 }
 
-/* Shared AI companion: robot face, same glass circle and size as quick-add. */
+/* Shared AI companion: approved "Robot kính lồng" on Mobile and Desktop. */
 .ai-fab .ai-fab-robot { display: none; }
 html #aiButton {
   width: 45.9px;
@@ -11618,31 +11618,85 @@ html #aiButton {
   min-width: 45.9px;
   min-height: 45.9px;
   padding: 0;
-  border: 1.275px solid rgba(255,255,255,.8);
+  border: 1px solid #ffffffbf;
   border-radius: 50%;
-  background: linear-gradient(145deg,#8670cf 0%,#7565c8 48%,#4085c1 100%);
+  background: linear-gradient(140deg,#a68be0,#7b6bce 48%,#3b94c5);
   color: #fff;
-  box-shadow: 0 6.8px 17px rgba(74,85,157,.24), inset 0 .85px 0 rgba(255,255,255,.52);
+  box-shadow: 0 7px 16px #6153a63d, inset 0 1px 2px #ffffffed, inset 0 -3px 5px #2d3e872e;
+  isolation: isolate;
+  overflow: hidden;
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
 html #aiButton::before {
-  inset: 1.7px;
+  inset: 6%;
   border-radius: inherit;
-  background: linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 58%);
-  box-shadow: none;
+  border: 1px solid #f6eaffad;
+  background: none;
+  box-shadow: inset 0 0 0 3px #e0d4ff18, 0 0 0 1px #8273cb80;
+  pointer-events: none;
+}
+html #aiButton::after {
+  content: "";
+  position: absolute;
+  inset: 3%;
+  border-radius: inherit;
+  background: linear-gradient(145deg,#ffffff6b,transparent 43%,#ffffff04 72%);
+  z-index: 6;
+  pointer-events: none;
+}
+html #aiButton .ai-fab-surface {
+  position: absolute;
+  inset: 15%;
+  border-radius: 50%;
+  background: linear-gradient(150deg,#c4b7f01c,#a5e5ff0a);
+  box-shadow: 0 0 0 1px #e4d8ff48, inset 0 1px 5px #ffffff1c;
+  pointer-events: none;
+}
+html #aiButton .ai-fab-glyph {
+  position: relative;
+  width: 67%;
+  height: 67%;
+  z-index: 4;
+  pointer-events: none;
+}
+html #aiButton .ai-fab-face {
+  position: absolute;
+  left: 17.5%;
+  right: 17.5%;
+  top: 34%;
+  bottom: 17%;
+  border-radius: 15%;
+  background: linear-gradient(140deg,#ffffff19,#c6dbff10);
+  box-shadow: inset 0 1px 1px #ffffff25;
+  pointer-events: none;
+}
+html #aiButton .ai-fab-status-dot {
+  position: absolute;
+  right: 19%;
+  top: 19%;
+  width: 7%;
+  height: 7%;
+  border-radius: 50%;
+  border: 1px solid #e5fff8;
+  background: radial-gradient(circle at 30% 25%,#fff,#b9f4e6 40%,#58bdb5);
+  box-shadow: 0 1px 3px #1f758852;
+  z-index: 5;
   pointer-events: none;
 }
 html #aiButton .ai-fab-label { display: none; }
 html #aiButton .ai-fab-robot {
   display: block;
-  width: 26px;
-  height: 26px;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   fill: none;
-  stroke: #fff;
-  stroke-width: 1.8;
+  stroke: #fff4ff;
+  stroke-width: 1.65;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter: drop-shadow(0 1px 1px rgba(34,46,105,.16));
+  filter: drop-shadow(0 1px 1px #51438c50);
+  pointer-events: none;
 }
 html #aiButton:active {
   transform: translateY(.85px) scale(.95);

@@ -24,19 +24,27 @@ test('shared AI robot retains its accessible label without external icons',()=>{
  const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
  const button=html.match(/<button class="quick-entry-fab ai-fab"[\s\S]*?<\/button>/)[0];
  assert.match(button,/aria-label="Mở trợ lý AI"/);assert.match(button,/class="ai-fab-label"[^>]*>AI<\/span>/);
- assert.match(button,/class="ai-fab-robot" aria-hidden="true" viewBox="0 0 24 24"/);assert.match(button,/<rect[^>]*rx="4"/);
+ assert.match(button,/class="ai-fab-robot" aria-hidden="true" viewBox="0 0 24 24"/);assert.match(button,/<rect[^>]*rx="2"/);
+ assert.match(button,/M12 8V4H8/);assert.match(button,/M15 13v2M9 13v2/);
+ for(const layer of ['surface','glyph','face','status-dot'])assert.match(button,new RegExp('class="ai-fab-'+layer+'"'));
  assert.doesNotMatch(button,/<img|https?:/);
  assert.match(css,/\.ai-fab \.ai-fab-robot \{ display: none; \}/);
  assert.match(css,/html #aiButton \.ai-fab-label \{ display: none; \}/);
 });
-test('AI keeps its original glass paint and matches quick-add dimensions on both platforms',()=>{
+test('AI uses approved nested glass paint and matches quick-add dimensions on both platforms',()=>{
  const rules=css.slice(css.indexOf('/* Shared AI companion:'));
  const ai=rules.match(/html #aiButton \{([^}]+)\}/)[1];
  const plus=css.match(/html #quickEntryButton \{([^}]+)\}/)[1];
  for(const property of ['width','height','min-width','min-height','border-radius']){
   const re=new RegExp(`(?:^|;)\\s*${property}: ([^;]+);`);assert.equal(ai.match(re)[1],plus.match(re)[1],property);
  }
- assert.match(rules,/#aiButton \.ai-fab-robot \{[\s\S]*?stroke: #fff;\s*stroke-width: 1\.8;/);
+ assert.match(rules,/#aiButton \.ai-fab-robot \{[\s\S]*?stroke: #fff4ff;\s*stroke-width: 1\.65;/);
+ assert.match(ai,/linear-gradient\(140deg,#a68be0,#7b6bce 48%,#3b94c5\)/);
+ assert.match(rules,/#aiButton::before \{[\s\S]*?inset: 6%;/);
+ assert.match(rules,/#aiButton::after \{[\s\S]*?inset: 3%;/);
+ assert.match(rules,/\.ai-fab-surface \{[\s\S]*?inset: 15%;/);
+ assert.match(rules,/\.ai-fab-glyph \{[\s\S]*?width: 67%;/);
+ assert.match(rules,/isolation: isolate/);assert.match(rules,/overflow: hidden/);
  assert.match(rules,/#aiButton:focus-visible/);assert.match(rules,/prefers-reduced-motion: reduce/);
 });
 

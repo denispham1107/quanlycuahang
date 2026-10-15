@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=175" />
+    <link rel="manifest" href="manifest.webmanifest?v=176" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=175" />
+    <link rel="stylesheet" href="styles.css?v=176" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -785,14 +785,16 @@
     </button>
     <button class="quick-entry-fab ai-fab" id="aiButton" type="button" hidden aria-label="Mở trợ lý AI" title="Mở trợ lý AI">
       <span class="ai-fab-label" aria-hidden="true">AI</span>
-      <svg class="ai-fab-robot" aria-hidden="true" viewBox="0 0 24 24">
-        <path d="M12 4v3M3 10v5M21 10v5" />
-        <circle cx="12" cy="3" r="1" fill="currentColor" stroke="none" />
-        <rect x="5" y="7" width="14" height="12" rx="4" />
-        <circle cx="9" cy="11.5" r="1.1" fill="currentColor" stroke="none" />
-        <circle cx="15" cy="11.5" r="1.1" fill="currentColor" stroke="none" />
-        <path d="M9 15c1.5 2 4.5 2 6 0" />
-      </svg>
+      <span class="ai-fab-surface" aria-hidden="true"></span>
+      <span class="ai-fab-glyph" aria-hidden="true">
+        <span class="ai-fab-face"></span>
+        <svg class="ai-fab-robot" aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M12 8V4H8" />
+          <rect width="16" height="12" x="4" y="8" rx="2" />
+          <path d="M2 14h2M20 14h2M15 13v2M9 13v2" />
+        </svg>
+      </span>
+      <span class="ai-fab-status-dot" aria-hidden="true"></span>
     </button>
 
     <div class="modal-backdrop ai-chat-backdrop" id="aiChatModal" hidden>
@@ -1548,8 +1550,8 @@
       </div>
     </main>
 
-    <script defer src="firebase-loader.js?v=175"></script>
-    <script defer src="cloud-sync-core.js?v=175"></script>
+    <script defer src="firebase-loader.js?v=176"></script>
+    <script defer src="cloud-sync-core.js?v=176"></script>
     <script defer src="firebase-config.js"></script>
     <section id="closingBookPage" class="closing-book-page" aria-labelledby="closingBookTitle" hidden>
       <div id="closingBookMain" class="closing-book-shell">
@@ -1613,9 +1615,9 @@
         </form>
       </section>
     </div>
-    <script defer src="app.js?v=175"></script>
-    <script defer src="closing-book-core.js?v=175"></script>
-    <script defer src="closing-book-export.js?v=175"></script>
-    <script defer src="closing-book.js?v=175"></script>
+    <script defer src="app.js?v=176"></script>
+    <script defer src="closing-book-core.js?v=176"></script>
+    <script defer src="closing-book-export.js?v=176"></script>
+    <script defer src="closing-book.js?v=176"></script>
   </body>
 </html>
