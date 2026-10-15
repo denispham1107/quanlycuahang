@@ -28,6 +28,18 @@ test('mobile purchase overview sums import/export quantities and current stock v
   assert.doesNotMatch(app.slice(start,end),/inventoryLogSearch|inventoryLogFilter|inventorySearch|inventoryFilter/);
   assert.match(app,/renderMobilePurchaseOverview\(store, range\);/);
 });
+test('desktop purchase replaces counts with the same four Mobile warehouse metrics', () => {
+  const range={start:'2026-10-12',end:'2026-10-12'};
+  const ctx={desktopUi:{insights:{innerHTML:''}},getDateRange:()=>range,getActiveTabName:()=> 'purchase',getInventoryLogDate:log=>String(log.date||log.updatedAt).slice(0,10),isCancelledEntry:log=>log.status==='cancelled',formatCurrency:value=>`${value.toLocaleString('vi-VN')} ₫`,escapeHtml:String};
+  vm.createContext(ctx);vm.runInContext(app.slice(start,end),ctx);
+  vm.runInContext(app.slice(app.indexOf('function renderDesktopInsights('),app.indexOf('function getMobileTimeFilterLabel(')),ctx);
+  const store={inventory:[{quantity:7.5,totalCost:87600}],inventoryLogs:[{date:'2026-10-12',oldQuantity:0,newQuantity:55.25},{date:'2026-10-12',oldQuantity:20,newQuantity:9.5},{date:'2026-10-12',type:'type-change',oldQuantity:99,newQuantity:0},{date:'2026-10-12',status:'cancelled',oldQuantity:0,newQuantity:500},{date:'2026-10-11',oldQuantity:0,newQuantity:1000}]};
+  ctx.renderDesktopInsights(store);const output=ctx.desktopUi.insights.innerHTML;
+  assert.deepEqual([...output.matchAll(/<div><span>(.*?)<\/span><strong>(.*?)<\/strong>/g)].map(m=>[m[1],m[2]]),[['Tổng giá trị kho','87.600 ₫'],['Nhập kho','55,25'],['Xuất kho','10,5'],['Tổng tồn kho','7,5']]);
+  assert.doesNotMatch(output,/Mặt hàng trong kho|Lượt cập nhật kho/);
+  range.start=range.end='2026-10-11';ctx.renderDesktopInsights(store);assert.match(ctx.desktopUi.insights.innerHTML,/<strong>1.000<\/strong>/);assert.match(ctx.desktopUi.insights.innerHTML,/<strong>87.600 ₫<\/strong>/);
+  ctx.renderDesktopInsights({});assert.equal((ctx.desktopUi.insights.innerHTML.match(/<strong>0(?: ₫)?<\/strong>/g)||[]).length,4);
+});
 test('all four mobile purchase metric colors are distinct and readable on pastel tiles', () => {
   const colors=['mobilePurchaseStockValue','mobilePurchaseImportCount','mobilePurchaseExportCount','mobilePurchaseStockTotal'].map(id=>[...css.matchAll(new RegExp(`html\\.mobile-app-theme #${id} \\{([^}]+)\\}`,'g'))].at(-1)[1].match(/color: (#[a-f0-9]{6})/)[1]);
   assert.equal(new Set(colors).size,4);

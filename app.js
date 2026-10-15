@@ -7892,15 +7892,17 @@ function renderDesktopInsights(store) {
       { label: "Đơn hàng đã hủy", value: stats.cancelledCount.toLocaleString("vi-VN"), kind: "cancelled" }
     ];
   } else if (tabName === "purchase") {
+    const stats = getMobilePurchaseOverviewStats(store, range);
     cards = [
-      { label: "Mặt hàng trong kho", value: String((store.inventory || []).length), kind: "total" },
-      { label: "Lượt cập nhật kho", value: String((store.inventoryLogs || []).filter(inRange).length), kind: "category-one" },
-      { label: "Tổng tồn kho", value: String((store.inventory || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0)), kind: "category-two" }
+      { label: "Tổng giá trị kho", value: formatCurrency(stats.value), kind: "total" },
+      { label: "Nhập kho", value: stats.imports.toLocaleString("vi-VN"), kind: "stock-import" },
+      { label: "Xuất kho", value: stats.exports.toLocaleString("vi-VN"), kind: "stock-export" },
+      { label: "Tổng tồn kho", value: stats.stock.toLocaleString("vi-VN"), kind: "category-two" }
     ];
   }
   desktopUi.insights.innerHTML = cards.map((card) => `
     <article class="desktop-insight ${card.kind}">
-      <span class="desktop-insight-icon" aria-hidden="true">${card.kind === "total" ? "◉" : card.kind === "category-one" ? "▤" : card.kind === "cancelled" ? "×" : "⌂"}</span>
+      <span class="desktop-insight-icon" aria-hidden="true">${card.kind === "total" ? "◉" : card.kind === "category-one" ? "▤" : card.kind === "cancelled" ? "×" : card.kind === "stock-import" ? "↓" : card.kind === "stock-export" ? "↑" : "⌂"}</span>
       <div><span>${escapeHtml(card.label)}</span><strong>${escapeHtml(card.value)}</strong></div>
     </article>
   `).join("");

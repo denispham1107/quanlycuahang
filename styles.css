@@ -408,6 +408,21 @@ html:not(.mobile-app-theme) .desktop-insights {
   gap: 15px;
 }
 
+/* Purchase overview shares Mobile calculations, while retaining Desktop cards. */
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] .desktop-insights { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] .desktop-insight { gap: 10px; padding: 14px; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] .desktop-insight-icon { flex-basis: 44px; width: 44px; height: 44px; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] .desktop-insight strong { font-size: clamp(18px,1.8vw,29px); white-space: normal; overflow-wrap: anywhere; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] .desktop-insight.stock-import { background: linear-gradient(135deg,#f7f0ff,#efefff); border-color: #d8c5ee; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] .desktop-insight.stock-import strong { color: #67509b; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] .desktop-insight.stock-import .desktop-insight-icon { background: #e9e0fa; color: #67509b; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] .desktop-insight.stock-export { background: linear-gradient(135deg,#fff1f5,#fbf4ff); border-color: #efd4e2; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] .desktop-insight.stock-export strong { color: #98416e; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] .desktop-insight.stock-export .desktop-insight-icon { background: #fbe2eb; color: #98416e; }
+@media (max-width:1279px) {
+  html:not(.mobile-app-theme) body[data-active-tab="purchase"] .desktop-insights { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+
 /* Sales overview: four metrics, with sold/cancelled counts kept distinct. */
 html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-insights { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; }
 html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-insight { gap: 10px; padding: 14px; }
