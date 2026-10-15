@@ -1,5 +1,7 @@
 # Quy tắc hồi quy giao diện
 
+- Theo yêu cầu mới, các ô thống kê nhanh Nhập hàng/Bán hàng Desktop dùng phong cách metric Tổng quan: nền trắng95%, viền#e2e9f6/radius18px/padding17px/bóng mờ, nhãn13px và số lớn cách21px có màu tím/lam/hồng theo cùng biến màu Tổng quan; không hiển thị .desktop-insight-icon. Thay màu nền pastel cũ riêng các ô này, giữ bố cục4cột/2×2, dữ liệu/thứ tự, Mobile/bộ lọc/nút/bảng và khung lịch sử nguyên trạng. QA so computed paint với metric Tổng quan, icon displaynone, số lớn/nhãn đủ chỗ, Desktop800–1920 và Mobile320/375/430/ngang/keyboard pixel trước/sau.
+
 - Tổng quan Nhập hàng Desktop bỏ Mặt hàng trong kho/Lượt cập nhật kho, dùng đúng getMobilePurchaseOverviewStats như Mobile với thứ tự Tổng giá trị kho/Nhập kho/Xuất kho/Tổng tồn kho. Nhập/Xuất là tổng chênh lệch số lượng nhật ký trong kỳ (bỏ hủy/type-change), giá trị/tồn là kho hiện tại; không bị lọc tìm kiếm/phân loại nhật ký. Bốn ô pastel Desktop 4cột từ1280px,2×2 dưới1280px, giữ Mobile/bộ lọc trái/nút/handler/quyền và tab khác. Kiểm tra dữ liệu rỗng/số lẻ/số lớn/đổi ngày/đổi cửa hàng, Desktop800/1024/1280/1440/1920 và Mobile320/375/430/ngang/keyboard, cùng tests/cuộn trang; không ghi dữ liệu thật.
 
 - Hai giá trị Mobile #mobileSalesReportCount và #mobileSalesCancelledCount chỉ hiện số (không thêm hậu tố “đơn”), kể cả mặc định0 trong HTML. Giữ nguyên nhãn Đơn đã bán/Đơn đã hủy, cách tính, số đơn cạnh tiêu đề trang và Desktop.

@@ -11270,6 +11270,23 @@ body:has(> :is(#customerHistoryModal, #memberTierModal):not([hidden])) > #custom
   html:not(.mobile-app-theme) .sales-page-mode #purchaseItems .service-stock-note { padding: 4px; font-size: 11px; line-height: 1.4; }
 }
 
+/* Desktop trade report cards match the white Overview metrics. */
+html:not(.mobile-app-theme) body:is([data-active-tab="purchase"],[data-active-tab="sales"]) #desktopInsights .desktop-insight {
+  display: block; min-height: 126px; border: 1px solid #e2e9f6; border-radius: 18px;
+  padding: 17px; background: rgba(255,255,255,0.95); box-shadow: 0 12px 24px rgba(69,84,149,0.08);
+}
+html:not(.mobile-app-theme) body:is([data-active-tab="purchase"],[data-active-tab="sales"]) #desktopInsights .desktop-insight-icon { display: none; }
+html:not(.mobile-app-theme) body:is([data-active-tab="purchase"],[data-active-tab="sales"]) #desktopInsights .desktop-insight div { display: block; }
+html:not(.mobile-app-theme) body:is([data-active-tab="purchase"],[data-active-tab="sales"]) #desktopInsights .desktop-insight div span { color: #536686; font-size: 13px; font-weight: 700; }
+html:not(.mobile-app-theme) body:is([data-active-tab="purchase"],[data-active-tab="sales"]) #desktopInsights .desktop-insight strong {
+  display: block; margin-top: 21px; font-size: clamp(25px,2.4vw,34px); letter-spacing: 0; white-space: normal; overflow-wrap: anywhere; color: var(--accent);
+}
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] #desktopInsights .desktop-insight.total strong,
+html:not(.mobile-app-theme) body[data-active-tab="sales"] #desktopInsights .desktop-insight.category-one strong { background: var(--money-gradient); -webkit-background-clip: text; background-clip: text; color: transparent; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] #desktopInsights .desktop-insight.stock-export strong,
+html:not(.mobile-app-theme) body[data-active-tab="sales"] #desktopInsights .desktop-insight.cancelled strong { color: var(--expense); }
+html:not(.mobile-app-theme) body:is([data-active-tab="purchase"],[data-active-tab="sales"]) #desktopInsights .desktop-insight.category-two strong { color: var(--balance); }
+
 /* Desktop trade accents: color only, no layout or behavior changes. */
 html:not(.mobile-app-theme) body[data-active-tab="purchase"] .desktop-insight.total strong { color: #58468e; }
 html:not(.mobile-app-theme) body[data-active-tab="purchase"] .desktop-insight.category-one strong { color: #944567; }
