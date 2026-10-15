@@ -30,6 +30,7 @@ test('approved sales mobile additions are hidden on desktop and history remains 
  const newCSS=css.slice(css.indexOf('/* Approved "Nổi bật gradient"'));
  for(const selector of newCSS.split('{').slice(0,-1).map(x=>x.split('}').at(-1).trim())){
   if(selector.startsWith('/*')||selector.startsWith('.mobile-sales-heading')||selector.startsWith('@media'))continue;
+  if(/^html #(quickEntryButton|aiButton)(?:$|[\s:])/.test(selector))continue; // Approved shared floating actions on Desktop/Mobile.
   assert.ok(selector.includes('html.mobile-app-theme'),selector);
  }
  for(const id of ['salesGoodsFilter','salesOrderTable','salesDraftList','openCustomers'])assert.ok(tab.includes(`id="${id}"`));

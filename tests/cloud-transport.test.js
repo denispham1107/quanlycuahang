@@ -81,7 +81,8 @@ test('SDK loading is non-blocking, coalesced, bounded and retryable after CDN fa
 test('PWA updates migrate and retain Firebase SDK downloads instead of redownloading every release', async () => {
   const sdkUrl='https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js';
   const response={ok:true};
-  const buckets=new Map([['unrelated-app-cache',new Map()],['quanlycuahang-pwa-v165',new Map([[sdkUrl,response],['https://app.test/app.js',{}]])],['quanlycuahang-pwa-v166',new Map()]]);
+  const currentCache=source('service-worker.js').match(/const CACHE_VERSION = "([^"]+)"/)[1];
+  const buckets=new Map([['unrelated-app-cache',new Map()],['quanlycuahang-pwa-v165',new Map([[sdkUrl,response],['https://app.test/app.js',{}]])],[currentCache,new Map()]]);
   const events={};let claimed=false;
   const caches={keys:async()=>[...buckets.keys()],delete:async key=>buckets.delete(key),open:async key=>{
     if(!buckets.has(key))buckets.set(key,new Map());const b=buckets.get(key);
@@ -92,7 +93,7 @@ test('PWA updates migrate and retain Firebase SDK downloads instead of redownloa
   assert.equal(claimed,true);
   assert.equal(buckets.has('quanlycuahang-pwa-v165'),false);
   assert.equal(buckets.get('quanlycuahang-firebase-sdk-10.12.5').get(sdkUrl),response);
-  assert.equal(buckets.has('quanlycuahang-pwa-v166'),true);
+  assert.equal(buckets.has(currentCache),true);
   assert.equal(buckets.has('unrelated-app-cache'),true);
   events.activate({waitUntil:p=>pending=p});await pending;
   assert.equal(buckets.get('quanlycuahang-firebase-sdk-10.12.5').get(sdkUrl),response);

@@ -519,8 +519,9 @@ html:not(.mobile-app-theme) .tab-panel td {
   font-size: 15px;
 }
 
-html:not(.mobile-app-theme) .quick-entry-fab:not(.ai-fab) {
-  display: none;
+html:not(.mobile-app-theme) .quick-entry-fab {
+  right: 24px;
+  bottom: 20px;
 }
 
 /* Desktop “Điều hành”: a store master-detail page and a readable cash-flow overview. */
@@ -11487,8 +11488,8 @@ html.mobile-app-theme [data-tab-panel="sales"] .sales-history-table tr:not(.entr
   html.mobile-app-theme [data-tab-panel="sales"] .sales-table .delete-small { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
 }
 
-/* One shared mobile quick-add button: soft glass, clear plus, no inner white disc. */
-html.mobile-app-theme #quickEntryButton {
+/* One shared quick-add button: soft glass, clear plus, no inner white disc. */
+html #quickEntryButton {
   width: 45.9px;
   height: 45.9px;
   min-width: 45.9px;
@@ -11501,35 +11502,35 @@ html.mobile-app-theme #quickEntryButton {
   box-shadow: 0 6.8px 17px rgba(74,85,157,.24), inset 0 .85px 0 rgba(255,255,255,.52);
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
-html.mobile-app-theme #quickEntryButton::before {
+html #quickEntryButton::before {
   inset: 1.7px;
   border-radius: inherit;
   background: linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 58%);
   box-shadow: none;
   pointer-events: none;
 }
-html.mobile-app-theme #quickEntryButton svg {
+html #quickEntryButton svg {
   width: 22.1px;
   height: 22.1px;
   stroke: #fff;
   stroke-width: 3;
   filter: drop-shadow(0 1px 1px rgba(34,46,105,.16));
 }
-html.mobile-app-theme #quickEntryButton:active {
+html #quickEntryButton:active {
   transform: translateY(.85px) scale(.95);
   box-shadow: 0 4.25px 10.2px rgba(74,85,157,.22), inset 0 .85px 0 rgba(255,255,255,.42);
 }
-html.mobile-app-theme #quickEntryButton:focus-visible {
+html #quickEntryButton:focus-visible {
   outline: 3px solid rgba(55,94,165,.5);
   outline-offset: 3px;
 }
 @media (prefers-reduced-motion: reduce) {
-  html.mobile-app-theme #quickEntryButton { transition: none; }
+  html #quickEntryButton { transition: none; }
 }
 
-/* Mobile AI companion: robot face, same glass circle and size as quick-add. */
+/* Shared AI companion: robot face, same glass circle and size as quick-add. */
 .ai-fab .ai-fab-robot { display: none; }
-html.mobile-app-theme #aiButton {
+html #aiButton {
   width: 45.9px;
   height: 45.9px;
   min-width: 45.9px;
@@ -11542,15 +11543,15 @@ html.mobile-app-theme #aiButton {
   box-shadow: 0 6.8px 17px rgba(74,85,157,.24), inset 0 .85px 0 rgba(255,255,255,.52);
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
-html.mobile-app-theme #aiButton::before {
+html #aiButton::before {
   inset: 1.7px;
   border-radius: inherit;
   background: linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 58%);
   box-shadow: none;
   pointer-events: none;
 }
-html.mobile-app-theme #aiButton .ai-fab-label { display: none; }
-html.mobile-app-theme #aiButton .ai-fab-robot {
+html #aiButton .ai-fab-label { display: none; }
+html #aiButton .ai-fab-robot {
   display: block;
   width: 26px;
   height: 26px;
@@ -11561,16 +11562,16 @@ html.mobile-app-theme #aiButton .ai-fab-robot {
   stroke-linejoin: round;
   filter: drop-shadow(0 1px 1px rgba(34,46,105,.16));
 }
-html.mobile-app-theme #aiButton:active {
+html #aiButton:active {
   transform: translateY(.85px) scale(.95);
   box-shadow: 0 4.25px 10.2px rgba(74,85,157,.22), inset 0 .85px 0 rgba(255,255,255,.42);
 }
-html.mobile-app-theme #aiButton:focus-visible {
+html #aiButton:focus-visible {
   outline: 3px solid rgba(55,94,165,.5);
   outline-offset: 3px;
 }
 @media (prefers-reduced-motion: reduce) {
-  html.mobile-app-theme #aiButton { transition: none; }
+  html #aiButton { transition: none; }
 }
 
 /* Mobile purchase: clear hierarchy, glass metric tiles and compact full-detail history. */

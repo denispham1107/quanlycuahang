@@ -1,8 +1,8 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const css=fs.readFileSync(path.join(__dirname,'..','styles.css'),'utf8');
-test('shared mobile quick-add has a soft glass surface and clear white plus with independently scoped rules',()=>{
- const rules=css.slice(css.indexOf('/* One shared mobile quick-add button:'),css.indexOf('/* Mobile AI companion:'));
- assert.match(rules,/html\.mobile-app-theme #quickEntryButton \{/);
+test('shared quick-add has a soft glass surface and clear white plus on both platforms',()=>{
+ const rules=css.slice(css.indexOf('/* One shared quick-add button:'),css.indexOf('/* Shared AI companion:'));
+ assert.match(rules,/html #quickEntryButton \{/);
  assert.match(rules,/width: 45\.9px/);assert.match(rules,/height: 45\.9px/);assert.match(rules,/border-radius: 50%/);
  assert.equal(45.9/54,.85,'circle is 15% smaller while retaining a touch target above 44px');
  assert.match(rules,/#quickEntryButton svg \{\s*width: 22\.1px;\s*height: 22\.1px;/);
@@ -14,26 +14,32 @@ test('shared mobile quick-add has a soft glass surface and clear white plus with
  for(const hex of ['8670cf','7565c8','4085c1'])assert.ok(1.05/(luminance(hex)+.05)>=3,`white plus contrasts against ${hex}`);
 });
 test('quick-add retains press feedback, keyboard focus and reduced-motion support',()=>{
- const rules=css.slice(css.indexOf('/* One shared mobile quick-add button:'));
+ const rules=css.slice(css.indexOf('/* One shared quick-add button:'));
  assert.match(rules,/#quickEntryButton:active \{/);assert.match(rules,/#quickEntryButton:focus-visible \{/);
- assert.match(rules,/@media \(prefers-reduced-motion: reduce\) \{\s*html\.mobile-app-theme #quickEntryButton \{ transition: none;/);
+ assert.match(rules,/@media \(prefers-reduced-motion: reduce\) \{\s*html #quickEntryButton \{ transition: none;/);
 });
-test('mobile AI robot retains its accessible label and desktop text fallback without external icons',()=>{
+test('shared AI robot retains its accessible label without external icons',()=>{
  const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
  const button=html.match(/<button class="quick-entry-fab ai-fab"[\s\S]*?<\/button>/)[0];
  assert.match(button,/aria-label="Mở trợ lý AI"/);assert.match(button,/class="ai-fab-label"[^>]*>AI<\/span>/);
  assert.match(button,/class="ai-fab-robot" aria-hidden="true" viewBox="0 0 24 24"/);assert.match(button,/<rect[^>]*rx="4"/);
  assert.doesNotMatch(button,/<img|https?:/);
  assert.match(css,/\.ai-fab \.ai-fab-robot \{ display: none; \}/);
- assert.match(css,/html\.mobile-app-theme #aiButton \.ai-fab-label \{ display: none; \}/);
+ assert.match(css,/html #aiButton \.ai-fab-label \{ display: none; \}/);
 });
-test('AI circle matches current quick-add size and glass colors on mobile only',()=>{
- const rules=css.slice(css.indexOf('/* Mobile AI companion:'));
- const ai=rules.match(/html\.mobile-app-theme #aiButton \{([^}]+)\}/)[1];
- const plus=css.match(/html\.mobile-app-theme #quickEntryButton \{([^}]+)\}/)[1];
+test('AI circle matches current quick-add size and glass colors on both platforms',()=>{
+ const rules=css.slice(css.indexOf('/* Shared AI companion:'));
+ const ai=rules.match(/html #aiButton \{([^}]+)\}/)[1];
+ const plus=css.match(/html #quickEntryButton \{([^}]+)\}/)[1];
  for(const property of ['width','height','min-width','min-height','border','border-radius','background','box-shadow']){
   const re=new RegExp(`(?:^|;)\\s*${property}: ([^;]+);`);assert.equal(ai.match(re)[1],plus.match(re)[1],property);
  }
  assert.match(rules,/#aiButton \.ai-fab-robot \{[\s\S]*?stroke: #fff;\s*stroke-width: 1\.8;/);
  assert.match(rules,/#aiButton:focus-visible/);assert.match(rules,/prefers-reduced-motion: reduce/);
+});
+
+test('desktop quick-add is no longer CSS-hidden and sits below the final content row',()=>{
+ assert.doesNotMatch(css,/html:not\(\.mobile-app-theme\) \.quick-entry-fab:not\(\.ai-fab\)\s*\{\s*display: none;/);
+ assert.match(css,/html:not\(\.mobile-app-theme\) \.quick-entry-fab\s*\{\s*right: 24px;\s*bottom: 20px;/);
+ assert.match(css,/\.quick-entry-fab\[hidden\]\s*\{\s*display: none;/);
 });
