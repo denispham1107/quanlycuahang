@@ -23,6 +23,8 @@ const APP_STATE_DOCUMENT =
 const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE || "Asia/Ho_Chi_Minh";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-5.4-mini";
 const OPENAI_FALLBACK_MODEL = process.env.OPENAI_FALLBACK_MODEL || OPENAI_MODEL;
+// General chat follows the latest ChatGPT Instant alias independently of store reports.
+const OPENAI_GENERAL_MODEL = process.env.OPENAI_GENERAL_MODEL || "chat-latest";
 const MAX_MESSAGE_LENGTH = 2000;
 const GENERAL_MAX_MESSAGE_LENGTH = 4000;
 const GENERAL_HISTORY_LIMIT = 20;
@@ -2230,7 +2232,7 @@ async function callGeneralOpenAI({ message, history, attachments, useWebSearch }
     };
   }
 
-  const model = OPENAI_MODEL;
+  const model = OPENAI_GENERAL_MODEL;
   const input = buildGeneralInput(message, history, attachments);
   const maxOutputTokens = Number(process.env.OPENAI_MAX_OUTPUT_TOKENS || 1200);
   const request = {

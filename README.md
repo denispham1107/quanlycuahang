@@ -86,6 +86,13 @@ Trên web app mobile, biểu mẫu **Tạo đơn bán hàng** dùng bố cục c
 
 Sáu tab nghiệp vụ **Cửa hàng, Tổng quan, Thu, Chi, Nhập hàng, Bán hàng** là thành phần điều hướng cố định. Khi chỉnh sửa giao diện phải giữ `stickyControlDock`, `tabSpacer` và cơ chế `updatePinnedTabs()`: trên desktop Tab Bar bám mép trên; trên iOS/iPadOS và Android Tab Bar là dock kính mờ bám mép dưới, luôn nằm trọn trong vùng an toàn của màn hình. Bộ lọc thời gian trên mobile nằm phía trên: khi mở, các lựa chọn xếp dọc và chỉ cuộn theo chiều dọc trong khung nếu màn hình thấp; khi chọn, sau 1 giây tự thu gọn thành một dòng vẫn hiển thị bộ lọc đang áp dụng. Chọn lại cùng một lựa chọn vẫn phải tự thu gọn. Không thêm biểu tượng trang trí đứng trước tên các dòng mục hoặc báo cáo.
 
+## Model của Trợ lý AI
+
+- **ChatGPT tổng quát** dùng `chat-latest` theo lựa chọn của chủ ứng dụng. Đây là alias theo model Instant mới nhất đang dùng trong ChatGPT, được OpenAI cập nhật định kỳ: [OpenAI Docs](https://developers.openai.com/api/docs/models/chat-latest). Có thể cấu hình riêng bằng biến môi trường `OPENAI_GENERAL_MODEL`.
+- **Quản lý cửa hàng** giữ nguyên `OPENAI_MODEL` (mặc định `gpt-5.4-mini`) và `OPENAI_FALLBACK_MODEL`; thay model tổng quát không làm thay đổi model báo cáo cửa hàng.
+- Cả endpoint `chatGeneralAI` và nhánh `mode: "general"` của `chatWithAI` đều dùng chung model tổng quát. Thử lại khi web search lỗi vẫn dùng cùng model, không âm thầm quay về model cũ.
+- Thay đổi này nằm ở Cloud Functions, không cần đổi giao diện hoặc cache PWA. Triển khai đồng thời `functions:chatGeneralAI,functions:chatWithAI`. Không đưa API key vào mã frontend; QA dùng SDK giả, không gửi dữ liệu cửa hàng thật hoặc gọi model tính phí.
+
 ## Deploy lên GitHub Pages
 
 1. Commit các file đã sửa:
