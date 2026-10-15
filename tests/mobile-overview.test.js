@@ -45,6 +45,7 @@ test("mobile and desktop use the same filtered, non-cancelled totals", () => {
     formatCurrency: (value) => `${value} đ`
   };
   vm.createContext(context);
+  vm.runInContext(app.slice(app.indexOf("function getSalesOverviewStats("),app.indexOf("function renderDesktopInsights(")), context);
   vm.runInContext(`${app.slice(start, end)}\n}`, context);
   context.renderReports({
     entries: [

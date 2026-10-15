@@ -277,6 +277,8 @@ const els = {
   mobileSalesReportTotal: document.querySelector("#mobileSalesReportTotal"),
   mobileSalesReportRange: document.querySelector("#mobileSalesReportRange"),
   mobileSalesReportCount: document.querySelector("#mobileSalesReportCount"),
+  mobileSalesCancelledCount: document.querySelector("#mobileSalesCancelledCount"),
+  mobileSalesGoodsCount: document.querySelector("#mobileSalesGoodsCount"),
   salesDraftList: document.querySelector("#salesDraftList"),
   salesGoodsFilter: document.querySelector("#salesGoodsFilter"),
   salesGoodsRangeLabel: document.querySelector("#salesGoodsRangeLabel"),
@@ -7846,6 +7848,23 @@ function renderDesktopOverviewBreakdown(rangeLabel, amounts) {
   });
 }
 
+function getSalesOverviewStats(orders) {
+  const activeOrders = orders.filter((order) => !isCancelledEntry(order));
+  return {
+    activeOrders,
+    soldCount: activeOrders.length,
+    cancelledCount: orders.length - activeOrders.length,
+    totalAmount: activeOrders.reduce((sum, order) => {
+      const amount = Number(order.total || 0);
+      return sum + (Number.isFinite(amount) ? amount : 0);
+    }, 0),
+    goodsQuantity: activeOrders.reduce((sum, order) => sum + (order.items || []).reduce((quantity, item) => {
+      const value = Number(item?.quantity || 0);
+      return quantity + (Number.isFinite(value) && value > 0 ? value : 0);
+    }, 0), 0)
+  };
+}
+
 function renderDesktopInsights(store) {
   if (!desktopUi || !store) return;
   const range = getDateRange();
@@ -7864,11 +7883,13 @@ function renderDesktopInsights(store) {
       ...categoryTotals.slice(0, 2).map((item, index) => ({ label: item.label, value: formatCurrency(item.amount), kind: index === 0 ? "category-one" : "category-two" }))
     ];
   } else if (tabName === "sales") {
-    const orders = (store.orders || []).filter(inRange);
+    const orders = (store.orders || []).filter((order) => order.date >= range.start && order.date <= range.end);
+    const stats = getSalesOverviewStats(orders);
     cards = [
-      { label: "Tổng bán hàng", value: formatCurrency(orders.reduce((sum, order) => sum + Number(order.total || 0), 0)), kind: "total" },
-      { label: "Đơn hàng", value: String(orders.length), kind: "category-one" },
-      { label: "Hàng hóa đã bán", value: String(orders.reduce((sum, order) => sum + (order.items || []).length, 0)), kind: "category-two" }
+      { label: "Tổng bán hàng", value: formatCurrency(stats.totalAmount), kind: "total" },
+      { label: "Đơn hàng", value: stats.soldCount.toLocaleString("vi-VN"), kind: "category-one" },
+      { label: "Hàng hóa đã bán", value: stats.goodsQuantity.toLocaleString("vi-VN"), kind: "category-two" },
+      { label: "Đơn hàng đã hủy", value: stats.cancelledCount.toLocaleString("vi-VN"), kind: "cancelled" }
     ];
   } else if (tabName === "purchase") {
     cards = [
@@ -7879,7 +7900,7 @@ function renderDesktopInsights(store) {
   }
   desktopUi.insights.innerHTML = cards.map((card) => `
     <article class="desktop-insight ${card.kind}">
-      <span class="desktop-insight-icon" aria-hidden="true">${card.kind === "total" ? "◉" : card.kind === "category-one" ? "▤" : "⌂"}</span>
+      <span class="desktop-insight-icon" aria-hidden="true">${card.kind === "total" ? "◉" : card.kind === "category-one" ? "▤" : card.kind === "cancelled" ? "×" : "⌂"}</span>
       <div><span>${escapeHtml(card.label)}</span><strong>${escapeHtml(card.value)}</strong></div>
     </article>
   `).join("");
@@ -8322,8 +8343,9 @@ function renderReports(store) {
   const salesOrders = (store.orders || [])
     .filter((order) => order.date >= range.start && order.date <= range.end)
     .sort((a, b) => b.date.localeCompare(a.date) || String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
-  const activeSalesOrders = salesOrders.filter((order) => !isCancelledEntry(order));
-  const totalSalesAmount = activeSalesOrders.reduce((sum, order) => sum + Number(order.total || 0), 0);
+  const salesStats = getSalesOverviewStats(salesOrders);
+  const activeSalesOrders = salesStats.activeOrders;
+  const totalSalesAmount = salesStats.totalAmount;
   els.totalSales.textContent = formatCurrency(totalSalesAmount);
   els.balance.textContent = formatCurrency(totalIncome + totalSalesAmount - totalExpense);
   els.mobileTotalSales.textContent = formatCurrency(totalSalesAmount);
@@ -8340,7 +8362,9 @@ function renderReports(store) {
   if (els.mobileSalesHeadingCount) els.mobileSalesHeadingCount.textContent = els.salesOrderCount.textContent;
   if (els.mobileSalesReportTotal) els.mobileSalesReportTotal.textContent = formatCurrency(totalSalesAmount);
   if (els.mobileSalesReportRange) els.mobileSalesReportRange.textContent = range.label;
-  if (els.mobileSalesReportCount) els.mobileSalesReportCount.textContent = `${activeSalesOrders.length} đơn`;
+  if (els.mobileSalesReportCount) els.mobileSalesReportCount.textContent = `${salesStats.soldCount.toLocaleString("vi-VN")} đơn`;
+  if (els.mobileSalesCancelledCount) els.mobileSalesCancelledCount.textContent = `${salesStats.cancelledCount.toLocaleString("vi-VN")} đơn`;
+  if (els.mobileSalesGoodsCount) els.mobileSalesGoodsCount.textContent = salesStats.goodsQuantity.toLocaleString("vi-VN");
   renderSalesDraftList(store.draftOrders || []);
 
   renderHistorySearchSuggestions(els.incomeHistorySearchSuggestions, incomeEntries);

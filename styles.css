@@ -408,6 +408,18 @@ html:not(.mobile-app-theme) .desktop-insights {
   gap: 15px;
 }
 
+/* Sales overview: four metrics, with sold/cancelled counts kept distinct. */
+html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-insights { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-insight { gap: 10px; padding: 14px; }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-insight-icon { flex-basis: 44px; width: 44px; height: 44px; }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-insight strong { font-size: clamp(18px,1.8vw,29px); white-space: normal; overflow-wrap: anywhere; }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-insight.cancelled { background: linear-gradient(135deg,#fff1f5,#fbf4ff); border-color: #efd4e2; }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-insight.cancelled strong { color: #98416e; }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-insight.cancelled .desktop-insight-icon { background: #fbe2eb; color: #98416e; }
+@media (max-width:1279px) {
+  html:not(.mobile-app-theme) body[data-active-tab="sales"] .desktop-insights { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+
 html:not(.mobile-app-theme) .desktop-insight {
   display: flex;
   align-items: center;
@@ -11409,6 +11421,16 @@ html.mobile-app-theme .mobile-sales-report { display: grid; }
 html.mobile-app-theme .mobile-sales-report-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 html.mobile-app-theme #mobileSalesReportRange { min-width: 0; overflow-wrap: anywhere; }
 html.mobile-app-theme #mobileSalesReportCount { flex: 0 0 auto; }
+html.mobile-app-theme .mobile-sales-report-stats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; margin-top: 12px; }
+html.mobile-app-theme .mobile-sales-report-stat { display: grid; align-content: start; gap: 6px; min-width: 0; padding: 10px 8px; border: 1px solid #ffffffdb; border-radius: 15px; background: #ffffffad; box-shadow: inset 0 1px 0 #ffffffb3; }
+html.mobile-app-theme .mobile-sales-report-stat > span { min-height: 2.7em; color: #4f617d; font-size: 11px; font-weight: 750; line-height: 1.35; overflow-wrap: anywhere; }
+html.mobile-app-theme .mobile-sales-report-stat strong { font-size: clamp(17px,4.7vw,23px); line-height: 1.25; overflow-wrap: anywhere; }
+html.mobile-app-theme .mobile-sales-report-stat.sold { background: #f0fbf5d9; }
+html.mobile-app-theme .mobile-sales-report-stat.sold strong { color: #24695f; }
+html.mobile-app-theme .mobile-sales-report-stat.cancelled { background: #fff2f7d9; }
+html.mobile-app-theme .mobile-sales-report-stat.cancelled strong { color: #98416e; }
+html.mobile-app-theme .mobile-sales-report-stat.goods { background: #f7f0ffd9; }
+html.mobile-app-theme .mobile-sales-report-stat.goods strong { color: #67509b; }
 html.mobile-app-theme [data-tab-panel="sales"] > .panel { padding: 14px; border: 1px solid #dce4f4; border-radius: 22px; background: #ffffffef; box-shadow: 0 5px 15px #7334d80a; }
 html.mobile-app-theme .sales-main-panel { display: block; }
 html.mobile-app-theme .sales-main-panel > .panel-heading { display: none; }
