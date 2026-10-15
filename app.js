@@ -8362,8 +8362,8 @@ function renderReports(store) {
   if (els.mobileSalesHeadingCount) els.mobileSalesHeadingCount.textContent = els.salesOrderCount.textContent;
   if (els.mobileSalesReportTotal) els.mobileSalesReportTotal.textContent = formatCurrency(totalSalesAmount);
   if (els.mobileSalesReportRange) els.mobileSalesReportRange.textContent = range.label;
-  if (els.mobileSalesReportCount) els.mobileSalesReportCount.textContent = `${salesStats.soldCount.toLocaleString("vi-VN")} đơn`;
-  if (els.mobileSalesCancelledCount) els.mobileSalesCancelledCount.textContent = `${salesStats.cancelledCount.toLocaleString("vi-VN")} đơn`;
+  if (els.mobileSalesReportCount) els.mobileSalesReportCount.textContent = salesStats.soldCount.toLocaleString("vi-VN");
+  if (els.mobileSalesCancelledCount) els.mobileSalesCancelledCount.textContent = salesStats.cancelledCount.toLocaleString("vi-VN");
   if (els.mobileSalesGoodsCount) els.mobileSalesGoodsCount.textContent = salesStats.goodsQuantity.toLocaleString("vi-VN");
   renderSalesDraftList(store.draftOrders || []);
 

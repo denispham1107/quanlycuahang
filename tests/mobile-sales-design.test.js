@@ -44,8 +44,8 @@ test('mobile report shares selected-range totals and excludes cancelled orders a
  const els=new Proxy({}, {get:(o,k)=>o[k]||(o[k]={textContent:'',innerHTML:''})});
  const ctx={els,store:{orders:[{date:'2026-10-11',total:53000},{date:'2026-10-11',total:200500},{date:'2026-10-11',total:999000,status:'cancelled'},{date:'2026-10-10',total:500000}],draftOrders:[{total:900000}]},range:{start:'2026-10-11',end:'2026-10-11',label:'11/10/2026'},totalIncome:0,totalExpense:0,isCancelledEntry:o=>o.status==='cancelled',formatCurrency:n=>`${n} ₫`,renderDesktopOverviewBreakdown:()=>{},renderOverviewExpenseCategories:()=>{},renderOverviewCharts:()=>{}};
  vm.createContext(ctx);vm.runInContext(app.slice(app.indexOf('function getSalesOverviewStats('),app.indexOf('function renderDesktopInsights(')),ctx);
- vm.runInContext(code,ctx);assert.equal(els.mobileSalesReportTotal.textContent,'253500 ₫');assert.equal(els.mobileSalesReportRange.textContent,'11/10/2026');assert.equal(els.mobileSalesReportCount.textContent,'2 đơn');assert.equal(els.mobileSalesCancelledCount.textContent,'1 đơn');assert.equal(els.mobileSalesHeadingCount.textContent,'3 đơn');
- ctx.store.orders=[];vm.runInNewContext(code,{...ctx});assert.equal(els.mobileSalesReportTotal.textContent,'0 ₫');assert.equal(els.mobileSalesReportCount.textContent,'0 đơn');
+ vm.runInContext(code,ctx);assert.equal(els.mobileSalesReportTotal.textContent,'253500 ₫');assert.equal(els.mobileSalesReportRange.textContent,'11/10/2026');assert.equal(els.mobileSalesReportCount.textContent,'2');assert.equal(els.mobileSalesCancelledCount.textContent,'1');assert.equal(els.mobileSalesHeadingCount.textContent,'3 đơn');
+ ctx.store.orders=[];vm.runInNewContext(code,{...ctx});assert.equal(els.mobileSalesReportTotal.textContent,'0 ₫');assert.equal(els.mobileSalesReportCount.textContent,'0');assert.equal(els.mobileSalesCancelledCount.textContent,'0');
 });
 test('mobile customer icon precedes create in heading, removes helper row and keeps existing permission/handler',()=>{
  const header=html.match(/<header class="mobile-sales-heading">[\s\S]*?<\/header>/)[0];
