@@ -12,3 +12,11 @@ test('pearl trade footer has four distinct semantic colors without touching geom
   assert.doesNotMatch(rules,/(?:width|height|padding|margin|font|display|transform|border-width)\s*:/);
   assert.doesNotMatch(rules,/#deleteSalesDraft|#addSalesItem|#addPurchaseItem|cash-quick-entry-mode/);
 });
+
+test('income and expense pearl actions are explicitly desktop-only',()=>{
+  const prefix='html:not(.mobile-app-theme) #quickEntryForm:is([data-type="income"], [data-type="expense"])';
+  assert.ok(css.includes(`${prefix} #cancelQuickEntry,`));
+  assert.ok(css.includes(`${prefix} #quickEntrySubmit,`));
+  assert.ok(css.includes(`${prefix} :is(#cancelQuickEntry, #quickEntrySubmit),`));
+  assert.ok(css.includes(`${prefix} :is(#cancelQuickEntry, #quickEntrySubmit):active:not(:disabled),`));
+});

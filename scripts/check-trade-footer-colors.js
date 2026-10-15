@@ -39,6 +39,7 @@ async function main(){
         saveSalesDraft=()=>{window.qaSaves.push('draft');return false;};
         savePurchaseOrder=()=>{window.qaSaves.push('purchase');return false;};
         saveBulkPurchaseOrder=()=>{window.qaSaves.push('purchase-bulk');return false;};
+        addEntry=(type)=>{window.qaSaves.push(type);return false;};
         getActiveStore().categories={income:[{id:'i',name:'Thu thử'}],expense:[{id:'e',name:'Chi thử'}]};
       });pages.push(p);
     }
@@ -46,13 +47,15 @@ async function main(){
     for(const flow of ['sales','draft','purchase','purchase-bulk','income','expense']){
       await open(before,flow);await open(page,flow);
       const trade=!['income','expense'].includes(flow);
-      assert.deepEqual(await snapshot(page,trade),await snapshot(before,trade),`${width} ${flow}: geometry, labels, fonts, other paints`);
-      if(trade){
+      const desktopCash=!trade&&!mobile;
+      const changed=trade||desktopCash;
+      assert.deepEqual(await snapshot(page,changed),await snapshot(before,changed),`${width} ${flow}: geometry, labels, fonts, other paints`);
+      if(changed){
         const paint=await page.locator('#quickEntryForm .modal-actions > button').evaluateAll(es=>es.filter(e=>!e.hidden&&e.id!=='deleteSalesDraft').map(e=>{
           const s=getComputedStyle(e),r=e.getBoundingClientRect(),range=document.createRange();range.selectNodeContents(e);const t=range.getBoundingClientRect();
           return {id:e.id,bg:s.backgroundColor,fg:s.color,highlight:s.backgroundImage,line:s.boxShadow,inside:t.left>=r.left-1&&t.right<=r.right+1&&t.top>=r.top-1&&t.bottom<=r.bottom+1,width:r.width};
         }));
-        for(const x of paint){const i=ids.indexOf(x.id);const rgb=h=>'rgb('+h.slice(1).match(/../g).map(v=>parseInt(v,16)).join(', ')+')';assert.equal(x.bg,rgb(palettes[i][0]));assert.equal(x.fg,rgb(palettes[i][1]));assert.ok(x.highlight.includes('175deg'));assert.ok(x.inside,`${width} ${flow} ${x.id}: label fits`);}
+        for(const x of paint){const i=desktopCash&&x.id==='quickEntrySubmit'?2:ids.indexOf(x.id);const rgb=h=>'rgb('+h.slice(1).match(/../g).map(v=>parseInt(v,16)).join(', ')+')';assert.equal(x.bg,rgb(palettes[i][0]));assert.equal(x.fg,rgb(palettes[i][1]));assert.ok(x.highlight.includes('175deg'));assert.ok(x.inside,`${width} ${flow} ${x.id}: label fits`);}
         if(flow==='sales'||flow==='draft'){
           await page.locator('#openOrderDiscount').press('Enter');assert.equal(await page.locator('#orderDiscountModal').isVisible(),true);await page.locator('#cancelOrderDiscount').click();
           await page.locator('#saveSalesDraft').press('Space');assert.ok((await page.evaluate(()=>window.qaSaves)).includes('draft'));
@@ -71,7 +74,7 @@ async function main(){
       await page.locator('#cancelQuickEntry').press('Enter');assert.equal(await page.locator('#quickEntryModal').isVisible(),false);
       assert.equal(await page.evaluate(()=>window.qaWrites),0);
     }
-    for(const p of pages)await p.close();console.log(`${width}x${height}: four trade states, Thu/Chi unchanged, labels/geometry/contrast/handlers/disabled OK`);
+    for(const p of pages)await p.close();console.log(`${width}x${height}: trade states, Thu/Chi ${mobile?'unchanged':'pearl colors'}, labels/geometry/contrast/handlers/disabled OK`);
   }}finally{await browser.close();}
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});
