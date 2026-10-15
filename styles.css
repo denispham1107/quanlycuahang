@@ -11464,6 +11464,38 @@ html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-pa
 html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) thead { background: linear-gradient(110deg,#e5dcf7,#dcecfb); }
 /* End Desktop Thu/Chi. */
 
+/* Approved “Ngọc trai thanh lịch” footer colors, shared by phone and desktop.
+   Inset edging preserves the existing border widths and button geometry. */
+html #quickEntryForm:is([data-type="sales"], [data-type="purchase"], [data-type="purchase-bulk"]) #cancelQuickEntry {
+  --trade-action-fill: #fde6e8;
+  --trade-action-ink: #9c3d52;
+  --trade-action-line: #e6b5bf;
+}
+html #quickEntryForm[data-type="sales"] #openOrderDiscount {
+  --trade-action-fill: #f8edcf;
+  --trade-action-ink: #75581c;
+  --trade-action-line: #e3cf9f;
+}
+html #quickEntryForm[data-type="sales"] #saveSalesDraft {
+  --trade-action-fill: #e8e3f7;
+  --trade-action-ink: #59468a;
+  --trade-action-line: #cbc0e5;
+}
+html #quickEntryForm:is([data-type="sales"], [data-type="purchase"], [data-type="purchase-bulk"]) #quickEntrySubmit {
+  --trade-action-fill: #dcefe9;
+  --trade-action-ink: #22665a;
+  --trade-action-line: #a5cfc0;
+}
+html #quickEntryForm:is([data-type="sales"], [data-type="purchase"], [data-type="purchase-bulk"]) :is(#cancelQuickEntry, #openOrderDiscount, #saveSalesDraft, #quickEntrySubmit) {
+  color: var(--trade-action-ink);
+  border-color: transparent;
+  background: linear-gradient(175deg, #ffffff70, transparent 66%), var(--trade-action-fill);
+  box-shadow: 0 4px 10px #655f8b0d, inset 0 1px 0 #ffffffdb, inset 0 0 0 1px var(--trade-action-line);
+}
+html #quickEntryForm:is([data-type="sales"], [data-type="purchase"], [data-type="purchase-bulk"]) :is(#cancelQuickEntry, #openOrderDiscount, #saveSalesDraft, #quickEntrySubmit):active:not(:disabled) {
+  box-shadow: inset 0 2px 5px #35456b18, inset 0 0 0 1px var(--trade-action-line);
+}
+
 /* Approved "Nổi bật gradient" sales design. Keep the shared desktop DOM/handlers. */
 .mobile-sales-heading, .mobile-sales-report { display: none; }
 html.mobile-app-theme [data-tab-panel="sales"] { gap: 12px; }
