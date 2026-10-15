@@ -11464,13 +11464,13 @@ html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-pa
 html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) thead { background: linear-gradient(110deg,#e5dcf7,#dcecfb); }
 /* End Desktop Thu/Chi. */
 
-/* Approved “Oải hương ngọc trai” add-goods buttons, shared by phone and desktop. */
+/* Approved “Tím thạch anh dịu” add-goods buttons, shared by phone and desktop. */
 html #quickEntryForm[data-type="sales"] #addSalesItem,
 html #quickEntryForm[data-type="purchase"] #addPurchaseItem {
-  border-color: #c9c2e2;
-  background: linear-gradient(175deg, #ffffff70, transparent 65%), linear-gradient(110deg, #eee7f8, #e3eafa);
-  color: #5c4c86;
-  box-shadow: 0 4px 11px #6a759011, inset 0 1px 0 #ffffffd9;
+  border-color: #b6a7d0;
+  background: linear-gradient(175deg, #ffffff40, transparent 65%), linear-gradient(110deg, #dccfeb, #cddcf2);
+  color: #58457f;
+  box-shadow: 0 4px 11px #6a759016, inset 0 1px 0 #ffffffc7;
 }
 html #quickEntryForm[data-type="sales"] #addSalesItem:hover:not(:disabled),
 html #quickEntryForm[data-type="purchase"] #addPurchaseItem:hover:not(:disabled) {
