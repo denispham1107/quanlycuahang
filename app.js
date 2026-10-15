@@ -7962,7 +7962,7 @@ function updateDesktopPageChrome(tabName = getActiveTabName()) {
     if (tabName === "purchase") {
       if (!desktopUi.purchaseActions.isConnected) {
         desktopUi.primaryAction.before(desktopUi.purchaseActions);
-        desktopUi.purchaseActions.append(desktopUi.primaryAction, els.toggleInventory);
+        desktopUi.purchaseActions.append(els.toggleInventory, desktopUi.primaryAction);
       }
     } else {
       if (desktopUi.purchaseActions.isConnected) {

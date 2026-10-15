@@ -26,7 +26,7 @@ test('desktop header actions use the matched Lam ngoc palette; bulk action and M
 test('desktop purchase relocates the existing warehouse action, retaining one shared SVG and permission target',()=>{
  assert.equal((html.match(/id="toggleInventory"/g)||[]).length,1);
  assert.match(app,/desktopUi\.inventoryAnchor = document\.createComment/);
- assert.match(app,/desktopUi\.purchaseActions\.append\(desktopUi\.primaryAction, els\.toggleInventory\)/);
+ assert.match(app,/desktopUi\.purchaseActions\.append\(els\.toggleInventory, desktopUi\.primaryAction\)/);
  assert.match(app,/desktopUi\.purchaseActions\.remove\(\);/);
  assert.match(app,/desktopUi\.inventoryAnchor\.after\(els\.toggleInventory\);/);
  assert.match(app,/els\.toggleInventory\.disabled = employee && !inventoryView/);
