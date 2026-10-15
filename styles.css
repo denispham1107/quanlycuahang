@@ -11464,6 +11464,23 @@ html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-pa
 html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) thead { background: linear-gradient(110deg,#e5dcf7,#dcecfb); }
 /* End Desktop Thu/Chi. */
 
+/* Approved “Lam sương” add-goods buttons, shared by phone and desktop. */
+html #quickEntryForm[data-type="sales"] #addSalesItem,
+html #quickEntryForm[data-type="purchase"] #addPurchaseItem {
+  border-color: #b8d0e0;
+  background: linear-gradient(175deg, #ffffff70, transparent 65%), linear-gradient(110deg, #e3eef8, #dceef3);
+  color: #35617d;
+  box-shadow: 0 4px 11px #6a759011, inset 0 1px 0 #ffffffd9;
+}
+html #quickEntryForm[data-type="sales"] #addSalesItem:hover:not(:disabled),
+html #quickEntryForm[data-type="purchase"] #addPurchaseItem:hover:not(:disabled) {
+  filter: brightness(.99);
+}
+html #quickEntryForm[data-type="sales"] #addSalesItem:active:not(:disabled),
+html #quickEntryForm[data-type="purchase"] #addPurchaseItem:active:not(:disabled) {
+  box-shadow: inset 0 2px 5px #4f5c7717;
+}
+
 /* Mobile purchase actions stay in DOM order on one shared row. */
 html.mobile-app-theme #quickEntryForm:is([data-type="purchase"], [data-type="purchase-bulk"]) .modal-actions {
   display: grid;
