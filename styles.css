@@ -11548,25 +11548,39 @@ html.mobile-app-theme [data-tab-panel="sales"] .sales-history-table tr:not(.entr
   html.mobile-app-theme [data-tab-panel="sales"] .sales-table .delete-small { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
 }
 
-/* One shared quick-add button: soft glass, clear plus, no inner white disc. */
+/* One shared quick-add button: approved "Kính đa tầng" on Mobile and Desktop. */
 html #quickEntryButton {
   width: 45.9px;
   height: 45.9px;
   min-width: 45.9px;
   min-height: 45.9px;
   padding: 0;
-  border: 1.275px solid rgba(255,255,255,.8);
+  border: 1px solid #ffffffb3;
   border-radius: 50%;
-  background: linear-gradient(145deg,#8670cf 0%,#7565c8 48%,#4085c1 100%);
+  background: linear-gradient(135deg,#a27adf 3%,#7568d0 45%,#328ec5);
   color: #fff;
-  box-shadow: 0 6.8px 17px rgba(74,85,157,.24), inset 0 .85px 0 rgba(255,255,255,.52);
+  box-shadow: 0 7px 16px rgba(72,67,151,.22), inset 0 2px 2px #ffffff80, inset 0 -3px 5px #34479655;
+  isolation: isolate;
+  overflow: hidden;
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
 html #quickEntryButton::before {
-  inset: 1.7px;
+  inset: 8%;
   border-radius: inherit;
-  background: linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 58%);
+  border: 1px solid #ffffff70;
+  background: radial-gradient(ellipse at 30% 10%,#ffffff73,transparent 57%);
   box-shadow: none;
+  pointer-events: none;
+}
+html #quickEntryButton::after {
+  content: "";
+  position: absolute;
+  inset: 3%;
+  border-radius: inherit;
+  border-top: 2px solid #ffffffe0;
+  border-left: 1px solid #ffffff80;
+  background: none;
+  transform: rotate(-22deg);
   pointer-events: none;
 }
 html #quickEntryButton svg {
@@ -11574,11 +11588,11 @@ html #quickEntryButton svg {
   height: 22.1px;
   stroke: #fff;
   stroke-width: 3;
-  filter: drop-shadow(0 1px 1px rgba(34,46,105,.16));
+  filter: drop-shadow(0 1px 1px rgba(35,75,140,.35));
 }
 html #quickEntryButton:active {
   transform: translateY(.85px) scale(.95);
-  box-shadow: 0 4.25px 10.2px rgba(74,85,157,.22), inset 0 .85px 0 rgba(255,255,255,.42);
+  box-shadow: 0 4px 10px rgba(72,67,151,.22), inset 0 1px 2px #ffffff73, inset 0 -2px 4px #34479655;
 }
 html #quickEntryButton:focus-visible {
   outline: 3px solid rgba(55,94,165,.5);
