@@ -675,7 +675,16 @@ els.signOutButton?.addEventListener("click", async () => {
 });
 
 function createStateExportPayload() {
-  return JSON.parse(JSON.stringify(state || defaultData));
+  const payload = JSON.parse(JSON.stringify(state || defaultData));
+  for (const store of payload.stores || []) {
+    try {
+      store.closingBookReport = ClosingBookExport.buildReport(store, ClosingBookCore, buildClosingBookAuditReports);
+    } catch (error) {
+      // A damaged legacy report must never prevent downloading its raw backup.
+      store.closingBookReport = { schemaVersion: 1, source: "closingMonths", savedDataOnly: true, complete: false, errors: [{ message: String(error.message || error) }] };
+    }
+  }
+  return payload;
 }
 
 function createStateExportDocument() {
