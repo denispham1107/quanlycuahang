@@ -4990,6 +4990,14 @@ th:last-child {
   white-space: nowrap;
 }
 
+/* Automatic full exports retain a readable filename/status, including on Mobile. */
+#aiFileStatus:has(.ai-file-complete-export) .ai-file-status-inner { flex-wrap: wrap; }
+#aiFileStatus:has(.ai-file-complete-export) .ai-file-list { flex: 1 1 140px; }
+#aiFileStatus .ai-file-complete-export { display: grid; gap: 3px; min-width: 0; max-width: min(100%,420px); border-radius: 12px; }
+#aiFileStatus .ai-file-complete-export span,
+#aiFileStatus .ai-file-complete-export small { white-space: normal; overflow-wrap: anywhere; }
+#aiFileStatus:has(.ai-file-complete-export) .ai-file-clear { min-height: 44px; }
+
 .ai-chat-form button,
 .ai-action-buttons button {
   border: 0;

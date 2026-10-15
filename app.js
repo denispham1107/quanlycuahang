@@ -4,6 +4,8 @@ const AI_CHAT_STORAGE_KEY = "store-cashbook-ai-chat-v1";
 const AI_CLIENT_STATE_MAX_CHARS = 900000;
 const AI_FILE_MAX_BYTES = 8 * 1024 * 1024;
 const AI_FILE_TEXT_MAX_CHARS = 80000;
+const AI_COMPLETE_EXPORT_SOURCE = "automatic_state_export";
+const AI_COMPLETE_EXPORT_MAX_BYTES = 8 * 1024 * 1024;
 const FIREBASE_CONFIG_PLACEHOLDER = "PASTE_YOUR_FIREBASE_CONFIG_HERE";
 const FIRESTORE_COLLECTION = "quanlycuahang";
 const FIRESTORE_DOCUMENT = "shared-state";
@@ -676,6 +678,11 @@ function createStateExportPayload() {
   return JSON.parse(JSON.stringify(state || defaultData));
 }
 
+function createStateExportDocument() {
+  const text = JSON.stringify(createStateExportPayload(), null, 2);
+  return { name: `du-lieu-thu-chi-${today}.json`, type: "application/json", text, size: new Blob([text]).size };
+}
+
 function createAIClientStateSnapshot() {
   const payload = {
     exportedAt: new Date().toISOString(),
@@ -1093,7 +1100,16 @@ if (els.aiClearChat) {
 }
 
 if (els.aiChatMode) {
-  els.aiChatMode.addEventListener("change", updateAIInputPlaceholder);
+  els.aiChatMode.addEventListener("change", () => {
+    cancelAIChatRequest();
+    if (getAISelectedMode() === "store") {
+      aiChatState.attachments = aiChatState.attachments.filter((file) => file.source !== AI_COMPLETE_EXPORT_SOURCE);
+      aiChatState.autoExportError = false;
+    }
+    updateAIInputPlaceholder();
+    renderAIFileStatus();
+    renderAIChat();
+  });
 }
 
 if (els.aiChatModal) {
@@ -1129,9 +1145,14 @@ if (els.aiFileInput) {
 
 if (els.aiFileStatus) {
   els.aiFileStatus.addEventListener("click", (event) => {
+    if (event.target.closest("[data-retry-ai-export]")) {
+      void sendAutomaticAIExport();
+      return;
+    }
     const clearButton = event.target.closest("[data-clear-ai-files]");
     if (!clearButton) return;
     aiChatState.attachments = [];
+    aiChatState.autoExportError = false;
     if (els.aiFileInput) els.aiFileInput.value = "";
     renderAIFileStatus();
   });
@@ -1883,11 +1904,12 @@ els.activityHistoryActorFilter?.addEventListener("change", () => {
 });
 
 els.exportData.addEventListener("click", () => {
-  const blob = new Blob([JSON.stringify(createStateExportPayload(), null, 2)], { type: "application/json" });
+  const exported = createStateExportDocument();
+  const blob = new Blob([exported.text], { type: exported.type });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `du-lieu-thu-chi-${today}.json`;
+  link.download = exported.name;
   link.click();
   URL.revokeObjectURL(url);
   setSettingsMenuOpen(false);
@@ -2243,6 +2265,7 @@ function showAuthProblem(message) {
 }
 
 function showLoginScreen(message = "") {
+  window.resetAIChatSession?.();
   window.hideClosingBookPage?.({ force: true });
   clearAuthStartupTimers();
   document.body.classList.add("auth-pending");
@@ -7186,26 +7209,77 @@ function deleteSalesDraft(draftId) {
 }
 
 const aiChatState = {
-  conversationId: loadAIConversationId(),
-  messages: loadAIChatMessages(),
+  conversationId: createId(),
+  messages: [],
   pending: false,
   dataSnapshot: null,
   dataSnapshotAt: "",
-  attachments: []
+  attachments: [],
+  ownerUid: "",
+  requestGeneration: 0,
+  exportGeneration: 0,
+  requestController: null,
+  preparingExport: false,
+  autoExportError: false
 };
 
-function loadAIConversationId() {
+function cancelAIChatRequest() {
+  ++aiChatState.requestGeneration;
+  ++aiChatState.exportGeneration;
+  aiChatState.requestController?.abort();
+  aiChatState.requestController = null;
+  aiChatState.pending = false;
+  aiChatState.preparingExport = false;
+}
+
+function resetAIChatSession() {
+  cancelAIChatRequest();
+  aiChatState.messages = [];
+  aiChatState.attachments = [];
+  aiChatState.dataSnapshot = null;
+  aiChatState.dataSnapshotAt = "";
+  aiChatState.autoExportError = false;
+  aiChatState.ownerUid = "";
+  aiChatState.conversationId = createId();
+  if (els.aiChatModal) els.aiChatModal.hidden = true;
+  if (els.aiChatInput) els.aiChatInput.value = "";
+  if (els.aiFileInput) els.aiFileInput.value = "";
+  renderAIFileStatus();
+  renderAIChat();
+}
+window.resetAIChatSession = resetAIChatSession;
+
+function syncAIChatOwner() {
+  const uid = authState.user?.uid || "";
+  if (uid !== aiChatState.ownerUid) {
+    resetAIChatSession();
+    aiChatState.ownerUid = uid;
+    aiChatState.conversationId = loadAIConversationId(uid);
+    aiChatState.messages = loadAIChatMessages(uid);
+  }
+}
+
+function loadAIOwnedCache(uid) {
+  if (!uid) return {};
   try {
-    const saved = JSON.parse(localStorage.getItem(AI_CHAT_STORAGE_KEY) || "{}");
+    const owned = localStorage.getItem(`${AI_CHAT_STORAGE_KEY}:${uid}`);
+    const saved = JSON.parse(owned || localStorage.getItem(AI_CHAT_STORAGE_KEY) || "{}");
+    return saved.ownerUid === uid ? saved : {};
+  } catch (_) { return {}; }
+}
+
+function loadAIConversationId(uid) {
+  try {
+    const saved = loadAIOwnedCache(uid);
     return saved.conversationId || createId();
   } catch (error) {
     return createId();
   }
 }
 
-function loadAIChatMessages() {
+function loadAIChatMessages(uid) {
   try {
-    const saved = JSON.parse(localStorage.getItem(AI_CHAT_STORAGE_KEY) || "{}");
+    const saved = loadAIOwnedCache(uid);
     return Array.isArray(saved.messages) ? saved.messages.slice(-30) : [];
   } catch (error) {
     return [];
@@ -7213,10 +7287,12 @@ function loadAIChatMessages() {
 }
 
 function saveAIChatMessages() {
+  if (!aiChatState.ownerUid) return;
   try {
     localStorage.setItem(
-      AI_CHAT_STORAGE_KEY,
+      `${AI_CHAT_STORAGE_KEY}:${aiChatState.ownerUid}`,
       JSON.stringify({
+        ownerUid: aiChatState.ownerUid,
         conversationId: aiChatState.conversationId,
         messages: aiChatState.messages.slice(-30)
       })
@@ -7266,11 +7342,13 @@ function updateAIInputPlaceholder() {
 }
 
 function clearAIConversation() {
+  cancelAIChatRequest();
   aiChatState.messages = [];
   aiChatState.conversationId = createId();
   aiChatState.dataSnapshot = null;
   aiChatState.dataSnapshotAt = "";
   aiChatState.attachments = [];
+  aiChatState.autoExportError = false;
   if (els.aiFileInput) els.aiFileInput.value = "";
   saveAIChatMessages();
   renderAIFileStatus();
@@ -7293,14 +7371,15 @@ function renderAIFileStatus() {
         ${files
           .map(
             (file) => `
-              <span class="ai-file-chip" title="${escapeHtml(file.name)}">
+              <span class="ai-file-chip${file.source === AI_COMPLETE_EXPORT_SOURCE ? " ai-file-complete-export" : ""}" title="${escapeHtml(file.name)}">
                 <span>${escapeHtml(file.name)}</span>
-                <small>${escapeHtml(file.kind || file.type || "file")}${file.truncated ? " · rút gọn" : ""}</small>
+                <small>${escapeHtml(file.kind || file.type || "file")}${file.source === AI_COMPLETE_EXPORT_SOURCE ? " · toàn bộ dữ liệu" : file.truncated ? " · rút gọn" : ""}</small>
               </span>
             `
           )
           .join("")}
       </div>
+      ${aiChatState.autoExportError ? '<button class="ai-file-clear" type="button" data-retry-ai-export>Gửi lại dữ liệu</button>' : ""}
       <button class="ai-file-clear" type="button" data-clear-ai-files>Gỡ file</button>
     </div>
   `;
@@ -7450,6 +7529,7 @@ async function readAIFile(file) {
 async function handleAIFileSelect(event) {
   const files = Array.from(event.target.files || []).slice(0, 5);
   if (!files.length) return;
+  const uid = authState.user?.uid || "", generation = aiChatState.exportGeneration;
 
   const previousLabel = els.aiFileButton?.getAttribute("aria-label") || "";
   if (els.aiFileButton) {
@@ -7458,14 +7538,16 @@ async function handleAIFileSelect(event) {
   }
 
   try {
-    aiChatState.attachments = await Promise.all(files.map(readAIFile));
+    const attachments = await Promise.all(files.map(readAIFile));
+    if (uid !== (authState.user?.uid || "") || generation !== aiChatState.exportGeneration) return;
+    aiChatState.attachments = attachments;
     renderAIFileStatus();
     addAIMessage(
       "assistant",
       `Đã nạp ${aiChatState.attachments.length} file cho AI. Bạn hãy nhập câu hỏi về nội dung file hoặc dữ liệu cửa hàng.`
     );
   } catch (error) {
-    addAIMessage("assistant", `Không đọc được file: ${error.message}`);
+    if (uid === (authState.user?.uid || "") && generation === aiChatState.exportGeneration) addAIMessage("assistant", `Không đọc được file: ${error.message}`);
   } finally {
     if (els.aiFileButton) {
       els.aiFileButton.disabled = false;
@@ -7474,16 +7556,39 @@ async function handleAIFileSelect(event) {
   }
 }
 
+async function sendAutomaticAIExport() {
+  if (!authState.ready || !isAdminUser() || !authState.user?.uid || aiChatState.pending || aiChatState.preparingExport) return;
+  const uid = authState.user.uid, generation = ++aiChatState.exportGeneration;
+  aiChatState.preparingExport = true;
+  aiChatState.autoExportError = false;
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    if (generation !== aiChatState.exportGeneration || uid !== authState.user?.uid || !isAdminUser() || els.aiChatModal.hidden) return;
+    if (cloudStore.initialLoadPending === true) throw new Error("Dữ liệu cloud chưa tải xong. Hãy đóng Trợ lý AI và mở lại sau khi đồng bộ hoàn tất.");
+    const exported = createStateExportDocument();
+    if (exported.size > AI_COMPLETE_EXPORT_MAX_BYTES) throw new Error("Tệp xuất lớn hơn 8 MB. Chưa gửi dữ liệu cho AI; nội dung không bị cắt bớt. Bạn vẫn có thể dùng Xuất dữ liệu để tải bản đầy đủ.");
+    const attachment = { ...exported, kind: "json", source: AI_COMPLETE_EXPORT_SOURCE, truncated: false };
+    aiChatState.attachments = [attachment, ...aiChatState.attachments.filter((file) => file.source !== AI_COMPLETE_EXPORT_SOURCE).slice(0, 4)];
+    if (els.aiChatMode) els.aiChatMode.value = "general";
+    updateAIInputPlaceholder();
+    renderAIFileStatus();
+    await sendAIChatMessage("Tôi gửi tệp JSON đầy đủ của tất cả cửa hàng, được tạo giống chức năng Xuất dữ liệu. Hãy đọc tệp, xác nhận ngắn gọn đã nhận dữ liệu và chờ câu hỏi tiếp theo; chưa cần phân tích hay thay đổi dữ liệu.", { automaticExport: true });
+  } catch (error) {
+    if (generation === aiChatState.exportGeneration && uid === authState.user?.uid) addAIMessage("assistant", error.message || "Chưa thể tạo tệp dữ liệu cho AI.");
+  } finally {
+    if (generation === aiChatState.exportGeneration) aiChatState.preparingExport = false;
+  }
+}
+
 function openAIChat() {
   if (!els.aiChatModal) return;
+  if (!els.aiChatModal.hidden) return;
+  syncAIChatOwner();
+  if (!isAdminUser()) aiChatState.attachments = aiChatState.attachments.filter((file) => file.source !== AI_COMPLETE_EXPORT_SOURCE);
+  if (els.aiChatMode) els.aiChatMode.value = "general";
   updateAIInputPlaceholder();
-  if (getAISelectedMode() === "store") {
-    aiChatState.dataSnapshot = createAIClientStateSnapshot();
-    aiChatState.dataSnapshotAt = aiChatState.dataSnapshot.exportedAt || new Date().toISOString();
-  } else {
-    aiChatState.dataSnapshot = null;
-    aiChatState.dataSnapshotAt = "";
-  }
+  aiChatState.dataSnapshot = null;
+  aiChatState.dataSnapshotAt = "";
   els.aiChatModal.hidden = false;
   document.body.classList.add("modal-open");
   updateTimeFiltersVisibility();
@@ -7497,10 +7602,12 @@ function openAIChat() {
   renderAIFileStatus();
   renderAIChat();
   setTimeout(() => els.aiChatInput?.focus(), 50);
+  void sendAutomaticAIExport();
 }
 
 function closeAIChat() {
   if (!els.aiChatModal) return;
+  cancelAIChatRequest();
   els.aiChatModal.hidden = true;
   document.body.classList.remove("modal-open");
   updateTimeFiltersVisibility();
@@ -7559,7 +7666,7 @@ function renderAIActionCard(action) {
   `;
 }
 
-async function sendAIChatMessage(rawMessage) {
+async function sendAIChatMessage(rawMessage, options = {}) {
   const message = String(rawMessage || "").trim();
   if (!message || aiChatState.pending) return;
 
@@ -7574,6 +7681,11 @@ async function sendAIChatMessage(rawMessage) {
   }
 
   const attachments = (aiChatState.attachments || []).slice();
+  const completeExport = attachments.some((file) => file.source === AI_COMPLETE_EXPORT_SOURCE);
+  if (completeExport && (!isAdminUser() || !authState.user?.getIdToken)) {
+    addAIMessage("assistant", "Bạn cần đăng nhập bằng tài khoản admin để gửi tệp xuất toàn bộ cửa hàng.");
+    return;
+  }
   const clientState = selectedMode === "store" ? createAIClientStateSnapshot() : null;
   if (clientState) {
     aiChatState.dataSnapshot = clientState;
@@ -7587,8 +7699,15 @@ async function sendAIChatMessage(rawMessage) {
     ? `${message}\n\nFile gửi kèm: ${attachments.map((file) => file.name).join(", ")}`
     : message;
   addAIMessage("user", visibleMessage);
-  els.aiChatInput.value = "";
+  if (!options.automaticExport) els.aiChatInput.value = "";
   aiChatState.pending = true;
+  aiChatState.autoExportError = false;
+  const uid = authState.user?.uid || "", generation = ++aiChatState.requestGeneration;
+  const controller = new AbortController();
+  aiChatState.requestController = controller;
+  const current = () => generation === aiChatState.requestGeneration && uid === (authState.user?.uid || "");
+  let timedOut = false;
+  const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, 95000);
   renderAIChat();
 
   try {
@@ -7610,24 +7729,44 @@ async function sendAIChatMessage(rawMessage) {
             history,
             attachments
           };
+    const headers = { "Content-Type": "application/json", "X-Admin-Pin": adminPin };
+    if (completeExport) {
+      const aborted = new Promise((_, reject) => controller.signal.addEventListener("abort", () => reject(new Error("Yêu cầu AI đã dừng.")), { once: true }));
+      const token = await Promise.race([authState.user.getIdToken(), aborted]);
+      if (!current() || !isAdminUser()) return;
+      if (controller.signal.aborted) throw new Error("Yêu cầu AI đã dừng.");
+      headers.Authorization = `Bearer ${token}`;
+    }
+    const serialized = JSON.stringify(body);
+    if (completeExport && new Blob([serialized]).size > AI_COMPLETE_EXPORT_MAX_BYTES) throw new Error("Yêu cầu chứa tệp lớn hơn 8 MB. Chưa gửi; dữ liệu không bị cắt bớt.");
     const response = await fetch(endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Admin-Pin": adminPin },
-      body: JSON.stringify(body)
+      headers,
+      body: serialized,
+      signal: controller.signal
     });
     const data = await response.json().catch(() => ({}));
+    if (!current()) return;
+    if (controller.signal.aborted) throw new Error("Yêu cầu AI đã dừng.");
     if (!response.ok) {
       throw new Error(data.error || "AI đang bận hoặc đã vượt giới hạn sử dụng, vui lòng thử lại sau.");
     }
     addAIMessage("assistant", data.reply || "AI chưa có câu trả lời.", data.actions || []);
   } catch (error) {
+    if (!current()) return;
+    if (options.automaticExport) aiChatState.autoExportError = true;
     addAIMessage(
       "assistant",
-      error.message || "AI đang bận hoặc đã vượt giới hạn sử dụng, vui lòng thử lại sau."
+      timedOut ? "AI phản hồi quá lâu. Tệp đầy đủ vẫn được giữ; bạn có thể bấm Gửi lại dữ liệu." : error.message || "AI đang bận hoặc đã vượt giới hạn sử dụng, vui lòng thử lại sau."
     );
   } finally {
-    aiChatState.pending = false;
-    renderAIChat();
+    clearTimeout(timeout);
+    if (current()) {
+      aiChatState.pending = false;
+      aiChatState.requestController = null;
+      renderAIFileStatus();
+      renderAIChat();
+    }
   }
 }
 
