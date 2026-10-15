@@ -11464,6 +11464,23 @@ html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-pa
 html:not(.mobile-app-theme) .tab-panel:is([data-tab-panel="income"],[data-tab-panel="expense"]) thead { background: linear-gradient(110deg,#e5dcf7,#dcecfb); }
 /* End Desktop Thu/Chi. */
 
+/* Mobile purchase actions stay in DOM order on one shared row. */
+html.mobile-app-theme #quickEntryForm:is([data-type="purchase"], [data-type="purchase-bulk"]) .modal-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+html.mobile-app-theme #quickEntryForm:is([data-type="purchase"], [data-type="purchase-bulk"]) #cancelQuickEntry {
+  grid-column: 1;
+  grid-row: 1;
+  min-height: 44px;
+}
+html.mobile-app-theme #quickEntryForm:is([data-type="purchase"], [data-type="purchase-bulk"]) #quickEntrySubmit {
+  grid-column: 2;
+  grid-row: 1;
+  min-height: 44px;
+}
+
 /* Approved “Ngọc trai thanh lịch” footer colors, shared by phone and desktop.
    Inset edging preserves the existing border widths and button geometry. */
 html:not(.mobile-app-theme) #quickEntryForm:is([data-type="income"], [data-type="expense"]) #cancelQuickEntry,
