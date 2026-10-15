@@ -15,7 +15,7 @@ async function main(){const browser=await chromium.launch({headless:true,executa
    const id=type==='sales'?'addSalesItem':'addPurchaseItem',items=type==='sales'?'salesItems':'purchaseItems',data=type==='sales'?'sales':'purchase';
    const button=p.locator('#'+id);
    const paint=await button.evaluate(e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect(),range=document.createRange();range.selectNodeContents(e);const t=range.getBoundingClientRect();return {bg:s.backgroundImage,fg:s.color,border:s.borderTopColor,fit:t.left>=r.left&&t.right<=r.right&&t.top>=r.top&&t.bottom<=r.bottom};});
-   assert.ok(paint.bg.includes('rgb(227, 238, 248)')&&paint.bg.includes('rgb(220, 238, 243)'));assert.equal(paint.fg,'rgb(53, 97, 125)');assert.equal(paint.border,'rgb(184, 208, 224)');assert.ok(paint.fit);
+   assert.ok(paint.bg.includes('rgb(238, 231, 248)')&&paint.bg.includes('rgb(227, 234, 250)'));assert.equal(paint.fg,'rgb(92, 76, 134)');assert.equal(paint.border,'rgb(201, 194, 226)');assert.ok(paint.fit);
    await p.locator(`#${items} [data-${data}-item="name"]`).first().fill('Hàng đang nhập');
    const rows=p.locator('#'+items+' > .sales-item-row');const count=await rows.count();
    await button.click();assert.equal(await rows.count(),count+1);
@@ -23,11 +23,11 @@ async function main(){const browser=await chromium.launch({headless:true,executa
    await button.press('Space');assert.equal(await rows.count(),count+3);
    assert.equal(await p.locator(`#${items} [data-${data}-item="name"]`).first().inputValue(),'Hàng đang nhập');
    await button.evaluate(e=>{e.disabled=true;e.click();});assert.equal(await rows.count(),count+3);await button.evaluate(e=>e.disabled=false);
-   if(width===375&&height===900){await button.scrollIntoViewIfNeeded();await p.screenshot({path:`C:/Users/HP/.codex/visualizations/2026/07/14/019f60d2-3ec4-7110-bb38-fd10c4af6926/applied-mist-add-${type}.png`,animations:'disabled'});}
+   if(width===375&&height===900){await button.scrollIntoViewIfNeeded();await p.screenshot({path:`C:/Users/HP/.codex/visualizations/2026/07/14/019f60d2-3ec4-7110-bb38-fd10c4af6926/applied-lavender-add-${type}.png`,animations:'disabled'});}
    assert.equal(await p.evaluate(()=>window.qaWrites),0);
   }
   for(const type of ['income','expense']){await open(before,type);await open(p,type);assert.deepEqual(await snapshot(p),await snapshot(before),`${width} ${type} unchanged`);}
-  for(const p of pages)await p.close();console.log(`${width}x${height}: mist colors, unchanged layout/other paints, add rows by click/Enter/Space, draft/disabled OK`);
+  for(const p of pages)await p.close();console.log(`${width}x${height}: pearl-lavender colors, unchanged layout/other paints, add rows by click/Enter/Space, draft/disabled OK`);
  }
 }finally{await browser.close();}}
 main().catch(e=>{console.error(e);process.exitCode=1;});
