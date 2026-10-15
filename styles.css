@@ -9914,6 +9914,23 @@ html.mobile-app-theme .cash-quick-entry-mode .quick-entry-card .modal-actions #q
   box-shadow: 0 10px 24px rgba(79, 91, 237, 0.22);
 }
 
+/* Approved “Oải hương sữa”: a quiet secondary action in both cash dialogs. */
+html.mobile-app-theme .cash-quick-entry-mode #openBulkCashPage {
+  border-color: #cec7e9;
+  background: linear-gradient(175deg, #ffffff45, transparent 63%), linear-gradient(110deg, #eee8fb, #e2eafa);
+  color: #5b4f8b;
+  box-shadow: 0 3px 10px #76669c17, inset 0 1px 0 #ffffffdb;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode #openBulkCashPage:focus-visible {
+  outline: 3px solid #8572bb;
+  outline-offset: 3px;
+}
+
+html.mobile-app-theme .cash-quick-entry-mode #openBulkCashPage:active {
+  box-shadow: 0 1px 4px #76669c17, inset 0 1px 1px #b8b6d026;
+}
+
 @media (max-width: 360px) {
   html.mobile-app-theme .cash-quick-entry-mode .quick-entry-card {
     padding-inline: 12px;
