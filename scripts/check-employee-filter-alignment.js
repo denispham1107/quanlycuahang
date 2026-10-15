@@ -1,0 +1,35 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{execFileSync}=require('node:child_process');
+const {chromium}=require('playwright'),{setup,filterStyles,samePixels}=require('./check-desktop-trade-colors');
+const {PNG}=require('pngjs');
+const snapshot=(page,options={})=>page.screenshot({animations:'disabled',...options});
+// Chrome's glass dock can vary by one RGB level over a few composited pixels.
+function sameVisual(a,b){if(samePixels(a,b))return true;const x=PNG.sync.read(a),y=PNG.sync.read(b);if(x.width!==y.width||x.height!==y.height)return false;let count=0;for(let i=0;i<x.data.length;i+=4){let d=0;for(let j=0;j<4;j++)d=Math.max(d,Math.abs(x.data[i+j]-y.data[i+j]));if(d>1)return false;if(d)count++;}return count<x.width*x.height*.005;}
+const root=path.resolve(__dirname,'..'),oldCss=execFileSync('git',['-c',`safe.directory=${root.replaceAll('\\','/')}`,'show','HEAD:styles.css'],{cwd:root}).toString();
+async function prepare(page,old,safe){await page.clock.setFixedTime(new Date('2026-10-15T12:00:00'));await setup(page,old);if(safe){const css=old?oldCss:fs.readFileSync(path.join(root,'styles.css'),'utf8');await page.addStyleTag({content:css.replaceAll('env(safe-area-inset-top)','var(--qa-safe-top,0px)')+`:root{--qa-safe-top:${safe}px}`});}}
+async function role(page,role,tab){await page.evaluate(({role,tab})=>{authState.role=role;authState.profile={role,storeId:'test',displayName:'Nhân viên thử',permissions:{purchase:{view:true,create:true,inventoryView:true},sales:{view:true,create:true},closingBook:{manage:false}}};activateTab(tab);render();scrollTo(0,0);document.activeElement?.blur();},{role,tab});await page.mouse.move(0,0);}
+const box=(page,selector)=>page.locator(selector).evaluate(e=>{const r=e.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,bottom:r.bottom};});
+async function main(){const browser=await chromium.launch({headless:true,executablePath:process.env.BULK_TEST_CHROME||'C:/Program Files/Google/Chrome/Application/chrome.exe'});try{
+ for(const [width,height,platform,safe] of [[320,700,'iPhone',0],[375,900,'iPhone',0],[430,900,'iPhone',44],[667,375,'iPhone',0],[375,400,'iPhone',0],[375,900,'Android',0]]){
+  const options={viewport:{width,height},isMobile:true,hasTouch:true,userAgent:platform==='Android'?'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/130.0 Mobile Safari/537.36':'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1'};
+  const before=await browser.newPage(options);await prepare(before,true,safe);const shots={};for(const tab of ['overview','purchase','sales']){await role(before,'admin',tab);shots[tab]=await snapshot(before);}await before.close();
+  const page=await browser.newPage(options),errors=[],calls=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/cloudfunctions\.net|firestore\.googleapis/.test(r.url()))calls.push(r.url());});await prepare(page,false,safe);
+  for(const tab of ['overview','purchase','sales']){
+   await role(page,'admin',tab);const actual=await snapshot(page);if(!sameVisual(actual,shots[tab])&&process.env.FILTER_ALIGNMENT_SHOTS){fs.writeFileSync(path.join(process.env.FILTER_ALIGNMENT_SHOTS,'filter-admin-before.png'),shots[tab]);fs.writeFileSync(path.join(process.env.FILTER_ALIGNMENT_SHOTS,'filter-admin-after.png'),actual);}assert.ok(sameVisual(actual,shots[tab]),`Admin Mobile ${tab} ${width} pixels unchanged`);const rail=await box(page,'.mobile-time-filter-shell'),workspace=await box(page,'#workspace');const heading=tab==='purchase'?'.mobile-purchase-heading':tab==='sales'?'.mobile-sales-heading':null,adminHeading=heading?await box(page,heading):null;
+   await role(page,'employee',tab);assert.deepEqual(await box(page,'.mobile-time-filter-shell'),rail,'filter uses the exact admin anchor and dimensions');assert.equal((await box(page,'#workspace')).y,workspace.y,'employee content aligns with admin');assert.equal(rail.y,Math.max(8,safe));
+   assert.equal(await page.locator('.sidebar').getAttribute('data-role-hidden'),'true');assert.equal(await page.locator('.sidebar').isVisible(),false,'admin sidebar stays hidden');
+   if(heading){const h=await box(page,heading);assert.equal(h.y,adminHeading.y);assert.ok(h.y>=rail.bottom,'filter does not overlap page heading');}
+   if(process.env.FILTER_ALIGNMENT_SHOTS)await snapshot(page,{path:path.join(process.env.FILTER_ALIGNMENT_SHOTS,`employee-filter-${tab}-${width}-${height}-${platform}.png`)});
+   await page.evaluate(()=>scrollTo(0,300));assert.equal((await box(page,'.mobile-time-filter-shell')).y,rail.y,'scroll does not shift the fixed filter');
+   await page.locator('#timeFilterToggle').click();await page.locator('#timeFilters').waitFor({state:'visible'});assert.equal(await page.locator('#timeFilterToggle').getAttribute('aria-expanded'),'true');assert.equal((await box(page,'.mobile-time-filter-shell')).y,rail.y);
+   await page.locator('[data-time-preset="yesterday"]').click();assert.equal(await page.evaluate(()=>uiState.rangeMode),'yesterday');if(await page.locator('#timeFilterToggle').getAttribute('aria-expanded')==='true')await page.locator('#timeFilterToggle').click();assert.equal(await page.locator('#timeFilterToggle').getAttribute('aria-expanded'),'false');
+   await page.evaluate(()=>{uiState.rangeMode='today';els.rangeMode.value='today';render();scrollTo(0,0);});
+   if(tab!=='overview'){await page.evaluate(tab=>openQuickEntryModal(tab),tab);assert.equal(await page.locator('.mobile-time-filter-shell').isVisible(),false);await page.locator('#cancelQuickEntry').click();assert.equal(await page.locator('.mobile-time-filter-shell').isVisible(),true);assert.equal((await box(page,'.mobile-time-filter-shell')).y,rail.y);}
+  }
+  await role(page,'employee','stores');assert.equal(await page.locator('.mobile-time-filter-shell').isVisible(),false);assert.deepEqual(errors,[]);assert.deepEqual(calls,[]);await page.close();console.log(`Mobile ${platform} ${width}x${height}, safe-top ${safe}: admin pixels, employee clearance, fixed scroll, presets and modal recovery OK`);
+ }
+ for(const width of [800,1024,1440]){
+  const before=await browser.newPage({viewport:{width,height:900}});await prepare(before,true,0);const expected={};for(const r of ['admin','employee'])for(const tab of ['overview','purchase','sales']){await role(before,r,tab);expected[r+tab]={image:await snapshot(before),filter:await filterStyles(before)};}await before.close();
+  const page=await browser.newPage({viewport:{width,height:900}});await prepare(page,false,0);for(const r of ['admin','employee'])for(const tab of ['overview','purchase','sales']){await role(page,r,tab);assert.deepEqual(await filterStyles(page),expected[r+tab].filter);assert.ok(sameVisual(await snapshot(page),expected[r+tab].image),`Desktop ${r}/${tab} pixels unchanged`);}await page.close();console.log(`Desktop ${width}: both roles and left filters unchanged`);
+ }
+}finally{await browser.close();}}
+main().catch(e=>{console.error(e);process.exitCode=1;});

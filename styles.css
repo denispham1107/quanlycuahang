@@ -1019,11 +1019,12 @@ html.mobile-app-theme .topbar {
 }
 
 html.mobile-app-theme .layout {
+  --mobile-layout-gap: 14px;
   width: 100%;
   max-width: none;
   grid-template-columns: minmax(0, 1fr);
   padding: 14px 12px calc(var(--mobile-dock-height) + max(24px, env(safe-area-inset-bottom)));
-  gap: 14px;
+  gap: var(--mobile-layout-gap);
 }
 
 html.mobile-app-theme body.mobile-secondary-tab .topbar,
@@ -1033,6 +1034,11 @@ html.mobile-app-theme body.mobile-secondary-tab .active-store-hero {
 
 html.mobile-app-theme body.mobile-secondary-tab .layout {
   padding-top: calc(max(8px, env(safe-area-inset-top)) + 36px);
+}
+
+/* The hidden employee sidebar removes one grid gap; keep the admin filter/content clearance. */
+html.mobile-app-theme body.employee-session.mobile-secondary-tab .layout {
+  padding-top: calc(max(8px, env(safe-area-inset-top)) + 36px + var(--mobile-layout-gap));
 }
 
 html.mobile-app-theme .dashboard,
