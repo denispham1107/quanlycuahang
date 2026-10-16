@@ -21,9 +21,9 @@ test('desktop customer button reuses Mobile SVG and renames gradient IDs, never 
 });
 
 test('desktop customer icon is before the label, centered and scoped away from Mobile and filters', () => {
-  const button = css.match(/html:not\(\.mobile-app-theme\) \[data-tab-panel="sales"\] #openCustomers \{ display: flex;([^}]+)\}/)[1];
+  const button = css.match(/html:not\(\.mobile-app-theme\) body\[data-active-tab="sales"\] #openCustomers \{ display: flex;([^}]+)\}/)[1];
   assert.match(button, /align-items: center; justify-content: center; gap: 8px/);
-  const icon = css.match(/html:not\(\.mobile-app-theme\) \[data-tab-panel="sales"\] #openCustomers \.sales-customers-icon \{([^}]+)\}/)[1];
+  const icon = css.match(/html:not\(\.mobile-app-theme\) body\[data-active-tab="sales"\] #openCustomers \.sales-customers-icon \{([^}]+)\}/)[1];
   assert.match(icon, /width: 32px; height: 32px; flex: 0 0 auto/);
   assert.doesNotMatch(button + icon, /font-size|height: 48px|position|grid-template|display: none/);
   assert.match(app, /els\.openCustomers\.addEventListener\("click", \(\) => openCustomersPage\(\)\)/);

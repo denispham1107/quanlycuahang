@@ -466,6 +466,10 @@ if (desktopUi) {
   desktopUi.purchaseActions.id = "desktopPurchaseActions";
   desktopUi.inventoryAnchor = document.createComment("Desktop warehouse action home");
   els.toggleInventory.before(desktopUi.inventoryAnchor);
+  desktopUi.salesActions = document.createElement("div");
+  desktopUi.salesActions.id = "desktopSalesActions";
+  desktopUi.customerAnchor = document.createComment("Desktop customer action home");
+  els.openCustomers.before(desktopUi.customerAnchor);
   document.querySelector("#desktopFilterControls").append(els.timeFilterToggle, els.timeFilters);
   document.querySelector("#desktopAddStoreShortcut").addEventListener("click", () => {
     els.storeName.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -7958,6 +7962,11 @@ function updateDesktopPageChrome(tabName = getActiveTabName()) {
   };
   const [title, subtitle, action] = pages[tabName] || pages.stores;
   document.body.dataset.activeTab = tabName;
+  if (tabName !== "sales" && desktopUi.salesActions?.isConnected) {
+    desktopUi.salesActions.before(desktopUi.primaryAction);
+    desktopUi.salesActions.remove();
+    desktopUi.customerAnchor.after(els.openCustomers);
+  }
   if (desktopUi.purchaseActions && desktopUi.inventoryAnchor) {
     if (tabName === "purchase") {
       if (!desktopUi.purchaseActions.isConnected) {
@@ -7971,6 +7980,10 @@ function updateDesktopPageChrome(tabName = getActiveTabName()) {
       }
       if (desktopUi.inventoryAnchor.nextSibling !== els.toggleInventory) desktopUi.inventoryAnchor.after(els.toggleInventory);
     }
+  }
+  if (tabName === "sales" && desktopUi.salesActions && !desktopUi.salesActions.isConnected) {
+    desktopUi.primaryAction.before(desktopUi.salesActions);
+    desktopUi.salesActions.append(els.openCustomers, desktopUi.primaryAction);
   }
   desktopUi.title.textContent = title;
   desktopUi.subtitle.textContent = subtitle;

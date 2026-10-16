@@ -11358,7 +11358,7 @@ html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tr:not
 html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tr:not(.entry-cancelled) .sales-bill-code { color: #075fd4; }
 html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tr:not(.entry-cancelled) .date-stack small { color: #5c6b87; }
 html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tr:not(.entry-cancelled) .amount-cell { color: #176992; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] #openCustomers { background: linear-gradient(145deg,#fffaff,#e8eaff 58%,#dcf0ff); border-color: #d0d8f3; color: #584a91; box-shadow: 0 4px 12px #536ba714, inset 0 1px 0 #ffffffcc; }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] #openCustomers { background: linear-gradient(145deg,#fffaff,#e8eaff 58%,#dcf0ff); border-color: #d0d8f3; color: #584a91; box-shadow: 0 4px 12px #536ba714, inset 0 1px 0 #ffffffcc; }
 html:not(.mobile-app-theme) body[data-active-tab="sales"] #desktopPrimaryAction { background: linear-gradient(110deg, #bb36f5 0%, #7151f8 49%, #079ff8 100%); color: #fff; border-color: rgba(255, 255, 255, 0.8); box-shadow: 0 10px 24px rgba(80, 91, 220, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
 html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-table .delete-small { background: #fff0f6; color: #c83578; border-color: #f4dce7; box-shadow: none; }
 html:not(.mobile-app-theme) [data-tab-panel="purchase"] > .purchase-main-panel { background: linear-gradient(135deg,#e5ecff,#def3ed); border-color: #afc7dd; box-shadow: 0 10px 25px #3f78981c; }
@@ -11381,8 +11381,8 @@ html:not(.mobile-app-theme) [data-tab-panel="purchase"] .inventory-log-purpose.e
 /* Desktop sales button skin follows Mobile; preserve sizes, handlers and filter rail. */
 html:not(.mobile-app-theme) body[data-active-tab="sales"] #desktopPrimaryAction { border-radius: 15px; }
 html:not(.mobile-app-theme) [data-tab-panel="sales"] > .panel { border-radius: 22px; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] #openCustomers { display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 14px; }
-html:not(.mobile-app-theme) [data-tab-panel="sales"] #openCustomers .sales-customers-icon { width: 32px; height: 32px; flex: 0 0 auto; overflow: visible; filter: drop-shadow(0 2px 1px #7964be24); }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] #openCustomers { display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 14px; }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] #openCustomers .sales-customers-icon { width: 32px; height: 32px; flex: 0 0 auto; overflow: visible; filter: drop-shadow(0 2px 1px #7964be24); }
 html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-table .delete-small { display: inline-grid; place-items: center; padding: 0; font-size: 0; border-radius: 10px; }
 html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-table .delete-small::before {
   content: "";
@@ -11393,6 +11393,18 @@ html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-table .delete-small:
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 7h14M9 7V4h6v3m2 0-1 13H8L7 7m4 4v5m3-5v5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 /* End Desktop sales button skin. */
+
+/* Reuse the existing customer button beside the desktop sales primary action. */
+html:not(.mobile-app-theme) #desktopSalesActions { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+html:not(.mobile-app-theme) #desktopSalesActions #openCustomers { width: auto; margin: 0; padding: 0 16px; font-weight: 900; }
+html:not(.mobile-app-theme) #desktopSalesActions #openCustomers[data-role-hidden="true"] { display: none; }
+html:not(.mobile-app-theme) .sales-main-panel > .panel-heading h2 { display: none; }
+html:not(.mobile-app-theme) .sales-main-panel > .panel-heading { justify-content: flex-end; }
+@media (max-width: 1024px) {
+  html:not(.mobile-app-theme) body[data-active-tab="sales"] #desktopPageHeading { flex-wrap: wrap; }
+  html:not(.mobile-app-theme) #desktopSalesActions { margin-left: auto; flex-wrap: wrap; }
+}
+/* End Desktop sales header actions. */
 
 /* Desktop cancelled-sale purge label: reserve a lower action lane within the last two columns. */
 html:not(.mobile-app-theme) .sales-history-table .entry-cancelled td:last-child { position: relative; vertical-align: top; padding-bottom: 54px; }
