@@ -15,3 +15,10 @@ test('trash glass decorations cannot intercept clicks or change button dimension
  assert.match(block,/isolation: isolate/);assert.match(block,/inset: 3px/);
  assert.doesNotMatch(block,/\.history-purge-button|\.danger-button|button\[type=/);
 });
+test('mobile trash glyph is centered independently of the invisible text flex item',()=>{
+ const center=block.slice(block.indexOf('/* Mobile buttons retain'),block.indexOf('html body .delete-small::after'));
+ assert.match(center,/html\.mobile-app-theme body \.delete-small::before/);
+ assert.match(center,/position: absolute/);assert.match(center,/left: 50%/);assert.match(center,/top: 50%/);
+ assert.match(center,/transform: translate\(-50%,-50%\)/);
+ assert.doesNotMatch(center,/html:not|width:|height:|padding:|gap:|margin:/);
+});

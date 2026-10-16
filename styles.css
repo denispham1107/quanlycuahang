@@ -12019,6 +12019,15 @@ html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-table .delete-small:
   filter: drop-shadow(0 .6px .25px #fff);
   pointer-events: none;
 }
+/* Mobile buttons retain a zero-size text node and a flex gap; center the glyph
+   independently so that the invisible text cannot shift it left. */
+html.mobile-app-theme body .delete-small::before,
+html.mobile-app-theme [data-tab-panel="sales"] .sales-table .delete-small::before {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%,-50%);
+}
 html body .delete-small::after {
   content: "";
   position: absolute;
