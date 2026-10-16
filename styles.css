@@ -12060,3 +12060,113 @@ html.mobile-app-theme #quickEntryForm[data-type="sales"] #salesItems .sales-note
 html.mobile-app-theme #quickEntryForm[data-type="sales"] #salesItems .sales-item-note { display: block; font-size: 16px; }
 .order-detail-product-note { display: block; margin-top: 5px; color: #65718a; font-size: 12px; font-weight: 400; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 /* End per-item sales notes. */
+
+/* Employee management: pastel team workspace, one page scroll owner. */
+#employeeManagerPage { background: radial-gradient(ellipse at 0 0,#f5d9f5,transparent 48%),linear-gradient(135deg,#efebff,#e4f5ff); }
+#employeeManagerPage .settings-detail-shell { width: min(1240px,100%); }
+#employeeManagerPage .employee-manager-card { gap: 22px; background: linear-gradient(145deg,#ffffffed,#f7f6fff5 50%,#f0fafff5); border-color: #fff; }
+#employeeManagerPage .employee-manager-heading { display: grid; grid-template-columns: 76px minmax(0,1fr) auto; gap: 18px; align-items: center; margin: 0; padding: 24px; border: 1px solid #fff; border-radius: 23px; background: radial-gradient(ellipse at 5% 0%,#fff9,transparent 60%),linear-gradient(115deg,#eddef9,#e2e9fc 56%,#d8f2fa); box-shadow: inset 0 1px 0 #fff,0 8px 20px #746e9f0b; }
+#employeeManagerPage .employee-hero-icon { display: block; width: 76px; height: 76px; filter: drop-shadow(0 5px 9px #715b9b17); }
+#employeeManagerPage .employee-eyebrow { margin: 0 0 6px; font-size: 10px; letter-spacing: .13em; line-height: 1.6; font-weight: 850; color: #68528f; }
+#employeeManagerPage .employee-manager-heading h2 { margin: 0 0 7px; font-size: clamp(25px,2.7vw,34px); line-height: 1.2; color: #21365e; overflow-wrap: anywhere; }
+#employeeManagerPage .employee-manager-heading > div > span { font-size: 13px; font-weight: 500; line-height: 1.6; color: #596a87; white-space: normal; overflow-wrap: anywhere; }
+#employeeManagerPage .employee-admin-badge { width: max-content; max-width: 100%; padding: 8px 12px; border: 1px solid #fff; border-radius: 999px; background: #ffffffad; color: #5a5186; font-size: 11px; font-weight: 800; }
+#employeeManagerPage .employee-overview { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+#employeeManagerPage .employee-overview-card { display: grid; align-content: start; gap: 8px; min-width: 0; padding: 18px 20px; border: 1px solid #e0dcf1; border-radius: 19px; background: linear-gradient(140deg,#fff,#f0ebfb); color: #675093; box-shadow: 0 6px 18px #6d70a00b; }
+#employeeManagerPage .employee-overview-card.active { background: linear-gradient(140deg,#fff,#e6f4ee); border-color: #d4e8df; color: #287463; }
+#employeeManagerPage .employee-overview-card.paused { background: linear-gradient(140deg,#fff,#fbeaf0); border-color: #f0dce5; color: #a04b70; }
+#employeeManagerPage .employee-overview-card > span { font-size: 13px; font-weight: 750; color: #53617d; }
+#employeeManagerPage .employee-overview-card strong { font-size: 30px; line-height: 1.2; overflow-wrap: anywhere; }
+#employeeManagerPage .employee-overview-card small { font-size: 11px; color: #5e6b82; line-height: 1.5; }
+#employeeManagerPage .employee-manager-content { overflow: visible; max-height: none; gap: 20px; }
+#employeeManagerPage .employee-create-form { gap: 20px; padding: 22px; border: 1px solid #dddff2; border-radius: 22px; background: #ffffffd9; box-shadow: 0 8px 24px #65779b0b; }
+#employeeManagerPage .employee-section-heading { display: flex; align-items: center; gap: 12px; }
+#employeeManagerPage .employee-step { display: grid; place-items: center; flex: 0 0 42px; width: 42px; height: 42px; border: 1px solid #d9cfee; border-radius: 14px; background: linear-gradient(140deg,#eee3f9,#e4edff); color: #69509a; font-size: 13px; font-weight: 850; }
+#employeeManagerPage .employee-section-heading h3 { margin: 0 0 4px; color: #283d65; font-size: 19px; }
+#employeeManagerPage .employee-section-heading p,#employeeManagerPage .employee-list-description { margin: 0; color: #5e6b82; font-size: 12px; line-height: 1.6; }
+#employeeManagerPage .employee-form-grid { gap: 14px; }
+#employeeManagerPage .employee-form-grid .field { gap: 7px; }
+#employeeManagerPage .employee-form-grid label { color: #596881; font-size: 12px; font-weight: 750; }
+#employeeManagerPage .employee-form-grid input,#employeeManagerPage .employee-form-grid select { min-height: 46px; border: 1px solid #dce2ef; border-radius: 13px; padding: 11px 12px; background: #fcfdff; color: #243b61; box-shadow: inset 0 1px 2px #526b8d05; }
+#employeeManagerPage .employee-form-grid input::placeholder { color: #66738b; font-weight: 400; }
+#employeeManagerPage .employee-manager-note { margin: 0; padding: 11px 13px; border: 1px solid #dedff1; background: #f4f3fb; color: #626380; font-size: 12px; font-weight: 500; line-height: 1.6; }
+#employeeManagerPage .employee-manager-note > span { color: #8b6bb2; margin-right: 5px; }
+#employeeManagerPage .employee-permissions { grid-template-columns: repeat(3,minmax(0,1fr)); align-items: start; gap: 12px; padding: 12px 0 0; border: 0; background: transparent; }
+#employeeManagerPage .employee-permissions legend { padding: 0; margin-bottom: 5px; color: #3e4f73; font-size: 14px; }
+#employeeManagerPage .employee-permission-group { display: grid; align-content: start; gap: 6px; min-width: 0; height: 100%; padding: 14px; border: 1px solid #d9e5ef; border-radius: 17px; background: linear-gradient(145deg,#f4fafc,#ecf5fa); }
+#employeeManagerPage .employee-permission-group.sales { border-color: #e0d9ed; background: linear-gradient(145deg,#faf5fd,#f0ecfa); }
+#employeeManagerPage .employee-permission-group.closing { border-color: #eddae3; background: linear-gradient(145deg,#fff7fa,#faeef4); }
+#employeeManagerPage .employee-permission-group h4 { margin: 0; font-size: 13px; line-height: 1.5; color: #325f77; }
+#employeeManagerPage .employee-permission-group.sales h4 { color: #69508e; }
+#employeeManagerPage .employee-permission-group.closing h4 { color: #965475; }
+#employeeManagerPage .employee-permission-group p { margin: 0 0 5px; font-size: 11px; line-height: 1.5; color: #5e6b82; }
+#employeeManagerPage .employee-permissions label { min-height: 44px; align-items: flex-start; padding: 10px 8px; gap: 9px; border: 1px solid #ffffffb3; border-radius: 10px; background: #ffffff94; color: #354a6a; font-size: 12px; line-height: 1.6; font-weight: 600; }
+#employeeManagerPage .employee-permissions label:has(input:checked) { border-color: #c7d8e7; background: #ffffffeb; box-shadow: 0 2px 5px #5e76980a; }
+#employeeManagerPage .employee-permissions input { flex: 0 0 19px; min-height: 19px; width: 19px; height: 19px; margin-top: 1px; padding: 0; box-shadow: none; accent-color: #7760b5; }
+#employeeManagerPage .employee-create-submit,#employeeManagerPage [data-save-employee] { min-height: 46px; width: auto; padding: 11px 19px; border: 1px solid #b8afd3; border-radius: 13px; background: linear-gradient(110deg,#ded2ef,#cddff3); color: #514275; box-shadow: 0 5px 12px #797a9d12,inset 0 1px 0 #ffffffbf; font-size: 13px; font-weight: 800; }
+#employeeManagerPage .employee-list-heading { align-items: center; padding: 10px 2px 0; }
+#employeeManagerPage .employee-list-heading h3 { margin-bottom: 6px; color: #283d65; font-size: 22px; }
+#employeeManagerPage #employeeCount { flex: 0 0 auto; padding: 8px 12px; border: 1px solid #dcd7ef; border-radius: 999px; background: #eeeafa; color: #69578e; font-size: 12px; }
+#employeeManagerPage .employee-delete-toolbar { padding: 12px 16px; background: #f4f1fb; border-color: #dfd8ee; }
+#employeeManagerPage .employee-account-list { gap: 18px; align-items: start; }
+#employeeManagerPage .employee-account-card { gap: 17px; padding: 20px; border: 1px solid #dcdced; border-top: 3px solid #c8b5e6; border-radius: 21px; background: linear-gradient(155deg,#fff,#f9f7ff); box-shadow: 0 8px 22px #6876a410; }
+#employeeManagerPage .employee-account-card[data-tone="1"] { border-top-color: #9bcbbc; background: linear-gradient(155deg,#fff,#f5fbf9); }
+#employeeManagerPage .employee-account-card[data-tone="2"] { border-top-color: #deb3ca; background: linear-gradient(155deg,#fff,#fdf6fa); }
+#employeeManagerPage .employee-account-selected { outline: 2px solid #ab97d8; outline-offset: 2px; }
+#employeeManagerPage .employee-card-select-row { padding-bottom: 10px; border-color: #e8e6f1; }
+#employeeManagerPage .employee-account-heading { display: grid; grid-template-columns: 50px minmax(0,1fr); gap: 10px 12px; align-items: center; }
+#employeeManagerPage .employee-avatar { display: grid; place-items: center; width: 50px; height: 50px; border: 1px solid #fff; border-radius: 17px; background: linear-gradient(135deg,#e2d2f2,#cde3f6); color: #66518f; font-size: 17px; font-weight: 850; box-shadow: 0 4px 10px #696fa216; }
+#employeeManagerPage .employee-identity strong { font-size: 17px; line-height: 1.5; color: #2b3e65; }
+#employeeManagerPage .employee-identity small { color: #5e6b82; line-height: 1.5; }
+#employeeManagerPage .employee-account-state { justify-self: start; width: max-content; max-width: 100%; margin-top: 5px; padding: 3px 8px; border: 1px solid #c7e2d8; border-radius: 999px; color: #2c715e; background: #e9f5ef; font-size: 10px; line-height: 1.6; font-weight: 750; }
+#employeeManagerPage .employee-account-state[data-state="paused"] { background: #f6edf3; color: #9c536e; border-color: #ecd5e0; }
+#employeeManagerPage .employee-account-state[data-state="pending"] { background: #fff0e4; color: #935e2f; border-color: #edd8c1; }
+#employeeManagerPage .employee-active-toggle { grid-column: 1 / -1; justify-self: start; min-height: 42px; padding: 9px 12px; border: 1px solid #dce1eb; border-radius: 12px; background: #f0f3f8; color: #5b6980; font-size: 12px; }
+#employeeManagerPage .employee-active-toggle:has(input:checked) { background: #e9f5ef; border-color: #c7e2d8; color: #2c715e; }
+#employeeManagerPage .employee-active-toggle input { width: 19px; min-width: 19px; height: 19px; min-height: 19px; padding: 0; box-shadow: none; }
+#employeeManagerPage .employee-edit-grid { padding: 14px; border: 1px solid #e5e6f0; border-radius: 15px; background: #f5f7fc; }
+#employeeManagerPage .employee-card-actions { border-top: 1px solid #e5e7f0; padding-top: 14px; }
+#employeeManagerPage input:focus-visible,#employeeManagerPage select:focus-visible,#employeeManagerPage button:focus-visible { outline: 3px solid #9b89ca; outline-offset: 3px; }
+#employeeManagerPage button:disabled { cursor: not-allowed; opacity: .55; }
+#employeeManagerPage .empty-list { padding: 36px 18px; border: 1px dashed #d4cce7; border-radius: 18px; color: #6a6681; background: #f8f6fd; }
+@media(min-width:1200px) {
+  #employeeManagerPage .employee-account-list { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  #employeeManagerPage .employee-account-list > .empty-list { grid-column: 1 / -1; }
+  #employeeManagerPage .employee-card-permissions { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  #employeeManagerPage .employee-card-permissions .closing { grid-column: 1 / -1; grid-template-columns: repeat(2,minmax(0,1fr)); }
+  #employeeManagerPage .employee-card-permissions .closing h4,#employeeManagerPage .employee-card-permissions .closing p { grid-column: 1 / -1; }
+}
+@media(max-width:900px) {
+  #employeeManagerPage .employee-manager-heading { grid-template-columns: 60px minmax(0,1fr); padding: 19px; gap: 13px; }
+  #employeeManagerPage .employee-hero-icon { width: 60px; height: 60px; }
+  #employeeManagerPage .employee-admin-badge { grid-column: 2; }
+  #employeeManagerPage .employee-permissions { grid-template-columns: minmax(0,1fr); }
+}
+@media(max-width:700px) {
+  #employeeManagerPage .employee-manager-card { padding: 13px; gap: 15px; border-radius: 23px; }
+  #employeeManagerPage .employee-manager-heading { grid-template-columns: 47px minmax(0,1fr); padding: 16px 12px; gap: 10px; border-radius: 18px; }
+  #employeeManagerPage .employee-hero-icon { width: 47px; height: 47px; }
+  #employeeManagerPage .employee-manager-heading h2 { font-size: 25px; }
+  #employeeManagerPage .employee-manager-heading > div > span { font-size: 12px; }
+  #employeeManagerPage .employee-eyebrow { font-size: 9px; letter-spacing: .09em; }
+  #employeeManagerPage .employee-admin-badge { padding: 5px 8px; font-size: 10px; }
+  #employeeManagerPage .employee-overview { gap: 7px; }
+  #employeeManagerPage .employee-overview-card { padding: 12px 9px; gap: 8px; border-radius: 14px; }
+  #employeeManagerPage .employee-overview-card > span { font-size: 11px; line-height: 1.6; min-height: 35px; }
+  #employeeManagerPage .employee-overview-card strong { font-size: 25px; }
+  #employeeManagerPage .employee-overview-card small { font-size: 10px; }
+  #employeeManagerPage .employee-create-form,#employeeManagerPage .employee-account-card { padding: 14px 11px; gap: 16px; border-radius: 18px; }
+  #employeeManagerPage .employee-section-heading { align-items: flex-start; gap: 9px; }
+  #employeeManagerPage .employee-step { width: 34px; height: 34px; flex-basis: 34px; border-radius: 11px; }
+  #employeeManagerPage .employee-section-heading h3 { font-size: 18px; }
+  #employeeManagerPage .employee-form-grid { grid-template-columns: minmax(0,1fr); }
+  #employeeManagerPage .employee-form-grid input,#employeeManagerPage .employee-form-grid select { font-size: 16px; }
+  #employeeManagerPage .employee-permission-group { padding: 11px; }
+  #employeeManagerPage .employee-permissions label { font-size: 12px; padding: 10px 7px; }
+  #employeeManagerPage .employee-create-submit,#employeeManagerPage [data-save-employee] { width: 100%; }
+  #employeeManagerPage .employee-list-heading { align-items: flex-start; flex-wrap: wrap; gap: 8px; }
+  #employeeManagerPage .employee-list-heading h3 { font-size: 21px; }
+  #employeeManagerPage .employee-delete-toolbar { padding: 10px; }
+  #employeeManagerPage .employee-edit-grid { padding: 11px; }
+}
+/* End employee team workspace. */

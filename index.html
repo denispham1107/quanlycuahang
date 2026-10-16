@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Quản lý cửa hàng" />
     <title>Quản lý thu chi cửa hàng</title>
-    <link rel="manifest" href="manifest.webmanifest?v=196" />
+    <link rel="manifest" href="manifest.webmanifest?v=197" />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     <link rel="icon" type="image/svg+xml" href="icons/icon-v3.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-v3.png" />
@@ -21,7 +21,7 @@
         document.documentElement.classList.toggle("mobile-app-theme", isAppleMobile || /Android/i.test(navigator.userAgent));
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=196" />
+    <link rel="stylesheet" href="styles.css?v=197" />
   </head>
   <body class="auth-pending">
     <main class="auth-screen" id="authScreen" aria-labelledby="authTitle">
@@ -1436,51 +1436,66 @@
         </header>
       <section class="settings-detail-card employee-manager-card" aria-labelledby="employeeManagerTitle">
         <div class="panel-heading employee-manager-heading">
+          <svg class="employee-hero-icon" viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="19" fill="#ffffffb3"/><circle cx="25" cy="24" r="9" fill="#b6a1e5" stroke="#7357ae" stroke-width="2"/><path d="M10 49v-5c0-9 7-13 15-13s15 4 15 13v5Z" fill="#8265bf"/><circle cx="44" cy="27" r="7" fill="#a7cee5" stroke="#4787a9" stroke-width="2"/><path d="M40 37c8-3 15 3 15 9v4H43" fill="#5c9db5"/><path d="m20 42 4 4 7-8" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <div>
+            <p class="employee-eyebrow">ĐỘI NGŨ & PHÂN QUYỀN</p>
             <h2 id="employeeManagerTitle">Quản lý nhân viên</h2>
-            <span>Tạo tài khoản và phân quyền</span>
+            <span>Tạo tài khoản, sắp xếp cửa hàng và kiểm soát quyền truy cập của đội ngũ.</span>
           </div>
+          <span class="employee-admin-badge">Chỉ quản trị viên</span>
+        </div>
+        <div class="employee-overview" aria-label="Tổng quan nhân viên">
+          <div class="employee-overview-card"><span>Tổng nhân viên</span><strong id="employeeStatTotal">—</strong><small>Tài khoản đã tạo</small></div>
+          <div class="employee-overview-card active"><span>Đang hoạt động</span><strong id="employeeStatActive">—</strong><small>Được phép đăng nhập</small></div>
+          <div class="employee-overview-card paused"><span>Đang tạm khóa</span><strong id="employeeStatPaused">—</strong><small>Gồm tài khoản chờ xóa</small></div>
         </div>
         <div class="employee-manager-content">
-          <p class="employee-manager-note">Mật khẩu chỉ dùng để tạo tài khoản và không được lưu trong dữ liệu cửa hàng.</p>
           <form class="employee-create-form" id="employeeCreateForm" novalidate>
+            <div class="employee-section-heading"><span class="employee-step" aria-hidden="true">01</span><div><h3>Tạo tài khoản mới</h3><p>Điền thông tin đăng nhập và chọn cửa hàng phụ trách.</p></div></div>
             <div class="employee-form-grid">
               <div class="field">
                 <label for="employeeDisplayName">Tên nhân viên</label>
-                <input id="employeeDisplayName" name="displayName" type="text" maxlength="120" autocomplete="off" required />
+                <input id="employeeDisplayName" name="displayName" type="text" maxlength="120" autocomplete="off" placeholder="Ví dụ: Nguyễn Minh Anh" required />
               </div>
               <div class="field">
                 <label for="employeeEmail">Email đăng nhập</label>
-                <input id="employeeEmail" name="email" type="email" maxlength="254" inputmode="email" autocomplete="off" required />
+                <input id="employeeEmail" name="email" type="email" maxlength="254" inputmode="email" autocomplete="off" placeholder="tennhanvien@email.com" required />
               </div>
               <div class="field">
                 <label for="employeePassword">Mật khẩu tạm thời</label>
-                <input id="employeePassword" name="password" type="password" minlength="8" maxlength="128" autocomplete="new-password" required />
+                <input id="employeePassword" name="password" type="password" minlength="8" maxlength="128" autocomplete="new-password" placeholder="Tối thiểu 8 ký tự" required />
               </div>
               <div class="field">
                 <label for="employeeStore">Cửa hàng</label>
                 <select id="employeeStore" name="storeId" required></select>
               </div>
             </div>
+            <p class="employee-manager-note"><span aria-hidden="true">◇</span> Mật khẩu chỉ dùng để tạo tài khoản và không được lưu trong dữ liệu cửa hàng.</p>
             <fieldset class="employee-permissions">
-              <legend>Quyền nhân viên</legend>
+              <legend>02 · Quyền nhân viên</legend>
+              <div class="employee-permission-group purchase"><h4>Nhập hàng & Kho</h4><p>Theo dõi hàng hóa và thao tác kho.</p>
               <label><input name="purchaseView" type="checkbox" checked /> Xem tab Nhập hàng</label>
               <label><input name="purchaseCreate" type="checkbox" checked /> Tạo mới trong Nhập hàng</label>
               <label><input name="purchaseInventoryView" type="checkbox" /> Xem Kho hàng</label>
               <label><input name="purchaseInventoryExport" type="checkbox" /> Xuất hàng trong Kho hàng</label>
               <label><input name="purchaseInventoryTypeManage" type="checkbox" /> Đổi loại hàng trong kho</label>
+              </div>
+              <div class="employee-permission-group sales"><h4>Bán hàng & Khách hàng</h4><p>Tạo đơn, lưu nháp và chăm sóc khách.</p>
               <label><input name="salesView" type="checkbox" checked /> Xem tab Bán hàng</label>
               <label><input name="salesCreate" type="checkbox" checked /> Tạo mới trong Bán hàng</label>
               <label><input name="salesDraft" type="checkbox" /> Lưu và mở đơn đang lưu</label>
               <label><input name="salesCustomerManage" type="checkbox" /> Thông tin khách hàng · Thêm, chỉnh sửa (không được xóa)</label>
+              </div>
+              <div class="employee-permission-group closing"><h4>Lịch sử & Chốt sổ</h4><p>Tra cứu hoạt động và đối chiếu cuối ca.</p>
               <label><input name="historyViewOwn" type="checkbox" checked /> Xem lịch sử của chính mình</label>
               <label><input name="closingBookManage" type="checkbox" /> Chốt sổ · Toàn bộ chức năng, chuyển Thu/Chi và xóa ca</label>
+              </div>
             </fieldset>
             <p class="employee-manager-status" id="employeeManagerStatus" role="status" hidden></p>
             <button class="employee-create-submit" type="submit">Tạo tài khoản nhân viên</button>
           </form>
           <div class="employee-list-heading">
-            <h3>Tài khoản đã tạo</h3>
+            <div><p class="employee-eyebrow">QUẢN LÝ ĐỘI NGŨ</p><h3>Tài khoản đã tạo</h3><p class="employee-list-description">Chỉnh sửa thông tin, trạng thái đăng nhập và quyền của từng nhân viên. Nhấn “Lưu phân quyền” để áp dụng thay đổi.</p></div>
             <span id="employeeCount">0 nhân viên</span>
           </div>
           <div class="employee-delete-toolbar" id="employeeDeleteToolbar" hidden>
@@ -1550,8 +1565,8 @@
       </div>
     </main>
 
-    <script defer src="firebase-loader.js?v=196"></script>
-    <script defer src="cloud-sync-core.js?v=196"></script>
+    <script defer src="firebase-loader.js?v=197"></script>
+    <script defer src="cloud-sync-core.js?v=197"></script>
     <script defer src="firebase-config.js"></script>
     <section id="closingBookPage" class="closing-book-page" aria-labelledby="closingBookTitle" hidden>
       <div id="closingBookMain" class="closing-book-shell">
@@ -1615,9 +1630,9 @@
         </form>
       </section>
     </div>
-    <script defer src="app.js?v=196"></script>
-    <script defer src="closing-book-core.js?v=196"></script>
-    <script defer src="closing-book-export.js?v=196"></script>
-    <script defer src="closing-book.js?v=196"></script>
+    <script defer src="app.js?v=197"></script>
+    <script defer src="closing-book-core.js?v=197"></script>
+    <script defer src="closing-book-export.js?v=197"></script>
+    <script defer src="closing-book.js?v=197"></script>
   </body>
 </html>

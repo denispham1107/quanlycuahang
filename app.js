@@ -2918,24 +2918,33 @@ function employeePermissionFields(permissions) {
   const normalized = normalizeEmployeePermissions({ permissions });
   const field = (name, checked, label) =>
     `<label><input name="${name}" type="checkbox" ${checked ? "checked" : ""} /> ${label}</label>`;
-  return [
+  const group = (tone, title, description, fields) => `<div class="employee-permission-group ${tone}"><h4>${title}</h4><p>${description}</p>${fields.join("")}</div>`;
+  return [group("purchase", "Nhập hàng & Kho", "Theo dõi hàng hóa và thao tác kho.", [
     field("purchaseView", normalized.purchase.view, "Xem tab Nhập hàng"),
     field("purchaseCreate", normalized.purchase.create, "Tạo mới trong Nhập hàng"),
     field("purchaseInventoryView", normalized.purchase.inventoryView, "Xem Kho hàng"),
     field("purchaseInventoryExport", normalized.purchase.inventoryExport, "Xuất hàng trong Kho hàng"),
-    field("purchaseInventoryTypeManage", normalized.purchase.inventoryTypeManage, "Đổi loại hàng trong kho"),
+    field("purchaseInventoryTypeManage", normalized.purchase.inventoryTypeManage, "Đổi loại hàng trong kho")]),
+    group("sales", "Bán hàng & Khách hàng", "Tạo đơn, lưu nháp và chăm sóc khách.", [
     field("salesView", normalized.sales.view, "Xem tab Bán hàng"),
     field("salesCreate", normalized.sales.create, "Tạo mới trong Bán hàng"),
     field("salesDraft", normalized.sales.draft, "Lưu và mở đơn đang lưu"),
-    field("salesCustomerManage", normalized.sales.customerManage, "Thông tin khách hàng · Thêm, chỉnh sửa (không được xóa)"),
+    field("salesCustomerManage", normalized.sales.customerManage, "Thông tin khách hàng · Thêm, chỉnh sửa (không được xóa)")]),
+    group("closing", "Lịch sử & Chốt sổ", "Tra cứu hoạt động và đối chiếu cuối ca.", [
     field("historyViewOwn", normalized.history.viewOwn, "Xem lịch sử của chính mình"),
-    field("closingBookManage", normalized.closingBook.manage, "Chốt sổ · Toàn bộ chức năng, chuyển Thu/Chi và xóa ca")
+    field("closingBookManage", normalized.closingBook.manage, "Chốt sổ · Toàn bộ chức năng, chuyển Thu/Chi và xóa ca")])
   ].join("");
 }
 
 function renderEmployeeAccounts(payload = {}) {
   employeeManagerState.employees = Array.isArray(payload.employees) ? payload.employees : [];
   employeeManagerState.stores = Array.isArray(payload.stores) ? payload.stores : [];
+  const total = employeeManagerState.employees.length;
+  const active = employeeManagerState.employees.filter(employee => employee.active !== false && !employee.deletionPending).length;
+  for (const [id, value] of [["employeeStatTotal", total], ["employeeStatActive", active], ["employeeStatPaused", total - active]]) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value.toLocaleString("vi-VN");
+  }
   if (els.employeeStore) {
     els.employeeStore.innerHTML = employeeStoreOptions(employeeManagerState.stores[0]?.id || "");
     els.employeeStore.disabled = !employeeManagerState.stores.length;
@@ -2953,30 +2962,32 @@ function renderEmployeeAccounts(payload = {}) {
   }
   els.employeeAccountList.innerHTML = employeeManagerState.employees
     .map(
-      (employee) => `
-        <article class="employee-account-card" data-employee-uid="${escapeHtml(employee.uid)}">
+      (employee, index) => `
+        <article class="employee-account-card" data-tone="${index % 3}" data-employee-uid="${escapeHtml(employee.uid)}">
           <div class="employee-card-select-row">
             <label class="employee-select-control"><input type="checkbox" data-select-employee value="${escapeHtml(employee.uid)}" aria-label="Chọn ${escapeHtml(employee.displayName || employee.email || "nhân viên")}" /> Chọn nhân viên</label>
             ${employee.deletionPending ? '<span class="employee-deletion-pending">Đang chờ xóa lại · đã tạm khóa</span>' : ""}
           </div>
           <div class="employee-account-heading">
-            <div>
+            <span class="employee-avatar" aria-hidden="true">${escapeHtml(String(employee.displayName || employee.email || "NV").trim().split(/\s+/).slice(-2).map(word => Array.from(word)[0] || "").join("").toLocaleUpperCase("vi-VN"))}</span>
+            <div class="employee-identity">
               <strong>${escapeHtml(employee.displayName || "Nhân viên")}</strong>
               <small>${escapeHtml(employee.email || "Không tìm thấy email Authentication")}</small>
+              <span class="employee-account-state" data-state="${employee.deletionPending ? "pending" : employee.active === false ? "paused" : "active"}">${employee.deletionPending ? "Chờ xóa · Đã khóa" : employee.active === false ? "Đang tạm khóa" : "Đang hoạt động"}</span>
             </div>
             <label class="employee-active-toggle">
               <input name="active" type="checkbox" ${employee.active !== false ? "checked" : ""} />
-              Đang hoạt động
+              Cho phép đăng nhập
             </label>
           </div>
           <div class="employee-form-grid employee-edit-grid">
             <div class="field">
-              <label>Tên nhân viên</label>
-              <input name="displayName" type="text" maxlength="120" value="${escapeHtml(employee.displayName || "")}" />
+              <label for="employee-name-${escapeHtml(employee.uid)}">Tên nhân viên</label>
+              <input id="employee-name-${escapeHtml(employee.uid)}" name="displayName" type="text" maxlength="120" value="${escapeHtml(employee.displayName || "")}" />
             </div>
             <div class="field">
-              <label>Cửa hàng</label>
-              <select name="storeId">${employeeStoreOptions(employee.storeId)}</select>
+              <label for="employee-store-${escapeHtml(employee.uid)}">Cửa hàng</label>
+              <select id="employee-store-${escapeHtml(employee.uid)}" name="storeId">${employeeStoreOptions(employee.storeId)}</select>
             </div>
           </div>
           <fieldset class="employee-permissions employee-card-permissions">
@@ -3621,10 +3632,14 @@ function ensureSettingsDetailFocusVisible(target) {
   if (!page || page.hidden) return;
   const pageBounds = page.getBoundingClientRect();
   const targetBounds = target.getBoundingClientRect();
+  const employeeHeader = page.id === "employeeManagerPage" && !target.closest(".settings-detail-header")
+    ? page.querySelector(".settings-detail-header")?.getBoundingClientRect()
+    : null;
+  const safeTop = employeeHeader ? Math.max(pageBounds.top + 18, employeeHeader.bottom + 12) : pageBounds.top + 18;
   if (targetBounds.bottom > pageBounds.bottom - 18) {
     page.scrollTop += targetBounds.bottom - pageBounds.bottom + 18;
-  } else if (targetBounds.top < pageBounds.top + 18) {
-    page.scrollTop -= pageBounds.top - targetBounds.top + 18;
+  } else if (targetBounds.top < safeTop) {
+    page.scrollTop -= safeTop - targetBounds.top;
   }
 }
 
