@@ -10,15 +10,15 @@ async function main(){const browser=await chromium.launch({headless:true,executa
  if(mobile)assert.ok(pixels(await before.locator('.layout').screenshot(),await p.locator('.layout').screenshot()),'Mobile unchanged');
  else{
  assert.ok(pixels(await before.locator('#desktopFilterRail').screenshot(),await p.locator('#desktopFilterRail').screenshot()),'filter unchanged');
- const style=await p.evaluate(()=>{const button=document.getElementById('desktopPrimaryAction'),a=getComputedStyle(button),b=getComputedStyle(document.getElementById('quickEntryButton'));return {same:['backgroundImage','color','borderColor','boxShadow'].every(k=>a[k]===b[k]),glass:['::before','::after'].every(k=>getComputedStyle(button,k).pointerEvents==='none'),html:button.innerHTML};});assert.ok(style.same&&style.glass);assert.equal(style.html,await before.locator('#desktopPrimaryAction').innerHTML());
+ const style=await p.evaluate(()=>{const button=document.getElementById('desktopPrimaryAction'),a=getComputedStyle(button),b=getComputedStyle(document.querySelector('.desktop-nav-host .tab-button[data-tab="sales"]'));return {same:['backgroundImage','color','borderColor','boxShadow'].every(k=>a[k]===b[k]),noGlass:['::before','::after'].every(k=>['none','normal'].includes(getComputedStyle(button,k).content)),html:button.innerHTML};});assert.ok(style.same&&style.noGlass);assert.equal(style.html,await before.locator('#desktopPrimaryAction').innerHTML());
  for(const key of ['Enter','Space']){await p.locator('#desktopPrimaryAction').press(key);assert.equal(await p.locator('#salesOrderFields').isVisible(),true);await p.locator('#cancelQuickEntry').click();}
  await p.locator('#desktopPrimaryAction span:last-child').click();assert.equal(await p.locator('#salesOrderFields').isVisible(),true);await p.locator('#cancelQuickEntry').click();
- if(width===1440)await p.screenshot({path:'C:/Users/HP/.codex/visualizations/2026/07/14/019f60d2-3ec4-7110-bb38-fd10c4af6926/applied-sales-header-glass.png'});
+ if(width===1440)await p.screenshot({path:'C:/Users/HP/.codex/visualizations/2026/07/14/019f60d2-3ec4-7110-bb38-fd10c4af6926/applied-sales-header-tab-match.png'});
  await p.evaluate(()=>{authState.role='employee';authState.profile={role:'employee',storeId:'test',permissions:{sales:{view:true,create:false}}};render();});assert.equal(await p.locator('#desktopPrimaryAction').isVisible(),false);
  await p.evaluate(()=>{authState.role='admin';authState.profile={role:'admin'};render();});
  }
  for(const tab of ['purchase','overview','income','expense']){for(const q of pages)await q.evaluate(t=>{activateTab(t);render();},tab);assert.deepEqual(await snapshot(p,false),await snapshot(before,false),tab+' unchanged');}
- assert.equal(await p.evaluate(()=>window.qaWrites),0);for(const q of pages)await q.close();console.log(`${width}x${height}: glass match, layout/filter/Mobile/other tabs, keyboard/click/permissions OK`);
+ assert.equal(await p.evaluate(()=>window.qaWrites),0);for(const q of pages)await q.close();console.log(`${width}x${height}: active sales-tab match, layout/filter/Mobile/other tabs, keyboard/click/permissions OK`);
  }
 }finally{await browser.close();}}
 main().catch(e=>{console.error(e);process.exitCode=1;});

@@ -11359,7 +11359,7 @@ html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tr:not
 html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tr:not(.entry-cancelled) .date-stack small { color: #5c6b87; }
 html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-history-table tr:not(.entry-cancelled) .amount-cell { color: #176992; }
 html:not(.mobile-app-theme) [data-tab-panel="sales"] #openCustomers { background: linear-gradient(145deg,#fffaff,#e8eaff 58%,#dcf0ff); border-color: #d0d8f3; color: #584a91; box-shadow: 0 4px 12px #536ba714, inset 0 1px 0 #ffffffcc; }
-html:not(.mobile-app-theme) body[data-active-tab="sales"] #desktopPrimaryAction { background: linear-gradient(135deg,#a27adf 3%,#7568d0 45%,#328ec5); color: #fff; border-color: #ffffffb3; box-shadow: 0 7px 16px rgba(72,67,151,.22), inset 0 2px 2px #ffffff80, inset 0 -3px 5px #34479655; }
+html:not(.mobile-app-theme) body[data-active-tab="sales"] #desktopPrimaryAction { background: linear-gradient(110deg, #bb36f5 0%, #7151f8 49%, #079ff8 100%); color: #fff; border-color: rgba(255, 255, 255, 0.8); box-shadow: 0 10px 24px rgba(80, 91, 220, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
 html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-table .delete-small { background: #fff0f6; color: #c83578; border-color: #f4dce7; box-shadow: none; }
 html:not(.mobile-app-theme) [data-tab-panel="purchase"] > .purchase-main-panel { background: linear-gradient(135deg,#e5ecff,#def3ed); border-color: #afc7dd; box-shadow: 0 10px 25px #3f78981c; }
 html:not(.mobile-app-theme) [data-tab-panel="purchase"] .panel-heading h2 { color: #315e91; }
@@ -11393,32 +11393,6 @@ html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-table .delete-small:
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 7h14M9 7V4h6v3m2 0-1 13H8L7 7m4 4v5m3-5v5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 /* End Desktop sales button skin. */
-
-/* Desktop sales quick-add matches the multilayer-glass FAB without changing its layout. */
-html:not(.mobile-app-theme) body[data-active-tab="sales"] #desktopPrimaryAction {
-  position: relative; isolation: isolate; overflow: hidden;
-}
-html:not(.mobile-app-theme) body[data-active-tab="sales"] #desktopPrimaryAction::before {
-  content: ""; position: absolute; inset: 4px; border-radius: 11px;
-  border: 1px solid #ffffff70;
-  background: radial-gradient(ellipse at 30% 10%,#ffffff73,transparent 57%);
-  pointer-events: none; z-index: -1;
-}
-html:not(.mobile-app-theme) body[data-active-tab="sales"] #desktopPrimaryAction::after {
-  content: ""; position: absolute; inset: 2px; border-radius: 13px;
-  border-top: 2px solid #ffffffe0; border-left: 1px solid #ffffff80;
-  pointer-events: none; z-index: -1;
-}
-html:not(.mobile-app-theme) body[data-active-tab="sales"] #desktopPrimaryAction span {
-  text-shadow: 0 1px 2px #273c8a80;
-}
-html:not(.mobile-app-theme) body[data-active-tab="sales"] #desktopPrimaryAction:active {
-  box-shadow: 0 4px 10px rgba(72,67,151,.22), inset 0 1px 2px #ffffff73, inset 0 -2px 4px #34479655;
-}
-html:not(.mobile-app-theme) body[data-active-tab="sales"] #desktopPrimaryAction:focus-visible {
-  outline: 3px solid rgba(55,94,165,.5); outline-offset: 3px;
-}
-/* End Desktop sales quick-add glass. */
 
 /* Desktop cancelled-sale purge label: reserve a lower action lane within the last two columns. */
 html:not(.mobile-app-theme) .sales-history-table .entry-cancelled td:last-child { position: relative; vertical-align: top; padding-bottom: 54px; }
