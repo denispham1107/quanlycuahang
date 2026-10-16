@@ -8925,6 +8925,10 @@ function renderSalesOrderItemLine(item, index = 0) {
 
 function renderSalesDraftList(drafts) {
   if (!els.salesDraftList) return;
+  const desktopDraftHeader = !USE_MOBILE_APP_THEME
+    ? els.salesDraftList.closest(".sales-main-panel")?.querySelector(":scope > .panel-heading")
+    : null;
+  desktopDraftHeader?.querySelector(".draft-order-heading")?.remove();
 
   if (isEmployeeUser() && !employeeCan("sales", "draft")) {
     els.salesDraftList.innerHTML = "";
@@ -9000,6 +9004,7 @@ function renderSalesDraftList(drafts) {
       </table>
     </div>
   `;
+  if (desktopDraftHeader) desktopDraftHeader.prepend(els.salesDraftList.querySelector(".draft-order-heading"));
 }
 
 function renderInventory(store) {

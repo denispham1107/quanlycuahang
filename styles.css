@@ -11399,7 +11399,10 @@ html:not(.mobile-app-theme) #desktopSalesActions { display: flex; align-items: c
 html:not(.mobile-app-theme) #desktopSalesActions #openCustomers { width: auto; margin: 0; padding: 0 16px; font-weight: 900; }
 html:not(.mobile-app-theme) #desktopSalesActions #openCustomers[data-role-hidden="true"] { display: none; }
 html:not(.mobile-app-theme) .sales-main-panel > .panel-heading h2 { display: none; }
-html:not(.mobile-app-theme) .sales-main-panel > .panel-heading { justify-content: flex-end; }
+html:not(.mobile-app-theme) .sales-main-panel > .panel-heading { justify-content: space-between; }
+html:not(.mobile-app-theme) .sales-main-panel > .panel-heading .draft-order-heading { font-size: 20px; font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
+html:not(.mobile-app-theme) #salesDraftList { margin-top: 0; }
+html:not(.mobile-app-theme) .sales-main-panel > .panel-heading:not(:has(.draft-order-heading)) { justify-content: flex-end; }
 @media (max-width: 1024px) {
   html:not(.mobile-app-theme) body[data-active-tab="sales"] #desktopPageHeading { flex-wrap: wrap; }
   html:not(.mobile-app-theme) #desktopSalesActions { margin-left: auto; flex-wrap: wrap; }
