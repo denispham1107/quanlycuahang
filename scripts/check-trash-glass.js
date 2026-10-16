@@ -1,0 +1,25 @@
+const assert=require('node:assert/strict'),{chromium}=require('playwright');
+const {setup,filterStyles}=require('./check-desktop-trade-colors');
+const ua='Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1';
+async function open(p,type){await p.evaluate(type=>{closeQuickEntryModal();openQuickEntryModal(type);},type);await p.locator('#quickEntryForm').evaluate(e=>{e.getAnimations().forEach(a=>a.finish());document.activeElement?.blur();e.parentElement.scrollTop=0;scrollTo(0,0);});}
+async function snapshot(p,selector){return p.locator(selector).evaluate(root=>{const b=root.getBoundingClientRect();return [root,...root.querySelectorAll('*')].map(e=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e),trash=e.matches('.delete-small');return {tag:e.tagName,key:e.id||e.className,rect:[r.x-b.x,r.y-b.y,r.width,r.height].map(n=>Math.round(n*100)/100),geometry:[s.padding,s.margin,s.borderWidth,s.borderRadius],paint:trash?null:[s.backgroundImage,s.backgroundColor,s.color,s.borderColor,s.boxShadow],font:trash?null:[s.fontSize,s.fontWeight,s.lineHeight]};});});}
+async function glass(p){const rows=await p.locator('.delete-small:visible').evaluateAll(es=>es.map(e=>{const s=getComputedStyle(e),g=getComputedStyle(e,'::before'),rim=getComputedStyle(e,'::after');return {color:s.color,bg:s.backgroundImage,w:g.width,h:g.height,mask:g.maskImage,events:[g.pointerEvents,rim.pointerEvents],label:e.getAttribute('aria-label'),rim:rim.content};}));assert.ok(rows.length);for(const r of rows){assert.equal(r.color,'rgb(182, 62, 112)');assert.ok(r.bg.includes('rgb(251, 230, 239)'));assert.equal(r.w,'18px');assert.equal(r.h,'18px');assert.ok(r.mask.includes('M10 11v6M14 11v6'));assert.deepEqual(r.events,['none','none']);assert.ok(r.label);assert.equal(r.rim,'""');}}
+async function main(){const b=await chromium.launch({headless:true,executablePath:process.env.BULK_TEST_CHROME||'C:/Program Files/Google/Chrome/Application/chrome.exe'});try{
+ for(const [width,height,mobile] of [[320,700,true],[375,900,true],[430,900,true],[667,375,true],[375,400,true],[800,1000,true],[800,900,false],[1024,900,false],[1440,1000,false],[1920,1080,false]]){
+  const pages=[];for(const old of [true,false]){const p=await b.newPage({viewport:{width,height},...(mobile?{isMobile:true,hasTouch:true,userAgent:ua}:{})});await p.clock.setFixedTime(new Date('2026-10-16T12:00:00'));await setup(p,old);await p.evaluate(()=>{window.qaWrites=0;saveStateToCloud=()=>window.qaWrites++;});pages.push(p);}
+  const [old,p]=pages;assert.deepEqual(await snapshot(p,'.sales-main-panel'),await snapshot(old,'.sales-main-panel'),'sales table geometry and non-trash paint preserved');if(!mobile)assert.deepEqual(await filterStyles(p),await filterStyles(old),'filter untouched');await glass(p);
+  const draft=p.locator('[data-delete-sales-draft="draft"]');if(height===400){await draft.focus();await draft.press('Enter');}else await draft.click();assert.equal(await draft.count(),0,'existing draft delete handler runs on fake data');assert.equal(await p.evaluate(()=>window.qaWrites),1);await p.evaluate(()=>window.qaWrites=0);assert.equal(await p.locator('#quickEntryModal').isVisible(),false,'delete does not open draft row');
+  for(const type of ['purchase','sales']){
+   for(const q of pages)await open(q,type);assert.deepEqual(await snapshot(p,'#quickEntryForm'),await snapshot(old,'#quickEntryForm'),type+' form geometry and other paint unchanged');await glass(p);
+   const id=type==='purchase'?'purchaseItems':'salesItems',add=type==='purchase'?'addPurchaseItem':'addSalesItem';
+   await p.locator('#'+add).click();await p.locator('#'+add).press('Enter');assert.equal(await p.locator('#'+id+' > .sales-item-row').count(),3);
+   const name=p.locator('#'+id+' input').first();await name.fill('Hàng đang soạn');await p.locator('#'+id+' .delete-small').last().focus();await p.locator('#'+id+' .delete-small').last().press('Space');assert.equal(await p.locator('#'+id+' > .sales-item-row').count(),2);assert.equal(await name.inputValue(),'Hàng đang soạn');
+   await p.locator('#'+id+' .delete-small').last().press('Enter');assert.equal(await p.locator('#'+id+' > .sales-item-row').count(),1);await p.locator('#'+add).click();await glass(p);
+   if(width===375&&height===900||width===1440)await p.screenshot({path:`C:/Users/HP/.codex/visualizations/2026/07/14/019f60d2-3ec4-7110-bb38-fd10c4af6926/applied-trash-${type}-${width}.png`,animations:'disabled'});
+   await p.locator('#cancelQuickEntry').click();assert.equal(await p.evaluate(()=>window.qaWrites),0);
+  }
+  for(const type of ['income','expense']){for(const q of pages)await open(q,type);assert.deepEqual(await snapshot(p,'#quickEntryForm'),await snapshot(old,'#quickEntryForm'),type+' unchanged');}
+  for(const q of pages)await q.close();console.log(`${width}x${height} ${mobile?'Mobile':'Desktop'}: trash paint/18px glyph, exact geometry, other controls, existing delete handlers, click/Enter/Space OK`);
+ }
+}finally{await b.close();}}
+main().catch(e=>{console.error(e);process.exitCode=1;});

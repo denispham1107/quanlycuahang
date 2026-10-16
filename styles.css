@@ -11983,4 +11983,50 @@ html.mobile-app-theme #inventoryHistoryList .inventory-meta span:nth-child(2) { 
 html.mobile-app-theme #inventoryHistoryList .inventory-meta span:nth-child(3) { background: #fbedf3; color: #a84e76; }
 html.mobile-app-theme #inventoryHistoryList .inventory-meta span:nth-child(4) { background: #e9f2ff; color: #346ba0; font-weight: 800; }
 html.mobile-app-theme #inventoryHistoryModal .modal-actions { grid-template-columns: minmax(0,1fr); }
+
+/* Approved trash model 1: pink layered glass. Keep existing button geometry. */
+:root {
+  --trash-glass-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 11v6M14 11v6M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'/%3E%3C/svg%3E");
+}
+html body .delete-small,
+html.mobile-app-theme body .delete-small,
+html.mobile-app-theme [data-tab-panel="sales"] .sales-table .delete-small,
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-table .delete-small {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0;
+  color: #b63e70;
+  background: linear-gradient(145deg,#fff8fc,#fbe6ef 60%,#eddaee);
+  border-color: #edcada;
+  box-shadow: 0 3px 7px #a55b7b14,inset 0 1px 0 #fff,inset 0 -2px 3px #c790ae1c;
+}
+html body .delete-small::before,
+html.mobile-app-theme body .delete-small::before,
+html.mobile-app-theme [data-tab-panel="sales"] .sales-table .delete-small::before,
+html:not(.mobile-app-theme) [data-tab-panel="sales"] .sales-table .delete-small::before {
+  content: "";
+  position: relative;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  background: currentColor;
+  -webkit-mask: var(--trash-glass-glyph) center / contain no-repeat;
+  mask: var(--trash-glass-glyph) center / contain no-repeat;
+  filter: drop-shadow(0 .6px .25px #fff);
+  pointer-events: none;
+}
+html body .delete-small::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 8px;
+  border: 1px solid #ffffffc9;
+  background: radial-gradient(ellipse at 25% 5%,#ffffffd9,transparent 65%);
+  pointer-events: none;
+}
+/* End approved trash glass. */
 html.mobile-app-theme .inventory-pastel-card .field[hidden] { display: none; }
