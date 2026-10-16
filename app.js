@@ -1314,6 +1314,16 @@ els.salesItems.addEventListener("change", (event) => {
 });
 
 els.salesItems.addEventListener("click", (event) => {
+  const noteToggle = event.target.closest("[data-toggle-sales-note]");
+  if (noteToggle) {
+    const row = noteToggle.closest(".sales-item-row");
+    const open = row.dataset.noteOpen !== "true";
+    row.dataset.noteOpen = String(open);
+    noteToggle.setAttribute("aria-expanded", String(open));
+    noteToggle.setAttribute("aria-label", open ? "Thu gọn ghi chú hàng hóa" : "Mở ghi chú hàng hóa");
+    if (open) row.querySelector('[data-sales-item="note"]')?.focus();
+    return;
+  }
   const catalogButton = event.target.closest("[data-open-sales-catalog]");
   if (catalogButton) {
     openSalesCatalogPage(catalogButton.closest(".sales-item-row"));
@@ -4972,6 +4982,9 @@ function openSalesOrderModal(store, draft = null) {
 function addSalesItemRow(item = {}) {
   const row = document.createElement("div");
   row.className = "sales-item-row";
+  const noteId = `sales-note-${createId()}`;
+  const noteOpen = Boolean(String(item.note || "").trim());
+  row.dataset.noteOpen = String(noteOpen);
   const originalPrice = Number(item.originalPrice || item.price || 0);
   const hasDiscount = Number(item.discountPercent || 0) > 0 || Number(item.discountAmount || 0) > 0;
   const displayPrice = hasDiscount ? Number(item.price || getDiscountedPrice(originalPrice, item.discountPercent, item.discountAmount)) : originalPrice;
@@ -5001,6 +5014,8 @@ function addSalesItemRow(item = {}) {
       <button class="quantity-step" type="button" data-sales-quantity-step="1" aria-label="Tăng số lượng">+</button>
     </div>
     <button class="delete-small" type="button" data-remove-sales-item title="Xóa khoản" aria-label="Xóa khoản">×</button>
+    <button class="sales-note-toggle" type="button" data-toggle-sales-note aria-controls="${noteId}" aria-expanded="${noteOpen}" aria-label="${noteOpen ? "Thu gọn" : "Mở"} ghi chú hàng hóa"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7 5 5 5-5"/></svg></button>
+    <textarea class="sales-item-note" id="${noteId}" data-sales-item="note" placeholder="Ghi chú" aria-label="Ghi chú hàng hóa" rows="2" maxlength="2000">${escapeHtml(item.note || "")}</textarea>
   `;
   els.salesItems.append(row);
 }
@@ -5013,6 +5028,7 @@ function getSalesOrderItems() {
       const quantity = Math.max(1, Number.parseInt(row.querySelector('[data-sales-item="quantity"]')?.value, 10) || 1);
       return {
         name,
+        note: String(row.querySelector('[data-sales-item="note"]')?.value || "").trim(),
         itemType: getSalesItemType(getActiveStore(), name),
         price: pricing.price,
         originalPrice: pricing.originalPrice,
@@ -5033,6 +5049,7 @@ function getSalesDraftItems() {
       const quantity = Math.max(1, Number.parseInt(row.querySelector('[data-sales-item="quantity"]')?.value, 10) || 1);
       return {
         name,
+        note: String(row.querySelector('[data-sales-item="note"]')?.value || "").trim(),
         itemType: getSalesItemType(getActiveStore(), name),
         price: pricing.price,
         originalPrice: pricing.originalPrice,
@@ -5042,7 +5059,7 @@ function getSalesDraftItems() {
         total: pricing.price * quantity
       };
     })
-    .filter((item) => item.name || item.originalPrice > 0);
+    .filter((item) => item.name || item.note || item.originalPrice > 0);
 }
 
 function getSalesFormData({ completeOnly = false } = {}) {
@@ -8911,7 +8928,7 @@ function renderSalesOrderItemLine(item, index = 0) {
   return `
     <div class="order-detail-product-row" role="row">
       <span class="order-detail-product-index" role="cell">${index + 1}</span>
-      <strong class="order-detail-product-name" role="cell">${escapeHtml(item.name || "")}</strong>
+      <strong class="order-detail-product-name" role="cell">${escapeHtml(item.name || "")}${String(item.note || "").trim() ? `<span class="order-detail-product-note">${escapeHtml(item.note)}</span>` : ""}</strong>
       <span class="order-detail-product-quantity" role="cell" data-label="SL">${quantity}</span>
       <span class="order-detail-product-price" role="cell" data-label="Đơn giá">
         ${hasDiscount ? `<span class="old-value">${formatCurrency(originalPrice)}</span>` : ""}

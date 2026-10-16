@@ -480,6 +480,7 @@ function applyEmployeeSalesMutation(store, rawOrder, user) {
     return {
       name,
       groupName: employeeText(item.groupName || "Chưa phân nhóm", 120),
+      note: employeeText(item.note, 2000),
       quantity,
       price,
       originalPrice: employeeNumber(item.originalPrice ?? price, 0),
@@ -589,6 +590,7 @@ function applyEmployeeSalesDraftMutation(store, rawDraft, user) {
       const discountAmount = employeeNumber(item.discountAmount || 0, 0);
       return {
         name,
+        note: employeeText(item.note, 2000),
         itemType: (store.inventory || []).filter(stock => employeeKey(stock.name) === employeeKey(name)).length > 0 && (store.inventory || []).filter(stock => employeeKey(stock.name) === employeeKey(name)).every(stock => stock.itemType === "service") ? "service" : "goods",
         price,
         originalPrice,
@@ -598,7 +600,7 @@ function applyEmployeeSalesDraftMutation(store, rawDraft, user) {
         total: price * quantity
       };
     })
-    .filter((item) => item.name || item.originalPrice > 0);
+    .filter((item) => item.name || item.note || item.originalPrice > 0);
 
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);
   const directDiscount = Math.min(subtotal, employeeNumber(rawDraft.orderDiscountAmount || 0, 0));

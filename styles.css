@@ -12039,3 +12039,24 @@ html body .delete-small::after {
 }
 /* End approved trash glass. */
 html.mobile-app-theme .inventory-pastel-card .field[hidden] { display: none; }
+
+/* Per-item sales notes: desktop disclosure, always visible below quantity on Mobile. */
+#quickEntryForm[data-type="sales"] #salesItems .sales-note-toggle {
+  grid-column: 1 / -1; justify-self: center; display: inline-flex;
+  align-items: center; justify-content: center; width: 44px; min-width: 44px;
+  height: 22px; min-height: 22px; padding: 0; border: 0; border-radius: 8px;
+  background: transparent; color: #695883; box-shadow: none;
+}
+.sales-note-toggle svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.sales-note-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+#quickEntryForm[data-type="sales"] #salesItems .sales-item-note {
+  grid-column: 1 / -1; display: none; width: 100%; min-width: 0; max-width: 100%;
+  min-height: 52px; box-sizing: border-box; padding: 10px 12px; border: 1px solid #dcdcec;
+  border-radius: 12px; background: #fff; color: #293b5b; font: inherit;
+  line-height: 1.5; resize: vertical; overflow-wrap: anywhere;
+}
+#quickEntryForm[data-type="sales"] #salesItems [data-note-open="true"] .sales-item-note { display: block; }
+html.mobile-app-theme #quickEntryForm[data-type="sales"] #salesItems .sales-note-toggle { display: none; }
+html.mobile-app-theme #quickEntryForm[data-type="sales"] #salesItems .sales-item-note { display: block; font-size: 16px; }
+.order-detail-product-note { display: block; margin-top: 5px; color: #65718a; font-size: 12px; font-weight: 400; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+/* End per-item sales notes. */
