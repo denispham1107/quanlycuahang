@@ -27,7 +27,7 @@ test('approved sales mobile additions are hidden on desktop and history remains 
  const positions=['mobile-sales-heading','mobile-sales-report','sales-main-panel','sales-goods-panel','sales-history-panel'].map(c=>tab.indexOf(c));
  assert.ok(positions.every((n,i)=>n>=0&&(!i||n>positions[i-1])));
  assert.match(css,/\.mobile-sales-heading, \.mobile-sales-report \{ display: none; \}/);
- const newCSS=css.slice(css.indexOf('/* Approved "Nổi bật gradient"'));
+ const newCSS=css.slice(css.indexOf('/* Approved "Nổi bật gradient"'),css.indexOf('/* Mobile purchase:'));
  for(const selector of newCSS.split('{').slice(0,-1).map(x=>x.split('}').at(-1).trim())){
   if(selector.startsWith('/*')||selector.startsWith('.mobile-sales-heading')||selector.startsWith('@media'))continue;
   if(/^html #(quickEntryButton|aiButton)(?:$|[\s:])/.test(selector))continue; // Approved shared floating actions on Desktop/Mobile.

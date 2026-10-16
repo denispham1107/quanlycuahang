@@ -11881,6 +11881,36 @@ html.mobile-app-theme #inventoryLogPanel .inventory-log-change > span { min-widt
 html.mobile-app-theme #inventoryLogPanel .inventory-log-total { overflow-wrap: anywhere; color: #2b6cab; }
 html.mobile-app-theme #inventoryLogPanel .history-purge-button { min-height: 44px; max-width: 100%; padding: 6px 8px; font-size: 11px; white-space: normal; overflow-wrap: anywhere; justify-self: end; }
 
+/* Desktop purchase palette follows Mobile; retain desktop geometry, controls and header actions. */
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] #desktopInsights {
+  background: linear-gradient(120deg,#f5e8fc,#e6eaff 55%,#dff2ff); border-radius: 18px;
+  box-shadow: 0 12px 25px rgba(83,88,160,.13),inset 0 1px 0 rgba(255,255,255,.88);
+}
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] #desktopInsights .desktop-insight { background: #ffffff8a; border-color: #ffffffce; box-shadow: none; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] #desktopInsights .desktop-insight.total { background: linear-gradient(115deg,#fffaffc9,#e4efffc7); }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] #desktopInsights .desktop-insight div span { color: #586580; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] #desktopInsights .desktop-insight.total strong { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: #244f96; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] #desktopInsights .desktop-insight.stock-import strong { color: #6654b5; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] #desktopInsights .desktop-insight.stock-export strong { color: #ae4b77; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] #desktopInsights .desktop-insight.category-two strong { color: #24776b; }
+html:not(.mobile-app-theme) [data-tab-panel="purchase"] > .purchase-main-panel { background: #ffffffeb; border-color: #ffffffe6; box-shadow: 0 8px 24px #6763a710; }
+html:not(.mobile-app-theme) [data-tab-panel="purchase"] .purchase-main-panel > .panel-heading h2 { color: #18264c; }
+html:not(.mobile-app-theme) [data-tab-panel="purchase"] #inventoryCount { color: #5b5c9c; }
+html:not(.mobile-app-theme) [data-tab-panel="purchase"] #openBulkPurchase { background: radial-gradient(ellipse at 10% 0%,#ffffff66,transparent 65%),linear-gradient(110deg,#c5eee1,#97d4ca 48%,#a6cde7); color: #235a6a; border-color: #8bbdbb; box-shadow: 0 5px 14px #397b851f,inset 0 1px 0 #ffffffb3; }
+html:not(.mobile-app-theme) [data-tab-panel="purchase"] #inventoryLogPanel .inventory-log-heading { color: #203459; }
+html:not(.mobile-app-theme) [data-tab-panel="purchase"] #inventoryLogPanel .inventory-log-filter label { color: #67718b; }
+html:not(.mobile-app-theme) [data-tab-panel="purchase"] #inventoryLogPanel .inventory-log-summary { background: linear-gradient(110deg,#f0eafc,#e9f4ff); border-color: #ccd9f0; color: var(--text); }
+html:not(.mobile-app-theme) [data-tab-panel="purchase"] #inventoryLogPanel .inventory-log-summary strong { color: #2c66a7; }
+html:not(.mobile-app-theme) [data-tab-panel="purchase"] #inventoryLogPanel .inventory-log-table-wrap { background: none; border-color: #dae3f2; }
+html:not(.mobile-app-theme) [data-tab-panel="purchase"] #inventoryLogPanel .inventory-log-table thead { background: linear-gradient(110deg,#f0eafc,#e9f4ff); }
+html:not(.mobile-app-theme) [data-tab-panel="purchase"] #inventoryLogPanel .inventory-log-table th { color: #203459; border-color: #e8e6f5; }
+html:not(.mobile-app-theme) [data-tab-panel="purchase"] #inventoryLogPanel .inventory-log-table tbody tr { background: linear-gradient(145deg,#fff,#f7faff); box-shadow: 0 3px 10px #667aaf09; }
+html:not(.mobile-app-theme) [data-tab-panel="purchase"] #inventoryLogPanel .inventory-log-table td { color: #243656; border-color: #e8edf6; }
+html:not(.mobile-app-theme) [data-tab-panel="purchase"] #inventoryLogPanel .inventory-log-total { color: #2b6cab; }
+html:not(.mobile-app-theme) [data-tab-panel="purchase"] #inventoryLogPanel .inventory-log-purpose.purchase { background: rgba(8,120,247,.1); color: #176992; }
+html:not(.mobile-app-theme) [data-tab-panel="purchase"] #inventoryLogPanel .inventory-log-purpose.export { background: rgba(236,72,153,.12); color: #9b4167; }
+/* End Desktop purchase Mobile palette. */
+
 /* Export inventory: mobile-only pastel sections and clearly distinct actions. */
 .export-dialog-icon { display: none; }
 html.mobile-app-theme #exportInventoryModal { background: #29334e66; backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); }
