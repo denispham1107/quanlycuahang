@@ -1214,6 +1214,7 @@ els.applyOrderDiscount.addEventListener("click", () => {
 });
 
 els.quickEntryModal.addEventListener("click", (event) => {
+  if (!USE_MOBILE_APP_THEME && ["sales", "purchase", "purchase-bulk"].includes(els.quickEntryForm.dataset.type)) return;
   if (event.target === els.quickEntryModal) closeQuickEntryModal();
 });
 
@@ -1429,7 +1430,7 @@ els.inventoryModal.addEventListener("focusin", (event) => {
 });
 
 els.inventoryModal.addEventListener("click", (event) => {
-  if (event.target === els.inventoryModal) closeInventoryModal();
+  if (USE_MOBILE_APP_THEME && event.target === els.inventoryModal) closeInventoryModal();
 });
 
 els.openInventoryHistory.addEventListener("click", () => {
