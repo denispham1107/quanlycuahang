@@ -8172,6 +8172,13 @@ body.modal-open {
   }
 }
 
+/* Mobile purchase groups use the same inter-item spacing as the sales form. */
+html.mobile-app-theme .sales-page-mode #quickEntryForm[data-type="purchase"] #purchaseItems { display: grid; gap: 12px; }
+@media (max-width: 700px) {
+  html.mobile-app-theme .sales-page-mode #quickEntryForm[data-type="purchase"] #purchaseItems { gap: 6px; }
+}
+/* End Mobile purchase group spacing. */
+
 /* Purchase has a different set of fields from sales: never let cost occupy
    the narrow action-button column on phones or portrait tablets. */
 @media (max-width: 920px) {
