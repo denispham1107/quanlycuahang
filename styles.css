@@ -12170,3 +12170,17 @@ html.mobile-app-theme #quickEntryForm[data-type="sales"] #salesItems .sales-item
   #employeeManagerPage .employee-edit-grid { padding: 11px; }
 }
 /* End employee team workspace. */
+
+/* Desktop purchase overview and primary action match Sales exactly; paint only. */
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] #desktopInsights { background: none; box-shadow: none; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] #desktopInsights .desktop-insight,
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] #desktopInsights .desktop-insight.total {
+  background: rgba(255,255,255,.95); border-color: #e2e9f6; box-shadow: 0 12px 24px rgba(69,84,149,.08);
+}
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] #desktopInsights .desktop-insight div span { color: #536686; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] #desktopInsights .desktop-insight.total strong { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: var(--accent); }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] #desktopInsights .desktop-insight.stock-import strong { background: var(--money-gradient); -webkit-background-clip: text; background-clip: text; color: transparent; }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] #desktopInsights .desktop-insight.stock-export strong { color: var(--balance); }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] #desktopInsights .desktop-insight.category-two strong { color: var(--expense); }
+html:not(.mobile-app-theme) body[data-active-tab="purchase"] #desktopPurchaseActions #desktopPrimaryAction { background: linear-gradient(110deg,#7860b5,#4f78ac); color: #fff; border-color: #7d83bb; box-shadow: 0 7px 16px #6c75a123,inset 0 1px 0 #ffffff80; }
+/* End purchase Sales-matched paint. */

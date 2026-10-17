@@ -1,0 +1,22 @@
+const assert=require('node:assert/strict'),{chromium}=require('playwright');
+const {setup,filterStyles}=require('./check-desktop-trade-colors');
+const ua='Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1';
+const props=['backgroundImage','backgroundColor','backgroundClip','color','borderColor','boxShadow'];
+async function paint(p,s){return p.locator(s).evaluateAll((es,props)=>es.map(e=>{const v=getComputedStyle(e);return props.map(k=>v[k]);}),props);}
+async function snap(p,allowed){return p.locator('.layout').evaluate((root,allowed)=>[root,...root.querySelectorAll('*')].filter(e=>e.getBoundingClientRect().width).map(e=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e),ignore=allowed&&(e.closest('#desktopInsights')||e.closest('#desktopPrimaryAction'));return {tag:e.tagName,id:e.id,rect:[r.x,r.y,r.width,r.height],font:[s.fontSize,s.fontWeight,s.padding,s.margin,s.borderWidth,s.borderRadius],text:e.children.length?null:e.textContent,paint:ignore?null:[s.backgroundImage,s.backgroundColor,s.color,s.borderColor,s.boxShadow]};}),allowed);}
+async function tab(p,name){await p.evaluate(name=>{activateTab(name);render();scrollTo(0,0);},name);}
+async function main(){const b=await chromium.launch({headless:true,executablePath:process.env.BULK_TEST_CHROME||'C:/Program Files/Google/Chrome/Application/chrome.exe'});try{
+ for(const [width,height,mobile] of [[800,900,false],[1024,900,false],[1440,1000,false],[1920,1080,false],[320,700,true],[375,900,true],[430,900,true],[667,375,true],[375,400,true]]){
+  const pages=[];for(const old of [true,false]){const p=await b.newPage({viewport:{width,height},...(mobile?{isMobile:true,hasTouch:true,userAgent:ua}:{})});await p.clock.setFixedTime(new Date('2026-10-17T12:00:00'));await setup(p,old);await p.evaluate(()=>{window.qaWrites=0;saveStateToCloud=()=>window.qaWrites++;});pages.push(p);}
+  const [before,p]=pages;assert.deepEqual(await snap(p,false),await snap(before,false),'Sales and every non-purchase element unchanged');
+  const expected=mobile?null:{cards:await paint(p,'#desktopInsights .desktop-insight'),labels:await paint(p,'#desktopInsights .desktop-insight div span'),numbers:await paint(p,'#desktopInsights .desktop-insight strong'),button:await paint(p,'#desktopPrimaryAction')};
+  for(const q of pages)await tab(q,'purchase');assert.deepEqual(await snap(p,!mobile),await snap(before,!mobile),'all geometry/fonts/content and outside-target paint unchanged');
+  if(!mobile){assert.deepEqual(await paint(p,'#desktopInsights .desktop-insight'),expected.cards,'all four card surfaces exactly match Sales');assert.deepEqual(await paint(p,'#desktopInsights .desktop-insight div span'),expected.labels,'labels exactly match Sales');assert.deepEqual(await paint(p,'#desktopInsights .desktop-insight strong'),expected.numbers,'number colors and text gradients exactly match Sales');assert.deepEqual(await paint(p,'#desktopPrimaryAction'),expected.button,'purchase button paint exactly matches Sales');assert.deepEqual(await filterStyles(p),await filterStyles(before),'left filters unchanged');
+   if(width===1440)await p.screenshot({path:'C:/Users/HP/.codex/visualizations/2026/07/14/019f60d2-3ec4-7110-bb38-fd10c4af6926/purchase-sales-matched-desktop.png',animations:'disabled'});
+   await p.locator('#desktopPrimaryAction').click();assert.equal(await p.locator('#quickEntryForm').getAttribute('data-type'),'purchase');await p.locator('#cancelQuickEntry').click();await p.locator('#desktopPrimaryAction').press('Enter');assert.equal(await p.locator('#purchaseItems').isVisible(),true);await p.locator('#cancelQuickEntry').click();await p.locator('#toggleInventory').click();assert.equal(await p.locator('#inventoryModal').isVisible(),true);await p.locator('#closeInventory').click();
+   for(const q of pages)await q.evaluate(()=>{getActiveStore().inventory=[];getActiveStore().inventoryLogs=[];render();});assert.deepEqual(await p.locator('#desktopInsights strong').allTextContents(),await before.locator('#desktopInsights strong').allTextContents(),'empty totals unchanged');
+  }
+  assert.equal(await p.evaluate(()=>window.qaWrites),0);for(const q of pages)await q.close();console.log(`${width}x${height}: ${mobile?'Mobile entirely unchanged':'Purchase cards/button exactly match Sales, no other paint/layout/data changes'} OK`);
+ }
+}finally{await b.close();}}
+main().catch(e=>{console.error(e);process.exitCode=1;});
